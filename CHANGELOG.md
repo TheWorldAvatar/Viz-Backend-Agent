@@ -1,6 +1,8 @@
-# 1.3.0
+# Change Log
 
-## Features
+## 1.3.0
+
+### Features
 
 - Added form branch capability
 - Added form array fields capability
@@ -8,42 +10,42 @@
 - General improvements to query generation for GET and DELETE queries
 - Added sample pricing model configurations
 
-## Bug Fixes
+### Bug Fixes
 
 - Fix lifecycle related queries not returning the right occurrences
 
-# 1.2.2
+## 1.2.2
 
-## Features
+### Features
 
 - Simplifies dependent form fields
 
-## Bug Fixes
+### Bug Fixes
 
 - Fix conflicting independent form fields with similar names
 
-# 1.2.1
+## 1.2.1
 
-## Bug Fixes
+### Bug Fixes
 
 - Fixes error when retrieval form template with no default values for dispatch
 - Fixes error for accepting the wrong field parameter when instantiating
 
-# 1.2.0
+## 1.2.0
 
-## Features
+### Features
 
 - Added capabilities to manage lifecycle states and transitions
 
-# 1.1.0
+## 1.1.0
 
-## Features
+### Features
 
 - Extension of search functionality to general data and time series
 - Added geocoding capabilities
 
-# 1.0.0
+## 1.0.0
 
-## Features
+### Features
 
 - Introduced the initial version of VisBackend Agent to add, delete, update, or get instances within the registry using SHACL
