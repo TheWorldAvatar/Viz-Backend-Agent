@@ -3,7 +3,6 @@ package com.cmclinnovations.agent.service.core;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,9 +32,8 @@ import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
-import com.cmclinnovations.agent.template.FormTemplateFactory;
-import com.cmclinnovations.agent.template.QueryTemplateFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.stack.clients.blazegraph.BlazegraphClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -52,9 +50,8 @@ public class KGService {
 
   private final RestClient client;
   private final ObjectMapper objectMapper;
-  private final FormTemplateFactory formTemplateFactory;
-  private final QueryTemplateFactory queryTemplateFactory;
   private final FileService fileService;
+  private final QueryTemplateService queryTemplateService;
 
   private static final String DEFAULT_NAMESPACE = "kb";
   private static final String JSON_MEDIA_TYPE = "application/json";
@@ -73,12 +70,11 @@ public class KGService {
    * 
    * @param fileService File service for accessing file resources.
    */
-  public KGService(FileService fileService, JsonLdService jsonLdService) {
+  public KGService(FileService fileService, QueryTemplateService queryTemplateService) {
     this.client = RestClient.create();
     this.objectMapper = new ObjectMapper();
-    this.formTemplateFactory = new FormTemplateFactory();
-    this.queryTemplateFactory = new QueryTemplateFactory(jsonLdService);
     this.fileService = fileService;
+    this.queryTemplateService = queryTemplateService;
   }
 
   /**
@@ -104,10 +100,10 @@ public class KGService {
    */
   public ResponseEntity<String> delete(ObjectNode addJsonSchema, String targetId) {
     // Parse the JSON schema into the corresponding delete query
-    String query = this.queryTemplateFactory.genDeleteQueryTemplate(addJsonSchema, targetId);
+    Queue<String> query = this.queryTemplateService.genDeleteQuery(addJsonSchema, targetId);
     LOGGER.debug("Deleting instances...");
 
-    int statusCode = this.executeUpdate(query);
+    int statusCode = this.executeUpdate(query.poll());
     if (statusCode == 200) {
       LOGGER.info("Instance has been successfully deleted!");
       return new ResponseEntity<>(
@@ -281,8 +277,7 @@ public class KGService {
       // Execute the query on the current endpoint and get the result
       ArrayNode results = this.queryJsonLd(query, endpoint);
       if (!results.isEmpty()) {
-        LOGGER.debug("Query is successfully executed. Parsing the results...");
-        return this.formTemplateFactory.genTemplate(results, defaultVals);
+        return this.queryTemplateService.genFormTemplate(results, defaultVals);
       }
     }
     return new HashMap<>();
@@ -340,10 +335,10 @@ public class KGService {
     // And add the first level right away
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.queryNestedPredicates(shaclPathQuery);
     LOGGER.debug("Generating the query template from the predicate paths and variables queried...");
-    Queue<String> queries = this.queryTemplateFactory.genGetTemplate(nestedVariablesAndPropertyPaths, targetId,
+    Queue<String> queries = this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, targetId,
         parentField, lifecycleEvent);
     LOGGER.debug("Querying the knowledge graph for the instances...");
-    List<String> varSequence = this.queryTemplateFactory.getSequence();
+    List<String> varSequence = this.queryTemplateService.getFieldSequence();
     // Query for direct instances
     Queue<SparqlBinding> instances = this.query(queries.poll(), SparqlEndpointType.MIXED);
     // Query for secondary instances ie instances that are subclasses of parent
@@ -370,8 +365,7 @@ public class KGService {
       throw new IllegalStateException(INVALID_SHACL_ERROR_MSG);
     }
     LOGGER.debug("Generating the query template from the predicate paths and variables queried...");
-    Queue<String> queries = this.queryTemplateFactory.genGetTemplate(nestedVariablesAndPropertyPaths, null, null,
-        null);
+    Queue<String> queries = this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths);
     LOGGER.debug("Querying the knowledge graph for the instances in csv format...");
     // Query for direct instances
     String[] resultRows = this.queryCSV(queries.poll(), SparqlEndpointType.MIXED);
@@ -405,9 +399,7 @@ public class KGService {
       LOGGER.error(INVALID_SHACL_ERROR_MSG);
       throw new IllegalStateException(INVALID_SHACL_ERROR_MSG);
     }
-    LOGGER.debug("Generating the query template from the predicate paths and variables queried...");
-    Queue<String> searchQuery = this.queryTemplateFactory.genSearchTemplate(nestedVariablesAndPropertyPaths,
-        criterias);
+    Queue<String> searchQuery = this.queryTemplateService.genSearchQuery(nestedVariablesAndPropertyPaths, criterias);
     LOGGER.debug("Querying the knowledge graph for the matching instances...");
     // Query for direct instances
     Queue<SparqlBinding> instances = this.query(searchQuery.poll(), SparqlEndpointType.MIXED);
@@ -452,7 +444,6 @@ public class KGService {
     }
     LOGGER.error("Data model is invalid!");
     throw new IllegalStateException("Data model is invalid!");
-
   }
 
   /**
@@ -562,8 +553,8 @@ public class KGService {
       }
       // Extend to get the next level of shape if any
       replacementShapePath = replacementShapePath.isEmpty() ? " ?nestedshape." +
-          "?nestedshape sh:name ?" + QueryTemplateFactory.NODE_GROUP_VAR + ";sh:node/sh:targetClass ?"
-          + QueryTemplateFactory.NESTED_CLASS_VAR + ";" + SUB_SHAPE_PATH
+          "?nestedshape sh:name ?" + StringResource.NODE_GROUP_VAR + ";sh:node/sh:targetClass ?"
+          + StringResource.NESTED_CLASS_VAR + ";" + SUB_SHAPE_PATH
           : "/" + SUB_SHAPE_PATH + replacementShapePath;
     }
     if (results.isEmpty()) {
