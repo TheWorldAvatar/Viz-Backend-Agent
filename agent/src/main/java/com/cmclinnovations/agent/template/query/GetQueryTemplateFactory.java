@@ -119,7 +119,7 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       if (parsedFieldName.isEmpty()) {
         LOGGER.error("Unable to find matching variable for parent field: {}", parentField.name());
         throw new IllegalArgumentException(
-            MessageFormat.format("Unable to find matching variable for parent field: {}", parentField.name()));
+            MessageFormat.format("Unable to find matching variable for parent field: {0}", parentField.name()));
       }
       query.append("FILTER STRENDS(STR(")
           .append(parsedFieldName)
