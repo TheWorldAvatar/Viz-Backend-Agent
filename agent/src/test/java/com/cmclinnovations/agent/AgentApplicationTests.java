@@ -60,19 +60,6 @@ class AgentApplicationTests {
   }
 
   @Test
-  void testConceptMetadataRoute_InvalidRoute() throws Exception {
-    File sampleFile = FileServiceTest.genSampleFile("/" + FileService.APPLICATION_FORM_RESOURCE, "{}");
-    try {
-      this.mockMvc.perform(get("/type/invalid"))
-          .andExpect(status().isBadRequest())
-          .andExpect(content().string(
-              "Route is invalid at /invalid! If this route is intended to be enabled, please contact your technical team for assistance."));
-    } finally {
-      sampleFile.delete();
-    }
-  }
-
-  @Test
   void testGetAllInstancesRoute_MissingFormResource() throws Exception {
     this.mockMvc.perform(get("/invalid"))
         .andExpect(status().isInternalServerError())

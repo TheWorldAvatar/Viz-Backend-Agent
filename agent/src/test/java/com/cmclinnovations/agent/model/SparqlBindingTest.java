@@ -60,15 +60,15 @@ public class SparqlBindingTest {
 
   @Test
   void testGet() {
-    Map<String, SparqlResponseField> bindings = this.sampleBinding.get();
+    Map<String, Object> bindings = this.sampleBinding.get();
     assertNotNull(bindings);
     assertEquals(3, bindings.size());
-    validateResponseField(bindings.get(FIELD_ONE), FIELD_TYPE_LITERAL, FIELD_VALUE_ONE, FIELD_DEFAULT_DATA_TYPE,
-        FIELD_DEFAULT_LANGUAGE);
-    validateResponseField(bindings.get(FIELD_TWO), FIELD_TYPE_URI, FIELD_VALUE_TWO, FIELD_TWO_DATA_TYPE,
-        FIELD_DEFAULT_LANGUAGE);
-    validateResponseField(bindings.get(FIELD_THREE), FIELD_TYPE_LITERAL, FIELD_VALUE_THREE, FIELD_DEFAULT_DATA_TYPE,
-        FIELD_THREE_LANGUAGE);
+    validateResponseField((SparqlResponseField) bindings.get(FIELD_ONE), FIELD_TYPE_LITERAL, FIELD_VALUE_ONE,
+        FIELD_DEFAULT_DATA_TYPE, FIELD_DEFAULT_LANGUAGE);
+    validateResponseField((SparqlResponseField) bindings.get(FIELD_TWO), FIELD_TYPE_URI, FIELD_VALUE_TWO,
+        FIELD_TWO_DATA_TYPE, FIELD_DEFAULT_LANGUAGE);
+    validateResponseField((SparqlResponseField) bindings.get(FIELD_THREE), FIELD_TYPE_LITERAL, FIELD_VALUE_THREE,
+        FIELD_DEFAULT_DATA_TYPE, FIELD_THREE_LANGUAGE);
   }
 
   @Test

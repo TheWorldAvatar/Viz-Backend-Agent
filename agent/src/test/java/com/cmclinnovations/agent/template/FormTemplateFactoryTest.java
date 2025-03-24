@@ -66,7 +66,7 @@ class FormTemplateFactoryTest {
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
       this.formTemplateFactory.genTemplate(sample, new HashMap<>());
     });
-    assertEquals("Invalid input node! Only property shape and property group is allowed.", exception.getMessage());
+    assertEquals("Invalid input node! Only property shape, property group, and node shape is allowed.", exception.getMessage());
   }
 
   @Test
