@@ -16,6 +16,7 @@ import com.cmclinnovations.agent.TestUtils;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.utils.StringResource;
 
 class GetQueryTemplateFactoryTest {
@@ -64,7 +65,7 @@ class GetQueryTemplateFactoryTest {
     nestedBindings.offer(bindings);
     // Execute
     Queue<String> results = TEMPLATE_FACTORY.write(
-        new QueryTemplateFactoryParameters(nestedBindings, null, "", null, null, null));
+        new QueryTemplateFactoryParameters(nestedBindings, "", null, null));
     // Assert
     assertEquals(2, results.size());
     assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_FILE), results.poll());
@@ -83,7 +84,7 @@ class GetQueryTemplateFactoryTest {
     nestedBindings.offer(bindings);
     // Execute
     Queue<String> results = TEMPLATE_FACTORY
-        .write(new QueryTemplateFactoryParameters(nestedBindings, null, SAMPLE_FILTER, null, null, null));
+        .write(new QueryTemplateFactoryParameters(nestedBindings, SAMPLE_FILTER, null, null));
     // Assert
     assertEquals(2, results.size());
     assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_ID_FILE), results.poll());
@@ -101,8 +102,8 @@ class GetQueryTemplateFactoryTest {
     // hasParent is true
     IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
       TEMPLATE_FACTORY.write(
-          new QueryTemplateFactoryParameters(nestedBindings, null, SAMPLE_FILTER,
-              new ParentField(SAMPLE_FILTER, SAMPLE_PARENT_FIELD), null, null));
+          new QueryTemplateFactoryParameters(nestedBindings, SAMPLE_FILTER,
+              new ParentField(SAMPLE_FILTER, SAMPLE_PARENT_FIELD), null));
     });
     assertEquals("Unable to find matching variable for parent field: " + SAMPLE_PARENT_FIELD, thrown.getMessage());
   }
@@ -116,8 +117,8 @@ class GetQueryTemplateFactoryTest {
     nestedBindings.offer(bindings);
     // Execute
     Queue<String> results = TEMPLATE_FACTORY.write(
-        new QueryTemplateFactoryParameters(nestedBindings, null, SAMPLE_FILTER,
-            new ParentField(SAMPLE_FILTER, SAMPLE_PARENT_FIELD), null, null));
+        new QueryTemplateFactoryParameters(nestedBindings, SAMPLE_FILTER,
+            new ParentField(SAMPLE_FILTER, SAMPLE_PARENT_FIELD), null));
     // Assert
     assertEquals(2, results.size());
     assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_PARENT_FILE), results.poll());
@@ -134,7 +135,7 @@ class GetQueryTemplateFactoryTest {
     nestedBindings.offer(bindings);
     // Execute
     Queue<String> results = TEMPLATE_FACTORY.write(
-        new QueryTemplateFactoryParameters(nestedBindings, null, "", null, null, null));
+        new QueryTemplateFactoryParameters(nestedBindings, "", null, null));
     // Assert
     assertEquals(2, results.size());
     assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_OPTIONAL_FILE), results.poll());

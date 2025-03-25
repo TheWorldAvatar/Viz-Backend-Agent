@@ -49,7 +49,7 @@ public class QueryTemplateService {
   public Queue<String> genDeleteQuery(ObjectNode addJsonSchema, String targetId) {
     LOGGER.debug("Generating the DELETE query...");
     return this.deleteQueryTemplateFactory
-        .write(new QueryTemplateFactoryParameters(null, addJsonSchema, targetId, null, null, null));
+        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId));
   }
 
   /**
@@ -85,8 +85,7 @@ public class QueryTemplateService {
       ParentField parentField, LifecycleEventType lifecycleEvent) {
     LOGGER.debug("Generating the SELECT query to get instances...");
     return this.getQueryTemplateFactory
-        .write(
-            new QueryTemplateFactoryParameters(queryVarsAndPaths, null, targetId, parentField, null, lifecycleEvent));
+        .write(new QueryTemplateFactoryParameters(queryVarsAndPaths, targetId, parentField, lifecycleEvent));
   }
 
   /**
@@ -98,7 +97,7 @@ public class QueryTemplateService {
   public Queue<String> genSearchQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, Map<String, String> criterias) {
     LOGGER.debug("Generating the SELECT query to search for specific instances...");
     return this.searchQueryTemplateFactory
-        .write(new QueryTemplateFactoryParameters(queryVarsAndPaths, null, null, null, criterias, null));
+        .write(new QueryTemplateFactoryParameters(queryVarsAndPaths, criterias));
   }
 
   /**
