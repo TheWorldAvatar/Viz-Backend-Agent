@@ -6,29 +6,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
-import com.cmclinnovations.agent.model.type.LifecycleEventType;
-import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public class GetQueryTemplateFactory extends QueryTemplateFactory {
-  private final LifecycleQueryFactory lifecycleQueryFactory;
   private static final Logger LOGGER = LogManager.getLogger(GetQueryTemplateFactory.class);
 
   /**
    * Constructs a new query template factory.
-   * 
    */
   public GetQueryTemplateFactory() {
-    this.lifecycleQueryFactory = new LifecycleQueryFactory();
+    // no initialisation step is required
   }
 
   /**
@@ -45,7 +40,9 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    *               bindings - SHACL restrictions
    *               targetId - Optional Filter constraint for a specific instance
    *               parent - Optional details if instances must be associated
-   *               lifecycleEvent - Optional lifecycle event type
+   *               addQueryStatements - Optional additional query statements
+   *               addVars - Optional additional variables to be included in the
+   *               query, along with their order sequence
    */
   public Queue<String> write(QueryTemplateFactoryParameters params) {
     Map<String, String> queryLines = new HashMap<>();
@@ -61,26 +58,11 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       selectVariableBuilder.append(ShaclResource.VARIABLE_MARK).append(LifecycleResource.IRI_KEY);
       super.variables.forEach(variable -> selectVariableBuilder.append(ShaclResource.WHITE_SPACE)
           .append(variable));
-      // Append lifecycle events if available
-      if (params.lifecycleEvent() != null) {
-        List.of(LifecycleResource.STATUS_KEY, LifecycleResource.SCHEDULE_START_DATE_KEY,
-            LifecycleResource.SCHEDULE_END_DATE_KEY, LifecycleResource.SCHEDULE_START_TIME_KEY,
-            LifecycleResource.SCHEDULE_END_TIME_KEY, LifecycleResource.SCHEDULE_TYPE_KEY)
-            .forEach(lifecycleVar -> selectVariableBuilder.append(ShaclResource.WHITE_SPACE)
-                .append(ShaclResource.VARIABLE_MARK)
-                .append(StringResource.parseQueryVariable(lifecycleVar)));
-      }
+      params.addVars().forEach((field, fieldSequence) -> selectVariableBuilder.append(ShaclResource.WHITE_SPACE)
+          .append(ShaclResource.VARIABLE_MARK)
+          .append(StringResource.parseQueryVariable(field)));
     } else {
-      // Else sort the variable and add them to the query
-      // Add a status variable for lifecycle if available
-      if (params.lifecycleEvent() != null) {
-        super.varSequence.put(LifecycleResource.STATUS_KEY, Stream.of(1, 0).toList());
-        super.varSequence.put(LifecycleResource.SCHEDULE_START_DATE_KEY, Stream.of(2, 0).toList());
-        super.varSequence.put(LifecycleResource.SCHEDULE_END_DATE_KEY, Stream.of(2, 1).toList());
-        super.varSequence.put(LifecycleResource.SCHEDULE_START_TIME_KEY, Stream.of(2, 2).toList());
-        super.varSequence.put(LifecycleResource.SCHEDULE_END_TIME_KEY, Stream.of(2, 3).toList());
-        super.varSequence.put(LifecycleResource.SCHEDULE_TYPE_KEY, Stream.of(2, 4).toList());
-      }
+      super.varSequence.putAll(params.addVars());
       List<String> sortedSequence = new ArrayList<>(super.varSequence.keySet());
       sortedSequence
           .sort((key1, key2) -> ShaclResource.compareLists(super.varSequence.get(key1), super.varSequence.get(key2)));
@@ -92,7 +74,7 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
     }
     queryLines.values().forEach(whereBuilder::append);
     this.appendOptionalIdFilters(whereBuilder, params.targetId(), params.parent());
-    this.appendOptionalLifecycleFilters(whereBuilder, params.lifecycleEvent());
+    whereBuilder.append(params.addQueryStatements());
     return super.genFederatedQuery(selectVariableBuilder.toString(), whereBuilder.toString(), targetClass);
   }
 
@@ -131,33 +113,6 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       query.append("FILTER STRENDS(STR(?id), \"")
           .append(filterId)
           .append("\")");
-    }
-  }
-
-  /**
-   * Appends optional lifecycle filter if required based on the specified event.
-   * 
-   * @param query          Builder for the query template.
-   * @param lifecycleEvent Target event for filter.
-   */
-  private void appendOptionalLifecycleFilters(StringBuilder query, LifecycleEventType lifecycleEvent) {
-    if (lifecycleEvent != null) {
-      query.append(this.lifecycleQueryFactory.getReadableScheduleQuery());
-      switch (lifecycleEvent) {
-        case LifecycleEventType.APPROVED:
-          this.lifecycleQueryFactory.appendFilterExists(query, false, LifecycleResource.EVENT_APPROVAL);
-          break;
-        case LifecycleEventType.SERVICE_EXECUTION:
-          this.lifecycleQueryFactory.appendFilterExists(query, true, LifecycleResource.EVENT_APPROVAL);
-          this.lifecycleQueryFactory.appendArchivedFilterExists(query, false);
-          break;
-        case LifecycleEventType.ARCHIVE_COMPLETION:
-          this.lifecycleQueryFactory.appendArchivedStateQuery(query);
-          break;
-        default:
-          // Do nothing if it doesnt meet the above events
-          break;
-      }
     }
   }
 }

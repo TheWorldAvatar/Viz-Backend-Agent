@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,6 +38,7 @@ public class LifecycleService {
   private final KGService kgService;
   private final FileService fileService;
   private final LifecycleQueryFactory lifecycleQueryFactory;
+  private final Map<String, List<Integer>> lifecycleVarSequence = new HashMap<>();
 
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
@@ -58,6 +60,12 @@ public class LifecycleService {
     this.kgService = kgService;
     this.fileService = fileService;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
+
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_DATE_KEY, Stream.of(2, 0).toList());
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_END_DATE_KEY, Stream.of(2, 1).toList());
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_TIME_KEY, Stream.of(2, 2).toList());
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_END_TIME_KEY, Stream.of(2, 3).toList());
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_TYPE_KEY, Stream.of(2, 4).toList());
   }
 
   /**
@@ -156,8 +164,10 @@ public class LifecycleService {
     String queryPath = requireLabel ? FileService.SHACL_PATH_LABEL_QUERY_RESOURCE
         : FileService.SHACL_PATH_QUERY_RESOURCE;
 
+    String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
     String query = this.fileService.getContentsWithReplacement(queryPath, iriResponse.getBody());
-    Queue<SparqlBinding> results = this.kgService.queryInstances(query, eventType);
+    Queue<SparqlBinding> results = this.kgService.queryInstances(query, additionalQueryStatement,
+        this.lifecycleVarSequence);
     LOGGER.info("Successfuly retrieved contracts!");
     return new ResponseEntity<>(results.stream().map(SparqlBinding::get).toList(), HttpStatus.OK);
   }

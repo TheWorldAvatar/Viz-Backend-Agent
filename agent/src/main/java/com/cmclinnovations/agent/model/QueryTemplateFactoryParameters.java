@@ -1,9 +1,9 @@
 package com.cmclinnovations.agent.model;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
-import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public record QueryTemplateFactoryParameters(
@@ -12,18 +12,19 @@ public record QueryTemplateFactoryParameters(
     String targetId,
     ParentField parent,
     Map<String, String> criterias,
-    LifecycleEventType lifecycleEvent) {
+    String addQueryStatements,
+    Map<String, List<Integer>> addVars) {
 
   public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId) {
-    this(null, rootNode, targetId, null, null, null);
+    this(null, rootNode, targetId, null, null, null, null);
   }
 
   public QueryTemplateFactoryParameters(Queue<Queue<SparqlBinding>> bindings, Map<String, String> criterias) {
-    this(bindings, null, null, null, criterias, null);
+    this(bindings, null, null, null, criterias, null, null);
   }
 
   public QueryTemplateFactoryParameters(Queue<Queue<SparqlBinding>> bindings, String targetId, ParentField parent,
-      LifecycleEventType lifecycleEvent) {
-    this(bindings, null, targetId, parent, null, lifecycleEvent);
+      String addQueryStatements, Map<String, List<Integer>> addVars) {
+    this(bindings, null, targetId, parent, null, addQueryStatements, addVars);
   }
 }

@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.service.core;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Service;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
-import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.template.FormTemplateFactory;
 import com.cmclinnovations.agent.template.query.DeleteQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
@@ -69,23 +69,25 @@ public class QueryTemplateService {
    * @param queryVarsAndPaths The query construction requirements.
    */
   public Queue<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
-    return this.genGetQuery(queryVarsAndPaths, null, null, null);
+    return this.genGetQuery(queryVarsAndPaths, null, null, "", new HashMap<>());
   }
 
   /**
    * Generates a SELECT SPARQL query to retrieve instances from the inputs.
    * 
-   * @param queryVarsAndPaths The query construction requirements.
-   * @param targetId          An optional field to target at a specific instance.
-   * @param parentField       Optional parent field.
-   * @param lifecycleEvent    Optional parameter to dictate the filter for a
-   *                          relevant lifecycle event.
+   * @param queryVarsAndPaths  The query construction requirements.
+   * @param targetId           An optional field to target at a specific instance.
+   * @param parentField        Optional parent field.
+   * @param addQueryStatements Additional query statements to be added
+   * @param addVars            Optional additional variables to be included in the
+   *                           query, along with their order sequence
    */
   public Queue<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
-      ParentField parentField, LifecycleEventType lifecycleEvent) {
+      ParentField parentField, String addQueryStatements, Map<String, List<Integer>> addVars) {
     LOGGER.debug("Generating the SELECT query to get instances...");
     return this.getQueryTemplateFactory
-        .write(new QueryTemplateFactoryParameters(queryVarsAndPaths, targetId, parentField, lifecycleEvent));
+        .write(
+            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetId, parentField, addQueryStatements, addVars));
   }
 
   /**

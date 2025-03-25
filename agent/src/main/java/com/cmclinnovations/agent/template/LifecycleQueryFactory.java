@@ -175,11 +175,38 @@ public class LifecycleQueryFactory {
   }
 
   /**
+   * Generates lifecycle filter statements for SPARQL if required based on the
+   * specified event.
+   * 
+   * @param lifecycleEvent Target event for filter.
+   */
+  public String genLifecycleFilterStatements(LifecycleEventType lifecycleEvent) {
+    StringBuilder query = new StringBuilder();
+    query.append(this.getReadableScheduleQuery());
+    switch (lifecycleEvent) {
+      case LifecycleEventType.APPROVED:
+        this.appendFilterExists(query, false, LifecycleResource.EVENT_APPROVAL);
+        break;
+      case LifecycleEventType.SERVICE_EXECUTION:
+        this.appendFilterExists(query, true, LifecycleResource.EVENT_APPROVAL);
+        this.appendArchivedFilterExists(query, false);
+        break;
+      case LifecycleEventType.ARCHIVE_COMPLETION:
+        this.appendArchivedStateQuery(query);
+        break;
+      default:
+        // Do nothing if it doesnt meet the above events
+        break;
+    }
+    return query.toString();
+  }
+
+  /**
    * Appends a query statement to retrieve the status of an archived contract.
    * 
    * @param query Builder for the query template.
    */
-  public void appendArchivedStateQuery(StringBuilder query) {
+  private void appendArchivedStateQuery(StringBuilder query) {
     String eventVar = ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY;
     StringBuilder tempBuilder = new StringBuilder();
     StringResource.appendTriple(tempBuilder, ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY,
@@ -206,7 +233,7 @@ public class LifecycleQueryFactory {
    * @param query  Builder for the query template.
    * @param exists Indicate if using FILTER EXISTS or FILTER NOT EXISTS.
    */
-  public void appendArchivedFilterExists(StringBuilder query, boolean exists) {
+  private void appendArchivedFilterExists(StringBuilder query, boolean exists) {
     String stageVar = ShaclResource.VARIABLE_MARK + LifecycleResource.STAGE_KEY + "_archived";
     StringBuilder tempBuilder = new StringBuilder();
     StringResource.appendTriple(tempBuilder, ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY,
@@ -226,7 +253,7 @@ public class LifecycleQueryFactory {
    * @param exists   Indicate if using FILTER EXISTS or FILTER NOT EXISTS.
    * @param instance Target IRI instance. Typically the object in a triple.
    */
-  public void appendFilterExists(StringBuilder query, boolean exists, String instance) {
+  private void appendFilterExists(StringBuilder query, boolean exists, String instance) {
     StringBuilder tempBuilder = new StringBuilder();
     StringResource.appendTriple(tempBuilder, "?iri", LifecycleResource.LIFECYCLE_EVENT_PREDICATE_PATH,
         StringResource.parseIriForQuery(instance));
@@ -240,7 +267,7 @@ public class LifecycleQueryFactory {
    * @param contents Contents for the clause.
    * @param exists   Indicate if using FILTER EXISTS or FILTER NOT EXISTS.
    */
-  public void appendFilterExists(StringBuilder query, String contents, boolean exists) {
+  private void appendFilterExists(StringBuilder query, String contents, boolean exists) {
     String constraintKeyword = "";
     // Add NOT parameter if this filter should not exist
     if (exists) {

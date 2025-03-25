@@ -30,7 +30,6 @@ import org.springframework.web.client.RestClient;
 
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
-import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.StringResource;
@@ -291,7 +290,7 @@ public class KGService {
    * @param targetId       Target ID of interest.
    */
   public Queue<SparqlBinding> queryInstances(String shaclPathQuery, String targetId) {
-    return this.queryInstances(shaclPathQuery, targetId, null, null);
+    return this.queryInstances(shaclPathQuery, targetId, null, "", new HashMap<>());
   }
 
   /**
@@ -303,40 +302,43 @@ public class KGService {
    * @param parentField    Optional parent field.
    */
   public Queue<SparqlBinding> queryInstances(String shaclPathQuery, ParentField parentField) {
-    return this.queryInstances(shaclPathQuery, "", parentField, null);
+    return this.queryInstances(shaclPathQuery, "", parentField, "", new HashMap<>());
   }
 
   /**
    * Queries for all instances associated with a lifecycle event.
    * 
-   * @param shaclPathQuery The query to retrieve the required predicate paths in
-   *                       the SHACL restrictions.
-   * @param lifecycleEvent Optional parameter to dictate the filter for a relevant
-   *                       lifecycle event.
+   * @param shaclPathQuery     The query to retrieve the required predicate paths
+   *                           in
+   *                           the SHACL restrictions.
+   * @param addQueryStatements Additional query statements to be added
+   * @param addVars            Optional additional variables to be included in the
+   *                           query, along with their order sequence
    */
-  public Queue<SparqlBinding> queryInstances(String shaclPathQuery, LifecycleEventType lifecycleEvent) {
-    return this.queryInstances(shaclPathQuery, "", null, lifecycleEvent);
+  public Queue<SparqlBinding> queryInstances(String shaclPathQuery, String addQueryStatements,
+      Map<String, List<Integer>> addVars) {
+    return this.queryInstances(shaclPathQuery, "", null, addQueryStatements, addVars);
   }
 
   /**
    * Queries for either all instances or a specific instance based on the id.
    * 
-   * @param shaclPathQuery The query to retrieve the required predicate paths in
-   *                       the SHACL restrictions.
-   * @param targetId       An optional field to target the query at a specific
-   *                       instance.
-   * @param parentField    Optional parent field.
-   * @param lifecycleEvent Optional parameter to dictate the filter for a relevant
-   *                       lifecycle event.
+   * @param shaclPathQuery     The query to retrieve the required predicate paths
+   *                           in the SHACL restrictions.
+   * @param targetId           An optional field to target the query at a specific
+   *                           instance.
+   * @param addQueryStatements Additional query statements to be added
+   * @param addVars            Optional additional variables to be included in the
+   *                           query, along with their order sequence
    */
   public Queue<SparqlBinding> queryInstances(String shaclPathQuery, String targetId, ParentField parentField,
-      LifecycleEventType lifecycleEvent) {
+      String addQueryStatements, Map<String, List<Integer>> addVars) {
     // Initialise a new queue to store all variables
     // And add the first level right away
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.queryNestedPredicates(shaclPathQuery);
     LOGGER.debug("Generating the query template from the predicate paths and variables queried...");
     Queue<String> queries = this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, targetId,
-        parentField, lifecycleEvent);
+        parentField, addQueryStatements, addVars);
     LOGGER.debug("Querying the knowledge graph for the instances...");
     List<String> varSequence = this.queryTemplateService.getFieldSequence();
     // Query for direct instances
