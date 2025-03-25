@@ -387,12 +387,12 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       String maxCriteriaVal = criterias.get("max " + variable);
       // Append min filter if available
       if (!minCriteriaVal.isEmpty()) {
-        rangeQuery += " FILTER(?" + formattedVar + " >= " + criterias.get("min " + variable);
+        rangeQuery += "FILTER(?" + formattedVar + " >= " + criterias.get("min " + variable);
       }
       // Append max filter if available
       if (!maxCriteriaVal.isEmpty()) {
         // Prefix should be a conditional && if the min filter is already present
-        rangeQuery += rangeQuery.isEmpty() ? " FILTER(?" : " && ?";
+        rangeQuery += rangeQuery.isEmpty() ? "FILTER(?" : " && ?";
         rangeQuery += formattedVar + " <= " + maxCriteriaVal;
       }
       if (!rangeQuery.isEmpty()) {
@@ -401,6 +401,6 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       // Return empty string otherwise
       return rangeQuery;
     }
-    return " FILTER(STR(?" + formattedVar + ") = \"" + criteriaVal + "\")";
+    return "FILTER(STR(?" + formattedVar + ") = \"" + criteriaVal + "\")";
   }
 }

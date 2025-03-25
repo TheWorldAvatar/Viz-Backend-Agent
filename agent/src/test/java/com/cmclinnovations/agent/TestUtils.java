@@ -8,6 +8,9 @@ import java.io.IOException;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.util.ResourceUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 public class TestUtils {
   /**
    * Check if the result response entity contains the expected substring.
@@ -42,5 +45,16 @@ public class TestUtils {
       }
     }
     return output.toString();
+  }
+
+  /**
+   * Retrieve the JSON object from the input file.
+   * 
+   * @param filePath Input file.
+   */
+  public static ObjectNode getJson(String filePath) throws IOException {
+    File file = ResourceUtils.getFile("classpath:" + filePath);
+    ObjectMapper mapper = new ObjectMapper();
+    return mapper.readValue(file, ObjectNode.class);
   }
 }

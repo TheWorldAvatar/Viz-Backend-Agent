@@ -1,0 +1,20 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": {
+    "@replace": "id",
+    "@type": "iri",
+    "prefix": "https://www.example.org/kg/address/"
+  },
+  "@reverse": {
+    "https://www.example.org/kg/hasAddress": {
+      "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://www.example.org/kg/person/"
+      },
+      "@type": "https://www.example.org/kg/Person"
+    }
+  }
+}
