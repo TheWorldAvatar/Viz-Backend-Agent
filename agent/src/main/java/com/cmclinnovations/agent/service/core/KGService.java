@@ -138,6 +138,7 @@ public class KGService {
    * @return the query results.
    */
   public Queue<SparqlBinding> query(String query, String endpoint) {
+    LOGGER.info("Executing query: {}", query);
     String results = this.client.post()
         .uri(endpoint)
         .accept(MediaType.valueOf(JSON_MEDIA_TYPE))
@@ -175,6 +176,7 @@ public class KGService {
       StringWriter stringWriter = new StringWriter();
       FedXRepository repository = FedXFactory.createSparqlFederation(endpoints);
       try (FedXRepositoryConnection conn = repository.getConnection()) {
+        LOGGER.info("Executing query: {}", query);
         TupleQuery tq = conn.prepareTupleQuery(query);
         // Extend execution time as required
         tq.setMaxExecutionTime(600);
@@ -240,6 +242,7 @@ public class KGService {
    * @return the query results as JSON array.
    */
   public ArrayNode queryJsonLd(String query, String endpoint) {
+    LOGGER.info("Executing query: {}", query);
     String results = this.client.post()
         // JSON LD queries are used only for generating the form template, and thus,
         // will always be executed on the blazegraph namespace (storing the SHACL
@@ -474,6 +477,7 @@ public class KGService {
    * @return the status code.
    */
   private int executeUpdate(String query) {
+    LOGGER.info("Executing query: {}", query);
     RemoteStoreClient kgClient = BlazegraphClient.getInstance().getRemoteStoreClient(this.namespace);
     // Execute the request
     try (CloseableHttpResponse response = kgClient.executeUpdateByPost(query)) {
