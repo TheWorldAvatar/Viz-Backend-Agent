@@ -293,9 +293,11 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         // If the value must conform to a specific subject variable,
         // a filter needs to be added directly to the same optional clause
         if (!queryLine.subjectFilter().isEmpty()) {
-          Map<String, String> searchCriteria = new HashMap<>();
-          searchCriteria.put(queryLine.property(), queryLine.subjectFilter());
-          currentLine.append(this.genSearchCriteria(queryLine.property(), searchCriteria));
+          currentLine.append("FILTER(STR(?")
+              .append(StringResource.parseQueryVariable(queryLine.property()))
+              .append(") = \"")
+              .append(queryLine.subjectFilter())
+              .append("\")");
         }
         lineOutput = StringResource.genOptionalClause(currentLine.toString());
       } else {
@@ -365,42 +367,5 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
 
     // Return true if input matches either pattern 1 or pattern 2
     return matcher1.matches() || matcher2.matches();
-  }
-
-  /**
-   * Generates the search criteria query line of a query ie:
-   * FILTER(STR(?var) = STR(string_criteria))
-   * 
-   * @param variable The name of the variable.
-   * @param criteria The criteria to be met.
-   */
-  protected String genSearchCriteria(String variable, Map<String, String> criterias) {
-    String criteriaVal = criterias.get(variable);
-    String formattedVar = StringResource.parseQueryVariable(variable);
-    if (criteriaVal.isEmpty()) {
-      return criteriaVal;
-    }
-    // The front end will return a range value if range parsing is required
-    if (criteriaVal.equals("range")) {
-      String rangeQuery = "";
-      String minCriteriaVal = criterias.get("min " + variable);
-      String maxCriteriaVal = criterias.get("max " + variable);
-      // Append min filter if available
-      if (!minCriteriaVal.isEmpty()) {
-        rangeQuery += "FILTER(?" + formattedVar + " >= " + criterias.get("min " + variable);
-      }
-      // Append max filter if available
-      if (!maxCriteriaVal.isEmpty()) {
-        // Prefix should be a conditional && if the min filter is already present
-        rangeQuery += rangeQuery.isEmpty() ? "FILTER(?" : " && ?";
-        rangeQuery += formattedVar + " <= " + maxCriteriaVal;
-      }
-      if (!rangeQuery.isEmpty()) {
-        rangeQuery += ")";
-      }
-      // Return empty string otherwise
-      return rangeQuery;
-    }
-    return "FILTER(STR(?" + formattedVar + ") = \"" + criteriaVal + "\")";
-  }
+  } 
 }

@@ -54,7 +54,7 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
         // will not be added
         if (params.criterias().containsKey(variable) && !params.criterias().get(variable).isEmpty()) {
           // If there is no search filters to be added, this variable should not be added
-          String searchFilters = super.genSearchCriteria(variable, params.criterias());
+          String searchFilters = this.genSearchCriteria(variable, params.criterias());
           if (!searchFilters.isEmpty()) {
             whereBuilder.append(currentLine.getValue());
             filters.append(searchFilters);
@@ -63,5 +63,42 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
       }
     });
     return super.genFederatedQuery("?iri", whereBuilder.append(filters).toString(), targetClass);
+  }
+
+  /**
+   * Generates the search criteria query line of a query ie:
+   * FILTER(STR(?var) = STR(string_criteria))
+   * 
+   * @param variable The name of the variable.
+   * @param criteria The criteria to be met.
+   */
+  private String genSearchCriteria(String variable, Map<String, String> criterias) {
+    String criteriaVal = criterias.get(variable);
+    String formattedVar = StringResource.parseQueryVariable(variable);
+    if (criteriaVal.isEmpty()) {
+      return criteriaVal;
+    }
+    // The front end will return a range value if range parsing is required
+    if (criteriaVal.equals("range")) {
+      String rangeQuery = "";
+      String minCriteriaVal = criterias.get("min " + variable);
+      String maxCriteriaVal = criterias.get("max " + variable);
+      // Append min filter if available
+      if (!minCriteriaVal.isEmpty()) {
+        rangeQuery += "FILTER(?" + formattedVar + " >= " + criterias.get("min " + variable);
+      }
+      // Append max filter if available
+      if (!maxCriteriaVal.isEmpty()) {
+        // Prefix should be a conditional && if the min filter is already present
+        rangeQuery += rangeQuery.isEmpty() ? "FILTER(?" : " && ?";
+        rangeQuery += formattedVar + " <= " + maxCriteriaVal;
+      }
+      if (!rangeQuery.isEmpty()) {
+        rangeQuery += ")";
+      }
+      // Return empty string otherwise
+      return rangeQuery;
+    }
+    return "FILTER(STR(?" + formattedVar + ") = \"" + criteriaVal + "\")";
   }
 }
