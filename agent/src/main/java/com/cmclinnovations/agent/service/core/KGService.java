@@ -51,6 +51,7 @@ public class KGService {
   private final ObjectMapper objectMapper;
   private final FileService fileService;
   private final QueryTemplateService queryTemplateService;
+  private final LoggingService loggingService;
 
   private static final String DEFAULT_NAMESPACE = "kb";
   private static final String JSON_MEDIA_TYPE = "application/json";
@@ -67,13 +68,16 @@ public class KGService {
   /**
    * Constructs a new service.
    * 
-   * @param fileService File service for accessing file resources.
+   * @param fileService          File service for accessing file resources.
+   * @param queryTemplateService Service for generating different query templates.
+   * @param loggingService       Service for logging statements.
    */
-  public KGService(FileService fileService, QueryTemplateService queryTemplateService) {
+  public KGService(FileService fileService, QueryTemplateService queryTemplateService, LoggingService loggingService) {
     this.client = RestClient.create();
     this.objectMapper = new ObjectMapper();
     this.fileService = fileService;
     this.queryTemplateService = queryTemplateService;
+    this.loggingService = loggingService;
   }
 
   /**
@@ -138,7 +142,7 @@ public class KGService {
    * @return the query results.
    */
   public Queue<SparqlBinding> query(String query, String endpoint) {
-    LOGGER.info("Executing query: {}", query);
+    this.loggingService.logQuery(query, LOGGER);
     String results = this.client.post()
         .uri(endpoint)
         .accept(MediaType.valueOf(JSON_MEDIA_TYPE))
@@ -176,7 +180,7 @@ public class KGService {
       StringWriter stringWriter = new StringWriter();
       FedXRepository repository = FedXFactory.createSparqlFederation(endpoints);
       try (FedXRepositoryConnection conn = repository.getConnection()) {
-        LOGGER.info("Executing query: {}", query);
+        this.loggingService.logQuery(query, LOGGER);
         TupleQuery tq = conn.prepareTupleQuery(query);
         // Extend execution time as required
         tq.setMaxExecutionTime(600);
@@ -242,7 +246,7 @@ public class KGService {
    * @return the query results as JSON array.
    */
   public ArrayNode queryJsonLd(String query, String endpoint) {
-    LOGGER.info("Executing query: {}", query);
+    this.loggingService.logQuery(query, LOGGER);
     String results = this.client.post()
         // JSON LD queries are used only for generating the form template, and thus,
         // will always be executed on the blazegraph namespace (storing the SHACL
@@ -477,7 +481,7 @@ public class KGService {
    * @return the status code.
    */
   private int executeUpdate(String query) {
-    LOGGER.info("Executing query: {}", query);
+    this.loggingService.logQuery(query, LOGGER);
     RemoteStoreClient kgClient = BlazegraphClient.getInstance().getRemoteStoreClient(this.namespace);
     // Execute the request
     try (CloseableHttpResponse response = kgClient.executeUpdateByPost(query)) {
