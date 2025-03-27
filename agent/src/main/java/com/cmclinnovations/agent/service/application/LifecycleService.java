@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.service.application;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException.BadRequest;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.ApiResponse;
@@ -39,6 +41,7 @@ public class LifecycleService {
   private final FileService fileService;
   private final LifecycleQueryFactory lifecycleQueryFactory;
   private final Map<String, List<Integer>> lifecycleVarSequence = new HashMap<>();
+  private final Map<String, List<Integer>> taskVarSequence = new HashMap<>();
 
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
@@ -66,6 +69,9 @@ public class LifecycleService {
     this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_TIME_KEY, Stream.of(2, 2).toList());
     this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_END_TIME_KEY, Stream.of(2, 3).toList());
     this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_TYPE_KEY, Stream.of(2, 4).toList());
+
+    this.taskVarSequence.put(LifecycleResource.DATE_KEY, Stream.of(2, 3).toList());
+    this.taskVarSequence.put(LifecycleResource.EVENT_KEY, Stream.of(999,999).toList());
   }
 
   /**
@@ -176,12 +182,13 @@ public class LifecycleService {
    * Retrieve all service related occurrences in the lifecycle for the specified
    * date.
    * 
-   * @param contract The contract identifier.
+   * @param contract   The contract identifier.
+   * @param entityType Target resource ID.
    */
-  public ResponseEntity<List<Map<String, Object>>> getOccurrences(String contract) {
+  public ResponseEntity<List<Map<String, Object>>> getOccurrences(String contract, String entityType) {
     String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(contract, null);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(activeServiceQuery,
-        LifecycleResource.DATE_KEY);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, LifecycleResource.DATE_KEY,
+        activeServiceQuery);
     LOGGER.info("Successfuly retrieved all associated services!");
     return new ResponseEntity<>(occurrences, HttpStatus.OK);
   }
@@ -190,14 +197,15 @@ public class LifecycleService {
    * Retrieve all service related occurrences in the lifecycle for the specified
    * date.
    * 
-   * @param timestamp Timestamp in UNIX format.
+   * @param timestamp  Timestamp in UNIX format.
+   * @param entityType Target resource ID.
    */
-  public ResponseEntity<List<Map<String, Object>>> getOccurrences(long timestamp) {
+  public ResponseEntity<List<Map<String, Object>>> getOccurrences(long timestamp, String entityType) {
     // Get date from timestamp
     String targetDate = this.dateTimeService.getDateFromTimestamp(timestamp);
     String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetDate);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(activeServiceQuery,
-        LifecycleResource.CONTRACT_KEY);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, LifecycleResource.IRI_KEY,
+        activeServiceQuery);
     LOGGER.info("Successfuly retrieved services in progress!");
     return new ResponseEntity<>(occurrences, HttpStatus.OK);
   }
@@ -205,11 +213,19 @@ public class LifecycleService {
   /**
    * Executes the occurrence query and group them by the specified group variable.
    * 
-   * @param timestamp Timestamp in UNIX format.
-   * @param groupVar  The variable name that should be grouped by.
+   * @param entityType      Target resource ID.
+   * @param groupVar        The variable name that should be grouped by.
+   * @param additionalQuery Additional query to append to the main query.
    */
-  private List<Map<String, Object>> executeOccurrenceQuery(String query, String groupVar) {
-    Queue<SparqlBinding> results = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
+  private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String groupVar, String additionalQuery) {
+    ResponseEntity<String> iriResponse = this.fileService.getTargetIri(entityType);
+    if (iriResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
+      LOGGER.error("Invalid resource ID detected!");
+      throw new IllegalArgumentException("Invalid resource ID detected!");
+    }
+    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PATH_LABEL_QUERY_RESOURCE,
+        iriResponse.getBody());
+    Queue<SparqlBinding> results = this.kgService.queryInstances(query, additionalQuery, this.taskVarSequence);
     Map<String, SparqlBinding> resultMapping = results.stream()
         .collect(Collectors.toMap(
             binding -> binding.getFieldValue(groupVar), // Key mapper

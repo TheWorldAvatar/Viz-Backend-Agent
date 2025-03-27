@@ -103,25 +103,21 @@ public class LifecycleQueryFactory {
    * @param date     Target date in YYYY-MM-DD format. Optional if null is passed.
    */
   public String getServiceTasksQuery(String contract, String date) {
-    String contractVar = ShaclResource.VARIABLE_MARK + LifecycleResource.CONTRACT_KEY;
     String eventDateVar = ShaclResource.VARIABLE_MARK + LifecycleResource.DATE_KEY;
     String eventVar = ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY;
     // Targeted filter statement for date and/or contract filter
     String eventDateValue = date != null ? "\"" + date + "\"^^xsd:date" : eventDateVar;
-    String filterStatement = contract != null ? "FILTER STRENDS(STR(" + contractVar + "),\"" + contract + "\")" : "";
-    return StringResource.QUERY_TEMPLATE_PREFIX
-        + "SELECT DISTINCT " + contractVar + " ?iri " + eventDateVar + " " + eventVar
-        + " WHERE{" + contractVar + " fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage."
-        + "?stage fibo-fnd-rel-rel:exemplifies <"
+    String filterStatement = contract != null ? "FILTER STRENDS(STR(?iri),\"" + contract + "\")" : "";
+    return "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
+        + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
         + LifecycleResource.getStageClass(LifecycleEventType.SERVICE_EXECUTION) + ">;"
         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
-        + "?order_event fibo-fnd-rel-rel:exemplifies "
+        + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + StringResource.parseIriForQuery(LifecycleResource.EVENT_ORDER_RECEIVED) + ";"
-        + "fibo-fnd-dt-oc:hasEventDate " + eventDateValue + "."
-        + "?iri fibo-fnd-rel-rel:exemplifies " + eventVar + ";"
-        + "cmns-dt:succeeds* ?order_event."
-        + filterStatement
-        + "}";
+        + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> " + eventDateValue + "."
+        + "?current_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> " + eventVar + ";"
+        + "<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
+        + filterStatement;
   }
 
   /**

@@ -529,9 +529,9 @@ There is also an additional optional parameter `label` to retrieve in progress c
 
 > Records of service tasks
 
-For tasks on a selected date, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/{timestamp}` endpoint to retrieve all tasks for the target date, where `timestamp` is the UNIX timestamp.
+For tasks on a selected date, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/{timestamp}?type={contractType}` endpoint to retrieve all tasks for the target date, where `timestamp` is the UNIX timestamp and `contractType` is the resource ID of the contract type.
 
-For tasks associated with a contract, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/{contract}` endpoint to retrieve all tasks for the target contract, where `contract` is the contract's identifier.
+For tasks associated with a contract, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/{contract}?type={contractType}` endpoint to retrieve all tasks for the target contract, where `contract` is the contract's identifier and `contractType` is the resource ID of the contract type.
 
 > Service dispatch
 
@@ -1077,7 +1077,7 @@ The instantiation of array fields can be created using the following replacement
 
 #### 4.1.2 Form Branch
 
-Form branches adapt to selected categories by displaying different field sets. Depending on the selected category, a different instantiation template is required. These templates can be set up as an array using the `@branch` key. Do note that there should not be any `@id` and `@type` included within the templates, as the agent will search for the most relevant template and append these templates to the common fields. 
+Form branches adapt to selected categories by displaying different field sets. Depending on the selected category, a different instantiation template is required. These templates can be set up as an array using the `@branch` key. Do note that there should not be any `@id` and `@type` included within the templates, as the agent will search for the most relevant template and append these templates to the common fields.
 
 > [!TIP]
 > Only one form branch can be empty as all other branches have additional properties beyond the common template
