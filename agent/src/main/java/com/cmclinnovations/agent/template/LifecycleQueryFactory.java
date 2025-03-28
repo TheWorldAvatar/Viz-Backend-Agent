@@ -105,6 +105,7 @@ public class LifecycleQueryFactory {
   public String getServiceTasksQuery(String contract, String date) {
     String eventDateVar = ShaclResource.VARIABLE_MARK + LifecycleResource.DATE_KEY;
     String eventVar = ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY;
+    String eventIdVar = StringResource.parseQueryVariable(ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_ID_KEY);
     // Targeted filter statement for date and/or contract filter
     String eventDateValue = date != null ? "\"" + date + "\"^^xsd:date" : eventDateVar;
     String filterStatement = contract != null ? "FILTER STRENDS(STR(?iri),\"" + contract + "\")" : "";
@@ -114,8 +115,9 @@ public class LifecycleQueryFactory {
         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
         + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + StringResource.parseIriForQuery(LifecycleResource.EVENT_ORDER_RECEIVED) + ";"
-        + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> " + eventDateValue + "."
-        + "?current_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> " + eventVar + ";"
+        + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> " + eventDateValue
+        + "." + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+        + eventVar + ";"
         + "<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
         + filterStatement;
   }

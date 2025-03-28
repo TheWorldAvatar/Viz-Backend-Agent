@@ -72,6 +72,7 @@ public class LifecycleService {
 
     this.taskVarSequence.put(LifecycleResource.DATE_KEY, Stream.of(2, 3).toList());
     this.taskVarSequence.put(LifecycleResource.EVENT_KEY, Stream.of(999, 999).toList());
+    this.taskVarSequence.put(LifecycleResource.EVENT_ID_KEY, Stream.of(1000, 999).toList());
   }
 
   /**
