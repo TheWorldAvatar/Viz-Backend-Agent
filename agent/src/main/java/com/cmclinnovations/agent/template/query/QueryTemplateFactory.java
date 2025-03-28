@@ -199,6 +199,9 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       if (binding.containsField(ORDER_VAR)) {
         int order = Integer.parseInt(binding.getFieldValue(ORDER_VAR));
         List<Integer> orders = new ArrayList<>();
+        if (shNodeGroupName != null) {
+          orders = this.varSequence.get(shNodeGroupName);
+        }
         orders.add(order);
         this.varSequence.put(propertyName, orders);
       }
@@ -367,5 +370,5 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
 
     // Return true if input matches either pattern 1 or pattern 2
     return matcher1.matches() || matcher2.matches();
-  } 
+  }
 }
