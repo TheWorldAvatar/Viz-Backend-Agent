@@ -71,7 +71,7 @@ public class LifecycleService {
     this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_TYPE_KEY, Stream.of(2, 4).toList());
 
     this.taskVarSequence.put(LifecycleResource.DATE_KEY, Stream.of(2, 3).toList());
-    this.taskVarSequence.put(LifecycleResource.EVENT_KEY, Stream.of(999,999).toList());
+    this.taskVarSequence.put(LifecycleResource.EVENT_KEY, Stream.of(999, 999).toList());
   }
 
   /**
@@ -204,8 +204,7 @@ public class LifecycleService {
     // Get date from timestamp
     String targetDate = this.dateTimeService.getDateFromTimestamp(timestamp);
     String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetDate);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, LifecycleResource.IRI_KEY,
-        activeServiceQuery);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, "id", activeServiceQuery);
     LOGGER.info("Successfuly retrieved services in progress!");
     return new ResponseEntity<>(occurrences, HttpStatus.OK);
   }
