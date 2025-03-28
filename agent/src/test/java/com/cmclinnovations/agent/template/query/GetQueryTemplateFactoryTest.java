@@ -22,13 +22,13 @@ import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.utils.StringResource;
 
-class GetQueryTemplateFactoryTest {
+public class GetQueryTemplateFactoryTest {
   private static GetQueryTemplateFactory TEMPLATE_FACTORY;
 
-  private static final String EXPECTED_SIMPLE_FILE = "template/query/get/get_query_simple.sparql";
-  private static final String EXPECTED_SIMPLE_MIXED_FILE = "template/query/get/get_query_simple_mixed.sparql";
-  private static final String EXPECTED_SIMPLE_ID_FILE = "template/query/get/get_query_simple_id.sparql";
-  private static final String EXPECTED_SIMPLE_ID_MIXED_FILE = "template/query/get/get_query_simple_id_mixed.sparql";
+  public static final String EXPECTED_SIMPLE_FILE = "template/query/get/get_query_simple.sparql";
+  public static final String EXPECTED_SIMPLE_MIXED_FILE = "template/query/get/get_query_simple_mixed.sparql";
+  public static final String EXPECTED_SIMPLE_ID_FILE = "template/query/get/get_query_simple_id.sparql";
+  public static final String EXPECTED_SIMPLE_ID_MIXED_FILE = "template/query/get/get_query_simple_id_mixed.sparql";
   private static final String EXPECTED_SIMPLE_PARENT_FILE = "template/query/get/get_query_simple_parent.sparql";
   private static final String EXPECTED_SIMPLE_PARENT_MIXED_FILE = "template/query/get/get_query_simple_parent_mixed.sparql";
   private static final String EXPECTED_SIMPLE_OPTIONAL_FILE = "template/query/get/get_query_simple_optional.sparql";
@@ -48,7 +48,7 @@ class GetQueryTemplateFactoryTest {
   private static final String SAMPLE_PARENT_FIELD = "parent field";
   private static final String SAMPLE_OPTIONAL_FIELD = "optional field";
 
-  private static final String SAMPLE_FILTER = "01j82";
+  public static final String SAMPLE_FILTER = "01j82";
   private static final String SAMPLE_ADDITIONAL_FIELD = "addProperty";
   private static final String SAMPLE_ADDITIONAL_STATEMENT = "?iri <http://example.com/addPath> ?"
       + SAMPLE_ADDITIONAL_FIELD + ".";
@@ -69,13 +69,7 @@ class GetQueryTemplateFactoryTest {
   @Test
   void testWrite_Simple() throws IOException {
     // Set up
-    Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
-    Queue<SparqlBinding> bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", false);
-    nestedBindings.offer(bindings);
-    bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_NESTED_PRED_PATH, "", false);
-    nestedBindings.offer(bindings);
+    Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
     Queue<String> results = TEMPLATE_FACTORY.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
@@ -88,13 +82,7 @@ class GetQueryTemplateFactoryTest {
   @Test
   void testWrite_SimpleWithFilter() throws IOException {
     // Set up
-    Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
-    Queue<SparqlBinding> bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", false);
-    nestedBindings.offer(bindings);
-    bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_NESTED_PRED_PATH, "", false);
-    nestedBindings.offer(bindings);
+    Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
     Queue<String> results = TEMPLATE_FACTORY
         .write(new QueryTemplateFactoryParameters(nestedBindings, SAMPLE_FILTER, null, "", new HashMap<>()));
@@ -157,13 +145,7 @@ class GetQueryTemplateFactoryTest {
 
   @Test
   void testWrite_OnlyAdditionalQuery() throws IOException {
-    Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
-    Queue<SparqlBinding> bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", false);
-    nestedBindings.offer(bindings);
-    bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_NESTED_PRED_PATH, "", false);
-    nestedBindings.offer(bindings);
+    Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
     Queue<String> results = TEMPLATE_FACTORY.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, SAMPLE_ADDITIONAL_STATEMENT, new HashMap<>()));
@@ -175,13 +157,7 @@ class GetQueryTemplateFactoryTest {
 
   @Test
   void testWrite_AdditionalQuery() throws IOException {
-    Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
-    Queue<SparqlBinding> bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", false);
-    nestedBindings.offer(bindings);
-    bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_NESTED_PRED_PATH, "", false);
-    nestedBindings.offer(bindings);
+    Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
     Queue<String> results = TEMPLATE_FACTORY.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, SAMPLE_ADDITIONAL_STATEMENT, SAMPLE_ADD_VARS));
@@ -189,6 +165,20 @@ class GetQueryTemplateFactoryTest {
     assertEquals(2, results.size());
     assertEquals(TestUtils.getSparqlQuery(EXPECTED_COMPLEX_ADDITIONAL_FILE), results.poll());
     assertEquals(TestUtils.getSparqlQuery(EXPECTED_COMPLEX_ADDITIONAL_MIXED_FILE), results.poll());
+  }
+
+  /**
+   * Initialise test bindings.
+   */
+  public static Queue<Queue<SparqlBinding>> initTestBindings() {
+    Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
+    Queue<SparqlBinding> bindings = new ArrayDeque<>();
+    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", false);
+    nestedBindings.offer(bindings);
+    bindings = new ArrayDeque<>();
+    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_NESTED_PRED_PATH, "", false);
+    nestedBindings.offer(bindings);
+    return nestedBindings;
   }
 
   /**

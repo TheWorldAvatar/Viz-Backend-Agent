@@ -18,11 +18,11 @@ import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.utils.StringResource;
 
-class SearchQueryTemplateFactoryTest {
+public class SearchQueryTemplateFactoryTest {
     private static SearchQueryTemplateFactory TEMPLATE_FACTORY;
 
-    private static final String EXPECTED_SIMPLE_FILE = "template/query/search/search_query_simple.sparql";
-    private static final String EXPECTED_SIMPLE_MIXED_FILE = "template/query/search/search_query_simple_mixed.sparql";
+    public static final String EXPECTED_SIMPLE_FILE = "template/query/search/search_query_simple.sparql";
+    public static final String EXPECTED_SIMPLE_MIXED_FILE = "template/query/search/search_query_simple_mixed.sparql";
     private static final String EXPECTED_SIMPLE_MINMAX_FILE = "template/query/search/search_query_simple_minmax.sparql";
     private static final String EXPECTED_SIMPLE_MINMAX_MIXED_FILE = "template/query/search/search_query_simple_minmax_mixed.sparql";
     private static final String EXPECTED_SIMPLE_MIN_FILE = "template/query/search/search_query_simple_min.sparql";
@@ -33,10 +33,10 @@ class SearchQueryTemplateFactoryTest {
     private static final String SAMPLE_CONCEPT = SAMPLE_PREFIX + "Concept";
     private static final String SAMPLE_PRED_PATH = SAMPLE_PREFIX + "propPath1";
     private static final String SAMPLE_NESTED_PRED_PATH = SAMPLE_PREFIX + "propPath2";
-    private static final String SAMPLE_FIELD = "field";
     private static final int SAMPLE_MIN_VAL = 0;
     private static final int SAMPLE_MAX_VAL = 10;
-    private static final String SAMPLE_FILTER = "01j82";
+    public static final String SAMPLE_FIELD = "field";
+    public static final String SAMPLE_FILTER = "01j82";
 
     private static final String NAME_VAR = "name";
     private static final String IS_OPTIONAL_VAR = "isoptional";
@@ -51,7 +51,7 @@ class SearchQueryTemplateFactoryTest {
     @Test
     void testWrite_SimpleNoCriteria() {
         // Set up
-        Queue<Queue<SparqlBinding>> testBindings = this.initTestBindings();
+        Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
         Queue<String> results = TEMPLATE_FACTORY.write(
                 new QueryTemplateFactoryParameters(testBindings, new HashMap<>()));
@@ -65,10 +65,10 @@ class SearchQueryTemplateFactoryTest {
     @Test
     void testWrite_SimpleStringCriteria() throws IOException {
         // Set up
-        Queue<Queue<SparqlBinding>> testBindings = this.initTestBindings();
+        Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
         Queue<String> results = TEMPLATE_FACTORY.write(
-                new QueryTemplateFactoryParameters(testBindings, this.genCriterias(SAMPLE_FIELD, SAMPLE_FILTER)));
+                new QueryTemplateFactoryParameters(testBindings, genCriterias(SAMPLE_FIELD, SAMPLE_FILTER)));
         // Assert
         assertEquals(2, results.size());
         assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_FILE), results.poll());
@@ -78,7 +78,7 @@ class SearchQueryTemplateFactoryTest {
     @Test
     void testWrite_SimpleMinMaxCriteria() throws IOException {
         // Set up
-        Queue<Queue<SparqlBinding>> testBindings = this.initTestBindings();
+        Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
         Queue<String> results = TEMPLATE_FACTORY.write(
                 new QueryTemplateFactoryParameters(testBindings,
@@ -92,7 +92,7 @@ class SearchQueryTemplateFactoryTest {
     @Test
     void testWrite_SimpleMinCriteria() throws IOException {
         // Set up
-        Queue<Queue<SparqlBinding>> testBindings = this.initTestBindings();
+        Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
         Queue<String> results = TEMPLATE_FACTORY.write(
                 new QueryTemplateFactoryParameters(testBindings,
@@ -106,7 +106,7 @@ class SearchQueryTemplateFactoryTest {
     @Test
     void testWrite_SimpleMaxCriteria() throws IOException {
         // Set up
-        Queue<Queue<SparqlBinding>> testBindings = this.initTestBindings();
+        Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
         Queue<String> results = TEMPLATE_FACTORY.write(
                 new QueryTemplateFactoryParameters(testBindings,
@@ -120,7 +120,7 @@ class SearchQueryTemplateFactoryTest {
     /**
      * Initialise test bindings.
      */
-    private Queue<Queue<SparqlBinding>> initTestBindings() {
+    public static Queue<Queue<SparqlBinding>> initTestBindings() {
         Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
         Queue<SparqlBinding> bindings = new ArrayDeque<>();
         genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", false);
@@ -166,7 +166,7 @@ class SearchQueryTemplateFactoryTest {
      * 
      * @param criteria Key and field criteria inputs as pairs.
      */
-    private Map<String, String> genCriterias(String... criteria) {
+    public static Map<String, String> genCriterias(String... criteria) {
         if ((criteria.length / 2) != 1) {
             throw new IllegalArgumentException("Criteria should be in pairs!");
         }

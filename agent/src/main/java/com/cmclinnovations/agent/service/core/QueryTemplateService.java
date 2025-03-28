@@ -69,7 +69,7 @@ public class QueryTemplateService {
    * @param queryVarsAndPaths The query construction requirements.
    */
   public Queue<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
-    return this.genGetQuery(queryVarsAndPaths, null, null, "", new HashMap<>());
+    return this.genGetQuery(queryVarsAndPaths, "", null, "", new HashMap<>());
   }
 
   /**

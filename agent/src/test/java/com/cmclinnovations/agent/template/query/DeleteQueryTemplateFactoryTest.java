@@ -13,14 +13,14 @@ import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-class DeleteQueryTemplateFactoryTest {
+public class DeleteQueryTemplateFactoryTest {
     private static DeleteQueryTemplateFactory TEMPLATE_FACTORY;
 
-    private static final String TEST_SIMPLE_FILE = "template/query/delete/test/delete_simple.json";
-    private static final String EXPECTED_SIMPLE_FILE = "template/query/delete/expected/delete_simple.sparql";
+    public static final String TEST_SIMPLE_FILE = "template/query/delete/test/delete_simple.json";
+    public static final String EXPECTED_SIMPLE_FILE = "template/query/delete/expected/delete_simple.sparql";
     private static final String TEST_SIMPLE_REVERSE_FILE = "template/query/delete/test/delete_simple_reverse.json";
     private static final String EXPECTED_SIMPLE_REVERSE_FILE = "template/query/delete/expected/delete_simple_reverse.sparql";
-    private static final String SAMPLE_ID = "01j82";
+    public static final String SAMPLE_ID = "01j82";
 
     @BeforeAll
     static void setup() {
