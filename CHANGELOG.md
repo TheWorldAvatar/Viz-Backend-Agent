@@ -1,5 +1,14 @@
 # Change Log
 
+## 1.4.0
+
+### Features
+
+- Added more informative task details
+- Added logging of queries before execution
+- Added simple unit tests
+- General code improvements
+
 ## 1.3.0
 
 ### Features
