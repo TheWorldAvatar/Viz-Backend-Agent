@@ -31,6 +31,7 @@ public class LifecycleResource {
   public static final String SCHEDULE_END_TIME_KEY = "end time";
   public static final String SCHEDULE_RECURRENCE_KEY = "recurrence";
   public static final String SCHEDULE_TYPE_KEY = "schedule type";
+  public static final String SCHEDULE_AFFECTED_BY_PUBLIC_HOLIDAY_KEY = "affected by public holiday";
 
   public static final String EXEMPLIFIES_RELATIONS = "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies";
   public static final String HAS_AMOUNT_RELATIONS = "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasAmount";

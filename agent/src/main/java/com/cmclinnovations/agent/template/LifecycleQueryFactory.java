@@ -266,6 +266,7 @@ public class LifecycleQueryFactory {
         + "<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimePeriod>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndTime>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue> ?"
         + StringResource.parseQueryVariable(LifecycleResource.SCHEDULE_END_TIME_KEY) + ";"
         + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?"
-        + LifecycleResource.SCHEDULE_RECURRENCE_KEY + ShaclResource.FULL_STOP;
+        + LifecycleResource.SCHEDULE_RECURRENCE_KEY + ";" 
+        + "<https://theworldavatar.io/affectedByPublicHoliday> ?" + StringResource.parseQueryVariable(LifecycleResource.SCHEDULE_AFFECTED_BY_PUBLIC_HOLIDAY_KEY) + ShaclResource.FULL_STOP;
   }
 }
