@@ -4,11 +4,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Map;
 
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.util.ResourceUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class TestUtils {
@@ -56,5 +58,27 @@ public class TestUtils {
     File file = ResourceUtils.getFile("classpath:" + filePath);
     ObjectMapper mapper = new ObjectMapper();
     return mapper.readValue(file, ObjectNode.class);
+  }
+
+  /**
+   * Retrieve the JSON object from the input file.
+   * 
+   * @param filePath Input file.
+   */
+  public static Map<String, Object> getMapJson(String filePath) throws IOException {
+    File file = ResourceUtils.getFile("classpath:" + filePath);
+    ObjectMapper mapper = new ObjectMapper();
+    return mapper.readValue(file, Map.class);
+  }
+
+  /**
+   * Retrieve the JSON object from the input file.
+   * 
+   * @param filePath Input file.
+   */
+  public static ArrayNode getArrayJson(String filePath) throws IOException {
+    File file = ResourceUtils.getFile("classpath:" + filePath);
+    ObjectMapper mapper = new ObjectMapper();
+    return mapper.readValue(file, ArrayNode.class);
   }
 }
