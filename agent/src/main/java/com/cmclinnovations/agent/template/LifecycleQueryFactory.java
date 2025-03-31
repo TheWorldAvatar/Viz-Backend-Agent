@@ -132,9 +132,10 @@ public class LifecycleQueryFactory {
   public String getStageQuery(String contract, LifecycleEventType eventType) {
     return StringResource.QUERY_TEMPLATE_PREFIX
         + "SELECT DISTINCT ?iri WHERE {" +
-        "<" + contract + "> fibo-fnd-arr-lif:hasLifecycle ?lifecycle ." +
+        "?contract fibo-fnd-arr-lif:hasLifecycle ?lifecycle ." +
         "?lifecycle fibo-fnd-arr-lif:hasStage ?iri ." +
         "?iri fibo-fnd-rel-rel:exemplifies <" + LifecycleResource.getStageClass(eventType) + "> ." +
+        "FILTER STRENDS(STR(?contract),\"" + contract + "\")" +
         "}";
   }
 
