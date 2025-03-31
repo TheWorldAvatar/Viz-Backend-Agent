@@ -1,13 +1,11 @@
 package com.cmclinnovations.agent.service.application;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
@@ -15,9 +13,9 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException.BadRequest;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
@@ -30,6 +28,7 @@ import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.StringResource;
+import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @Service
 public class LifecycleService {
@@ -188,8 +187,7 @@ public class LifecycleService {
    */
   public ResponseEntity<List<Map<String, Object>>> getOccurrences(String contract, String entityType) {
     String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(contract, null);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, LifecycleResource.DATE_KEY,
-        activeServiceQuery);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery);
     LOGGER.info("Successfuly retrieved all associated services!");
     return new ResponseEntity<>(occurrences, HttpStatus.OK);
   }
@@ -205,7 +203,7 @@ public class LifecycleService {
     // Get date from timestamp
     String targetDate = this.dateTimeService.getDateFromTimestamp(timestamp);
     String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetDate);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, "id", activeServiceQuery);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery);
     LOGGER.info("Successfuly retrieved services in progress!");
     return new ResponseEntity<>(occurrences, HttpStatus.OK);
   }
@@ -214,10 +212,9 @@ public class LifecycleService {
    * Executes the occurrence query and group them by the specified group variable.
    * 
    * @param entityType      Target resource ID.
-   * @param groupVar        The variable name that should be grouped by.
    * @param additionalQuery Additional query to append to the main query.
    */
-  private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String groupVar, String additionalQuery) {
+  private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String additionalQuery) {
     ResponseEntity<String> iriResponse = this.fileService.getTargetIri(entityType);
     if (iriResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
       LOGGER.error("Invalid resource ID detected!");
@@ -226,22 +223,28 @@ public class LifecycleService {
     String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PATH_LABEL_QUERY_RESOURCE,
         iriResponse.getBody());
     Queue<SparqlBinding> results = this.kgService.queryInstances(query, additionalQuery, this.taskVarSequence);
-    Map<String, SparqlBinding> resultMapping = results.stream()
-        .collect(Collectors.toMap(
-            binding -> binding.getFieldValue(groupVar), // Key mapper
-            binding -> binding, // Value mapper
-            (existing, replacement) -> // Merge function to keep the higher order
-            LifecycleResource.getEventPriority(existing.getFieldValue(LifecycleResource.EVENT_KEY)) > LifecycleResource
-                .getEventPriority(replacement.getFieldValue(LifecycleResource.EVENT_KEY))
-                    ? existing
-                    : replacement));
-    return resultMapping.values().stream()
+    return results.stream()
         .map(binding -> {
           Map<String, Object> fields = binding.get();
-          String occurrenceId = binding.getFieldValue(LifecycleResource.IRI_KEY);
+          // Extract the latest event occurrence through their priority levels
+          List<SparqlResponseField> events = TypeCastUtils.castToListObject(fields.get(LifecycleResource.EVENT_KEY),
+              SparqlResponseField.class);
+          List<SparqlResponseField> eventIds = TypeCastUtils.castToListObject(
+              fields.get(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY)),
+              SparqlResponseField.class);
+          int highestPriority = 0;
+          int highestPriorityIndex = 0;
+          for (int i = 0; i < events.size(); i++) {
+            SparqlResponseField respField = events.get(i);
+            if (highestPriority < LifecycleResource.getEventPriority(respField.value())) {
+              highestPriorityIndex = i;
+            }
+          }
+          fields.put(LifecycleResource.EVENT_KEY, events.get(highestPriorityIndex));
+          fields.put(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY), eventIds.get(highestPriorityIndex));
           // Extract and add dispatch details if available
           ResponseEntity<?> response = this.getOccurrenceDetails(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-              occurrenceId, true);
+              eventIds.get(highestPriorityIndex).value(), true);
           if (response.getStatusCode() == HttpStatus.OK) {
             Map<String, Object> dispatch = (Map<String, Object>) response.getBody();
             dispatch.remove("id"); // remove unneeded id key
