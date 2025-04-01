@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,15 +64,15 @@ public class LifecycleService {
     this.fileService = fileService;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
 
-    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_DATE_KEY, Stream.of(2, 0).toList());
-    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_END_DATE_KEY, Stream.of(2, 1).toList());
-    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_TIME_KEY, Stream.of(2, 2).toList());
-    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_END_TIME_KEY, Stream.of(2, 3).toList());
-    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_TYPE_KEY, Stream.of(2, 4).toList());
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_DATE_KEY, List.of(2, 0));
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_END_DATE_KEY, List.of(2, 1));
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_TIME_KEY, List.of(2, 2));
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_END_TIME_KEY, List.of(2, 3));
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_TYPE_KEY, List.of(2, 4));
 
-    this.taskVarSequence.put(LifecycleResource.DATE_KEY, Stream.of(2, 3).toList());
-    this.taskVarSequence.put(LifecycleResource.EVENT_KEY, Stream.of(999, 999).toList());
-    this.taskVarSequence.put(LifecycleResource.EVENT_ID_KEY, Stream.of(1000, 999).toList());
+    this.taskVarSequence.put(LifecycleResource.DATE_KEY, List.of(2, 3));
+    this.taskVarSequence.put(LifecycleResource.EVENT_KEY, List.of(999, 999));
+    this.taskVarSequence.put(LifecycleResource.EVENT_ID_KEY, List.of(1000, 999));
   }
 
   /**

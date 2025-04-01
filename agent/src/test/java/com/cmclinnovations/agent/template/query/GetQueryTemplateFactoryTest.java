@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -63,8 +62,7 @@ public class GetQueryTemplateFactoryTest {
   @BeforeAll
   static void setup() {
     TEMPLATE_FACTORY = new GetQueryTemplateFactory();
-    SAMPLE_ADD_VARS.put(SAMPLE_ADDITIONAL_FIELD, Stream.of(0, 0).toList());
-
+    SAMPLE_ADD_VARS.put(SAMPLE_ADDITIONAL_FIELD, List.of(0, 0));
   }
 
   @Test
