@@ -1,0 +1,17 @@
+DELETE {
+    <https://www.example.org/kg/person/01j82> rdf:type <https://www.example.org/kg/Person>.
+    <https://www.example.org/kg/person/01j82> <https://www.example.org/kg/hasName> ?name.
+    <https://www.example.org/kg/person/01j82> <https://www.example.org/kg/hasAddress> <https://www.example.org/kg/address/01j82>.
+    <https://www.example.org/kg/address/01j82> <https://www.example.org/kg/hasStreet> ?street.
+    <https://www.example.org/kg/address/01j82> <https://www.example.org/kg/hasCity> ?city.
+} WHERE {
+    <https://www.example.org/kg/person/01j82> rdf:type <https://www.example.org/kg/Person>.
+    OPTIONAL{
+        <https://www.example.org/kg/person/01j82> <https://www.example.org/kg/hasName> ?name.
+    }
+    <https://www.example.org/kg/person/01j82> <https://www.example.org/kg/hasAddress> <https://www.example.org/kg/address/01j82>.
+    OPTIONAL{
+        <https://www.example.org/kg/address/01j82> <https://www.example.org/kg/hasStreet> ?street.
+    }
+    <https://www.example.org/kg/address/01j82> <https://www.example.org/kg/hasCity> ?city.
+}

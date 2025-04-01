@@ -2,11 +2,11 @@ package com.cmclinnovations.agent.service.application;
 
 import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
@@ -26,7 +27,9 @@ import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
+import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @Service
 public class LifecycleService {
@@ -37,6 +40,8 @@ public class LifecycleService {
   private final KGService kgService;
   private final FileService fileService;
   private final LifecycleQueryFactory lifecycleQueryFactory;
+  private final Map<String, List<Integer>> lifecycleVarSequence = new HashMap<>();
+  private final Map<String, List<Integer>> taskVarSequence = new HashMap<>();
 
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
@@ -58,6 +63,16 @@ public class LifecycleService {
     this.kgService = kgService;
     this.fileService = fileService;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
+
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_DATE_KEY, List.of(2, 0));
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_END_DATE_KEY, List.of(2, 1));
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_TIME_KEY, List.of(2, 2));
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_END_TIME_KEY, List.of(2, 3));
+    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_TYPE_KEY, List.of(2, 4));
+
+    this.taskVarSequence.put(LifecycleResource.DATE_KEY, List.of(2, 3));
+    this.taskVarSequence.put(LifecycleResource.EVENT_KEY, List.of(999, 999));
+    this.taskVarSequence.put(LifecycleResource.EVENT_ID_KEY, List.of(1000, 999));
   }
 
   /**
@@ -105,6 +120,12 @@ public class LifecycleService {
     // Only update the date field if there is no pre-existing field
     params.putIfAbsent(LifecycleResource.DATE_KEY, date);
     params.putIfAbsent(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
+    // Update the order enum with the specific event instance
+    String orderEnum = params.get(LifecycleResource.ORDER_KEY).toString();
+    query = this.lifecycleQueryFactory.getEventQuery(params.get("id").toString(),
+        LifecycleResource.getEventClassFromOrderEnum(orderEnum));
+    String event = this.getService.getInstance(query).getFieldValue(LifecycleResource.IRI_KEY);
+    params.put(LifecycleResource.ORDER_KEY, event);
   }
 
   /**
@@ -156,8 +177,10 @@ public class LifecycleService {
     String queryPath = requireLabel ? FileService.SHACL_PATH_LABEL_QUERY_RESOURCE
         : FileService.SHACL_PATH_QUERY_RESOURCE;
 
+    String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
     String query = this.fileService.getContentsWithReplacement(queryPath, iriResponse.getBody());
-    Queue<SparqlBinding> results = this.kgService.queryInstances(query, eventType);
+    Queue<SparqlBinding> results = this.kgService.queryInstances(query, additionalQueryStatement,
+        this.lifecycleVarSequence);
     LOGGER.info("Successfuly retrieved contracts!");
     return new ResponseEntity<>(results.stream().map(SparqlBinding::get).toList(), HttpStatus.OK);
   }
@@ -166,12 +189,12 @@ public class LifecycleService {
    * Retrieve all service related occurrences in the lifecycle for the specified
    * date.
    * 
-   * @param contract The contract identifier.
+   * @param contract   The contract identifier.
+   * @param entityType Target resource ID.
    */
-  public ResponseEntity<List<Map<String, Object>>> getOccurrences(String contract) {
+  public ResponseEntity<List<Map<String, Object>>> getOccurrences(String contract, String entityType) {
     String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(contract, null);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(activeServiceQuery,
-        LifecycleResource.DATE_KEY);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery);
     LOGGER.info("Successfuly retrieved all associated services!");
     return new ResponseEntity<>(occurrences, HttpStatus.OK);
   }
@@ -180,14 +203,14 @@ public class LifecycleService {
    * Retrieve all service related occurrences in the lifecycle for the specified
    * date.
    * 
-   * @param timestamp Timestamp in UNIX format.
+   * @param timestamp  Timestamp in UNIX format.
+   * @param entityType Target resource ID.
    */
-  public ResponseEntity<List<Map<String, Object>>> getOccurrences(long timestamp) {
+  public ResponseEntity<List<Map<String, Object>>> getOccurrences(long timestamp, String entityType) {
     // Get date from timestamp
     String targetDate = this.dateTimeService.getDateFromTimestamp(timestamp);
     String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetDate);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(activeServiceQuery,
-        LifecycleResource.CONTRACT_KEY);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery);
     LOGGER.info("Successfuly retrieved services in progress!");
     return new ResponseEntity<>(occurrences, HttpStatus.OK);
   }
@@ -195,31 +218,52 @@ public class LifecycleService {
   /**
    * Executes the occurrence query and group them by the specified group variable.
    * 
-   * @param timestamp Timestamp in UNIX format.
-   * @param groupVar  The variable name that should be grouped by.
+   * @param entityType      Target resource ID.
+   * @param additionalQuery Additional query to append to the main query.
    */
-  private List<Map<String, Object>> executeOccurrenceQuery(String query, String groupVar) {
-    Queue<SparqlBinding> results = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
-    Map<String, SparqlBinding> resultMapping = results.stream()
-        .collect(Collectors.toMap(
-            binding -> binding.getFieldValue(groupVar), // Key mapper
-            binding -> binding, // Value mapper
-            (existing, replacement) -> // Merge function to keep the higher order
-            LifecycleResource.getEventPriority(existing.getFieldValue(LifecycleResource.EVENT_KEY)) > LifecycleResource
-                .getEventPriority(replacement.getFieldValue(LifecycleResource.EVENT_KEY))
-                    ? existing
-                    : replacement));
-    return resultMapping.values().stream()
+  private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String additionalQuery) {
+    ResponseEntity<String> iriResponse = this.fileService.getTargetIri(entityType);
+    if (iriResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
+      LOGGER.error("Invalid resource ID detected!");
+      throw new IllegalArgumentException("Invalid resource ID detected!");
+    }
+    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PATH_LABEL_QUERY_RESOURCE,
+        iriResponse.getBody());
+    Queue<SparqlBinding> results = this.kgService.queryInstances(query, additionalQuery, this.taskVarSequence);
+    return results.stream()
         .map(binding -> {
           Map<String, Object> fields = binding.get();
-          String occurrenceId = binding.getFieldValue(LifecycleResource.IRI_KEY);
+          // Extract the latest event occurrence through their priority levels
+          List<SparqlResponseField> events = TypeCastUtils.castToListObject(fields.get(LifecycleResource.EVENT_KEY),
+              SparqlResponseField.class);
+          List<SparqlResponseField> eventIds = TypeCastUtils.castToListObject(
+              fields.get(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY)),
+              SparqlResponseField.class);
+          int highestPriority = 0;
+          int highestPriorityIndex = 0;
+          for (int i = 0; i < events.size(); i++) {
+            SparqlResponseField respField = events.get(i);
+            if (highestPriority < LifecycleResource.getEventPriority(respField.value())) {
+              highestPriorityIndex = i;
+            }
+          }
+          fields.put(LifecycleResource.EVENT_KEY, events.get(highestPriorityIndex));
+          fields.put(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY),
+              eventIds.get(highestPriorityIndex));
           // Extract and add dispatch details if available
           ResponseEntity<?> response = this.getOccurrenceDetails(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-              occurrenceId, true);
+              eventIds.get(highestPriorityIndex).value(), true);
           if (response.getStatusCode() == HttpStatus.OK) {
+            Map<String, Object> tempFields = new LinkedHashMap<>();
+            tempFields.put("id", fields.get("id"));
+            tempFields.put(ShaclResource.NAME_PROPERTY, fields.get(ShaclResource.NAME_PROPERTY));
+            fields.remove("id");
+            fields.remove(ShaclResource.NAME_PROPERTY);
             Map<String, Object> dispatch = (Map<String, Object>) response.getBody();
             dispatch.remove("id"); // remove unneeded id key
-            fields.putAll(dispatch);
+            tempFields.putAll(dispatch);
+            tempFields.putAll(fields);
+            fields = tempFields;
           }
           return fields;
         })

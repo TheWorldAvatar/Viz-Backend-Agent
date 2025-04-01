@@ -1,0 +1,56 @@
+[
+  {
+    "@id": "string_id",
+    "@type": [
+      "http://www.w3.org/ns/shacl#PropertyShape"
+    ],
+    "http://www.w3.org/ns/shacl#name": [
+      {
+        "@value": "name"
+      }
+    ],
+    "http://www.w3.org/ns/shacl#description": [
+      {
+        "@value": "The first name of a person"
+      }
+    ],
+    "http://www.w3.org/ns/shacl#datatype": [
+      {
+        "@id": "http://www.w3.org/2001/XMLSchema#string"
+      }
+    ],
+    "http://www.w3.org/ns/shacl#order": [
+      {
+        "@type": "http://www.w3.org/2001/XMLSchema#integer",
+        "@value": "1"
+      }
+    ]
+  },
+  {
+    "@id": "dec_id",
+    "@type": [
+      "http://www.w3.org/ns/shacl#PropertyShape"
+    ],
+    "http://www.w3.org/ns/shacl#name": [
+      {
+        "@value": "age"
+      }
+    ],
+    "http://www.w3.org/ns/shacl#description": [
+      {
+        "@value": "The age of a person"
+      }
+    ],
+    "http://www.w3.org/ns/shacl#datatype": [
+      {
+        "@id": "http://www.w3.org/2001/XMLSchema#integer"
+      }
+    ],
+    "http://www.w3.org/ns/shacl#order": [
+      {
+        "@type": "http://www.w3.org/2001/XMLSchema#integer",
+        "@value": "2"
+      }
+    ]
+  }
+]

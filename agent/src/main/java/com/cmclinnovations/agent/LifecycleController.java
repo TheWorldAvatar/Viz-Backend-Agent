@@ -384,16 +384,17 @@ public class LifecycleController {
    */
   @GetMapping("/service/{task}")
   public ResponseEntity<?> getAllTasksOnTimestamp(
-      @PathVariable(name = "task") String input) {
+      @PathVariable(name = "task") String input,
+      @RequestParam(required = true) String type) {
     // Attempt to parse the input into a long, indicating this is a timestamp
     try {
       long timestamp = Long.parseLong(input);
       LOGGER.info("Received request to retrieve services in progress for a specified date...");
-      return this.lifecycleService.getOccurrences(timestamp);
+      return this.lifecycleService.getOccurrences(timestamp, type);
     } catch (NumberFormatException e) {
       // Any parsing errors will indicate that this is an identifier for the contract
       LOGGER.info("Received request to retrieve services in progress for a specified contract...");
-      return this.lifecycleService.getOccurrences(input);
+      return this.lifecycleService.getOccurrences(input, type);
     }
   }
 

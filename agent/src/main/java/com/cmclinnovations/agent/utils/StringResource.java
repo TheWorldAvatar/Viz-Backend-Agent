@@ -28,6 +28,11 @@ public class StringResource {
       + "PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>"
       + "PREFIX xsd:<http://www.w3.org/2001/XMLSchema#>";
 
+  public static final String NODE_GROUP_VAR = "nodegroup";
+  public static final String NESTED_CLASS_VAR = "nested_class";
+  public static final String CLAZZ_VAR = "clazz";
+  public static final String RDF_TYPE = "rdf:type";
+
   // Private constructor to prevent instantiation
   private StringResource() {
     throw new UnsupportedOperationException("This class cannot be instantiated!");

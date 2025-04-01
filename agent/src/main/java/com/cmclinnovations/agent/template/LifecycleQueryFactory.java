@@ -103,25 +103,24 @@ public class LifecycleQueryFactory {
    * @param date     Target date in YYYY-MM-DD format. Optional if null is passed.
    */
   public String getServiceTasksQuery(String contract, String date) {
-    String contractVar = ShaclResource.VARIABLE_MARK + LifecycleResource.CONTRACT_KEY;
     String eventDateVar = ShaclResource.VARIABLE_MARK + LifecycleResource.DATE_KEY;
     String eventVar = ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY;
+    String eventIdVar = StringResource.parseQueryVariable(ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_ID_KEY);
     // Targeted filter statement for date and/or contract filter
-    String eventDateValue = date != null ? "\"" + date + "\"^^xsd:date" : eventDateVar;
-    String filterStatement = contract != null ? "FILTER STRENDS(STR(" + contractVar + "),\"" + contract + "\")" : "";
-    return StringResource.QUERY_TEMPLATE_PREFIX
-        + "SELECT DISTINCT " + contractVar + " ?iri " + eventDateVar + " " + eventVar
-        + " WHERE{" + contractVar + " fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage."
-        + "?stage fibo-fnd-rel-rel:exemplifies <"
+    String bindDateStatement = date != null ? "BIND(\"" + date + "\"^^xsd:date AS " + eventDateVar + ")" : "";
+    String filterStatement = contract != null ? "FILTER STRENDS(STR(?iri),\"" + contract + "\")" : "";
+    return "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
+        + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
         + LifecycleResource.getStageClass(LifecycleEventType.SERVICE_EXECUTION) + ">;"
         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
-        + "?order_event fibo-fnd-rel-rel:exemplifies "
+        + bindDateStatement
+        + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + StringResource.parseIriForQuery(LifecycleResource.EVENT_ORDER_RECEIVED) + ";"
-        + "fibo-fnd-dt-oc:hasEventDate " + eventDateValue + "."
-        + "?iri fibo-fnd-rel-rel:exemplifies " + eventVar + ";"
-        + "cmns-dt:succeeds* ?order_event."
-        + filterStatement
-        + "}";
+        + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> " + eventDateVar
+        + "." + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+        + eventVar + ";"
+        + "<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
+        + filterStatement;
   }
 
   /**
@@ -134,9 +133,10 @@ public class LifecycleQueryFactory {
   public String getStageQuery(String contract, LifecycleEventType eventType) {
     return StringResource.QUERY_TEMPLATE_PREFIX
         + "SELECT DISTINCT ?iri WHERE {" +
-        "<" + contract + "> fibo-fnd-arr-lif:hasLifecycle ?lifecycle ." +
+        "?contract fibo-fnd-arr-lif:hasLifecycle ?lifecycle ." +
         "?lifecycle fibo-fnd-arr-lif:hasStage ?iri ." +
         "?iri fibo-fnd-rel-rel:exemplifies <" + LifecycleResource.getStageClass(eventType) + "> ." +
+        "FILTER STRENDS(STR(?contract),\"" + contract + "\")" +
         "}";
   }
 
@@ -175,11 +175,38 @@ public class LifecycleQueryFactory {
   }
 
   /**
+   * Generates lifecycle filter statements for SPARQL if required based on the
+   * specified event.
+   * 
+   * @param lifecycleEvent Target event for filter.
+   */
+  public String genLifecycleFilterStatements(LifecycleEventType lifecycleEvent) {
+    StringBuilder query = new StringBuilder();
+    query.append(this.getReadableScheduleQuery());
+    switch (lifecycleEvent) {
+      case LifecycleEventType.APPROVED:
+        this.appendFilterExists(query, false, LifecycleResource.EVENT_APPROVAL);
+        break;
+      case LifecycleEventType.SERVICE_EXECUTION:
+        this.appendFilterExists(query, true, LifecycleResource.EVENT_APPROVAL);
+        this.appendArchivedFilterExists(query, false);
+        break;
+      case LifecycleEventType.ARCHIVE_COMPLETION:
+        this.appendArchivedStateQuery(query);
+        break;
+      default:
+        // Do nothing if it doesnt meet the above events
+        break;
+    }
+    return query.toString();
+  }
+
+  /**
    * Appends a query statement to retrieve the status of an archived contract.
    * 
    * @param query Builder for the query template.
    */
-  public void appendArchivedStateQuery(StringBuilder query) {
+  private void appendArchivedStateQuery(StringBuilder query) {
     String eventVar = ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY;
     StringBuilder tempBuilder = new StringBuilder();
     StringResource.appendTriple(tempBuilder, ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY,
@@ -206,7 +233,7 @@ public class LifecycleQueryFactory {
    * @param query  Builder for the query template.
    * @param exists Indicate if using FILTER EXISTS or FILTER NOT EXISTS.
    */
-  public void appendArchivedFilterExists(StringBuilder query, boolean exists) {
+  private void appendArchivedFilterExists(StringBuilder query, boolean exists) {
     String stageVar = ShaclResource.VARIABLE_MARK + LifecycleResource.STAGE_KEY + "_archived";
     StringBuilder tempBuilder = new StringBuilder();
     StringResource.appendTriple(tempBuilder, ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY,
@@ -226,7 +253,7 @@ public class LifecycleQueryFactory {
    * @param exists   Indicate if using FILTER EXISTS or FILTER NOT EXISTS.
    * @param instance Target IRI instance. Typically the object in a triple.
    */
-  public void appendFilterExists(StringBuilder query, boolean exists, String instance) {
+  private void appendFilterExists(StringBuilder query, boolean exists, String instance) {
     StringBuilder tempBuilder = new StringBuilder();
     StringResource.appendTriple(tempBuilder, "?iri", LifecycleResource.LIFECYCLE_EVENT_PREDICATE_PATH,
         StringResource.parseIriForQuery(instance));
@@ -240,7 +267,7 @@ public class LifecycleQueryFactory {
    * @param contents Contents for the clause.
    * @param exists   Indicate if using FILTER EXISTS or FILTER NOT EXISTS.
    */
-  public void appendFilterExists(StringBuilder query, String contents, boolean exists) {
+  private void appendFilterExists(StringBuilder query, String contents, boolean exists) {
     String constraintKeyword = "";
     // Add NOT parameter if this filter should not exist
     if (exists) {

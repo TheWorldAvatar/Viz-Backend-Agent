@@ -1,0 +1,4 @@
+SELECT DISTINCT ?iri ?optional_field WHERE {
+    ?iri a <http://example.com/Concept>.
+    OPTIONAL{?iri <http://example.com/optionalPath1> ?optional_field.}
+}

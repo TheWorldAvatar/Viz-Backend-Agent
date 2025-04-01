@@ -19,6 +19,7 @@ public class LifecycleResource {
   public static final String DATE_KEY = "date";
   public static final String DATE_TIME_KEY = "dateTime";
   public static final String EVENT_KEY = "event";
+  public static final String EVENT_ID_KEY = "event id";
   public static final String STAGE_KEY = "stage";
   public static final String STATUS_KEY = "status";
   public static final String REMARKS_KEY = "remarks";
@@ -109,6 +110,22 @@ public class LifecycleResource {
         return "https://www.theworldavatar.com/kg/ontoservice/ExpirationStage";
       default:
         throw new IllegalArgumentException("Invalid event type!");
+    }
+  }
+
+  /**
+   * Retrieve the event type associated with the order enum number.
+   * 
+   * @param orderEnum The target enum number.
+   */
+  public static LifecycleEventType getEventClassFromOrderEnum(String orderEnum) {
+    switch (orderEnum) {
+      case "0":
+        return LifecycleEventType.SERVICE_ORDER_RECEIVED;
+      case "1":
+        return LifecycleEventType.SERVICE_ORDER_DISPATCHED;
+      default:
+        throw new IllegalArgumentException("Invalid order enum number!");
     }
   }
 
