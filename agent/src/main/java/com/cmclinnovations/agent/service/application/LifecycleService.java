@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.service.application;
 
 import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -27,6 +28,7 @@ import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 
@@ -253,9 +255,16 @@ public class LifecycleService {
           ResponseEntity<?> response = this.getOccurrenceDetails(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
               eventIds.get(highestPriorityIndex).value(), true);
           if (response.getStatusCode() == HttpStatus.OK) {
+            Map<String, Object> tempFields = new LinkedHashMap<>();
+            tempFields.put("id", fields.get("id"));
+            tempFields.put(ShaclResource.NAME_PROPERTY, fields.get(ShaclResource.NAME_PROPERTY));
+            fields.remove("id");
+            fields.remove(ShaclResource.NAME_PROPERTY);
             Map<String, Object> dispatch = (Map<String, Object>) response.getBody();
             dispatch.remove("id"); // remove unneeded id key
-            fields.putAll(dispatch);
+            tempFields.putAll(dispatch);
+            tempFields.putAll(fields);
+            fields = tempFields;
           }
           return fields;
         })
