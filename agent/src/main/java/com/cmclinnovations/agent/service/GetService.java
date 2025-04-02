@@ -3,7 +3,6 @@ package com.cmclinnovations.agent.service;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
-import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,11 +48,7 @@ public class GetService {
    */
   public ResponseEntity<?> getAllInstances(String resourceID, ParentField parentField, boolean requireLabel) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
-    ResponseEntity<String> iriResponse = this.fileService.getTargetIri(resourceID);
-    // Return the BAD REQUEST response directly if IRI is invalid
-    if (iriResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-      return iriResponse;
-    }
+    String iri = this.fileService.getTargetIri(resourceID);
     String queryPath = FileService.SHACL_PATH_QUERY_RESOURCE;
     if (requireLabel) {
       // Only use the label query if required due to the associated slower query
@@ -62,7 +57,7 @@ public class GetService {
       // Parent related parameters should be disabled
       parentField = null;
     }
-    String query = this.fileService.getContentsWithReplacement(queryPath, iriResponse.getBody());
+    String query = this.fileService.getContentsWithReplacement(queryPath, iri);
     Queue<SparqlBinding> results = this.kgService.queryInstances(query, parentField);
     return new ResponseEntity<>(
         results.stream()
@@ -79,13 +74,8 @@ public class GetService {
    */
   public ResponseEntity<String> getAllInstancesInCSV(String resourceID) {
     LOGGER.info("Retrieving all instances of {} in csv...", resourceID);
-    ResponseEntity<String> iriResponse = this.fileService.getTargetIri(resourceID);
-    // Return the BAD REQUEST response directly if IRI is invalid
-    if (iriResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-      return iriResponse;
-    }
-    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PATH_LABEL_QUERY_RESOURCE,
-        iriResponse.getBody());
+    String iri = this.fileService.getTargetIri(resourceID);
+    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PATH_LABEL_QUERY_RESOURCE, iri);
     return new ResponseEntity<>(
         this.kgService.queryInstancesInCsv(query),
         HttpStatus.OK);
@@ -101,12 +91,8 @@ public class GetService {
    *                     fields that are IRIs.
    */
   public ResponseEntity<?> getInstance(String resourceID, String targetId, boolean requireLabel) {
-    ResponseEntity<String> iriResponse = this.fileService.getTargetIri(resourceID);
-    // Return the BAD REQUEST response directly if IRI is invalid
-    if (iriResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-      return iriResponse;
-    }
-    return getInstance(resourceID, targetId, iriResponse.getBody(), requireLabel);
+    String iri = this.fileService.getTargetIri(resourceID);
+    return getInstance(resourceID, targetId, iri, requireLabel);
   }
 
   /**
@@ -159,11 +145,7 @@ public class GetService {
    */
   public ResponseEntity<?> getForm(String resourceID, String targetId) {
     LOGGER.debug("Retrieving the form template for {} ...", resourceID);
-    ResponseEntity<String> iriResponse = this.fileService.getTargetIri(resourceID);
-    // Return the BAD REQUEST response directly if IRI is invalid
-    if (iriResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-      return iriResponse;
-    }
+    String iri = this.fileService.getTargetIri(resourceID);
     Map<String, Object> currentEntity = new HashMap<>();
     if (targetId != null) {
       LOGGER.debug("Detected specific entity ID! Retrieving relevant entity information for {} ...", resourceID);
@@ -172,7 +154,7 @@ public class GetService {
         currentEntity = (Map<String, Object>) currentEntityResponse.getBody();
       }
     }
-    String query = this.fileService.getContentsWithReplacement(FileService.FORM_QUERY_RESOURCE, iriResponse.getBody());
+    String query = this.fileService.getContentsWithReplacement(FileService.FORM_QUERY_RESOURCE, iri);
     Map<String, Object> results = this.kgService.queryForm(query, currentEntity);
     if (results.isEmpty()) {
       LOGGER.error(KGService.INVALID_SHACL_ERROR_MSG);
@@ -219,13 +201,8 @@ public class GetService {
    */
   public ResponseEntity<?> getMatchingInstances(String resourceID, Map<String, String> criterias) {
     LOGGER.debug("Retrieving the form template for {} ...", resourceID);
-    ResponseEntity<String> iriResponse = this.fileService.getTargetIri(resourceID);
-    // Return the BAD REQUEST response directly if IRI is invalid
-    if (iriResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-      return iriResponse;
-    }
-    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PATH_QUERY_RESOURCE,
-        iriResponse.getBody());
+    String iri = this.fileService.getTargetIri(resourceID);
+    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PATH_QUERY_RESOURCE, iri);
     Queue<SparqlBinding> results = this.kgService.queryInstancesWithCriteria(query, criterias);
     LOGGER.info(SUCCESSFUL_REQUEST_MSG);
     return new ResponseEntity<>(

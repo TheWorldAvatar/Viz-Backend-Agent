@@ -168,17 +168,13 @@ public class LifecycleService {
    */
   public ResponseEntity<?> getContracts(String resourceID, boolean requireLabel, LifecycleEventType eventType) {
     LOGGER.debug("Retrieving all contracts...");
-    ResponseEntity<String> iriResponse = this.fileService.getTargetIri(resourceID);
-    // Return the BAD REQUEST response directly if IRI is invalid
-    if (iriResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-      return iriResponse;
-    }
+    String iri = this.fileService.getTargetIri(resourceID);
     // Only use the label query if required due to the slower query performance
     String queryPath = requireLabel ? FileService.SHACL_PATH_LABEL_QUERY_RESOURCE
         : FileService.SHACL_PATH_QUERY_RESOURCE;
 
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
-    String query = this.fileService.getContentsWithReplacement(queryPath, iriResponse.getBody());
+    String query = this.fileService.getContentsWithReplacement(queryPath, iri);
     Queue<SparqlBinding> results = this.kgService.queryInstances(query, additionalQueryStatement,
         this.lifecycleVarSequence);
     LOGGER.info("Successfuly retrieved contracts!");
@@ -222,13 +218,8 @@ public class LifecycleService {
    * @param additionalQuery Additional query to append to the main query.
    */
   private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String additionalQuery) {
-    ResponseEntity<String> iriResponse = this.fileService.getTargetIri(entityType);
-    if (iriResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-      LOGGER.error("Invalid resource ID detected!");
-      throw new IllegalArgumentException("Invalid resource ID detected!");
-    }
-    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PATH_LABEL_QUERY_RESOURCE,
-        iriResponse.getBody());
+    String iri = this.fileService.getTargetIri(entityType);
+    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PATH_LABEL_QUERY_RESOURCE, iri);
     Queue<SparqlBinding> results = this.kgService.queryInstances(query, additionalQuery, this.taskVarSequence);
     return results.stream()
         .map(binding -> {

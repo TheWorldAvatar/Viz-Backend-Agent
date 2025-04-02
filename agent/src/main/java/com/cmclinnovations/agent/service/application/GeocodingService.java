@@ -56,15 +56,11 @@ public class GeocodingService {
   public ResponseEntity<?> getAddress(String postalCode) {
     LOGGER.debug("Retrieving geocoding endpoint...");
     // The geocoding endpoint must be added as the value of the "geocode" field
-    ResponseEntity<String> geocodingEndpointResponse = this.fileService.getTargetFileName("geocode");
-    // Return the BAD REQUEST response directly if there is no associated url
-    if (geocodingEndpointResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-      return geocodingEndpointResponse;
-    }
+    String geocodingEndpoint = this.fileService.getTargetFileName("geocode");
     LOGGER.debug("Generating query template to search for address...");
     String query = this.genSearchQueryTemplate(postalCode);
     LOGGER.debug("Retrieving address for postal code: {} ...", postalCode);
-    Queue<SparqlBinding> results = this.kgService.query(query, geocodingEndpointResponse.getBody());
+    Queue<SparqlBinding> results = this.kgService.query(query, geocodingEndpoint);
     if (results.isEmpty()) {
       LOGGER.info("No address found!");
       return new ResponseEntity<>(
@@ -121,15 +117,11 @@ public class GeocodingService {
   public ResponseEntity<?> getCoordinates(String block, String street, String city, String country, String postalCode) {
     LOGGER.debug("Retrieving geocoding endpoint...");
     // The geocoding endpoint must be added as the value of the "geocode" field
-    ResponseEntity<String> geocodingEndpointResponse = this.fileService.getTargetFileName("geocode");
-    // Return the BAD REQUEST response directly if there is no associated url
-    if (geocodingEndpointResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-      return geocodingEndpointResponse;
-    }
+    String geocodingEndpoint = this.fileService.getTargetFileName("geocode");
     LOGGER.debug("Generating query template for retrieving coordinates...");
     String query = this.genCoordinateQueryTemplate(block, street, city, country, postalCode);
     LOGGER.debug("Retrieving coordinates for postal code: {} ...", postalCode);
-    Queue<SparqlBinding> results = this.kgService.query(query, geocodingEndpointResponse.getBody());
+    Queue<SparqlBinding> results = this.kgService.query(query, geocodingEndpoint);
     return this.parseCoordinates(results);
   }
 

@@ -2,7 +2,6 @@ package com.cmclinnovations.agent.service;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -43,22 +42,13 @@ public class DeleteService {
     String filePath = LifecycleResource.getLifecycleResourceFilePath(resourceID);
     // Default to the file name in application-service if it not a lifecycle route
     if (filePath == null) {
-      ResponseEntity<String> fileNameResponse = this.fileService.getTargetFileName(resourceID);
-      // Return the BAD REQUEST response directly if the file is invalid
-      if (fileNameResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-        return new ResponseEntity<>(
-            new ApiResponse(fileNameResponse),
-            fileNameResponse.getStatusCode());
-      }
-      filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileNameResponse.getBody() + ".jsonld";
+      String fileName = this.fileService.getTargetFileName(resourceID);
+      filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileName + ".jsonld";
     }
     // Retrieve the instantiation JSON schema
     JsonNode addJsonSchema = this.fileService.getJsonContents(filePath);
     if (!addJsonSchema.isObject()) {
-      LOGGER.info("Invalid JSON-LD format! Please ensure the file starts with an JSON object.");
-      return new ResponseEntity<>(
-          new ApiResponse("Invalid JSON-LD format! Please contact your technical team for assistance."),
-          HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new IllegalArgumentException("Invalid JSON-LD format! Please ensure the file starts with an JSON object.");
     }
     String instanceIri = addJsonSchema.path(ShaclResource.ID_KEY).asText();
     ResponseEntity<String> response = this.kgService.delete((ObjectNode) addJsonSchema, targetId);

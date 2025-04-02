@@ -80,14 +80,8 @@ public class AddService {
     String filePath = LifecycleResource.getLifecycleResourceFilePath(resourceID);
     // Default to the file name in application-service if it not a lifecycle route
     if (filePath == null) {
-      ResponseEntity<String> fileNameResponse = this.fileService.getTargetFileName(resourceID);
-      // Return the BAD REQUEST response directly if the file is invalid
-      if (fileNameResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-        return new ResponseEntity<>(
-            new ApiResponse(fileNameResponse),
-            fileNameResponse.getStatusCode());
-      }
-      filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileNameResponse.getBody() + ".jsonld";
+      String fileName = this.fileService.getTargetFileName(resourceID);
+      filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileName + ".jsonld";
     }
     // Update ID value to target ID
     param.put("id", targetId);
@@ -112,13 +106,9 @@ public class AddService {
     ResponseEntity<String> response = this.kgService.add(jsonString);
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(message);
-      return new ResponseEntity<>(
-          new ApiResponse(message, instanceIri),
-          HttpStatus.CREATED);
+      return new ResponseEntity<>(new ApiResponse(message, instanceIri), HttpStatus.CREATED);
     } else {
-      return new ResponseEntity<>(
-          new ApiResponse(response),
-          response.getStatusCode());
+      return new ResponseEntity<>(new ApiResponse(response), response.getStatusCode());
     }
   }
 
