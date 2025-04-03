@@ -1,5 +1,17 @@
 # Change Log
 
+## 1.4.2
+
+### Bug Fixes
+
+- Fix failure to ignore missing order key when optional
+
+## 1.4.1
+
+### Bug Fixes
+
+- Fix the inability to complete tasks due to wrong event query
+
 ## 1.4.0
 
 ### Features
