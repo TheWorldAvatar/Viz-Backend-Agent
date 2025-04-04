@@ -18,6 +18,7 @@ import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.SearchQueryTemplateFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
+import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -72,6 +73,60 @@ public class QueryTemplateService {
         .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId));
     query.offer(instanceIri);
     return query;
+  }
+
+  /**
+   * Retrieves the query to extract the SHACL constraints for the form template.
+   * 
+   * @param resourceID    The target resource identifier.
+   * @param isReplacement Indicates if the resource ID is a replacement value
+   *                      rather than a resource.
+   */
+  public String getFormQuery(String resourceID, boolean isReplacement) {
+    if (!isReplacement) {
+      resourceID = this.fileService.getTargetIri(resourceID);
+    }
+    return this.fileService.getContentsWithReplacement(FileService.FORM_QUERY_RESOURCE, resourceID);
+  }
+
+  /**
+   * Retrieves the SHACL path query for a target IRI in `application-form.yml`.
+   * 
+   * @param resourceID   The target resource identifier.
+   * @param requireLabel Indicates if labels should be returned for all the
+   *                     fields that are IRIs.
+   */
+  public String getShaclQuery(String resourceID, boolean requireLabel) {
+    String iri = this.fileService.getTargetIri(resourceID);
+    return this.getShaclQuery(requireLabel, iri);
+  }
+
+  /**
+   * Retrieves the required SHACL path query.
+   * 
+   * @param requireLabel Indicates if labels should be returned for all the
+   *                     fields that are IRIs.
+   * @param replacement  The replacement string for [target].
+   */
+  public String getShaclQuery(boolean requireLabel, String replacement) {
+    LOGGER.debug("Retrieving the required SHACL query...");
+    String queryPath = FileService.SHACL_PATH_QUERY_RESOURCE;
+    if (requireLabel) {
+      // Only use the label query if required due to the associated slower query
+      // performance
+      queryPath = FileService.SHACL_PATH_LABEL_QUERY_RESOURCE;
+    }
+    return this.fileService.getContentsWithReplacement(queryPath, replacement);
+  }
+
+  /**
+   * Retrieves the conceptual query for the target class.
+   * 
+   * @param conceptClass The target class details to retrieved.
+   */
+  public String getConceptQuery(String conceptClass) {
+    return this.fileService.getContentsWithReplacement(FileService.INSTANCE_QUERY_RESOURCE,
+        StringResource.parseIriForQuery(conceptClass));
   }
 
   /**

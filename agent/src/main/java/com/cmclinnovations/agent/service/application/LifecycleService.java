@@ -18,13 +18,10 @@ import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
-import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
-import com.cmclinnovations.agent.service.core.FileService;
-import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
@@ -37,8 +34,6 @@ public class LifecycleService {
   private final DateTimeService dateTimeService;
   private final DeleteService deleteService;
   private final GetService getService;
-  private final KGService kgService;
-  private final FileService fileService;
   private final LifecycleQueryFactory lifecycleQueryFactory;
   private final Map<String, List<Integer>> lifecycleVarSequence = new HashMap<>();
   private final Map<String, List<Integer>> taskVarSequence = new HashMap<>();
@@ -52,16 +47,13 @@ public class LifecycleService {
   /**
    * Constructs a new service with the following dependencies.
    * 
-   * @param kgService KG service for performing the query.
    */
   public LifecycleService(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
-      GetService getService, KGService kgService, FileService fileService) {
+      GetService getService) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
     this.deleteService = deleteService;
     this.getService = getService;
-    this.kgService = kgService;
-    this.fileService = fileService;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
 
     this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_DATE_KEY, List.of(2, 0));
@@ -139,8 +131,7 @@ public class LifecycleService {
   public ResponseEntity<ApiResponse> getContractStatus(String contract) {
     LOGGER.debug("Retrieving the status of the contract...");
     String query = this.lifecycleQueryFactory.getServiceStatusQuery(contract);
-    Queue<SparqlBinding> results = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
-    SparqlBinding result = this.kgService.getSingleInstance(results);
+    SparqlBinding result = this.getService.getInstance(query);
     LOGGER.info("Successfuly retrieved contract status!");
     return new ResponseEntity<>(
         new ApiResponse(result.getFieldValue(LifecycleResource.STATUS_KEY),
@@ -156,8 +147,7 @@ public class LifecycleService {
   public ResponseEntity<Map<String, Object>> getSchedule(String contract) {
     LOGGER.debug("Retrieving the schedule details of the contract...");
     String query = this.lifecycleQueryFactory.getServiceScheduleQuery(contract);
-    Queue<SparqlBinding> results = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
-    SparqlBinding result = this.kgService.getSingleInstance(results);
+    SparqlBinding result = this.getService.getInstance(query);
     LOGGER.info("Successfuly retrieved schedule!");
     return new ResponseEntity<>(result.get(), HttpStatus.OK);
   }
@@ -171,17 +161,14 @@ public class LifecycleService {
    */
   public ResponseEntity<?> getContracts(String resourceID, boolean requireLabel, LifecycleEventType eventType) {
     LOGGER.debug("Retrieving all contracts...");
-    String iri = this.fileService.getTargetIri(resourceID);
-    // Only use the label query if required due to the slower query performance
-    String queryPath = requireLabel ? FileService.SHACL_PATH_LABEL_QUERY_RESOURCE
-        : FileService.SHACL_PATH_QUERY_RESOURCE;
-
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
-    String query = this.fileService.getContentsWithReplacement(queryPath, iri);
-    Queue<SparqlBinding> results = this.kgService.queryInstances(query, additionalQueryStatement,
-        this.lifecycleVarSequence);
-    LOGGER.info("Successfuly retrieved contracts!");
-    return new ResponseEntity<>(results.stream().map(SparqlBinding::get).toList(), HttpStatus.OK);
+    Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, null, "", additionalQueryStatement,
+        requireLabel, this.lifecycleVarSequence);
+    return new ResponseEntity<>(
+        instances.stream()
+            .map(SparqlBinding::get)
+            .toList(),
+        HttpStatus.OK);
   }
 
   /**
@@ -221,9 +208,8 @@ public class LifecycleService {
    * @param additionalQuery Additional query to append to the main query.
    */
   private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String additionalQuery) {
-    String iri = this.fileService.getTargetIri(entityType);
-    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PATH_LABEL_QUERY_RESOURCE, iri);
-    Queue<SparqlBinding> results = this.kgService.queryInstances(query, additionalQuery, this.taskVarSequence);
+    Queue<SparqlBinding> results = this.getService.getInstances(entityType, null, "", additionalQuery,
+        true, this.taskVarSequence);
     return results.stream()
         .map(binding -> {
           Map<String, Object> fields = binding.get();
@@ -275,8 +261,7 @@ public class LifecycleService {
     LOGGER.info("Generating all orders for the active contract {}...", contract);
     // Retrieve schedule information for the specific contract
     String query = this.lifecycleQueryFactory.getServiceScheduleQuery(contract);
-    Queue<SparqlBinding> results = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
-    SparqlBinding bindings = this.kgService.getSingleInstance(results);
+    SparqlBinding bindings = this.getService.getInstance(query);
     // Extract specific schedule info
     String startDate = bindings
         .getFieldValue(StringResource.parseQueryVariable(LifecycleResource.SCHEDULE_START_DATE_KEY));
@@ -331,7 +316,7 @@ public class LifecycleService {
   public void dischargeExpiredContracts() {
     LOGGER.info("Retrieving all active contracts that are expiring...");
     String query = this.lifecycleQueryFactory.getExpiredActiveContractQuery();
-    Queue<SparqlBinding> results = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
+    Queue<SparqlBinding> results = this.getService.getInstances(query);
     Map<String, Object> paramTemplate = new HashMap<>();
     paramTemplate.put(LifecycleResource.REMARKS_KEY, SERVICE_DISCHARGE_MESSAGE);
     LOGGER.debug("Instanting completed occurrences for these contracts...");
@@ -407,7 +392,7 @@ public class LifecycleService {
    * @param eventType The target event type.
    * @param targetId  The target instance IRI.
    */
-  public ResponseEntity<?> getForm(LifecycleEventType eventType, String targetId) {
+  public ResponseEntity<Map<String, Object>> getForm(LifecycleEventType eventType, String targetId) {
     // Ensure that there is a specific event type target
     String replacementQueryLine = "<https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence>;"
         + "sh:property/sh:hasValue " + StringResource.parseIriForQuery(LifecycleResource.getEventClass(eventType));
@@ -417,23 +402,9 @@ public class LifecycleService {
       ResponseEntity<?> currentEntityResponse = this.getOccurrenceDetails(eventType, targetId, false);
       if (currentEntityResponse.getStatusCode() == HttpStatus.OK) {
         currentEntity = (Map<String, Object>) currentEntityResponse.getBody();
-      } else {
-        currentEntity = new HashMap<>();
       }
     }
-    String query = this.fileService.getContentsWithReplacement(FileService.FORM_QUERY_RESOURCE, replacementQueryLine);
-    Map<String, Object> results = this.kgService.queryForm(query, currentEntity);
-    if (results.isEmpty()) {
-      LOGGER.error(KGService.INVALID_SHACL_ERROR_MSG);
-      return new ResponseEntity<>(
-          KGService.INVALID_SHACL_ERROR_MSG,
-          HttpStatus.INTERNAL_SERVER_ERROR);
-    } else {
-      LOGGER.info("Request has been completed successfully!");
-      return new ResponseEntity<>(
-          results,
-          HttpStatus.OK);
-    }
+    return this.getService.getForm(replacementQueryLine, true, currentEntity);
   }
 
   /**
@@ -449,13 +420,15 @@ public class LifecycleService {
     String replacementQueryLine = "<https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence>;"
         + "sh:property/sh:hasValue " + StringResource.parseIriForQuery(LifecycleResource.getEventClass(eventType));
     String query = this.lifecycleQueryFactory.getEventQuery(targetId, eventType);
-    Queue<SparqlBinding> results = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
-    if (results.size() == 0) {
-      return new ResponseEntity<>("No occurrence detected!", HttpStatus.NOT_ACCEPTABLE);
+    String targetOccurrence;
+    try {
+      targetOccurrence = this.getService.getInstance(query)
+          .getFieldValue(LifecycleResource.IRI_KEY);
+    } catch (NullPointerException e) {
+      return new ResponseEntity<>(new HashMap<>(), HttpStatus.NOT_FOUND);
     }
-    String targetOccurrence = this.kgService.getSingleInstance(results).getFieldValue(LifecycleResource.IRI_KEY);
     LOGGER.debug("Retrieving relevant entity information for occurrence of {}...", eventType);
-    return this.getService.getInstance("occurrence", targetOccurrence,
-        replacementQueryLine, requireLabel);
+    return this.getService.getInstance(targetOccurrence, requireLabel, replacementQueryLine);
+
   }
 }
