@@ -88,7 +88,7 @@ public class LifecycleQueryFactory {
         + "?iri fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage."
         // Nested query for all days
         + "?stage fibo-fnd-rel-rel:exemplifies <"
-        + LifecycleResource.getStageClass(LifecycleEventType.SERVICE_EXECUTION) + ">;"
+        + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
         + "<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/cmns-dt:hasEndDate/cmns-dt:hasDateValue ?end_date."
         + activeFilter
         + "FILTER(?end_date<xsd:date(NOW()))"
@@ -111,7 +111,7 @@ public class LifecycleQueryFactory {
     String filterStatement = contract != null ? "FILTER STRENDS(STR(?iri),\"" + contract + "\")" : "";
     return "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
         + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
-        + LifecycleResource.getStageClass(LifecycleEventType.SERVICE_EXECUTION) + ">;"
+        + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
         + bindDateStatement
         + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
@@ -135,7 +135,7 @@ public class LifecycleQueryFactory {
         + "SELECT DISTINCT ?iri WHERE {" +
         "?contract fibo-fnd-arr-lif:hasLifecycle ?lifecycle ." +
         "?lifecycle fibo-fnd-arr-lif:hasStage ?iri ." +
-        "?iri fibo-fnd-rel-rel:exemplifies <" + LifecycleResource.getStageClass(eventType) + "> ." +
+        "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getStage() + "> ." +
         "FILTER STRENDS(STR(?contract),\"" + contract + "\")" +
         "}";
   }
@@ -155,7 +155,7 @@ public class LifecycleQueryFactory {
         "?stage cmns-col:comprises ?event;" +
         "cmns-col:comprises ?iri." +
         "?event cmns-dt:succeeds? ?iri." +
-        "?iri fibo-fnd-rel-rel:exemplifies <" + LifecycleResource.getEventClass(eventType) + ">." +
+        "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
         "FILTER STRENDS(STR(?event),\"" + event + "\")" +
         "}";
   }
@@ -177,7 +177,7 @@ public class LifecycleQueryFactory {
         "?event fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;" +
         "fibo-fnd-dt-oc:hasEventDate \"" + date + "\"^^xsd:date;" +
         "^cmns-dt:succeeds* ?iri." +
-        "?iri fibo-fnd-rel-rel:exemplifies <" + LifecycleResource.getEventClass(eventType) + ">." +
+        "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
         "FILTER STRENDS(STR(?contract),\"" + contract + "\")" +
         "}";
   }
@@ -261,7 +261,7 @@ public class LifecycleQueryFactory {
     StringResource.appendTriple(tempBuilder, ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY,
         LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH, stageVar);
     StringResource.appendTriple(tempBuilder, stageVar, LifecycleResource.LIFECYCLE_EVENT_TYPE_PREDICATE_PATH,
-        StringResource.parseIriForQuery(LifecycleResource.getStageClass(LifecycleEventType.ARCHIVE_COMPLETION)));
+        StringResource.parseIriForQuery(LifecycleEventType.ARCHIVE_COMPLETION.getStage()));
     StringResource.appendTriple(tempBuilder, stageVar, LifecycleResource.LIFECYCLE_STAGE_EVENT_PREDICATE_PATH,
         ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY);
     this.appendFilterExists(query, tempBuilder.toString(), exists);

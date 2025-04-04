@@ -51,6 +51,9 @@ public class LifecycleResource {
   public static final String LIFECYCLE_EVENT_TYPE_PREDICATE_PATH = "<" + EXEMPLIFIES_RELATIONS + ">";
   public static final String LIFECYCLE_EVENT_PREDICATE_PATH = LIFECYCLE_STAGE_PREDICATE_PATH + "/"
       + LIFECYCLE_STAGE_EVENT_PREDICATE_PATH + "/" + LIFECYCLE_EVENT_TYPE_PREDICATE_PATH;
+  public static final String CREATION_STAGE = "https://www.theworldavatar.com/kg/ontoservice/CreationStage";
+  public static final String SERVICE_EXECUTION_STAGE = "https://www.theworldavatar.com/kg/ontoservice/ServiceExecutionStage";
+  public static final String EXPIRATION_STAGE = "https://www.theworldavatar.com/kg/ontoservice/ExpirationStage";
   public static final String EVENT_APPROVAL = "https://www.theworldavatar.com/kg/ontoservice/ContractApproval";
   public static final String EVENT_ORDER_RECEIVED = "https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent";
   public static final String EVENT_DISPATCH = "https://www.theworldavatar.com/kg/ontoservice/ServiceDispatchEvent";
@@ -90,30 +93,6 @@ public class LifecycleResource {
   }
 
   /**
-   * Retrieve the stage class associated with the event type.
-   * 
-   * @param eventType The target event type.
-   */
-  public static String getStageClass(LifecycleEventType eventType) {
-    switch (eventType) {
-      case LifecycleEventType.APPROVED:
-        return "https://www.theworldavatar.com/kg/ontoservice/CreationStage";
-      case LifecycleEventType.SERVICE_ORDER_RECEIVED:
-      case LifecycleEventType.SERVICE_ORDER_DISPATCHED:
-      case LifecycleEventType.SERVICE_EXECUTION:
-      case LifecycleEventType.SERVICE_CANCELLATION:
-      case LifecycleEventType.SERVICE_INCIDENT_REPORT:
-        return "https://www.theworldavatar.com/kg/ontoservice/ServiceExecutionStage";
-      case LifecycleEventType.ARCHIVE_COMPLETION:
-      case LifecycleEventType.ARCHIVE_RESCINDMENT:
-      case LifecycleEventType.ARCHIVE_TERMINATION:
-        return "https://www.theworldavatar.com/kg/ontoservice/ExpirationStage";
-      default:
-        throw new IllegalArgumentException("Invalid event type!");
-    }
-  }
-
-  /**
    * Retrieve the event type associated with the order enum number.
    * 
    * @param orderEnum The target enum number.
@@ -126,66 +105,6 @@ public class LifecycleResource {
         return LifecycleEventType.SERVICE_ORDER_DISPATCHED;
       default:
         throw new IllegalArgumentException("Invalid order enum number!");
-    }
-  }
-
-  /**
-   * Retrieve the event class associated with the event type.
-   * 
-   * @param eventType The target event type.
-   */
-  public static String getEventClass(LifecycleEventType eventType) {
-    switch (eventType) {
-      case LifecycleEventType.APPROVED:
-        return EVENT_APPROVAL;
-      case LifecycleEventType.SERVICE_ORDER_RECEIVED:
-        return EVENT_ORDER_RECEIVED;
-      case LifecycleEventType.SERVICE_ORDER_DISPATCHED:
-        return EVENT_DISPATCH;
-      case LifecycleEventType.SERVICE_EXECUTION:
-        return EVENT_DELIVERY;
-      case LifecycleEventType.SERVICE_CANCELLATION:
-        return EVENT_CANCELLATION;
-      case LifecycleEventType.SERVICE_INCIDENT_REPORT:
-        return EVENT_INCIDENT_REPORT;
-      case LifecycleEventType.ARCHIVE_COMPLETION:
-        return EVENT_CONTRACT_COMPLETION;
-      case LifecycleEventType.ARCHIVE_RESCINDMENT:
-        return EVENT_CONTRACT_RESCISSION;
-      case LifecycleEventType.ARCHIVE_TERMINATION:
-        return EVENT_CONTRACT_TERMINATION;
-      default:
-        throw new IllegalArgumentException("Invalid event type!");
-    }
-  }
-
-  /**
-   * Retrieve the event identifier associated with the event type.
-   * 
-   * @param eventType The target event type.
-   */
-  public static String getEventIdentifier(LifecycleEventType eventType) {
-    switch (eventType) {
-      case LifecycleEventType.APPROVED:
-        return "approve";
-      case LifecycleEventType.SERVICE_ORDER_RECEIVED:
-        return "order";
-      case LifecycleEventType.SERVICE_ORDER_DISPATCHED:
-        return "dispatch";
-      case LifecycleEventType.SERVICE_EXECUTION:
-        return "complete";
-      case LifecycleEventType.SERVICE_CANCELLATION:
-        return "cancel";
-      case LifecycleEventType.SERVICE_INCIDENT_REPORT:
-        return "report";
-      case LifecycleEventType.ARCHIVE_COMPLETION:
-        return "completed";
-      case LifecycleEventType.ARCHIVE_RESCINDMENT:
-        return "rescinded";
-      case LifecycleEventType.ARCHIVE_TERMINATION:
-        return "terminated";
-      default:
-        throw new IllegalArgumentException("Invalid event type!");
     }
   }
 

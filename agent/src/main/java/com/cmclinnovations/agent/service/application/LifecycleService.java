@@ -105,10 +105,10 @@ public class LifecycleService {
     String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
     String stage = this.getService.getInstance(query).getFieldValue(LifecycleResource.IRI_KEY);
     params.putIfAbsent("id",
-        StringResource.getPrefix(stage) + "/" + LifecycleResource.getEventIdentifier(eventType) + "/"
+        StringResource.getPrefix(stage) + "/" + eventType.getId() + "/"
             + UUID.randomUUID());
     params.put(LifecycleResource.STAGE_KEY, stage);
-    params.put(LifecycleResource.EVENT_KEY, LifecycleResource.getEventClass(eventType));
+    params.put(LifecycleResource.EVENT_KEY, eventType.getEvent());
     // Only update the date field if there is no pre-existing field
     params.putIfAbsent(LifecycleResource.DATE_KEY, date);
     params.putIfAbsent(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
@@ -289,7 +289,7 @@ public class LifecycleService {
     params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
     this.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
     String orderPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString()) + "/"
-        + LifecycleResource.getEventIdentifier(LifecycleEventType.SERVICE_ORDER_RECEIVED) + "/";
+        + LifecycleEventType.SERVICE_ORDER_RECEIVED.getId() + "/";
     // Instantiate each occurrence
     boolean hasError = false;
     while (!occurrences.isEmpty()) {
@@ -370,15 +370,14 @@ public class LifecycleService {
     if (eventType.equals(LifecycleEventType.SERVICE_ORDER_DISPATCHED)) {
       // Attempt to delete any existing dispatch occurrence before any updates
       ResponseEntity<ApiResponse> response = this.deleteService.delete(
-          LifecycleResource.getEventIdentifier(LifecycleEventType.SERVICE_ORDER_DISPATCHED),
+          LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(),
           params.get("id").toString());
       // Log responses
       LOGGER.info(response.getBody().getMessage());
     }
 
     // Ensure that the event identifier mapped directly to the jsonLd file name
-    ResponseEntity<ApiResponse> response = this.addService.instantiate(
-        LifecycleResource.getEventIdentifier(eventType), params);
+    ResponseEntity<ApiResponse> response = this.addService.instantiate(eventType.getId(), params);
     if (response.getStatusCode() != HttpStatus.CREATED) {
       LOGGER.error(createErrorMsg, params.get(LifecycleResource.ORDER_KEY), response.getBody().getMessage());
     }
@@ -395,7 +394,7 @@ public class LifecycleService {
   public ResponseEntity<Map<String, Object>> getForm(LifecycleEventType eventType, String targetId) {
     // Ensure that there is a specific event type target
     String replacementQueryLine = "<https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence>;"
-        + "sh:property/sh:hasValue " + StringResource.parseIriForQuery(LifecycleResource.getEventClass(eventType));
+        + "sh:property/sh:hasValue " + StringResource.parseIriForQuery(eventType.getEvent());
     Map<String, Object> currentEntity = new HashMap<>();
     if (targetId != null) {
       LOGGER.debug("Detected specific entity ID! Retrieving target event occurrence of {}...", eventType);
@@ -418,7 +417,7 @@ public class LifecycleService {
   private ResponseEntity<?> getOccurrenceDetails(LifecycleEventType eventType, String targetId, boolean requireLabel) {
     // Ensure that there is a specific event type target
     String replacementQueryLine = "<https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence>;"
-        + "sh:property/sh:hasValue " + StringResource.parseIriForQuery(LifecycleResource.getEventClass(eventType));
+        + "sh:property/sh:hasValue " + StringResource.parseIriForQuery(eventType.getEvent());
     String query = this.lifecycleQueryFactory.getEventQuery(targetId, eventType);
     String targetOccurrence;
     try {
