@@ -98,15 +98,12 @@ public class KGService {
   /**
    * Deletes the target instance and its associated properties from the KG.
    * 
-   * @param addJsonSchema The JSON schema for adding a new instance
-   * @param targetId      The target instance IRI.
+   * @param query    The DELETE query for execution.
+   * @param targetId The target instance IRI.
    */
-  public ResponseEntity<String> delete(ObjectNode addJsonSchema, String targetId) {
-    // Parse the JSON schema into the corresponding delete query
-    Queue<String> query = this.queryTemplateService.genDeleteQuery(addJsonSchema, targetId);
+  public ResponseEntity<String> delete(String query, String targetId) {
     LOGGER.debug("Deleting instances...");
-
-    int statusCode = this.executeUpdate(query.poll());
+    int statusCode = this.executeUpdate(query);
     if (statusCode == 200) {
       LOGGER.info("Instance has been successfully deleted!");
       return new ResponseEntity<>(

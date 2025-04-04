@@ -1,34 +1,32 @@
 package com.cmclinnovations.agent.service;
 
+import java.util.Queue;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.model.response.ApiResponse;
-import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.KGService;
-import com.cmclinnovations.agent.utils.LifecycleResource;
-import com.cmclinnovations.agent.utils.ShaclResource;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.cmclinnovations.agent.service.core.QueryTemplateService;
 
 @Service
 public class DeleteService {
   private final KGService kgService;
-  private final FileService fileService;
+  private final QueryTemplateService queryTemplateService;
 
   private static final Logger LOGGER = LogManager.getLogger(DeleteService.class);
 
   /**
    * Constructs a new service with the following dependencies.
    * 
-   * @param kgService   KG service for performing the query.
-   * @param fileService File service for accessing file resources.
+   * @param kgService            KG service for performing the query.
+   * @param queryTemplateService Service for generating query templates.
    */
-  public DeleteService(KGService kgService, FileService fileService) {
+  public DeleteService(KGService kgService, QueryTemplateService queryTemplateService) {
     this.kgService = kgService;
-    this.fileService = fileService;
+    this.queryTemplateService = queryTemplateService;
   }
 
   /**
@@ -39,21 +37,11 @@ public class DeleteService {
    */
   public ResponseEntity<ApiResponse> delete(String resourceID, String targetId) {
     LOGGER.debug("Deleting {} instance of {} ...", resourceID, targetId);
-    String filePath = LifecycleResource.getLifecycleResourceFilePath(resourceID);
-    // Default to the file name in application-service if it not a lifecycle route
-    if (filePath == null) {
-      String fileName = this.fileService.getTargetFileName(resourceID);
-      filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileName + ".jsonld";
-    }
-    // Retrieve the instantiation JSON schema
-    JsonNode addJsonSchema = this.fileService.getJsonContents(filePath);
-    if (!addJsonSchema.isObject()) {
-      throw new IllegalArgumentException("Invalid JSON-LD format! Please ensure the file starts with an JSON object.");
-    }
-    String instanceIri = addJsonSchema.path(ShaclResource.ID_KEY).asText();
-    ResponseEntity<String> response = this.kgService.delete((ObjectNode) addJsonSchema, targetId);
+
+    Queue<String> outputs = this.queryTemplateService.genDeleteQuery(resourceID, targetId);
+    ResponseEntity<String> response = this.kgService.delete(outputs.poll(), targetId);
     return new ResponseEntity<>(
-        new ApiResponse(response.getBody(), instanceIri),
+        new ApiResponse(response.getBody(), outputs.poll()),
         response.getStatusCode());
   }
 }

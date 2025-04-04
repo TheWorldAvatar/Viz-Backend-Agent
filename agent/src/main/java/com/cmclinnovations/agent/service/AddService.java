@@ -18,10 +18,9 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.service.application.LifecycleReportService;
-import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.service.core.KGService;
-import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -29,28 +28,28 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class AddService {
-  private final KGService kgService;
-  private final FileService fileService;
   private final JsonLdService jsonLdService;
+  private final KGService kgService;
   private final LifecycleReportService lifecycleReportService;
+  private final QueryTemplateService queryTemplateService;
 
   private static final Logger LOGGER = LogManager.getLogger(AddService.class);
 
   /**
    * Constructs a new service with the following dependencies.
    * 
-   * @param kgService              KG service for performing the query.
-   * @param fileService            File service for accessing file resources.
    * @param jsonLdService          A service for interactions with JSON LD.
+   * @param kgService              KG service for performing the query.
    * @param lifecycleReportService A service for reporting lifecycle matters such
    *                               as calculation instances.
+   * @param queryTemplateService   Service for generating query templates.
    */
-  public AddService(KGService kgService, FileService fileService, JsonLdService jsonLdService,
-      LifecycleReportService lifecycleReportService) {
-    this.kgService = kgService;
-    this.fileService = fileService;
+  public AddService(JsonLdService jsonLdService, KGService kgService, LifecycleReportService lifecycleReportService,
+      QueryTemplateService queryTemplateService) {
     this.jsonLdService = jsonLdService;
+    this.kgService = kgService;
     this.lifecycleReportService = lifecycleReportService;
+    this.queryTemplateService = queryTemplateService;
   }
 
   /**
@@ -77,17 +76,10 @@ public class AddService {
   public ResponseEntity<ApiResponse> instantiate(String resourceID, String targetId,
       Map<String, Object> param) {
     LOGGER.info("Instantiating an instance of {} ...", resourceID);
-    String filePath = LifecycleResource.getLifecycleResourceFilePath(resourceID);
-    // Default to the file name in application-service if it not a lifecycle route
-    if (filePath == null) {
-      String fileName = this.fileService.getTargetFileName(resourceID);
-      filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileName + ".jsonld";
-    }
     // Update ID value to target ID
     param.put("id", targetId);
     // Retrieve the instantiation JSON schema
-    ObjectNode addJsonSchema = this.jsonLdService.getObjectNode(
-        this.fileService.getJsonContents(filePath));
+    ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID, targetId);
     // Attempt to replace all placeholders in the JSON schema
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
     return this.instantiateJsonLd(addJsonSchema, resourceID + " has been successfully instantiated!");
