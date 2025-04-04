@@ -122,7 +122,7 @@ public class LifecycleService {
     params.putIfAbsent(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
     // Update the order enum with the specific event instance if it exist
     params.computeIfPresent(LifecycleResource.ORDER_KEY, (key, value) -> {
-      String orderEnum = params.get(LifecycleResource.ORDER_KEY).toString();
+      String orderEnum = value.toString();
       String eventQuery = this.lifecycleQueryFactory.getEventQuery(
           params.get(LifecycleResource.CONTRACT_KEY).toString(),
           params.get(LifecycleResource.DATE_KEY).toString(),
