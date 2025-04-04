@@ -120,12 +120,15 @@ public class LifecycleService {
     // Only update the date field if there is no pre-existing field
     params.putIfAbsent(LifecycleResource.DATE_KEY, date);
     params.putIfAbsent(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
-    // Update the order enum with the specific event instance
-    String orderEnum = params.get(LifecycleResource.ORDER_KEY).toString();
-    query = this.lifecycleQueryFactory.getEventQuery(params.get("id").toString(),
-        LifecycleResource.getEventClassFromOrderEnum(orderEnum));
-    String event = this.getService.getInstance(query).getFieldValue(LifecycleResource.IRI_KEY);
-    params.put(LifecycleResource.ORDER_KEY, event);
+    // Update the order enum with the specific event instance if it exist
+    params.computeIfPresent(LifecycleResource.ORDER_KEY, (key, value) -> {
+      String orderEnum = value.toString();
+      String eventQuery = this.lifecycleQueryFactory.getEventQuery(
+          params.get(LifecycleResource.CONTRACT_KEY).toString(),
+          params.get(LifecycleResource.DATE_KEY).toString(),
+          LifecycleResource.getEventClassFromOrderEnum(orderEnum));
+      return this.getService.getInstance(eventQuery).getFieldValue(LifecycleResource.IRI_KEY);
+    });
   }
 
   /**
