@@ -205,6 +205,21 @@ public class GetService {
   }
 
   /**
+   * Retrieve the get queries that will be executed.
+   * 
+   * @param shaclReplacement The replacement value of the SHACL query target
+   * @param targetId         An optional field to target the query at a specific
+   *                         instance.
+   * @param requireLabel     Indicates if labels should be returned
+   */
+  public Queue<String> getQuery(String shaclReplacement, String targetId, boolean requireLabel) {
+    String query = this.queryTemplateService.getShaclQuery(requireLabel, shaclReplacement);
+    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
+    return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, targetId,
+        null, "", new HashMap<>());
+  }
+
+  /**
    * Retrieve the best-fit response based on the results. This method caters to
    * retrieving a single instance.
    * 

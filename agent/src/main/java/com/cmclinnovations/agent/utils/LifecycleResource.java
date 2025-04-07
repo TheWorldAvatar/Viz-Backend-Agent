@@ -1,6 +1,11 @@
 package com.cmclinnovations.agent.utils;
 
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.cmclinnovations.agent.model.type.CalculationType;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
@@ -164,5 +169,61 @@ public class LifecycleResource {
       default:
         return null;
     }
+  }
+
+  /**
+   * Extract the variables from the query with their sequence order.
+   * 
+   * @param query      Target query for extraction.
+   * @param groupIndex The group index for the variables.
+   */
+  public static Map<String, List<Integer>> extractOccurrenceVariables(String query, int groupIndex) {
+    Pattern pattern = Pattern.compile("SELECT\\s+DISTINCT\\s+(.*?)\\s+WHERE", Pattern.DOTALL);
+    Matcher matcher = pattern.matcher(query);
+
+    if (!matcher.find()) {
+      return new HashMap<>();
+    }
+    String selectClause = matcher.group(1).trim();
+    String[] variables = selectClause.split("\\s?\\?");
+    Map<String, List<Integer>> varSequence = new HashMap<>();
+    for (int i = 0; i < variables.length; i++) {
+      String varName = variables[i].trim();
+      if (varName.isEmpty() || varName.equals("id")) {
+        continue; // Skip empty variables and ID key
+      }
+      varSequence.put(varName, List.of(groupIndex, i));
+    }
+    return varSequence;
+  }
+
+  /**
+   * Extract the occurrence's WHERE clause for an additional query additions.
+   * 
+   * @param query          Target query for extraction.
+   * @param lifecycleEvent Target event type.
+   */
+  public static String extractOccurrenceQuery(String query, LifecycleEventType lifecycleEvent) {
+    Pattern pattern = Pattern.compile("WHERE\\s*\\{(.*?)\\}$", Pattern.DOTALL);
+    Matcher matcher = pattern.matcher(query);
+
+    if (!matcher.find()) {
+      return "";
+    }
+    String eventVar = ShaclResource.VARIABLE_MARK + lifecycleEvent.getId() + "_event";
+    String parsedWhereClause = matcher.group(1)
+        .trim()
+        // Remove the following unneeded statements
+        // Use of replaceFirst to improve performance as it occurs only once
+        .replaceFirst(
+            "\\?iri a\\/rdfs\\:subClassOf\\* \\<https\\:\\/\\/spec\\.edmcouncil\\.org\\/fibo\\/ontology\\/FBC\\/ProductsAndServices\\/FinancialProductsAndServices\\/ContractLifecycleEventOccurrence\\>\\.",
+            "")
+        .replaceFirst("BIND\\(\\?iri AS \\?id\\)", "")
+        // Replace iri with event variable
+        .replace(ShaclResource.VARIABLE_MARK + IRI_KEY, eventVar);
+    return StringResource.genOptionalClause(
+        eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+            + StringResource.parseIriForQuery(lifecycleEvent.getEvent())
+            + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event." + parsedWhereClause);
   }
 }

@@ -2,7 +2,6 @@ package com.cmclinnovations.agent.service.application;
 
 import java.util.ArrayDeque;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -24,7 +23,6 @@ import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
-import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 
@@ -208,8 +206,12 @@ public class LifecycleService {
    * @param additionalQuery Additional query to append to the main query.
    */
   private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String additionalQuery) {
-    Queue<SparqlBinding> results = this.getService.getInstances(entityType, null, "", additionalQuery,
-        true, this.taskVarSequence);
+    Map<String, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
+    String addQuery = "";
+    addQuery += this.parseEventOccurrenceQuery(1, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
+    addQuery += additionalQuery;
+    Queue<SparqlBinding> results = this.getService.getInstances(entityType, null, "", addQuery,
+        true, varSequences);
     return results.stream()
         .map(binding -> {
           Map<String, Object> fields = binding.get();
@@ -230,24 +232,28 @@ public class LifecycleService {
           fields.put(LifecycleResource.EVENT_KEY, events.get(highestPriorityIndex));
           fields.put(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY),
               eventIds.get(highestPriorityIndex));
-          // Extract and add dispatch details if available
-          ResponseEntity<?> response = this.getOccurrenceDetails(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-              eventIds.get(highestPriorityIndex).value(), true);
-          if (response.getStatusCode() == HttpStatus.OK) {
-            Map<String, Object> tempFields = new LinkedHashMap<>();
-            tempFields.put("id", fields.get("id"));
-            tempFields.put(ShaclResource.NAME_PROPERTY, fields.get(ShaclResource.NAME_PROPERTY));
-            fields.remove("id");
-            fields.remove(ShaclResource.NAME_PROPERTY);
-            Map<String, Object> dispatch = (Map<String, Object>) response.getBody();
-            dispatch.remove("id"); // remove unneeded id key
-            tempFields.putAll(dispatch);
-            tempFields.putAll(fields);
-            fields = tempFields;
-          }
           return fields;
         })
         .toList();
+  }
+
+  /**
+   * Parses the event occurrence query to extract the variables and WHERE
+   * contents.
+   * 
+   * @param groupIndex     The group index for the variables.
+   * @param lifecycleEvent Target event type.
+   * @param varSequences   List of variable sequences to be added.
+   */
+  private String parseEventOccurrenceQuery(int groupIndex, LifecycleEventType lifecycleEvent,
+      Map<String, List<Integer>> varSequences) {
+    String replacementQueryLine = lifecycleEvent.getShaclReplacement();
+    Queue<String> occurrenceQuery = this.getService.getQuery(replacementQueryLine, "", true);
+    // First query is non-necessary and can be used to extract the variables
+    Map<String, List<Integer>> dispatchVars = LifecycleResource.extractOccurrenceVariables(occurrenceQuery.poll(),
+        groupIndex);
+    varSequences.putAll(dispatchVars);
+    return LifecycleResource.extractOccurrenceQuery(occurrenceQuery.poll(), lifecycleEvent);
   }
 
   /**
@@ -393,8 +399,7 @@ public class LifecycleService {
    */
   public ResponseEntity<Map<String, Object>> getForm(LifecycleEventType eventType, String targetId) {
     // Ensure that there is a specific event type target
-    String replacementQueryLine = "<https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence>;"
-        + "sh:property/sh:hasValue " + StringResource.parseIriForQuery(eventType.getEvent());
+    String replacementQueryLine = eventType.getShaclReplacement();
     Map<String, Object> currentEntity = new HashMap<>();
     if (targetId != null) {
       LOGGER.debug("Detected specific entity ID! Retrieving target event occurrence of {}...", eventType);
@@ -416,8 +421,7 @@ public class LifecycleService {
    */
   private ResponseEntity<?> getOccurrenceDetails(LifecycleEventType eventType, String targetId, boolean requireLabel) {
     // Ensure that there is a specific event type target
-    String replacementQueryLine = "<https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence>;"
-        + "sh:property/sh:hasValue " + StringResource.parseIriForQuery(eventType.getEvent());
+    String replacementQueryLine = eventType.getShaclReplacement();
     String query = this.lifecycleQueryFactory.getEventQuery(targetId, eventType);
     String targetOccurrence;
     try {
