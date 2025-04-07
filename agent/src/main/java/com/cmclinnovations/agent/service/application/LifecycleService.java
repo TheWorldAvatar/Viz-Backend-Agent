@@ -209,6 +209,7 @@ public class LifecycleService {
     Map<String, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = "";
     addQuery += this.parseEventOccurrenceQuery(1, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
+    addQuery += this.parseEventOccurrenceQuery(2, LifecycleEventType.SERVICE_EXECUTION, varSequences);
     addQuery += additionalQuery;
     Queue<SparqlBinding> results = this.getService.getInstances(entityType, null, "", addQuery,
         true, varSequences);
