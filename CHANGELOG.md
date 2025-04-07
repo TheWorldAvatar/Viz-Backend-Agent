@@ -1,5 +1,17 @@
 # Change Log
 
+## 1.5.0
+
+### Features
+
+- Improved the retrieval of order dispatch details
+- Added the retrieval of the order completion records as a form and individually
+- General code improvements to consolidate code and separate concerns
+
+### Bug Fixes
+
+- Fix calculation requiring exact match for parameter names that are nested
+
 ## 1.4.2
 
 ### Bug Fixes
