@@ -21,6 +21,7 @@ import com.cmclinnovations.agent.service.application.LifecycleReportService;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -145,7 +146,7 @@ public class AddService {
           }
           // IRIs that are not assigned to @id or @type should belong within a nested @id
           // object
-        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals("iri")
+        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(LifecycleResource.IRI_KEY)
             && !(parentField.equals(ShaclResource.ID_KEY) || parentField.equals(ShaclResource.TYPE_KEY))) {
           String replacement = this.jsonLdService.getReplacementValue(currentNode, replacements);
           if (replacement.isEmpty()) { // Remove empty replacements

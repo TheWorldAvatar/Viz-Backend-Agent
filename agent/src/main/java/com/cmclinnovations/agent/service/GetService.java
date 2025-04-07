@@ -299,7 +299,7 @@ public class GetService {
     LOGGER.info(SUCCESSFUL_REQUEST_MSG);
     return new ResponseEntity<>(
         results.stream()
-            .map(binding -> binding.getFieldValue("iri"))
+            .map(binding -> binding.getFieldValue(LifecycleResource.IRI_KEY))
             .toList(),
         HttpStatus.OK);
   }
