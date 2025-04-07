@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.service.application;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,6 +46,19 @@ public class CalculationService {
   }
 
   /**
+   * Finds the first matching key in target keys containing the short key.
+   * 
+   * @param shortkey The shorter form of the key.
+   * @param keys     The list of keys with complete forms.
+   */
+  public String findMatchingKey(String shortkey, Set<String> keys) {
+    return keys.stream()
+        .filter(key -> key.contains(shortkey))
+        .findFirst()
+        .orElse(null);
+  }
+
+  /**
    * Add all the values of the variables together to get the total value.
    * 
    * @param variables The name of variables for computation.
@@ -56,7 +70,8 @@ public class CalculationService {
     double total = 0.000;
     for (JsonNode quantity : variables) {
       String quantityName = quantity.get(ShaclResource.ID_KEY).asText();
-      double value = Double.parseDouble(params.get(quantityName).toString());
+      String paramName = this.findMatchingKey(quantityName, params.keySet());
+      double value = Double.parseDouble(params.get(paramName).toString());
       total += value;
     }
     return total;
@@ -75,7 +90,8 @@ public class CalculationService {
     double difference = Double.NaN;
     for (JsonNode quantity : variables) {
       String quantityName = quantity.get(ShaclResource.ID_KEY).asText();
-      double value = Double.parseDouble(params.get(quantityName).toString());
+      String paramName = this.findMatchingKey(quantityName, params.keySet());
+      double value = Double.parseDouble(params.get(paramName).toString());
       // First value should be the subject for further subtraction
       if (Double.isNaN(difference)) {
         difference = value;

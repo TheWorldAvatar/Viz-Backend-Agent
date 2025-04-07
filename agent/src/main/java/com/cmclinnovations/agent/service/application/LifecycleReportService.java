@@ -221,7 +221,8 @@ public class LifecycleReportService {
         LifecycleResource.getExpressionClass(calculationType));
     for (JsonNode config : variableQuantityConfigs) {
       String paramName = config.get(ShaclResource.ID_KEY).asText();
-      double value = Double.parseDouble(params.get(paramName).toString());
+      String parsedParamName = this.calculationService.findMatchingKey(paramName, params.keySet());
+      double value = Double.parseDouble(params.get(parsedParamName).toString());
       ObjectNode currentQuantity = this.genScalarQuantityNode(prefix, config.deepCopy(), value);
       switch (calculationType) {
         case CalculationType.DIFFERENCE:
