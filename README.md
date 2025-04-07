@@ -550,7 +550,7 @@ Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/ser
 
 > Service completion
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/dispatch/form` endpoint to retrieve the form template associated with the service completion event. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ServiceOrderCompletedOccurrenceShape` is defined in `./resources/shacl.ttl`, which can be extended for your specific requirements. Note that if you require any form of computation for the completion details, it is recommended to define a separate group using `sh:node` as evident by `WeightLogShape`.
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/complete/{id}` endpoint to retrieve the form template associated with the service completion event, where `id` is either the identifier of the service completion occurrence of interest, or `form` for an empty form template. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ServiceOrderCompletedOccurrenceShape` is defined in `./resources/shacl.ttl`, which can be extended for your specific requirements. Note that if you require any form of computation for the completion details, it is recommended to define a separate group using `sh:node` as evident by `WeightLogShape`.
 
 > Report unfulfilled service tasks
 
