@@ -136,22 +136,6 @@ public class LifecycleResource {
   }
 
   /**
-   * Retrieve the expression class associated with the target calculation type.
-   * 
-   * @param calculationType The target calculation type.
-   */
-  public static String getExpressionClass(CalculationType calculationType) {
-    switch (calculationType) {
-      case CalculationType.DIFFERENCE:
-        return "https://spec.edmcouncil.org/fibo/ontology/FND/Utilities/Analytics/Difference";
-      case CalculationType.TOTAL:
-        return "https://www.omg.org/spec/Commons/QuantitiesAndUnits/Total";
-      default:
-        throw new IllegalArgumentException("Invalid Calculation Type!");
-    }
-  }
-
-  /**
    * Retrieve the lifecycle resource file path associated with the resource ID.
    * 
    * @param resourceID The identifier for the resource.

@@ -218,7 +218,7 @@ public class LifecycleReportService {
   private ObjectNode appendCalculationExpression(ObjectNode occurrence, String prefix,
       ArrayNode variableQuantityConfigs, Map<String, Object> params, CalculationType calculationType) {
     ObjectNode expressionNode = this.jsonLdService.genInstance(prefix + "expression/",
-        LifecycleResource.getExpressionClass(calculationType));
+        calculationType.getExpressionClass());
     for (JsonNode config : variableQuantityConfigs) {
       String paramName = config.get(ShaclResource.ID_KEY).asText();
       String parsedParamName = this.calculationService.findMatchingKey(paramName, params.keySet());
