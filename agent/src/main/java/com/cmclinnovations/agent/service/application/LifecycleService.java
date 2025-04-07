@@ -60,8 +60,8 @@ public class LifecycleService {
     this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_END_TIME_KEY, List.of(2, 3));
     this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_TYPE_KEY, List.of(2, 4));
 
-    this.taskVarSequence.put(LifecycleResource.DATE_KEY, List.of(2, 3));
-    this.taskVarSequence.put(LifecycleResource.EVENT_KEY, List.of(999, 999));
+    this.taskVarSequence.put(LifecycleResource.DATE_KEY, List.of(-3, 1));
+    this.taskVarSequence.put(LifecycleResource.EVENT_KEY, List.of(-3, 2));
     this.taskVarSequence.put(LifecycleResource.EVENT_ID_KEY, List.of(1000, 999));
   }
 
@@ -208,8 +208,8 @@ public class LifecycleService {
   private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String additionalQuery) {
     Map<String, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = "";
-    addQuery += this.parseEventOccurrenceQuery(1, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
-    addQuery += this.parseEventOccurrenceQuery(2, LifecycleEventType.SERVICE_EXECUTION, varSequences);
+    addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
+    addQuery += this.parseEventOccurrenceQuery(-1, LifecycleEventType.SERVICE_EXECUTION, varSequences);
     addQuery += additionalQuery;
     Queue<SparqlBinding> results = this.getService.getInstances(entityType, null, "", addQuery,
         true, varSequences);
