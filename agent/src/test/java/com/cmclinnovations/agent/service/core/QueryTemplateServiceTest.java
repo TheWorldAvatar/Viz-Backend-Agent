@@ -34,11 +34,24 @@ class QueryTemplateServiceTest {
 
     private static QueryTemplateService testService;
     private static final String TEST_RESOURCE = "test";
+    public static final String TEST_JSONLD_FILE = "service/add/sample.jsonld";
 
     @BeforeEach
     void setup() {
         JsonLdService jsonLdService = new JsonLdService(new ObjectMapper());
         testService = new QueryTemplateService(fileService, jsonLdService);
+    }
+
+    @Test
+    void testGetJsonLdTemplate() throws IOException {
+        // Set up mocks
+        ObjectNode sample = TestUtils.getJson(TEST_JSONLD_FILE);
+        when(fileService.getTargetFileName(TEST_RESOURCE)).thenReturn(TEST_RESOURCE);
+        when(fileService.getJsonContents(Mockito.anyString())).thenReturn(sample);
+
+        // Execution
+        ObjectNode results = testService.getJsonLdTemplate(TEST_RESOURCE);
+        assertEquals(sample, results);
     }
 
     @Test
