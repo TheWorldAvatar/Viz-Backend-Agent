@@ -51,9 +51,8 @@ public class QueryTemplateService {
    * Get JSON-LD template from the target resource.
    * 
    * @param resourceID The target resource identifier for the instance.
-   * @param targetId   The target instance IRI.
    */
-  public ObjectNode getJsonLdTemplate(String resourceID, String targetId) {
+  public ObjectNode getJsonLdTemplate(String resourceID) {
     LOGGER.debug("Retrieving the JSON-LD template...");
     return this.getJsonLDResource(resourceID).deepCopy();
   }
@@ -73,20 +72,6 @@ public class QueryTemplateService {
         .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId));
     query.offer(instanceIri);
     return query;
-  }
-
-  /**
-   * Retrieves the query to extract the SHACL constraints for the form template.
-   * 
-   * @param resourceID    The target resource identifier.
-   * @param isReplacement Indicates if the resource ID is a replacement value
-   *                      rather than a resource.
-   */
-  public String getFormQuery(String resourceID, boolean isReplacement) {
-    if (!isReplacement) {
-      resourceID = this.fileService.getTargetIri(resourceID);
-    }
-    return this.fileService.getContentsWithReplacement(FileService.FORM_QUERY_RESOURCE, resourceID);
   }
 
   /**
@@ -127,6 +112,20 @@ public class QueryTemplateService {
   public String getConceptQuery(String conceptClass) {
     return this.fileService.getContentsWithReplacement(FileService.INSTANCE_QUERY_RESOURCE,
         StringResource.parseIriForQuery(conceptClass));
+  }
+
+  /**
+   * Retrieves the query to extract the SHACL constraints for the form template.
+   * 
+   * @param resourceID    The target resource identifier.
+   * @param isReplacement Indicates if the resource ID is a replacement value
+   *                      rather than a resource.
+   */
+  public String getFormQuery(String resourceID, boolean isReplacement) {
+    if (!isReplacement) {
+      resourceID = this.fileService.getTargetIri(resourceID);
+    }
+    return this.fileService.getContentsWithReplacement(FileService.FORM_QUERY_RESOURCE, resourceID);
   }
 
   /**

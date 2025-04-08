@@ -80,7 +80,7 @@ public class AddService {
     // Update ID value to target ID
     param.put("id", targetId);
     // Retrieve the instantiation JSON schema
-    ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID, targetId);
+    ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
     // Attempt to replace all placeholders in the JSON schema
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
     return this.instantiateJsonLd(addJsonSchema, resourceID + " has been successfully instantiated!");
