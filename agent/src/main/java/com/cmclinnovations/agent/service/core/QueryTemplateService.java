@@ -16,11 +16,16 @@ import com.cmclinnovations.agent.template.FormTemplateFactory;
 import com.cmclinnovations.agent.template.query.DeleteQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.SearchQueryTemplateFactory;
+import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
+import com.cmclinnovations.agent.utils.StringResource;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class QueryTemplateService {
+  private final FileService fileService;
   private final FormTemplateFactory formTemplateFactory;
   private final DeleteQueryTemplateFactory deleteQueryTemplateFactory;
   private final GetQueryTemplateFactory getQueryTemplateFactory;
@@ -31,25 +36,96 @@ public class QueryTemplateService {
   /**
    * Constructs a new service.
    * 
-   * @param fileService File service for accessing file resources.
+   * @param fileService   File service for accessing file resources.
+   * @param jsonLdService A service for interactions with JSON LD.
    */
-  public QueryTemplateService(JsonLdService jsonLdService) {
+  public QueryTemplateService(FileService fileService, JsonLdService jsonLdService) {
     this.formTemplateFactory = new FormTemplateFactory();
     this.deleteQueryTemplateFactory = new DeleteQueryTemplateFactory(jsonLdService);
     this.getQueryTemplateFactory = new GetQueryTemplateFactory();
     this.searchQueryTemplateFactory = new SearchQueryTemplateFactory();
+    this.fileService = fileService;
+  }
+
+  /**
+   * Get JSON-LD template from the target resource.
+   * 
+   * @param resourceID The target resource identifier for the instance.
+   */
+  public ObjectNode getJsonLdTemplate(String resourceID) {
+    LOGGER.debug("Retrieving the JSON-LD template...");
+    return this.getJsonLDResource(resourceID).deepCopy();
   }
 
   /**
    * Generates a DELETE SPARQL query from the inputs.
    * 
-   * @param addJsonSchema The JSON schema for adding a new instance
-   * @param targetId      The target instance IRI.
+   * @param resourceID The target resource identifier for the instance.
+   * @param targetId   The target instance IRI.
    */
-  public Queue<String> genDeleteQuery(ObjectNode addJsonSchema, String targetId) {
+  public Queue<String> genDeleteQuery(String resourceID, String targetId) {
     LOGGER.debug("Generating the DELETE query...");
-    return this.deleteQueryTemplateFactory
+    // Retrieve the instantiation JSON schema
+    ObjectNode addJsonSchema = this.getJsonLDResource(resourceID).deepCopy();
+    String instanceIri = addJsonSchema.path(ShaclResource.ID_KEY).asText();
+    Queue<String> query = this.deleteQueryTemplateFactory
         .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId));
+    query.offer(instanceIri);
+    return query;
+  }
+
+  /**
+   * Retrieves the SHACL path query for a target IRI in `application-form.yml`.
+   * 
+   * @param resourceID   The target resource identifier.
+   * @param requireLabel Indicates if labels should be returned for all the
+   *                     fields that are IRIs.
+   */
+  public String getShaclQuery(String resourceID, boolean requireLabel) {
+    String iri = this.fileService.getTargetIri(resourceID);
+    return this.getShaclQuery(requireLabel, iri);
+  }
+
+  /**
+   * Retrieves the required SHACL path query.
+   * 
+   * @param requireLabel Indicates if labels should be returned for all the
+   *                     fields that are IRIs.
+   * @param replacement  The replacement string for [target].
+   */
+  public String getShaclQuery(boolean requireLabel, String replacement) {
+    LOGGER.debug("Retrieving the required SHACL query...");
+    String queryPath = FileService.SHACL_PATH_QUERY_RESOURCE;
+    if (requireLabel) {
+      // Only use the label query if required due to the associated slower query
+      // performance
+      queryPath = FileService.SHACL_PATH_LABEL_QUERY_RESOURCE;
+    }
+    return this.fileService.getContentsWithReplacement(queryPath, replacement);
+  }
+
+  /**
+   * Retrieves the conceptual query for the target class.
+   * 
+   * @param conceptClass The target class details to retrieved.
+   */
+  public String getConceptQuery(String conceptClass) {
+    return this.fileService.getContentsWithReplacement(FileService.INSTANCE_QUERY_RESOURCE,
+        StringResource.parseIriForQuery(conceptClass));
+  }
+
+  /**
+   * Retrieves the query to extract the SHACL constraints for the form template.
+   * 
+   * @param resourceID    The target resource identifier.
+   * @param isReplacement Indicates if the resource ID is a replacement value
+   *                      rather than a resource.
+   */
+  public String getFormQuery(String resourceID, boolean isReplacement) {
+    if (!isReplacement) {
+      resourceID = this.fileService.getTargetIri(resourceID);
+    }
+    return this.fileService.getContentsWithReplacement(FileService.FORM_QUERY_RESOURCE, resourceID);
   }
 
   /**
@@ -107,5 +183,26 @@ public class QueryTemplateService {
    */
   public List<String> getFieldSequence() {
     return this.getQueryTemplateFactory.getSequence();
+  }
+
+  /**
+   * Retrieve the JSON LD resource based on the resource ID.
+   * 
+   * @param resourceID The target resource identifier for the instance.
+   */
+  private JsonNode getJsonLDResource(String resourceID) {
+    String filePath = LifecycleResource.getLifecycleResourceFilePath(resourceID);
+    // Default to the file name in application-service if it is not a lifecycle
+    // route
+    if (filePath == null) {
+      String fileName = this.fileService.getTargetFileName(resourceID);
+      filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileName + ".jsonld";
+    }
+    // Retrieve the instantiation JSON schema
+    JsonNode contents = this.fileService.getJsonContents(filePath);
+    if (!contents.isObject()) {
+      throw new IllegalArgumentException("Invalid JSON-LD format! Please ensure the file starts with an JSON object.");
+    }
+    return contents;
   }
 }

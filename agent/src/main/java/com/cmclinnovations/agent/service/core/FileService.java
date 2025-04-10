@@ -15,8 +15,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.utils.StringResource;
@@ -27,7 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class FileService {
   private final ObjectMapper objectMapper;
   private final ResourceLoader resourceLoader;
-  private static final Logger LOGGER = LogManager.getLogger(FileService.class);
 
   public static final String SPRING_FILE_PATH_PREFIX = "file:/";
   private static final String RESOURCE_DIR = "usr/local/tomcat/resources/";
@@ -53,6 +50,9 @@ public class FileService {
   public static final String REPLACEMENT_SHAPE = "[shape]";
   public static final String REPLACEMENT_PATH = "[path]";
 
+  private static final String MISSING_RESOURCE_TEMPLATE_MSG = "Resource at {0} is not found. Please ensure you have a valid resource in the file path.";
+  private static final Logger LOGGER = LogManager.getLogger(FileService.class);
+
   /**
    * Constructs a new service with the following dependencies.
    * 
@@ -77,10 +77,7 @@ public class FileService {
       contents = this.parseSparqlFile(inputStream);
       contents = contents.replace(REPLACEMENT_TARGET, replacement);
     } catch (FileNotFoundException e) {
-      LOGGER.info("Resource at {} is not found. Please ensure you have a valid resource in the file path.",
-          resourceFilePath);
-      throw new FileSystemNotFoundException(MessageFormat.format(
-          "Resource at {0} is not found. Please ensure you have a valid resource in the file path.", resourceFilePath));
+      throw new FileSystemNotFoundException(MessageFormat.format(MISSING_RESOURCE_TEMPLATE_MSG, resourceFilePath));
     } catch (IOException e) {
       LOGGER.error(e);
       throw new UncheckedIOException(e);
@@ -99,10 +96,7 @@ public class FileService {
     try (InputStream inputStream = this.resourceLoader.getResource(resourceFilePath).getInputStream()) {
       resourceNode = this.objectMapper.readTree(inputStream);
     } catch (FileNotFoundException e) {
-      LOGGER.info("Resource at {} is not found. Please ensure you have a valid resource in the file path.",
-          resourceFilePath);
-      throw new FileSystemNotFoundException(MessageFormat.format(
-          "Resource at {0} is not found. Please ensure you have a valid resource in the file path.", resourceFilePath));
+      throw new FileSystemNotFoundException(MessageFormat.format(MISSING_RESOURCE_TEMPLATE_MSG, resourceFilePath));
     } catch (IOException e) {
       LOGGER.error(e);
       throw new UncheckedIOException(e);
@@ -116,18 +110,15 @@ public class FileService {
    * 
    * @param resourceID The target resource identifier for the instance class.
    */
-  public ResponseEntity<String> getTargetFileName(String resourceID) {
+  public String getTargetFileName(String resourceID) {
     LOGGER.debug("Retrieving the target class associated with the resource identifier: {} ...", resourceID);
     String targetFileName = this.getResourceTarget(resourceID,
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_SERVICE_RESOURCE);
     // Handle invalid target type
     if (targetFileName.isEmpty()) {
-      return new ResponseEntity<>(MessageFormat.format(
-          "Invalid or missing resource for {0}! Please contact your technical team for assistance.",
-          resourceID),
-          HttpStatus.BAD_REQUEST);
+      throw new FileSystemNotFoundException(MessageFormat.format(MISSING_RESOURCE_TEMPLATE_MSG, resourceID));
     }
-    return new ResponseEntity<>(targetFileName, HttpStatus.OK);
+    return targetFileName;
   }
 
   /**
@@ -137,19 +128,16 @@ public class FileService {
    * 
    * @param resourceID The target resource identifier for the instance class.
    */
-  public ResponseEntity<String> getTargetIri(String resourceID) {
+  public String getTargetIri(String resourceID) {
     LOGGER.debug("Retrieving the target class associated with the resource identifier: {} ...", resourceID);
     String targetClass = this.getResourceTarget(resourceID,
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_FORM_RESOURCE);
     // Handle invalid target type
     if (targetClass.isEmpty()) {
-      return new ResponseEntity<>(MessageFormat.format(
-          "Route is invalid at /{0}! If this route is intended to be enabled, please contact your technical team for assistance.",
-          resourceID),
-          HttpStatus.BAD_REQUEST);
+      throw new FileSystemNotFoundException(MessageFormat.format("Route is invalid at /{0}!", resourceID));
     }
     // For valid target type, return the associated target class
-    return new ResponseEntity<>(StringResource.parseIriForQuery(targetClass), HttpStatus.OK);
+    return StringResource.parseIriForQuery(targetClass);
   }
 
   /**
@@ -170,10 +158,7 @@ public class FileService {
       }
       return this.objectMapper.treeToValue(resourceNode, String.class);
     } catch (FileNotFoundException e) {
-      LOGGER.info("Resource at {} is not found. Please ensure you have a valid resource in the file path.",
-          resourceFilePath);
-      throw new FileSystemNotFoundException(MessageFormat.format(
-          "Resource at {0} is not found. Please ensure you have a valid resource in the file path.", resourceFilePath));
+      throw new FileSystemNotFoundException(MessageFormat.format(MISSING_RESOURCE_TEMPLATE_MSG, resourceFilePath));
     } catch (IOException e) {
       LOGGER.info(e.getMessage());
       throw new UncheckedIOException(e);

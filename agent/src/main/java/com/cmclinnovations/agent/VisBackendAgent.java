@@ -1,6 +1,8 @@
 package com.cmclinnovations.agent;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.model.ParentField;
+import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
@@ -85,7 +88,12 @@ public class VisBackendAgent {
       @PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get all instances for {}...", type);
     // This route does not require further restriction on parent instances
-    return this.getService.getAllInstances(type, null, false);
+    Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", false, new HashMap<>());
+    return new ResponseEntity<>(
+        instances.stream()
+            .map(SparqlBinding::get)
+            .toList(),
+        HttpStatus.OK);
   }
 
   /**
@@ -97,7 +105,12 @@ public class VisBackendAgent {
       @PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get all instances with labels for {}...", type);
     // This route does not require further restriction on parent instances
-    return this.getService.getAllInstances(type, null, true);
+    Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", true, new HashMap<>());
+    return new ResponseEntity<>(
+        instances.stream()
+            .map(SparqlBinding::get)
+            .toList(),
+        HttpStatus.OK);
   }
 
   /**
@@ -111,7 +124,13 @@ public class VisBackendAgent {
       @PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get all instances of target {} associated with the parent type {}...", type,
         parent);
-    return this.getService.getAllInstances(type, new ParentField(id, parent), false);
+    Queue<SparqlBinding> instances = this.getService.getInstances(type, new ParentField(id, parent), "", "", false,
+        new HashMap<>());
+    return new ResponseEntity<>(
+        instances.stream()
+            .map(SparqlBinding::get)
+            .toList(),
+        HttpStatus.OK);
   }
 
   /**
@@ -120,7 +139,7 @@ public class VisBackendAgent {
   @GetMapping("/{type}/{id}")
   public ResponseEntity<?> getInstance(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to get a specific instance of {}...", type);
-    return this.getService.getInstance(type, id, false);
+    return this.getService.getInstance(id, type, false);
   }
 
   /**
@@ -130,7 +149,7 @@ public class VisBackendAgent {
   @GetMapping("/{type}/label/{id}")
   public ResponseEntity<?> getInstanceWithLabels(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to get a specific instance of {} with human readable data...", type);
-    return this.getService.getInstance(type, id, true);
+    return this.getService.getInstance(id, type, true);
   }
 
   /**
@@ -149,16 +168,16 @@ public class VisBackendAgent {
   @GetMapping("/csv/{type}")
   public ResponseEntity<String> getAllInstancesInCSV(@PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get all instances of {} type in the CSV format...", type);
-    return this.getService.getAllInstancesInCSV(type);
+    return this.getService.getInstancesInCSV(type);
   }
 
   /**
    * Retrieves the form template for the specified type from the knowledge graph.
    */
   @GetMapping("/form/{type}")
-  public ResponseEntity<?> getFormTemplate(@PathVariable(name = "type") String type) {
+  public ResponseEntity<Map<String, Object>> getFormTemplate(@PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get the form template for {}...", type);
-    return this.getService.getForm(type, null);
+    return this.getService.getForm(type, false, new HashMap<>());
   }
 
   /**
@@ -166,9 +185,14 @@ public class VisBackendAgent {
    * the knowledge graph.
    */
   @GetMapping("/form/{type}/{id}")
-  public ResponseEntity<?> retrieveFormTemplate(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<Map<String, Object>> retrieveFormTemplate(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to get specific form template for {} ...", type);
-    return this.getService.getForm(type, id);
+    Map<String, Object> currentEntity = new HashMap<>();
+    ResponseEntity<?> currentEntityResponse = this.getService.getInstance(id, type, false);
+    if (currentEntityResponse.getStatusCode() == HttpStatus.OK) {
+      currentEntity = (Map<String, Object>) currentEntityResponse.getBody();
+    }
+    return this.getService.getForm(type, false, currentEntity);
   }
 
   /**

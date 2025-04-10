@@ -18,9 +18,9 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.service.application.LifecycleReportService;
-import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.service.core.KGService;
+import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -29,28 +29,28 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class AddService {
-  private final KGService kgService;
-  private final FileService fileService;
   private final JsonLdService jsonLdService;
+  private final KGService kgService;
   private final LifecycleReportService lifecycleReportService;
+  private final QueryTemplateService queryTemplateService;
 
   private static final Logger LOGGER = LogManager.getLogger(AddService.class);
 
   /**
    * Constructs a new service with the following dependencies.
    * 
-   * @param kgService              KG service for performing the query.
-   * @param fileService            File service for accessing file resources.
    * @param jsonLdService          A service for interactions with JSON LD.
+   * @param kgService              KG service for performing the query.
    * @param lifecycleReportService A service for reporting lifecycle matters such
    *                               as calculation instances.
+   * @param queryTemplateService   Service for generating query templates.
    */
-  public AddService(KGService kgService, FileService fileService, JsonLdService jsonLdService,
-      LifecycleReportService lifecycleReportService) {
-    this.kgService = kgService;
-    this.fileService = fileService;
+  public AddService(JsonLdService jsonLdService, KGService kgService, LifecycleReportService lifecycleReportService,
+      QueryTemplateService queryTemplateService) {
     this.jsonLdService = jsonLdService;
+    this.kgService = kgService;
     this.lifecycleReportService = lifecycleReportService;
+    this.queryTemplateService = queryTemplateService;
   }
 
   /**
@@ -77,23 +77,10 @@ public class AddService {
   public ResponseEntity<ApiResponse> instantiate(String resourceID, String targetId,
       Map<String, Object> param) {
     LOGGER.info("Instantiating an instance of {} ...", resourceID);
-    String filePath = LifecycleResource.getLifecycleResourceFilePath(resourceID);
-    // Default to the file name in application-service if it not a lifecycle route
-    if (filePath == null) {
-      ResponseEntity<String> fileNameResponse = this.fileService.getTargetFileName(resourceID);
-      // Return the BAD REQUEST response directly if the file is invalid
-      if (fileNameResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-        return new ResponseEntity<>(
-            new ApiResponse(fileNameResponse),
-            fileNameResponse.getStatusCode());
-      }
-      filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileNameResponse.getBody() + ".jsonld";
-    }
     // Update ID value to target ID
     param.put("id", targetId);
     // Retrieve the instantiation JSON schema
-    ObjectNode addJsonSchema = this.jsonLdService.getObjectNode(
-        this.fileService.getJsonContents(filePath));
+    ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
     // Attempt to replace all placeholders in the JSON schema
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
     return this.instantiateJsonLd(addJsonSchema, resourceID + " has been successfully instantiated!");
@@ -112,13 +99,9 @@ public class AddService {
     ResponseEntity<String> response = this.kgService.add(jsonString);
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(message);
-      return new ResponseEntity<>(
-          new ApiResponse(message, instanceIri),
-          HttpStatus.CREATED);
+      return new ResponseEntity<>(new ApiResponse(message, instanceIri), HttpStatus.CREATED);
     } else {
-      return new ResponseEntity<>(
-          new ApiResponse(response),
-          response.getStatusCode());
+      return new ResponseEntity<>(new ApiResponse(response), response.getStatusCode());
     }
   }
 
@@ -163,7 +146,7 @@ public class AddService {
           }
           // IRIs that are not assigned to @id or @type should belong within a nested @id
           // object
-        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals("iri")
+        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(LifecycleResource.IRI_KEY)
             && !(parentField.equals(ShaclResource.ID_KEY) || parentField.equals(ShaclResource.TYPE_KEY))) {
           String replacement = this.jsonLdService.getReplacementValue(currentNode, replacements);
           if (replacement.isEmpty()) { // Remove empty replacements

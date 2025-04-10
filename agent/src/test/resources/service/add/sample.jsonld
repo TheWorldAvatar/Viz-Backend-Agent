@@ -1,0 +1,57 @@
+{
+    "@context": {
+        "xsd": "http://www.w3.org/2001/XMLSchema#"
+    },
+    "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://www.theworldavatar.io/kg/address/"
+    },
+    "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/Places/Addresses/ConventionalStreetAddress",
+    "https://spec.edmcouncil.org/fibo/ontology/FND/Places/Locations/hasCountry": {
+        "@id": {
+            "@replace": "country",
+            "@type": "iri"
+        }
+    },
+    "https://spec.edmcouncil.org/fibo/ontology/FND/Places/Locations/hasCityName": {
+        "@replace": "city",
+        "@type": "literal"
+    },
+    "https://spec.edmcouncil.org/fibo/ontology/FND/Places/Addresses/hasStreetAddress": {
+        "@id": {
+            "@replace": "id",
+            "@type": "iri",
+            "prefix": "https://www.theworldavatar.io/kg/address/street/"
+        },
+        "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/Places/Addresses/StreetAddress",
+        "https://spec.edmcouncil.org/fibo/ontology/FND/Places/Addresses/hasPrimaryAddressNumber": {
+            "@id": {
+                "@replace": "id",
+                "@type": "iri",
+                "prefix": "https://www.theworldavatar.io/kg/address/street/block/"
+            },
+            "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/Places/Addresses/PrimaryAddressNumber",
+            "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/hasTag": {
+                "@replace": "block",
+                "@type": "literal"
+            }
+        },
+        "https://spec.edmcouncil.org/fibo/ontology/FND/Places/Addresses/hasStreetName": {
+            "@id": {
+                "@replace": "id",
+                "@type": "iri",
+                "prefix": "https://www.theworldavatar.io/kg/address/street/name/"
+            },
+            "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/Places/Addresses/StreetName",
+            "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/hasTag": {
+                "@replace": "street name",
+                "@type": "literal"
+            }
+        }
+    },
+    "https://spec.edmcouncil.org/fibo/ontology/FND/Places/Addresses/hasPostalCode": {
+        "@replace": "postal code",
+        "@type": "literal"
+    }
+}

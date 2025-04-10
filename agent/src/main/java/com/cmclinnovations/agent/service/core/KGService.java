@@ -3,7 +3,6 @@ package com.cmclinnovations.agent.service.core;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayDeque;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -28,7 +27,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
@@ -50,7 +48,6 @@ public class KGService {
   private final RestClient client;
   private final ObjectMapper objectMapper;
   private final FileService fileService;
-  private final QueryTemplateService queryTemplateService;
   private final LoggingService loggingService;
 
   private static final String DEFAULT_NAMESPACE = "kb";
@@ -68,15 +65,13 @@ public class KGService {
   /**
    * Constructs a new service.
    * 
-   * @param fileService          File service for accessing file resources.
-   * @param queryTemplateService Service for generating different query templates.
-   * @param loggingService       Service for logging statements.
+   * @param fileService    File service for accessing file resources.
+   * @param loggingService Service for logging statements.
    */
-  public KGService(FileService fileService, QueryTemplateService queryTemplateService, LoggingService loggingService) {
+  public KGService(FileService fileService, LoggingService loggingService) {
     this.client = RestClient.create();
     this.objectMapper = new ObjectMapper();
     this.fileService = fileService;
-    this.queryTemplateService = queryTemplateService;
     this.loggingService = loggingService;
   }
 
@@ -98,15 +93,12 @@ public class KGService {
   /**
    * Deletes the target instance and its associated properties from the KG.
    * 
-   * @param addJsonSchema The JSON schema for adding a new instance
-   * @param targetId      The target instance IRI.
+   * @param query    The DELETE query for execution.
+   * @param targetId The target instance IRI.
    */
-  public ResponseEntity<String> delete(ObjectNode addJsonSchema, String targetId) {
-    // Parse the JSON schema into the corresponding delete query
-    Queue<String> query = this.queryTemplateService.genDeleteQuery(addJsonSchema, targetId);
+  public ResponseEntity<String> delete(String query, String targetId) {
     LOGGER.debug("Deleting instances...");
-
-    int statusCode = this.executeUpdate(query.poll());
+    int statusCode = this.executeUpdate(query);
     if (statusCode == 200) {
       LOGGER.info("Instance has been successfully deleted!");
       return new ResponseEntity<>(
@@ -268,194 +260,6 @@ public class KGService {
   }
 
   /**
-   * Queries for the form template.
-   * 
-   * @param query the query for execution.
-   * @return the form template as a JSON object.
-   */
-  public Map<String, Object> queryForm(String query, Map<String, Object> defaultVals) {
-    LOGGER.info("Querying the knowledge graph for the form template...");
-    // SHACL restrictions for generating the form template always stored on a
-    // blazegraph namespace
-    List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
-    for (String endpoint : endpoints) {
-      LOGGER.debug("Querying at the endpoint {}...", endpoint);
-      // Execute the query on the current endpoint and get the result
-      ArrayNode results = this.queryJsonLd(query, endpoint);
-      if (!results.isEmpty()) {
-        return this.queryTemplateService.genFormTemplate(results, defaultVals);
-      }
-    }
-    return new HashMap<>();
-  }
-
-  /**
-   * Queries for all instance(s) associated with the target id.
-   * 
-   * @param shaclPathQuery The query to retrieve the required predicate paths in
-   *                       the SHACL restrictions.
-   * @param targetId       Target ID of interest.
-   */
-  public Queue<SparqlBinding> queryInstances(String shaclPathQuery, String targetId) {
-    return this.queryInstances(shaclPathQuery, targetId, null, "", new HashMap<>());
-  }
-
-  /**
-   * Queries for all instances that may or may not be associated with a parent
-   * field.
-   * 
-   * @param shaclPathQuery The query to retrieve the required predicate paths in
-   *                       the SHACL restrictions.
-   * @param parentField    Optional parent field.
-   */
-  public Queue<SparqlBinding> queryInstances(String shaclPathQuery, ParentField parentField) {
-    return this.queryInstances(shaclPathQuery, "", parentField, "", new HashMap<>());
-  }
-
-  /**
-   * Queries for all instances associated with a lifecycle event.
-   * 
-   * @param shaclPathQuery     The query to retrieve the required predicate paths
-   *                           in
-   *                           the SHACL restrictions.
-   * @param addQueryStatements Additional query statements to be added
-   * @param addVars            Optional additional variables to be included in the
-   *                           query, along with their order sequence
-   */
-  public Queue<SparqlBinding> queryInstances(String shaclPathQuery, String addQueryStatements,
-      Map<String, List<Integer>> addVars) {
-    return this.queryInstances(shaclPathQuery, "", null, addQueryStatements, addVars);
-  }
-
-  /**
-   * Queries for either all instances or a specific instance based on the id.
-   * 
-   * @param shaclPathQuery     The query to retrieve the required predicate paths
-   *                           in the SHACL restrictions.
-   * @param targetId           An optional field to target the query at a specific
-   *                           instance.
-   * @param addQueryStatements Additional query statements to be added
-   * @param addVars            Optional additional variables to be included in the
-   *                           query, along with their order sequence
-   */
-  public Queue<SparqlBinding> queryInstances(String shaclPathQuery, String targetId, ParentField parentField,
-      String addQueryStatements, Map<String, List<Integer>> addVars) {
-    // Initialise a new queue to store all variables
-    // And add the first level right away
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.queryNestedPredicates(shaclPathQuery);
-    LOGGER.debug("Generating the query template from the predicate paths and variables queried...");
-    Queue<String> queries = this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, targetId,
-        parentField, addQueryStatements, addVars);
-    LOGGER.debug("Querying the knowledge graph for the instances...");
-    List<String> varSequence = this.queryTemplateService.getFieldSequence();
-    // Query for direct instances
-    Queue<SparqlBinding> instances = this.query(queries.poll(), SparqlEndpointType.MIXED);
-    // Query for secondary instances ie instances that are subclasses of parent
-    Queue<SparqlBinding> secondaryInstances = this.query(queries.poll(), SparqlEndpointType.BLAZEGRAPH);
-    instances = this.combineBindingQueue(instances, secondaryInstances);
-    // If there is a variable sequence available, add the sequence to each binding,
-    if (!varSequence.isEmpty()) {
-      instances.forEach(instance -> instance.addSequence(varSequence));
-    }
-    return instances;
-  }
-
-  /**
-   * Queries for all instances in the csv format.
-   * 
-   * @param shaclPathQuery The query to retrieve the required predicate paths in
-   *                       the SHACL restrictions.
-   */
-  public String queryInstancesInCsv(String shaclPathQuery) {
-    LOGGER.debug("Querying the knowledge graph for predicate paths and variables...");
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.queryNestedPredicates(shaclPathQuery);
-    if (nestedVariablesAndPropertyPaths.isEmpty()) {
-      LOGGER.error(INVALID_SHACL_ERROR_MSG);
-      throw new IllegalStateException(INVALID_SHACL_ERROR_MSG);
-    }
-    LOGGER.debug("Generating the query template from the predicate paths and variables queried...");
-    Queue<String> queries = this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths);
-    LOGGER.debug("Querying the knowledge graph for the instances in csv format...");
-    // Query for direct instances
-    String[] resultRows = this.queryCSV(queries.poll(), SparqlEndpointType.MIXED);
-    // Query for secondary instances ie instances that are subclasses of parent
-    String[] secondaryResultRows = this.queryCSV(queries.poll(), SparqlEndpointType.BLAZEGRAPH);
-    StringBuilder results = new StringBuilder();
-    // First row will always be column names and should be appended
-    for (String row : resultRows) {
-      results.append(row).append(System.getProperty("line.separator"));
-    }
-    // Ignore first row of secondary results as these are duplicate column names
-    if (secondaryResultRows.length > 1) {
-      for (int i = 1; i < secondaryResultRows.length; i++) {
-        results.append(secondaryResultRows[i]).append(System.getProperty("line.separator"));
-      }
-    }
-    return results.toString();
-  }
-
-  /**
-   * Queries for all instances that matches the search criteria.
-   * 
-   * @param shaclPathQuery The query to retrieve the required predicate paths in
-   *                       the SHACL restrictions.
-   * @param criterias      All the available search criteria inputs.
-   */
-  public Queue<SparqlBinding> queryInstancesWithCriteria(String shaclPathQuery, Map<String, String> criterias) {
-    LOGGER.debug("Querying the knowledge graph for predicate paths and variables...");
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.queryNestedPredicates(shaclPathQuery);
-    if (nestedVariablesAndPropertyPaths.isEmpty()) {
-      LOGGER.error(INVALID_SHACL_ERROR_MSG);
-      throw new IllegalStateException(INVALID_SHACL_ERROR_MSG);
-    }
-    Queue<String> searchQuery = this.queryTemplateService.genSearchQuery(nestedVariablesAndPropertyPaths, criterias);
-    LOGGER.debug("Querying the knowledge graph for the matching instances...");
-    // Query for direct instances
-    Queue<SparqlBinding> instances = this.query(searchQuery.poll(), SparqlEndpointType.MIXED);
-    // Query for secondary instances ie instances that are subclasses of parent
-    Queue<SparqlBinding> secondaryInstances = this.query(searchQuery.poll(), SparqlEndpointType.BLAZEGRAPH);
-    instances.addAll(secondaryInstances);
-    return instances;
-  }
-
-  /**
-   * A method to retrieve the result binding. Note that this method is only
-   * applicable for one result sparql binding and will return an error otherwise.
-   * 
-   * @param results Results to parse.
-   * @param field   Field name
-   */
-  public SparqlBinding getSingleInstance(Queue<SparqlBinding> results) {
-    if (results.size() > 1) {
-      // When there is more than one results, verify if they can be grouped
-      // as results might contain an array of different values for the same instance
-      String firstId = results.peek().getFieldValue(LifecycleResource.IRI_KEY);
-      boolean isGroup = results.stream().allMatch(binding -> {
-        String currentId = binding.getFieldValue(LifecycleResource.IRI_KEY);
-        return currentId != null && currentId.equals(firstId);
-      });
-      if (!isGroup) {
-        LOGGER.error("Detected multiple instances: Data model is invalid!");
-        throw new IllegalStateException("Detected multiple instances: Data model is invalid!");
-      }
-      // Removes the first instance from results as the core instance
-      SparqlBinding firstInstance = results.poll();
-      // Iterate over each result binding to append arrays if required
-      results.stream().forEach(firstInstance::addFieldArray);
-      return firstInstance;
-    }
-    if (results.size() == 1) {
-      return results.poll();
-    }
-    if (results.isEmpty()) {
-      LOGGER.error("No valid instance found!");
-      throw new NullPointerException("No valid instance found!");
-    }
-    LOGGER.error("Data model is invalid!");
-    throw new IllegalStateException("Data model is invalid!");
-  }
-
-  /**
    * Gets all available internal SPARQL endpoints within the stack of the
    * specified type.
    * 
@@ -474,45 +278,13 @@ public class KGService {
   }
 
   /**
-   * Executes the update query at the target endpoint.
-   * 
-   * @param query the query for execution.
-   * 
-   * @return the status code.
-   */
-  private int executeUpdate(String query) {
-    this.loggingService.logQuery(query, LOGGER);
-    RemoteStoreClient kgClient = BlazegraphClient.getInstance().getRemoteStoreClient(this.namespace);
-    // Execute the request
-    try (CloseableHttpResponse response = kgClient.executeUpdateByPost(query)) {
-      return response.getStatusLine().getStatusCode();
-    } catch (IOException e) {
-      LOGGER.error(e);
-    }
-    return 500;
-  }
-
-  /**
-   * Parses the results into the required data model.
-   * 
-   * @param results Results retrieved from the knowledge graph.
-   */
-  private Queue<SparqlBinding> parseResults(ArrayNode results) {
-    LOGGER.debug("Parsing the results...");
-    return StreamSupport.stream(results.spliterator(), false)
-        .filter(JsonNode::isObject) // Ensure they are object node so that we can type cast
-        .map(row -> new SparqlBinding((ObjectNode) row))
-        .collect(Collectors.toCollection(ArrayDeque::new));
-  }
-
-  /**
    * Queries for the nested predicates as a queue of responses based on their
    * current nested level.
    * 
    * @param shaclPathQuery The query to retrieve the required predicate paths in
    *                       the SHACL restrictions.
    */
-  private Queue<Queue<SparqlBinding>> queryNestedPredicates(String shaclPathQuery) {
+  public Queue<Queue<SparqlBinding>> queryNestedPredicates(String shaclPathQuery) {
     LOGGER.debug("Querying the knowledge graph for predicate paths and variables...");
     // Retrieve all endpoints once
     List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
@@ -581,7 +353,7 @@ public class KGService {
    * @param firstQueue The first target queue.
    * @param secQueue   The second target queue.
    */
-  private Queue<SparqlBinding> combineBindingQueue(Queue<SparqlBinding> firstQueue, Queue<SparqlBinding> secQueue) {
+  public Queue<SparqlBinding> combineBindingQueue(Queue<SparqlBinding> firstQueue, Queue<SparqlBinding> secQueue) {
     if (firstQueue.isEmpty() && secQueue.isEmpty()) {
       return new ArrayDeque<>();
     }
@@ -613,5 +385,37 @@ public class KGService {
       result.offer(firstBinding);
     });
     return result;
+  }
+
+  /**
+   * Executes the update query at the target endpoint.
+   * 
+   * @param query the query for execution.
+   * 
+   * @return the status code.
+   */
+  private int executeUpdate(String query) {
+    this.loggingService.logQuery(query, LOGGER);
+    RemoteStoreClient kgClient = BlazegraphClient.getInstance().getRemoteStoreClient(this.namespace);
+    // Execute the request
+    try (CloseableHttpResponse response = kgClient.executeUpdateByPost(query)) {
+      return response.getStatusLine().getStatusCode();
+    } catch (IOException e) {
+      LOGGER.error(e);
+    }
+    return 500;
+  }
+
+  /**
+   * Parses the results into the required data model.
+   * 
+   * @param results Results retrieved from the knowledge graph.
+   */
+  private Queue<SparqlBinding> parseResults(ArrayNode results) {
+    LOGGER.debug("Parsing the results...");
+    return StreamSupport.stream(results.spliterator(), false)
+        .filter(JsonNode::isObject) // Ensure they are object node so that we can type cast
+        .map(row -> new SparqlBinding((ObjectNode) row))
+        .collect(Collectors.toCollection(ArrayDeque::new));
   }
 }

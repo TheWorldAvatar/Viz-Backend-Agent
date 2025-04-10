@@ -2,6 +2,8 @@
 
 The Vis-Backend Agent is a supporting service to The World Avatar's [viz](https://github.com/TheWorldAvatar/viz) service. It is designed to manage all visualisation-related requests from a single point of access to for example, filter map layers, generate dynamic controls, or query, add, delete, and update instances within the registry. By abstracting the backend implementation details (such as which other agents to call), it provides a unified access point to the data within its specific stack. This design allows the ViP to be deployed on a separate stack while retaining the capability to ingest data from multiple stacks seamlessly.
 
+All notable changes to this agent are documented in the `CHANGELOG.md` file. Please consult it for release notes and upgrade information.
+
 ## Table of Contents
 
 - [Vis Backend Agent](#vis-backend-agent)
@@ -550,7 +552,7 @@ Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/ser
 
 > Service completion
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/dispatch/form` endpoint to retrieve the form template associated with the service completion event. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ServiceOrderCompletedOccurrenceShape` is defined in `./resources/shacl.ttl`, which can be extended for your specific requirements. Note that if you require any form of computation for the completion details, it is recommended to define a separate group using `sh:node` as evident by `WeightLogShape`.
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/complete/{id}` endpoint to retrieve the form template associated with the service completion event, where `id` is either the identifier of the service completion occurrence of interest, or `form` for an empty form template. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ServiceOrderCompletedOccurrenceShape` is defined in `./resources/shacl.ttl`, which can be extended for your specific requirements. Note that if you require any form of computation for the completion details, it is recommended to define a separate group using `sh:node` as evident by `WeightLogShape`.
 
 > Report unfulfilled service tasks
 

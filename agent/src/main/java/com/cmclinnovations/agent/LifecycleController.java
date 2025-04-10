@@ -1,7 +1,6 @@
 package com.cmclinnovations.agent;
 
 import java.text.MessageFormat;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
@@ -423,6 +422,15 @@ public class LifecycleController {
   public ResponseEntity<?> getOrderCompleteForm() {
     LOGGER.info("Received request to get form template for order completion...");
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_EXECUTION, null);
+  }
+
+  /**
+   * Retrieve the order complete details for the specified event
+   */
+  @GetMapping("/service/complete/{id}")
+  public ResponseEntity<?> getOrderCompleteDetails(@PathVariable String id) {
+    LOGGER.info("Received request to get form template with order completion details...");
+    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_EXECUTION, id);
   }
 
   /**

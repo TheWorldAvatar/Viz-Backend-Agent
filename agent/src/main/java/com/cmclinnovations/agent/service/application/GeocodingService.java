@@ -1,6 +1,5 @@
 package com.cmclinnovations.agent.service.application;
 
-import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,15 +55,11 @@ public class GeocodingService {
   public ResponseEntity<?> getAddress(String postalCode) {
     LOGGER.debug("Retrieving geocoding endpoint...");
     // The geocoding endpoint must be added as the value of the "geocode" field
-    ResponseEntity<String> geocodingEndpointResponse = this.fileService.getTargetFileName("geocode");
-    // Return the BAD REQUEST response directly if there is no associated url
-    if (geocodingEndpointResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-      return geocodingEndpointResponse;
-    }
+    String geocodingEndpoint = this.fileService.getTargetFileName("geocode");
     LOGGER.debug("Generating query template to search for address...");
     String query = this.genSearchQueryTemplate(postalCode);
     LOGGER.debug("Retrieving address for postal code: {} ...", postalCode);
-    Queue<SparqlBinding> results = this.kgService.query(query, geocodingEndpointResponse.getBody());
+    Queue<SparqlBinding> results = this.kgService.query(query, geocodingEndpoint);
     if (results.isEmpty()) {
       LOGGER.info("No address found!");
       return new ResponseEntity<>(
@@ -121,15 +116,11 @@ public class GeocodingService {
   public ResponseEntity<?> getCoordinates(String block, String street, String city, String country, String postalCode) {
     LOGGER.debug("Retrieving geocoding endpoint...");
     // The geocoding endpoint must be added as the value of the "geocode" field
-    ResponseEntity<String> geocodingEndpointResponse = this.fileService.getTargetFileName("geocode");
-    // Return the BAD REQUEST response directly if there is no associated url
-    if (geocodingEndpointResponse.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-      return geocodingEndpointResponse;
-    }
+    String geocodingEndpoint = this.fileService.getTargetFileName("geocode");
     LOGGER.debug("Generating query template for retrieving coordinates...");
     String query = this.genCoordinateQueryTemplate(block, street, city, country, postalCode);
     LOGGER.debug("Retrieving coordinates for postal code: {} ...", postalCode);
-    Queue<SparqlBinding> results = this.kgService.query(query, geocodingEndpointResponse.getBody());
+    Queue<SparqlBinding> results = this.kgService.query(query, geocodingEndpoint);
     return this.parseCoordinates(results);
   }
 
@@ -144,21 +135,18 @@ public class GeocodingService {
         ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + COUNTRY_VAR +
         ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + STREET_VAR +
         ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + BLOCK_VAR;
-    String queryFilters = this.getPredicate(GeoLocationType.POSTAL_CODE) + ShaclResource.WHITE_SPACE
-        + StringResource.parseLiteral(postalCode)
-        + ";";
-    queryFilters += this.getPredicate(GeoLocationType.CITY) + ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK
+    String queryFilters = GeoLocationType.POSTAL_CODE.getPred() + ShaclResource.WHITE_SPACE
+        + StringResource.parseLiteral(postalCode) + ";";
+    queryFilters += GeoLocationType.CITY.getPred() + ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK
         + CITY_VAR + ";";
-    queryFilters += this.getPredicate(GeoLocationType.COUNTRY) + ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK
+    queryFilters += GeoLocationType.COUNTRY.getPred() + ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK
         + COUNTRY_VAR + ";";
-    queryFilters += this.getPredicate(GeoLocationType.STREET) + ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK
-        + STREET_VAR
-        + ShaclResource.FULL_STOP;
+    queryFilters += GeoLocationType.STREET.getPred() + ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK
+        + STREET_VAR + ShaclResource.FULL_STOP;
     // Block numbers are optional
     queryFilters += StringResource.genOptionalClause(ShaclResource.VARIABLE_MARK + ADDRESS_VAR
-        + ShaclResource.WHITE_SPACE +
-        this.getPredicate(GeoLocationType.BLOCK) + ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + BLOCK_VAR
-        + ShaclResource.FULL_STOP);
+        + ShaclResource.WHITE_SPACE + GeoLocationType.BLOCK.getPred() + ShaclResource.WHITE_SPACE
+        + ShaclResource.VARIABLE_MARK + BLOCK_VAR + ShaclResource.FULL_STOP);
     return this.genQueryTemplate(selectVars, queryFilters);
   }
 
@@ -178,30 +166,30 @@ public class GeocodingService {
     String queryFilters = "fibo-fnd-arr-id:isIndexTo/geo:asWKT " + ShaclResource.VARIABLE_MARK + LOCATION_VAR + ";";
     String filterStatements = "";
     if (postalCode != null) {
-      queryFilters += this.getPredicate(GeoLocationType.POSTAL_CODE);
+      queryFilters += GeoLocationType.POSTAL_CODE.getPred();
       queryFilters += ShaclResource.WHITE_SPACE + StringResource.parseLiteral(postalCode) + ";";
     }
     if (city != null) {
       // check city name via lowercase
-      queryFilters += this.getPredicate(GeoLocationType.CITY);
+      queryFilters += GeoLocationType.CITY.getPred();
       queryFilters += ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + CITY_VAR + ";";
       filterStatements += this.genLowercaseFilterStatement(CITY_VAR, city);
     }
     if (country != null) {
-      queryFilters += this.getPredicate(GeoLocationType.COUNTRY);
+      queryFilters += GeoLocationType.COUNTRY.getPred();
       queryFilters += ShaclResource.WHITE_SPACE + StringResource.parseIriForQuery(country) + ";";
     }
 
     if (street != null) {
       // Block will only be included if there is a corresponding street
       if (block != null) {
-        queryFilters += this.getPredicate(GeoLocationType.BLOCK);
+        queryFilters += GeoLocationType.BLOCK.getPred();
         // Blocks may contain strings and should be match in lower case
         queryFilters += ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + BLOCK_VAR + ";";
         filterStatements += this.genLowercaseFilterStatement(BLOCK_VAR, block);
       }
       // check street name via lowercase
-      queryFilters += this.getPredicate(GeoLocationType.STREET);
+      queryFilters += GeoLocationType.STREET.getPred();
       queryFilters += ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + STREET_VAR + ";";
       filterStatements += this.genLowercaseFilterStatement(STREET_VAR, street);
     }
@@ -210,30 +198,6 @@ public class GeocodingService {
     return this.genQueryTemplate(selectVar, queryFilters + filterStatements)
         // Limit the query return to one result to improve performance
         + "LIMIT 1";
-  }
-
-  /**
-   * Get predicates based on the geolocation type.
-   * 
-   * @param geoType The types of geolocation.
-   */
-  private String getPredicate(GeoLocationType geoType) {
-    switch (geoType) {
-      case GeoLocationType.POSTAL_CODE:
-        return "fibo-fnd-plc-adr:hasPostalCode";
-      case GeoLocationType.BLOCK:
-        return "fibo-fnd-plc-adr:hasStreetAddress/fibo-fnd-plc-adr:hasPrimaryAddressNumber/fibo-fnd-rel-rel:hasTag";
-      case GeoLocationType.STREET:
-        return "fibo-fnd-plc-adr:hasStreetAddress/fibo-fnd-plc-adr:hasStreetName/fibo-fnd-rel-rel:hasTag";
-      case GeoLocationType.CITY:
-        return "fibo-fnd-plc-loc:hasCityName";
-      case GeoLocationType.COUNTRY:
-        return "fibo-fnd-plc-loc:hasCountry";
-      default:
-        String errorMessage = MessageFormat.format("Invalid geolocation Type: {}!", geoType);
-        LOGGER.error(errorMessage);
-        throw new IllegalArgumentException(errorMessage);
-    }
   }
 
   /**

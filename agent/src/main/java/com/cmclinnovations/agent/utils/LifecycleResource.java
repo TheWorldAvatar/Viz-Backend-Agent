@@ -1,6 +1,11 @@
 package com.cmclinnovations.agent.utils;
 
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.cmclinnovations.agent.model.type.CalculationType;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
@@ -51,6 +56,9 @@ public class LifecycleResource {
   public static final String LIFECYCLE_EVENT_TYPE_PREDICATE_PATH = "<" + EXEMPLIFIES_RELATIONS + ">";
   public static final String LIFECYCLE_EVENT_PREDICATE_PATH = LIFECYCLE_STAGE_PREDICATE_PATH + "/"
       + LIFECYCLE_STAGE_EVENT_PREDICATE_PATH + "/" + LIFECYCLE_EVENT_TYPE_PREDICATE_PATH;
+  public static final String CREATION_STAGE = "https://www.theworldavatar.com/kg/ontoservice/CreationStage";
+  public static final String SERVICE_EXECUTION_STAGE = "https://www.theworldavatar.com/kg/ontoservice/ServiceExecutionStage";
+  public static final String EXPIRATION_STAGE = "https://www.theworldavatar.com/kg/ontoservice/ExpirationStage";
   public static final String EVENT_APPROVAL = "https://www.theworldavatar.com/kg/ontoservice/ContractApproval";
   public static final String EVENT_ORDER_RECEIVED = "https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent";
   public static final String EVENT_DISPATCH = "https://www.theworldavatar.com/kg/ontoservice/ServiceDispatchEvent";
@@ -90,30 +98,6 @@ public class LifecycleResource {
   }
 
   /**
-   * Retrieve the stage class associated with the event type.
-   * 
-   * @param eventType The target event type.
-   */
-  public static String getStageClass(LifecycleEventType eventType) {
-    switch (eventType) {
-      case LifecycleEventType.APPROVED:
-        return "https://www.theworldavatar.com/kg/ontoservice/CreationStage";
-      case LifecycleEventType.SERVICE_ORDER_RECEIVED:
-      case LifecycleEventType.SERVICE_ORDER_DISPATCHED:
-      case LifecycleEventType.SERVICE_EXECUTION:
-      case LifecycleEventType.SERVICE_CANCELLATION:
-      case LifecycleEventType.SERVICE_INCIDENT_REPORT:
-        return "https://www.theworldavatar.com/kg/ontoservice/ServiceExecutionStage";
-      case LifecycleEventType.ARCHIVE_COMPLETION:
-      case LifecycleEventType.ARCHIVE_RESCINDMENT:
-      case LifecycleEventType.ARCHIVE_TERMINATION:
-        return "https://www.theworldavatar.com/kg/ontoservice/ExpirationStage";
-      default:
-        throw new IllegalArgumentException("Invalid event type!");
-    }
-  }
-
-  /**
    * Retrieve the event type associated with the order enum number.
    * 
    * @param orderEnum The target enum number.
@@ -126,66 +110,6 @@ public class LifecycleResource {
         return LifecycleEventType.SERVICE_ORDER_DISPATCHED;
       default:
         throw new IllegalArgumentException("Invalid order enum number!");
-    }
-  }
-
-  /**
-   * Retrieve the event class associated with the event type.
-   * 
-   * @param eventType The target event type.
-   */
-  public static String getEventClass(LifecycleEventType eventType) {
-    switch (eventType) {
-      case LifecycleEventType.APPROVED:
-        return EVENT_APPROVAL;
-      case LifecycleEventType.SERVICE_ORDER_RECEIVED:
-        return EVENT_ORDER_RECEIVED;
-      case LifecycleEventType.SERVICE_ORDER_DISPATCHED:
-        return EVENT_DISPATCH;
-      case LifecycleEventType.SERVICE_EXECUTION:
-        return EVENT_DELIVERY;
-      case LifecycleEventType.SERVICE_CANCELLATION:
-        return EVENT_CANCELLATION;
-      case LifecycleEventType.SERVICE_INCIDENT_REPORT:
-        return EVENT_INCIDENT_REPORT;
-      case LifecycleEventType.ARCHIVE_COMPLETION:
-        return EVENT_CONTRACT_COMPLETION;
-      case LifecycleEventType.ARCHIVE_RESCINDMENT:
-        return EVENT_CONTRACT_RESCISSION;
-      case LifecycleEventType.ARCHIVE_TERMINATION:
-        return EVENT_CONTRACT_TERMINATION;
-      default:
-        throw new IllegalArgumentException("Invalid event type!");
-    }
-  }
-
-  /**
-   * Retrieve the event identifier associated with the event type.
-   * 
-   * @param eventType The target event type.
-   */
-  public static String getEventIdentifier(LifecycleEventType eventType) {
-    switch (eventType) {
-      case LifecycleEventType.APPROVED:
-        return "approve";
-      case LifecycleEventType.SERVICE_ORDER_RECEIVED:
-        return "order";
-      case LifecycleEventType.SERVICE_ORDER_DISPATCHED:
-        return "dispatch";
-      case LifecycleEventType.SERVICE_EXECUTION:
-        return "complete";
-      case LifecycleEventType.SERVICE_CANCELLATION:
-        return "cancel";
-      case LifecycleEventType.SERVICE_INCIDENT_REPORT:
-        return "report";
-      case LifecycleEventType.ARCHIVE_COMPLETION:
-        return "completed";
-      case LifecycleEventType.ARCHIVE_RESCINDMENT:
-        return "rescinded";
-      case LifecycleEventType.ARCHIVE_TERMINATION:
-        return "terminated";
-      default:
-        throw new IllegalArgumentException("Invalid event type!");
     }
   }
 
@@ -212,22 +136,6 @@ public class LifecycleResource {
   }
 
   /**
-   * Retrieve the expression class associated with the target calculation type.
-   * 
-   * @param calculationType The target calculation type.
-   */
-  public static String getExpressionClass(CalculationType calculationType) {
-    switch (calculationType) {
-      case CalculationType.DIFFERENCE:
-        return "https://spec.edmcouncil.org/fibo/ontology/FND/Utilities/Analytics/Difference";
-      case CalculationType.TOTAL:
-        return "https://www.omg.org/spec/Commons/QuantitiesAndUnits/Total";
-      default:
-        throw new IllegalArgumentException("Invalid Calculation Type!");
-    }
-  }
-
-  /**
    * Retrieve the lifecycle resource file path associated with the resource ID.
    * 
    * @param resourceID The identifier for the resource.
@@ -245,5 +153,61 @@ public class LifecycleResource {
       default:
         return null;
     }
+  }
+
+  /**
+   * Extract the variables from the query with their sequence order.
+   * 
+   * @param query      Target query for extraction.
+   * @param groupIndex The group index for the variables.
+   */
+  public static Map<String, List<Integer>> extractOccurrenceVariables(String query, int groupIndex) {
+    Pattern pattern = Pattern.compile("SELECT\\s+DISTINCT\\s+(.*?)\\s+WHERE", Pattern.DOTALL);
+    Matcher matcher = pattern.matcher(query);
+
+    if (!matcher.find()) {
+      return new HashMap<>();
+    }
+    String selectClause = matcher.group(1).trim();
+    String[] variables = selectClause.split("\\s?\\?");
+    Map<String, List<Integer>> varSequence = new HashMap<>();
+    for (int i = 0; i < variables.length; i++) {
+      String varName = variables[i].trim();
+      if (varName.isEmpty() || varName.equals("id")) {
+        continue; // Skip empty variables and ID key
+      }
+      varSequence.put(varName, List.of(groupIndex, i));
+    }
+    return varSequence;
+  }
+
+  /**
+   * Extract the occurrence's WHERE clause for an additional query additions.
+   * 
+   * @param query          Target query for extraction.
+   * @param lifecycleEvent Target event type.
+   */
+  public static String extractOccurrenceQuery(String query, LifecycleEventType lifecycleEvent) {
+    Pattern pattern = Pattern.compile("WHERE\\s*\\{(.*?)\\}$", Pattern.DOTALL);
+    Matcher matcher = pattern.matcher(query);
+
+    if (!matcher.find()) {
+      return "";
+    }
+    String eventVar = ShaclResource.VARIABLE_MARK + lifecycleEvent.getId() + "_event";
+    String parsedWhereClause = matcher.group(1)
+        .trim()
+        // Remove the following unneeded statements
+        // Use of replaceFirst to improve performance as it occurs only once
+        .replaceFirst(
+            "\\?iri a\\/rdfs\\:subClassOf\\* \\<https\\:\\/\\/spec\\.edmcouncil\\.org\\/fibo\\/ontology\\/FBC\\/ProductsAndServices\\/FinancialProductsAndServices\\/ContractLifecycleEventOccurrence\\>\\.",
+            "")
+        .replaceFirst("BIND\\(\\?iri AS \\?id\\)", "")
+        // Replace iri with event variable
+        .replace(ShaclResource.VARIABLE_MARK + IRI_KEY, eventVar);
+    return StringResource.genOptionalClause(
+        eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+            + StringResource.parseIriForQuery(lifecycleEvent.getEvent())
+            + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event." + parsedWhereClause);
   }
 }
