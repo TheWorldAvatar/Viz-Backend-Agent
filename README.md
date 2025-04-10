@@ -2,6 +2,8 @@
 
 The Vis-Backend Agent is a supporting service to The World Avatar's [viz](https://github.com/TheWorldAvatar/viz) service. It is designed to manage all visualisation-related requests from a single point of access to for example, filter map layers, generate dynamic controls, or query, add, delete, and update instances within the registry. By abstracting the backend implementation details (such as which other agents to call), it provides a unified access point to the data within its specific stack. This design allows the ViP to be deployed on a separate stack while retaining the capability to ingest data from multiple stacks seamlessly.
 
+All notable changes to this agent are documented in the `CHANGELOG.md` file. Please consult it for release notes and upgrade information.
+
 ## Table of Contents
 
 - [Vis Backend Agent](#vis-backend-agent)
