@@ -245,11 +245,12 @@ public class GetService {
    * Retrieve the form template for the target entity and its information.
    * 
    * @param resourceID    The target resource identifier for the instance class.
+   * @param roles         The roles associated with the user request.
    * @param isReplacement Indicates if the resource ID is a replacement value
    *                      rather than a resource.
    * @param currentEntity Current default entity if available.
    */
-  public ResponseEntity<Map<String, Object>> getForm(String resourceID, boolean isReplacement,
+  public ResponseEntity<Map<String, Object>> getForm(String resourceID, String roles, boolean isReplacement,
       Map<String, Object> currentEntity) {
     LOGGER.debug("Retrieving the form template for {} ...", resourceID);
     String query = this.queryTemplateService.getFormQuery(resourceID, isReplacement);
@@ -261,7 +262,8 @@ public class GetService {
       // Execute the query on the current endpoint and get the result
       ArrayNode formTemplateInputs = this.kgService.queryJsonLd(query, endpoint);
       if (!formTemplateInputs.isEmpty()) {
-        Map<String, Object> results = this.queryTemplateService.genFormTemplate(formTemplateInputs, currentEntity);
+        Map<String, Object> results = this.queryTemplateService.genFormTemplate(formTemplateInputs, roles,
+            currentEntity);
         LOGGER.info(SUCCESSFUL_REQUEST_MSG);
         return new ResponseEntity<>(results, HttpStatus.OK);
       }

@@ -70,7 +70,7 @@ class QueryTemplateServiceTest {
     @Test
     void testGenFormTemplate() throws IOException {
         Map<String, Object> result = testService
-                .genFormTemplate(TestUtils.getArrayJson(FormTemplateFactoryTest.TEST_SIMPLE_FILE), new HashMap<>());
+                .genFormTemplate(TestUtils.getArrayJson(FormTemplateFactoryTest.TEST_SIMPLE_FILE), "", new HashMap<>());
         assertEquals(
                 TestUtils.getMapJson(FormTemplateFactoryTest.EXPECTED_SIMPLE_FILE),
                 result);

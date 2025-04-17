@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +25,7 @@ import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.GeocodingService;
+import com.cmclinnovations.agent.utils.StringResource;
 
 @RestController
 public class VisBackendAgent {
@@ -175,9 +177,10 @@ public class VisBackendAgent {
    * Retrieves the form template for the specified type from the knowledge graph.
    */
   @GetMapping("/form/{type}")
-  public ResponseEntity<Map<String, Object>> getFormTemplate(@PathVariable(name = "type") String type) {
+  public ResponseEntity<Map<String, Object>> getFormTemplate(@PathVariable(name = "type") String type, Model model) {
     LOGGER.info("Received request to get the form template for {}...", type);
-    return this.getService.getForm(type, false, new HashMap<>());
+    String roles = model.getAttribute(StringResource.HEADER_ROLES).toString();
+    return this.getService.getForm(type, roles, false, new HashMap<>());
   }
 
   /**
@@ -185,14 +188,16 @@ public class VisBackendAgent {
    * the knowledge graph.
    */
   @GetMapping("/form/{type}/{id}")
-  public ResponseEntity<Map<String, Object>> retrieveFormTemplate(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<Map<String, Object>> retrieveFormTemplate(@PathVariable String type, @PathVariable String id,
+      Model model) {
     LOGGER.info("Received request to get specific form template for {} ...", type);
+    String roles = model.getAttribute(StringResource.HEADER_ROLES).toString();
     Map<String, Object> currentEntity = new HashMap<>();
     ResponseEntity<?> currentEntityResponse = this.getService.getInstance(id, type, false);
     if (currentEntityResponse.getStatusCode() == HttpStatus.OK) {
       currentEntity = (Map<String, Object>) currentEntityResponse.getBody();
     }
-    return this.getService.getForm(type, false, currentEntity);
+    return this.getService.getForm(type, roles, false, currentEntity);
   }
 
   /**

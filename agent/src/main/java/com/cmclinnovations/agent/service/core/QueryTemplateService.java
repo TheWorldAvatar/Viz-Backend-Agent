@@ -132,11 +132,13 @@ public class QueryTemplateService {
    * Generates the form template as a JSON object.
    * 
    * @param shaclFormInputs the form inputs queried from the SHACL restrictions.
+   * @param roles           The roles associated with the user request.
    * @param defaultVals     the default values for the form.
    */
-  public Map<String, Object> genFormTemplate(ArrayNode shaclFormInputs, Map<String, Object> defaultVals) {
+  public Map<String, Object> genFormTemplate(ArrayNode shaclFormInputs, String roles,
+      Map<String, Object> defaultVals) {
     LOGGER.debug("Generating the form template from the found SHACL restrictions...");
-    return this.formTemplateFactory.genTemplate(shaclFormInputs, defaultVals);
+    return this.formTemplateFactory.genTemplate(StringResource.mapRoles(roles), shaclFormInputs, defaultVals);
   }
 
   /**

@@ -409,7 +409,7 @@ public class LifecycleService {
         currentEntity = (Map<String, Object>) currentEntityResponse.getBody();
       }
     }
-    return this.getService.getForm(replacementQueryLine, true, currentEntity);
+    return this.getService.getForm(replacementQueryLine, "", true, currentEntity);
   }
 
   /**

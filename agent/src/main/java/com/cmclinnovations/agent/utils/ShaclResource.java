@@ -1,7 +1,6 @@
 package com.cmclinnovations.agent.utils;
 
 import java.util.List;
-import java.util.Map;
 
 public class ShaclResource {
   // JSON LD keys
@@ -43,6 +42,7 @@ public class ShaclResource {
   public static final String IN_PROPERTY = "in";
   public static final String SHACL_IN_PROPERTY = SHACL_PREFIX + IN_PROPERTY;
   public static final String BELONGS_TO_PROPERTY = "belongsTo";
+  public static final String ROLE_PROPERTY = "role";
   public static final String NODE_PROPERTY = "node";
   // Query string elements
   public static final String RDFS_LABEL_PREDICATE = "rdfs:label";
