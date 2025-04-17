@@ -3,6 +3,10 @@ package com.cmclinnovations.agent.utils;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -32,6 +36,8 @@ public class StringResource {
   public static final String NESTED_CLASS_VAR = "nested_class";
   public static final String CLAZZ_VAR = "clazz";
   public static final String RDF_TYPE = "rdf:type";
+
+  public static final String HEADER_ROLES = "roles";
 
   // Private constructor to prevent instantiation
   private StringResource() {
@@ -164,5 +170,18 @@ public class StringResource {
       return iri.substring(0, lastSlashIndex);
     }
     throw new IllegalArgumentException("Invalid IRI! Does not conform to RFC2396 specifications.");
+  }
+
+  /**
+   * Maps the input roles string to a set for easy checks.
+   * 
+   * @param roles A string of roles delimited by ;.
+   */
+  public static Set<String> mapRoles(String roles) {
+    if (roles == null || roles.isEmpty()) {
+      return new HashSet<>();
+    }
+    return Arrays.stream(roles.split(";")).map(String::trim)
+        .collect(Collectors.toSet());
   }
 }
