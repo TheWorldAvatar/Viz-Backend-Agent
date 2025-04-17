@@ -397,8 +397,9 @@ public class LifecycleService {
    * 
    * @param eventType The target event type.
    * @param targetId  The target instance IRI.
+   * @param roles         The roles associated with the user request.
    */
-  public ResponseEntity<Map<String, Object>> getForm(LifecycleEventType eventType, String targetId) {
+  public ResponseEntity<Map<String, Object>> getForm(LifecycleEventType eventType, String targetId, String roles) {
     // Ensure that there is a specific event type target
     String replacementQueryLine = eventType.getShaclReplacement();
     Map<String, Object> currentEntity = new HashMap<>();
@@ -409,7 +410,7 @@ public class LifecycleService {
         currentEntity = (Map<String, Object>) currentEntityResponse.getBody();
       }
     }
-    return this.getService.getForm(replacementQueryLine, "", true, currentEntity);
+    return this.getService.getForm(replacementQueryLine, roles, true, currentEntity);
   }
 
   /**
