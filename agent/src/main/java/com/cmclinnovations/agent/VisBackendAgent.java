@@ -177,10 +177,10 @@ public class VisBackendAgent {
    * Retrieves the form template for the specified type from the knowledge graph.
    */
   @GetMapping("/form/{type}")
-  public ResponseEntity<Map<String, Object>> getFormTemplate(@PathVariable(name = "type") String type, Model model) {
+  public ResponseEntity<Map<String, Object>> getFormTemplate(@PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get the form template for {}...", type);
-    String roles = model.getAttribute(StringResource.HEADER_ROLES).toString();
-    return this.getService.getForm(type, roles, false, new HashMap<>());
+    // Access to this empty form is prefiltered on the UI and need not be enforced
+    return this.getService.getForm(type, "", false, new HashMap<>());
   }
 
   /**
