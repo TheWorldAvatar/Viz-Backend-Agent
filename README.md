@@ -725,6 +725,19 @@ base:ExampleClassShape
   ] .
 ```
 
+The following SHACL value constraints will be extracted and present in the form template:
+
+1. sh:minCount
+2. sh:maxCount
+3. sh:minInclusive
+4. sh:maxInclusive
+5. sh:minExclusive
+6. sh:maxExclusive
+7. sh:minLength
+8. sh:maxLength
+9. sh:pattern
+10. <https://theworldavatar.io/kg/form/step>
+
 ### 3.1.1 Branching Form
 
 Users can generate branching forms using the `sh:or` logical constraint. This generates a form with a category dropdown. Selecting a category displays a different set of form fields. Each branch requires a separate node shape without a `sh:targetClass` property, but with `sh:name` and `sh:description` properties. These properties populate the category dropdown.
