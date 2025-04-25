@@ -20,6 +20,7 @@ CONSTRUCT {
     sh:maxExclusive ?maxexclusive ;
     sh:minLength ?minlength ;
     sh:maxLength ?maxlength ;
+    twa:step ?step ;
     sh:pattern ?pattern .
   ?groupobj rdf:type sh:PropertyGroup ;
     rdfs:label ?group ;
@@ -119,6 +120,10 @@ CONSTRUCT {
 
     OPTIONAL {
       ?subproperty sh:pattern ?pattern .
+    }
+
+    OPTIONAL {
+      ?subproperty twa:step ?step .
     }
   }
 }
