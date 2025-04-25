@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.5.1
+
+### Features
+
+- Add query statement to extract steps from the SHACL constraints
+
 ## 1.5.0
 
 ### Features
