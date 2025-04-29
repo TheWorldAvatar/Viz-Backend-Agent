@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.service;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
@@ -10,6 +11,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.jena.riot.RDFDataMgr;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import java.io.ByteArrayOutputStream;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.riot.Lang;
+import org.topbraid.shacl.rules.RuleUtil;
 
 @Service
 public class AddService {
@@ -102,7 +109,31 @@ public class AddService {
     //Search jsonString for sh:SPARQLRule, if it exists run the indented two commands
     if (jsonString.contains("sh:SPARQLRule")) { // Step 1: Simple detection
       LOGGER.info("Detected sh:SPARQLRule, running SHACL inference...");
+      try {
+              // Step 2a: Read input JSON-LD into a Jena model
+              Model dataModel = ModelFactory.createDefaultModel();
+              RDFDataMgr.read(dataModel, new ByteArrayInputStream(jsonString.getBytes()), Lang.JSONLD);
 
+              // Step 2b: Apply SHACL SPARQLRule inference using TopBraid's RuleUtil
+              Model inferredModel = RuleUtil.executeRules(dataModel, null, null, null);
+
+              // Step 3: Serialize inferred triples into a string (Turtle format for example)
+              ByteArrayOutputStream out = new ByteArrayOutputStream();
+              inferredModel.write(out, "TURTLE");
+              String inferredTriplesString = out.toString();
+
+              LOGGER.debug("Inferred triples:\n" + inferredTriplesString);
+
+              // Step 4: Instantiate (add) the inferred triples into KG
+              ResponseEntity<String> inferredResponse = this.kgService.add(inferredTriplesString);
+              if (inferredResponse.getStatusCode() == HttpStatus.OK) {
+                  LOGGER.info("Successfully instantiated inferred triples.");
+              } else {
+                  LOGGER.warn("Failed to instantiate inferred triples: " + inferredResponse.getStatusCode());
+              }
+          } catch (Exception e) {
+              LOGGER.error("Error during SHACL SPARQLRule inference using TopBraid", e);
+      }
     }
 
     if (response.getStatusCode() == HttpStatus.OK) {
