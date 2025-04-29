@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+
 @Service
 public class AddService {
   private final JsonLdService jsonLdService;
@@ -97,6 +98,13 @@ public class AddService {
     String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();
     String jsonString = jsonLdSchema.toString();
     ResponseEntity<String> response = this.kgService.add(jsonString);
+
+    //Search jsonString for sh:SPARQLRule, if it exists run the indented two commands
+    if (jsonString.contains("sh:SPARQLRule")) { // Step 1: Simple detection
+      LOGGER.info("Detected sh:SPARQLRule, running SHACL inference...");
+
+    }
+
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(message);
       return new ResponseEntity<>(new ApiResponse(message, instanceIri), HttpStatus.CREATED);
