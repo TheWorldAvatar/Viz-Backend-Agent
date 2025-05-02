@@ -111,27 +111,30 @@ public class AddService {
 
     ResponseEntity<String> response = this.kgService.add(jsonString);
 
+    if (!response.getStatusCode().is2xxSuccessful()) {
+        LOGGER.error("Failed to add main instance to KG.");
+        return new ResponseEntity<>(new ApiResponse(response), response.getStatusCode());
+    }
     try {
-        // Step 2: Retrieve SHACL shape from Blazegraph based on instance type
+        //Retrieve SHACL shape from Blazegraph based on instance type
         String shapeTurtle = this.kgService.getShaclShape(instanceTypeIRI);
 
-        // Check if the shape contains a SPARQL rule
+        //Check if the shape contains a SPARQL rule
         if (shapeTurtle.contains("sh:rule")) {
             LOGGER.info("Detected sh:rule, running SHACL inference...");
 
-            // Step 3: Load data model from input JSON-LD
+            //Load data model from input JSON-LD
             Model dataModel = ModelFactory.createDefaultModel();
             RDFDataMgr.read(dataModel, new ByteArrayInputStream(jsonString.getBytes()), Lang.JSONLD);
 
-
-            // Step 4: Load SHACL shape model from Turtle string
+            //Load SHACL shape model from Turtle string
             Model shapesModel = ModelFactory.createDefaultModel();
             RDFDataMgr.read(shapesModel, new ByteArrayInputStream(shapeTurtle.getBytes(StandardCharsets.UTF_8)), Lang.TURTLE);
 
-            // Step 5: Run SHACL rule inference using TopBraid
+            //Run SHACL rule inference using TopBraid library
             Model inferredModel = RuleUtil.executeRules(dataModel, shapesModel, null, null);
 
-            // Step 6: Serialize inferred triples to JSON-LD
+            //Serialize inferred triples to JSON-LD
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             RDFWriter.create()
                 .source(inferredModel)
@@ -140,14 +143,17 @@ public class AddService {
 
             String inferredTriplesString = out.toString(StandardCharsets.UTF_8);
 
-            // Step 7: Add inferred triples to the knowledge graph
             ResponseEntity<String> inferredResponse = this.kgService.add(inferredTriplesString);
-
-            LOGGER.debug("Inferred triples:\n" + inferredTriplesString);
+            if (!inferredResponse.getStatusCode().is2xxSuccessful()) {
+                LOGGER.warn("Failed to add inferred triples to KG.");
+                return new ResponseEntity<>(new ApiResponse("Instance added, but inference failed to store.", instanceIri), HttpStatus.ACCEPTED);
+            }
+            LOGGER.info("Inferred triples:\n" + inferredTriplesString);
+          }
+        } catch (Exception e) {
+            LOGGER.error("Error during SHACL SPARQLRule inference using TopBraid", e);
+            return new ResponseEntity<>(new ApiResponse("Instance added, but inference encountered an error.", instanceIri), HttpStatus.ACCEPTED);
         }
-    } catch (Exception e) {
-        LOGGER.error("Error during SHACL SPARQLRule inference using TopBraid", e);
-    }
 
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(message);
