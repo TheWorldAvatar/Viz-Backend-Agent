@@ -418,4 +418,36 @@ public class KGService {
         .map(row -> new SparqlBinding((ObjectNode) row))
         .collect(Collectors.toCollection(ArrayDeque::new));
   }
+
+  /**
+   * Retrieves the SHACL shape for a given target class IRI.
+   *
+   * @param targetClassIRI The full IRI of the target class.
+   * @return The RDF triples describing the SHACL shape in Turtle format.
+   */
+  public String getShaclShape(String targetClassIRI) {
+    LOGGER.debug("Retrieving SHACL shape for target class: {}", targetClassIRI);
+
+    // Load the SPARQL query from the classpath and replace the [target] placeholder
+    String constructQuery = fileService.getContentsWithReplacement(
+            FileService.SHACL_SHAPE_PATH_QUERY_RESOURCE, targetClassIRI
+    );
+
+    String endpoint = BlazegraphClient.getInstance()
+            .getRemoteStoreClient(this.namespace)
+            .getQueryEndpoint();
+
+    try {
+      return client.post()
+              .uri(endpoint)
+              .accept(MediaType.valueOf("text/turtle"))
+              .contentType(MediaType.valueOf("application/sparql-query"))
+              .body(constructQuery)
+              .retrieve()
+              .body(String.class);
+    } catch (Exception e) {
+      LOGGER.error("Error retrieving SHACL shape: ", e);
+      throw new RuntimeException("Failed to retrieve SHACL shape for " + targetClassIRI, e);
+    }
+  }
 }

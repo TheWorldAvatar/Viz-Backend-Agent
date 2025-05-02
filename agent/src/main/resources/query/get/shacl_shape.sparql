@@ -3,10 +3,19 @@ PREFIX ontomatpassport: <https://www.theworldavatar.com/kg/ontomatpassport/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 CONSTRUCT {
-  ?s ?p ?o
+  ?shape ?p ?o .
+  ?o ?p1 ?o1 .
+  ?o1 ?p2 ?o2 .
 }
 WHERE {
-  ?s a sh:NodeShape ;
-     sh:targetClass [target];
-     ?p ?o .
+  ?shape a sh:NodeShape ;
+         sh:targetClass <[target]>;
+         ?p ?o .
+
+  OPTIONAL {
+    ?o ?p1 ?o1 .
+    OPTIONAL {
+      ?o1 ?p2 ?o2 .
+    }
+  }
 }

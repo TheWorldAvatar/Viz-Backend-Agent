@@ -2,7 +2,7 @@ package com.cmclinnovations.agent.service;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
@@ -106,49 +106,47 @@ public class AddService {
     LOGGER.debug("Adding instance to endpoint...");
     String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();
     String jsonString = jsonLdSchema.toString();
+
+    String instanceTypeIRI=jsonLdSchema.path(ShaclResource.TYPE_KEY).asText();
+
     ResponseEntity<String> response = this.kgService.add(jsonString);
 
-    //Search jsonString for sh:SPARQLRule, if it exists run the indented two commands
-    if (jsonString.contains("sh:SPARQLRule")) { // Step 1: Simple detection
-      LOGGER.info("Detected sh:SPARQLRule, running SHACL inference...");
-      try {
-            // Step 1: Read input JSON-LD into a Jena data model
+    try {
+        // Step 2: Retrieve SHACL shape from Blazegraph based on instance type
+        String shapeTurtle = this.kgService.getShaclShape(instanceTypeIRI);
+
+        // Check if the shape contains a SPARQL rule
+        if (shapeTurtle.contains("sh:rule")) {
+            LOGGER.info("Detected sh:rule, running SHACL inference...");
+
+            // Step 3: Load data model from input JSON-LD
             Model dataModel = ModelFactory.createDefaultModel();
             RDFDataMgr.read(dataModel, new ByteArrayInputStream(jsonString.getBytes()), Lang.JSONLD);
 
-            // Step 2: Query the SHACL Shape from Blazegraph
-        // 2a) Write the SPARQL query
-        // - Add function in kgservice to query the shape
-        // 2b) Read the results into a model
-            Model shapesModel = ModelFactory.createDefaultModel();
-            try (InputStream shapeIn = getClass().getClassLoader().getResourceAsStream("MaterialPassport.ttl")) {
-              if (shapeIn == null) {
-                throw new RuntimeException("Cannot find MaterialPassport.ttl in resources.");
-              }
-              RDFDataMgr.read(shapesModel, shapeIn, Lang.TURTLE);
-            }
 
-            // Step 3: Apply TopBraid's SHACL rule inference
+            // Step 4: Load SHACL shape model from Turtle string
+            Model shapesModel = ModelFactory.createDefaultModel();
+            RDFDataMgr.read(shapesModel, new ByteArrayInputStream(shapeTurtle.getBytes(StandardCharsets.UTF_8)), Lang.TURTLE);
+
+            // Step 5: Run SHACL rule inference using TopBraid
             Model inferredModel = RuleUtil.executeRules(dataModel, shapesModel, null, null);
 
-            // Step 4: Serialize inferred triples into a string (Turtle format)
+            // Step 6: Serialize inferred triples to JSON-LD
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-
             RDFWriter.create()
-            .source(inferredModel)
-            .format(RDFFormat.JSONLD)
-            .output(out);
+                .source(inferredModel)
+                .format(RDFFormat.JSONLD)
+                .output(out);
 
-            String inferredTriplesString = out.toString();
+            String inferredTriplesString = out.toString(StandardCharsets.UTF_8);
 
-            // Step 6: Add inferred triples to KG
+            // Step 7: Add inferred triples to the knowledge graph
             ResponseEntity<String> inferredResponse = this.kgService.add(inferredTriplesString);
 
             LOGGER.debug("Inferred triples:\n" + inferredTriplesString);
-
-          } catch (Exception e) {
-              LOGGER.error("Error during SHACL SPARQLRule inference using TopBraid", e);
-      }
+        }
+    } catch (Exception e) {
+        LOGGER.error("Error during SHACL SPARQLRule inference using TopBraid", e);
     }
 
     if (response.getStatusCode() == HttpStatus.OK) {
