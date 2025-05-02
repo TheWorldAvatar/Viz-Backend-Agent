@@ -1,0 +1,12 @@
+PREFIX sh: <http://www.w3.org/ns/shacl#>
+PREFIX ontomatpassport: <https://www.theworldavatar.com/kg/ontomatpassport/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+CONSTRUCT {
+  ?s ?p ?o
+}
+WHERE {
+  ?s a sh:NodeShape ;
+     sh:targetClass [target];
+     ?p ?o .
+}
