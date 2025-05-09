@@ -78,6 +78,13 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.topbraid/shacl -->
+		<dependency>
+			<groupId>org.topbraid</groupId>
+			<artifactId>shacl</artifactId>
+			<version>1.4.4</version>
+		</dependency>
 	</dependencies>
 
 	<build>

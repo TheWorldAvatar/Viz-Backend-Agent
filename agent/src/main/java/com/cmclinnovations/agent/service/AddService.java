@@ -1,5 +1,8 @@
 package com.cmclinnovations.agent.service;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
@@ -10,11 +13,18 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFFormat;
+import org.apache.jena.riot.RDFWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.topbraid.shacl.rules.RuleUtil;
 
 import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.service.application.LifecycleReportService;
@@ -96,7 +106,55 @@ public class AddService {
     LOGGER.debug("Adding instance to endpoint...");
     String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();
     String jsonString = jsonLdSchema.toString();
+
+    String instanceTypeIRI=jsonLdSchema.path(ShaclResource.TYPE_KEY).asText();
+
     ResponseEntity<String> response = this.kgService.add(jsonString);
+
+    if (!response.getStatusCode().is2xxSuccessful()) {
+        LOGGER.error("Failed to add main instance to KG.");
+        return new ResponseEntity<>(new ApiResponse(response), response.getStatusCode());
+    }
+    try {
+        //Retrieve SHACL shape from Blazegraph based on instance type
+        String shapeTurtle = this.kgService.getShaclShape(instanceTypeIRI);
+
+        //Check if the shape contains a SPARQL rule
+        if (shapeTurtle.contains("sh:rule")) {
+            LOGGER.info("Detected sh:rule, running SHACL inference...");
+
+            //Load data model from input JSON-LD
+            Model dataModel = ModelFactory.createDefaultModel();
+            RDFDataMgr.read(dataModel, new ByteArrayInputStream(jsonString.getBytes()), Lang.JSONLD);
+
+            //Load SHACL shape model from Turtle string
+            Model shapesModel = ModelFactory.createDefaultModel();
+            RDFDataMgr.read(shapesModel, new ByteArrayInputStream(shapeTurtle.getBytes(StandardCharsets.UTF_8)), Lang.TURTLE);
+
+            //Run SHACL rule inference using TopBraid library
+            Model inferredModel = RuleUtil.executeRules(dataModel, shapesModel, null, null);
+
+            //Serialize inferred triples to JSON-LD
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            RDFWriter.create()
+                .source(inferredModel)
+                .format(RDFFormat.JSONLD)
+                .output(out);
+
+            String inferredTriplesString = out.toString(StandardCharsets.UTF_8);
+
+            ResponseEntity<String> inferredResponse = this.kgService.add(inferredTriplesString);
+            if (!inferredResponse.getStatusCode().is2xxSuccessful()) {
+                LOGGER.warn("Failed to add inferred triples to KG.");
+                return new ResponseEntity<>(new ApiResponse("Instance added, but inference failed to store.", instanceIri), HttpStatus.ACCEPTED);
+            }
+            LOGGER.info("Inferred triples:\n" + inferredTriplesString);
+          }
+        } catch (Exception e) {
+            LOGGER.error("Error during SHACL SPARQLRule inference using TopBraid", e);
+            return new ResponseEntity<>(new ApiResponse("Instance added, but inference encountered an error.", instanceIri), HttpStatus.ACCEPTED);
+        }
+
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(message);
       return new ResponseEntity<>(new ApiResponse(message, instanceIri), HttpStatus.CREATED);
