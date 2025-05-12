@@ -141,7 +141,7 @@ public class FormTemplateFactory {
         propertyRoles.retainAll(roles);
         // Skip this iteration if permission is not given
         if (propertyRoles.isEmpty()) {
-          break;
+          continue;
         }
       }
 
