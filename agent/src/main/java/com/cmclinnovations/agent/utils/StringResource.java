@@ -37,7 +37,7 @@ public class StringResource {
   public static final String CLAZZ_VAR = "clazz";
   public static final String RDF_TYPE = "rdf:type";
 
-  public static final String HEADER_ROLES = "roles";
+  public static final String HEADER_ROLES = "role";
 
   // Private constructor to prevent instantiation
   private StringResource() {
