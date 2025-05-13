@@ -145,9 +145,10 @@ public class QueryTemplateService {
    * Generates a SELECT SPARQL query to retrieve instances from the inputs.
    * 
    * @param queryVarsAndPaths The query construction requirements.
+   * @param roles             The roles associated with the user request.
    */
-  public Queue<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
-    return this.genGetQuery(queryVarsAndPaths, "", null, "", new HashMap<>());
+  public Queue<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String roles) {
+    return this.genGetQuery(queryVarsAndPaths, "", null, roles, "", new HashMap<>());
   }
 
   /**
@@ -156,16 +157,18 @@ public class QueryTemplateService {
    * @param queryVarsAndPaths  The query construction requirements.
    * @param targetId           An optional field to target at a specific instance.
    * @param parentField        Optional parent field.
+   * @param roles              The roles associated with the user request.
    * @param addQueryStatements Additional query statements to be added
    * @param addVars            Optional additional variables to be included in the
    *                           query, along with their order sequence
    */
   public Queue<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
-      ParentField parentField, String addQueryStatements, Map<String, List<Integer>> addVars) {
+      ParentField parentField, String roles, String addQueryStatements, Map<String, List<Integer>> addVars) {
     LOGGER.debug("Generating the SELECT query to get instances...");
     return this.getQueryTemplateFactory
         .write(
-            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetId, parentField, addQueryStatements, addVars));
+            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetId, parentField, addQueryStatements, addVars,
+                StringResource.mapRoles(roles)));
   }
 
   /**

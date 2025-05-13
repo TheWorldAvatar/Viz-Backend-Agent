@@ -1,7 +1,8 @@
 PREFIX sh:             <http://www.w3.org/ns/shacl#>
 PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/>
+PREFIX twa:            <https://theworldavatar.io/kg/form/>
 
-SELECT DISTINCT ?clazz ?instance_clazz ?name ?nodegroup ?nested_class ?branch ?order ?subject ?isoptional ?isclass
+SELECT DISTINCT ?clazz ?instance_clazz ?name ?nodegroup ?nested_class ?branch ?role ?order ?subject ?isoptional ?isclass
  ?multipath ?multipath_proppath ?name_multipath ?name_multipath_proppath
 WHERE {
   ?shape rdf:type sh:NodeShape ;
@@ -19,6 +20,15 @@ WHERE {
   OPTIONAL{
     ?property sh:hasValue ?parentSubjectValue .
   }
+  OPTIONAL {
+    ?property twa:role ?role .
+  }
+  OPTIONAL {
+    ?property sh:group/twa:role ?nestedrole .
+  }
+  # nestedrole may be present within the [shape] replacement
+  BIND(IF(BOUND(?role), ?role, ?nestedrole) AS ?role)
+
   OPTIONAL{
     ?property sh:minCount ?minCount  .
   }

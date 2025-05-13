@@ -91,8 +91,10 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    *                         should be queried in template.
    * @param queryLineOutputs Mappings storing the parsed query lines for query
    *                         construction.
+   * @param roles            Optional set containing the roles
    */
-  protected void sortBindings(Queue<Queue<SparqlBinding>> nestedBindings, Map<String, String> queryLineOutputs) {
+  protected void sortBindings(Queue<Queue<SparqlBinding>> nestedBindings, Map<String, String> queryLineOutputs,
+      Set<String> roles) {
     this.reset();
     Map<String, SparqlQueryLine> queryLineMappings = new HashMap<>();
     Map<String, SparqlQueryLine> groupQueryLineMappings = new HashMap<>();
@@ -101,6 +103,17 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       Queue<String> nodeGroups = new ArrayDeque<>();
       while (!bindings.isEmpty()) {
         SparqlBinding binding = bindings.poll();
+        // If authorisation is enabled, and there are roles associated to the property,
+        // only query the field IF the user has the authority to do so
+        if (!roles.isEmpty() && binding.containsField(StringResource.HEADER_ROLES)) {
+          String unmappedPropertyRoles = binding.getFieldValue(StringResource.HEADER_ROLES);
+          Set<String> propertyRoles = StringResource.mapRoles(unmappedPropertyRoles);
+          propertyRoles.retainAll(roles);
+          // Skip this iteration if permission is not given
+          if (propertyRoles.isEmpty()) {
+            continue;
+          }
+        }
         String multiPartPredicate = this.getPredicate(binding, MULTIPATH_VAR);
         String multiPartLabelPredicate = this.getPredicate(binding, MULTI_NAME_PATH_VAR);
         this.genQueryLine(binding, multiPartPredicate, multiPartLabelPredicate, nodeGroups, queryLineMappings);

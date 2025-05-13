@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.template.query;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 
@@ -44,7 +45,9 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
     StringBuilder filters = new StringBuilder();
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    super.sortBindings(params.bindings(), queryLines);
+    // Search query should not be affected by security roles, as the triples should
+    // still be compliant
+    super.sortBindings(params.bindings(), queryLines, new HashSet<>());
 
     queryLines.entrySet().forEach(currentLine -> {
       String variable = currentLine.getKey();
