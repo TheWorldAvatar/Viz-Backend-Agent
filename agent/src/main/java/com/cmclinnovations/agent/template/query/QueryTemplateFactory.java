@@ -177,13 +177,14 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     boolean isClassVar = Boolean.parseBoolean(binding.getFieldValue(IS_CLASS_VAR));
     String instanceClass = binding.getFieldValue(INSTANCE_CLASS_VAR);
     String branchName = binding.getFieldValue(BRANCH_VAR);
-    String mappingKey = ShaclResource.getMappingKey(propertyName, branchName);
+    String mappingKey = ShaclResource.getMappingKey(propertyName, shNodeGroupName);
+    mappingKey = ShaclResource.getMappingKey(mappingKey, branchName);
     // For existing mappings,
     if (queryLineMappings.containsKey(mappingKey)) {
       SparqlQueryLine currentQueryLine = queryLineMappings.get(mappingKey);
       // Update the mapping with the extended predicates
       queryLineMappings.put(mappingKey,
-          new SparqlQueryLine(propertyName, instanceClass, currentQueryLine.nestedClass(), currentQueryLine.subject(),
+          new SparqlQueryLine(currentQueryLine.property(), instanceClass, currentQueryLine.nestedClass(), currentQueryLine.subject(),
               parsePredicate(currentQueryLine.predicate(), multiPartPredicate),
               parsePredicate(currentQueryLine.labelPredicate(), multiPartLabelPredicate),
               currentQueryLine.subjectFilter(), currentQueryLine.branch(), currentQueryLine.isOptional(), isClassVar));
@@ -247,7 +248,10 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
   private void parseQueryLines(Map<String, SparqlQueryLine> queryLineMappings,
       Map<String, SparqlQueryLine> groupQueryLineMappings, Map<String, String> queryLineOutputs) {
     Map<String, String> branchQueryLines = new HashMap<>();
+    // Store group lines into two separate maps to indicate which ones require an
+    // OPTIONAL wrapper
     Map<String, String> groupQueryLines = new HashMap<>();
+    Map<String, String> groupOptionalQueryLines = new HashMap<>();
     groupQueryLineMappings.forEach((key, queryLine) -> {
       StringBuilder currentLine = new StringBuilder();
       StringResource.appendTriple(currentLine,
@@ -262,7 +266,11 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
             RDF_TYPE + REPLACEMENT_PLACEHOLDER,
             StringResource.parseIriForQuery(queryLine.nestedClass()));
       }
-      groupQueryLines.put(key, currentLine.toString());
+      if (queryLine.isOptional()) {
+        groupOptionalQueryLines.put(key, currentLine.toString());
+      } else {
+        groupQueryLines.put(key, currentLine.toString());
+      }
     });
     queryLineMappings.values().forEach(queryLine -> {
       // Parse and generate a query line for the current line
@@ -310,6 +318,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
 
       // Branches should be added as a separate bunch
       if (queryLine.branch() != null) {
+        // WIP: Branching has not yet been tested with groupings robustly
         branchQueryLines.compute(queryLine.branch(), (k, previousLine) -> {
           // Append previous line only if there are previous lines, else, it will be an
           // empty string added
@@ -323,6 +332,11 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
           }
           return prevLine + lineOutput;
         });
+        // If the lines belong to a specific group, add them together
+      } else if (groupQueryLines.containsKey(queryLine.subject())) {
+        groupQueryLines.put(queryLine.subject(), groupQueryLines.get(queryLine.subject()) + lineOutput);
+      } else if (groupOptionalQueryLines.containsKey(queryLine.subject())) {
+        groupOptionalQueryLines.put(queryLine.subject(), groupOptionalQueryLines.get(queryLine.subject()) + lineOutput);
       } else {
         // Non-branch query lines will be added directly
         queryLineOutputs.put(queryLine.property(), lineOutput);
@@ -334,6 +348,14 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     // If there are non-branch group query lines, add them to the query lines
     if (!groupQueryLines.isEmpty()) {
       queryLineOutputs.putAll(groupQueryLines);
+    }
+    if (!groupOptionalQueryLines.isEmpty()) {
+      // For optional groups, wrap them in an optional statement
+      groupOptionalQueryLines.entrySet().stream()
+          .forEach(entry -> {
+            String optionalStatement = "OPTIONAL{" + entry.getValue() + "}";
+            queryLineOutputs.put(entry.getKey(), optionalStatement);
+          });
     }
     // Add branch query block if there are any branches
     if (!branchQueryLines.isEmpty()) {
