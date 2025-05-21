@@ -11,6 +11,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -85,6 +86,20 @@ public class SparqlBindingTest {
   void testGetFieldValue_NonExistentField() {
     assertNull(this.sampleBinding.getFieldValue(MISSING_FIELD),
         "Missing field should return null!");
+  }
+
+  /**
+   * Adds a response field to the specified object node.
+   * 
+   * @param node  The target object node to add the new field.
+   * @param field The field to be added.
+   * @param value The value of the field.
+   */
+  public static void addResponseField(ObjectNode node, String field, String value) {
+    if (value != null) {
+      node.set(field,
+          SparqlBindingTest.genResponseField(ShaclResource.XSD_STRING, value, null, null));
+    }
   }
 
   /**

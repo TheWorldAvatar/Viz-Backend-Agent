@@ -91,6 +91,14 @@ public class TestUtils {
   }
 
   /**
+   * Generates an empty Object node.
+   */
+  public static ObjectNode genEmptyObjectNode() {
+    ObjectMapper mapper = new ObjectMapper();
+    return mapper.createObjectNode();
+  }
+
+  /**
    * Generates a mock version of one SPARQL binding.
    * 
    * @param resultBindings   Stores the binding generated
@@ -103,35 +111,35 @@ public class TestUtils {
    * @param isOptional       Indicates if the field is optional
    */
   public static void genMockSPARQLBinding(Queue<SparqlBinding> resultBindings, String clazz, String varName,
-    String multiPathPred, String multiSubPathPred, String nodeGroup, String order, boolean isOptional) {
-  SparqlBinding binding = mock(SparqlBinding.class);
-  when(binding.getFieldValue(StringResource.CLAZZ_VAR)).thenReturn(clazz);
-  when(binding.getFieldValue(GetQueryTemplateFactoryTest.NAME_VAR)).thenReturn(varName);
-  when(binding.getFieldValue(ShaclResource.SUBJECT_VAR, "")).thenReturn("");
-  when(binding.getFieldValue(ShaclResource.INSTANCE_CLASS_VAR, "")).thenReturn("");
-  when(binding.getFieldValue(ShaclResource.NESTED_CLASS_VAR, "")).thenReturn("");
-  
-  // Only create mock interactions if there are values
-  if (!multiPathPred.isEmpty()) {
-    when(binding.containsField(GetQueryTemplateFactoryTest.MULTIPATH_VAR)).thenReturn(true);
-    when(binding.getFieldValue(GetQueryTemplateFactoryTest.MULTIPATH_VAR)).thenReturn(multiPathPred);
-  }
-  
-  if (!multiSubPathPred.isEmpty()) {
-    when(binding.containsField(GetQueryTemplateFactoryTest.MULTISUBPATH_VAR)).thenReturn(true);
-    when(binding.getFieldValue(GetQueryTemplateFactoryTest.MULTISUBPATH_VAR)).thenReturn(multiSubPathPred);
-  }
-  
-  if (!nodeGroup.isEmpty()) {
-    when(binding.containsField(ShaclResource.NODE_GROUP_VAR)).thenReturn(true);
-    when(binding.getFieldValue(ShaclResource.NODE_GROUP_VAR)).thenReturn(nodeGroup);
-  }
-  
-  if (!order.isEmpty()) {
-    when(binding.containsField("order")).thenReturn(true);
-    when(binding.getFieldValue("order")).thenReturn(order);
-  }
-  when(binding.getFieldValue(GetQueryTemplateFactoryTest.IS_OPTIONAL_VAR)).thenReturn(String.valueOf(isOptional));
-  resultBindings.offer(binding);
+      String multiPathPred, String multiSubPathPred, String nodeGroup, String order, boolean isOptional) {
+    SparqlBinding binding = mock(SparqlBinding.class);
+    when(binding.getFieldValue(StringResource.CLAZZ_VAR)).thenReturn(clazz);
+    when(binding.getFieldValue(GetQueryTemplateFactoryTest.NAME_VAR)).thenReturn(varName);
+    when(binding.getFieldValue(ShaclResource.SUBJECT_VAR, "")).thenReturn("");
+    when(binding.getFieldValue(ShaclResource.INSTANCE_CLASS_VAR, "")).thenReturn("");
+    when(binding.getFieldValue(ShaclResource.NESTED_CLASS_VAR, "")).thenReturn("");
+
+    // Only create mock interactions if there are values
+    if (!multiPathPred.isEmpty()) {
+      when(binding.containsField(GetQueryTemplateFactoryTest.MULTIPATH_VAR)).thenReturn(true);
+      when(binding.getFieldValue(GetQueryTemplateFactoryTest.MULTIPATH_VAR)).thenReturn(multiPathPred);
+    }
+
+    if (!multiSubPathPred.isEmpty()) {
+      when(binding.containsField(GetQueryTemplateFactoryTest.MULTISUBPATH_VAR)).thenReturn(true);
+      when(binding.getFieldValue(GetQueryTemplateFactoryTest.MULTISUBPATH_VAR)).thenReturn(multiSubPathPred);
+    }
+
+    if (!nodeGroup.isEmpty()) {
+      when(binding.containsField(ShaclResource.NODE_GROUP_VAR)).thenReturn(true);
+      when(binding.getFieldValue(ShaclResource.NODE_GROUP_VAR)).thenReturn(nodeGroup);
+    }
+
+    if (!order.isEmpty()) {
+      when(binding.containsField("order")).thenReturn(true);
+      when(binding.getFieldValue("order")).thenReturn(order);
+    }
+    when(binding.getFieldValue(GetQueryTemplateFactoryTest.IS_OPTIONAL_VAR)).thenReturn(String.valueOf(isOptional));
+    resultBindings.offer(binding);
   }
 }
