@@ -1,7 +1,6 @@
 package com.cmclinnovations.agent.utils;
 
 import java.util.List;
-import java.util.Map;
 
 public class ShaclResource {
   // JSON LD keys
@@ -16,6 +15,7 @@ public class ShaclResource {
   public static final String UNIT_KEY = "unit";
   public static final String VARIABLE_KEY = "variable";
   public static final String OUTPUT_KEY = "output";
+  public static final String ARRAY_KEY = "array";
   // Namespaces
   public static final String BASE_PREFIX = "https://theworldavatar.io/kg/";
   public static final String RDFS_PREFIX = "http://www.w3.org/2000/01/rdf-schema#";
@@ -44,6 +44,18 @@ public class ShaclResource {
   public static final String SHACL_IN_PROPERTY = SHACL_PREFIX + IN_PROPERTY;
   public static final String BELONGS_TO_PROPERTY = "belongsTo";
   public static final String NODE_PROPERTY = "node";
+  // Shacl Property Shape query variables
+  public static final String INSTANCE_CLASS_VAR = "instance_clazz";
+  public static final String NESTED_CLASS_VAR = "nested_class";
+  public static final String BRANCH_VAR = "branch";
+  public static final String SUBJECT_VAR = "subject";
+  public static final String NODE_GROUP_VAR = "nodegroup";
+  public static final String PATH_PREFIX = "_proppath";
+  public static final String MULTIPATH_VAR = "multipath";
+  public static final String MULTI_NAME_PATH_VAR = "name_multipath";
+  public static final String IS_ARRAY_VAR = "isarray";
+  public static final String IS_OPTIONAL_VAR = "isoptional";
+  public static final String IS_CLASS_VAR = "isclass";
   // Query string elements
   public static final String RDFS_LABEL_PREDICATE = "rdfs:label";
   public static final String FULL_STOP = ".";
@@ -83,13 +95,20 @@ public class ShaclResource {
   }
 
   /**
-   * Retrieve the query generation mapping key based on the property and branch.
+   * Retrieve the query generation mapping key based on the property and
+   * additional variables.
    * 
    * @param property property name.
-   * @param branch   optional branch name. must be null if optional.
+   * @param parts    Additional string parts to append (only non-null parts are
+   *                 used).
    */
-  public static String getMappingKey(String property, String branch) {
-    return branch == null ? property : branch + property;
-
+  public static String getMappingKey(String property, String... parts) {
+    StringBuilder key = new StringBuilder(property);
+    for (String part : parts) {
+      if (part != null) {
+        key.append(part);
+      }
+    }
+    return key.toString();
   }
 }

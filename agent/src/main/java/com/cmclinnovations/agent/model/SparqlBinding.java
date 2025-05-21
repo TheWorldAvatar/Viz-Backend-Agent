@@ -176,14 +176,24 @@ public class SparqlBinding {
   }
 
   /**
-   * Retrieve the field value.
+   * Retrieve the field value. Defaults to null if no value is found!
    * 
    * @param field Field of interest
    */
   public String getFieldValue(String field) {
+    return this.getFieldValue(field, null);
+  }
+
+  /**
+   * Retrieve the field value.
+   * 
+   * @param field        Field of interest
+   * @param defaultValue Fall back value.
+   */
+  public String getFieldValue(String field, String defaultValue) {
     SparqlResponseField fieldBinding = this.bindings.get(field);
     if (fieldBinding == null) {
-      return null;
+      return defaultValue;
     }
     return fieldBinding.value();
   }

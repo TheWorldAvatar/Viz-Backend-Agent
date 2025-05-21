@@ -30,6 +30,7 @@ import org.springframework.web.client.RestClient;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.stack.clients.blazegraph.BlazegraphClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -59,6 +60,7 @@ public class KGService {
 
   private static final String RDF_LIST_PATH_PREFIX = "/rdf:rest";
   private static final String SUB_SHAPE_PATH = "sh:node/sh:property";
+  private static final String FILTER_BOUNDED_PROPERTIES = "FILTER(BOUND(?name))";
 
   private static final Logger LOGGER = LogManager.getLogger(KGService.class);
 
@@ -291,6 +293,7 @@ public class KGService {
     // Initialise a queue to store all values
     Queue<Queue<SparqlBinding>> results = new ArrayDeque<>();
     String replacementShapePath = ""; // Initial replacement string
+    String replacementFilterPath = ""; // Initial replacement string
     boolean continueLoop = true; // Initialise a continue indicator
     // Iterate to get predicates at the hierarchy of shapes enforced via sh:node
     while (continueLoop) {
@@ -305,7 +308,8 @@ public class KGService {
         // Replace the [subproperty] and [path] with the respective values
         String executableQuery = shaclPathQuery
             .replace(FileService.REPLACEMENT_SHAPE, replacementShapePath)
-            .replace(FileService.REPLACEMENT_PATH, replacementPath);
+            .replace(FileService.REPLACEMENT_PATH, replacementPath)
+            .replace(FileService.REPLACEMENT_FILTER, replacementFilterPath);
         // SHACL restrictions are only found within one Blazegraph endpoint, and can be
         // queried without using FedX
         for (String endpoint : endpoints) {
@@ -318,6 +322,7 @@ public class KGService {
             hasResults = true;
           }
         }
+
         if (hasResults) {
           // Extend replacement path based on the current level
           replacementPath = replacementPath.isEmpty() ? RDF_LIST_PATH_PREFIX + "/rdf:first" // first level
@@ -328,6 +333,8 @@ public class KGService {
           // iterate to check if there are any nested shapes with predicates
           continueLoop = hasResults;
           isFirstIteration = false;
+          // Filter should be updated to no longer present empty branches after the first iteration ever
+          replacementFilterPath = FILTER_BOUNDED_PROPERTIES;
         }
       }
       if (!variablesAndPropertyPaths.isEmpty()) {
@@ -335,8 +342,8 @@ public class KGService {
       }
       // Extend to get the next level of shape if any
       replacementShapePath = replacementShapePath.isEmpty() ? " ?nestedshape." +
-          "?nestedshape sh:name ?" + StringResource.NODE_GROUP_VAR + ";sh:node/sh:targetClass ?"
-          + StringResource.NESTED_CLASS_VAR + ";" + SUB_SHAPE_PATH
+          "?nestedshape sh:name ?" + ShaclResource.NODE_GROUP_VAR + ";sh:node/sh:targetClass ?"
+          + ShaclResource.NESTED_CLASS_VAR + ";" + SUB_SHAPE_PATH
           : "/" + SUB_SHAPE_PATH + replacementShapePath;
     }
     if (results.isEmpty()) {

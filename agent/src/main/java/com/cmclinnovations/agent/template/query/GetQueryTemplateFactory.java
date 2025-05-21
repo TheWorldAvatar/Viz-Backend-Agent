@@ -2,9 +2,7 @@ package com.cmclinnovations.agent.template.query;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
@@ -45,13 +43,11 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    *               query, along with their order sequence
    */
   public Queue<String> write(QueryTemplateFactoryParameters params) {
-    Map<String, String> queryLines = new HashMap<>();
     LOGGER.info("Generating a query template for getting data...");
     StringBuilder selectVariableBuilder = new StringBuilder();
-    StringBuilder whereBuilder = new StringBuilder();
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    super.sortBindings(params.bindings(), queryLines);
+    String whereClauseLines = super.genWhereClauseContent(params.bindings());
 
     // Retrieve only the property fields if no sequence of variable is present
     if (super.varSequence.isEmpty()) {
@@ -72,7 +68,8 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
           .append(ShaclResource.WHITE_SPACE));
       super.setSequence(sortedSequence);
     }
-    queryLines.values().forEach(whereBuilder::append);
+
+    StringBuilder whereBuilder = new StringBuilder(whereClauseLines);
     this.appendOptionalIdFilters(whereBuilder, params.targetId(), params.parent());
     whereBuilder.append(params.addQueryStatements());
     return super.genFederatedQuery(selectVariableBuilder.toString(), whereBuilder.toString(), targetClass);
