@@ -2,8 +2,6 @@ package com.cmclinnovations.agent.template.query;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -19,7 +17,6 @@ import com.cmclinnovations.agent.TestUtils;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
-import com.cmclinnovations.agent.utils.StringResource;
 
 public class GetQueryTemplateFactoryTest {
   private static GetQueryTemplateFactory TEMPLATE_FACTORY;
@@ -54,10 +51,10 @@ public class GetQueryTemplateFactoryTest {
       + SAMPLE_ADDITIONAL_FIELD + ".";
   private static final Map<String, List<Integer>> SAMPLE_ADD_VARS = new HashMap<>();
 
-  private static final String NAME_VAR = "name";
-  private static final String IS_OPTIONAL_VAR = "isoptional";
-  private static final String MULTIPATH_VAR = "multipath";
-  private static final String MULTISUBPATH_VAR = "multisubpath";
+  public static final String NAME_VAR = "name";
+  public static final String IS_OPTIONAL_VAR = "isoptional";
+  public static final String MULTIPATH_VAR = "multipath";
+  public static final String MULTISUBPATH_VAR = "multisubpath";
 
   @BeforeAll
   static void setup() {
@@ -96,7 +93,8 @@ public class GetQueryTemplateFactoryTest {
     // Set up
     Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
     Queue<SparqlBinding> bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PARENT_PATH, SAMPLE_SUB_PATH, "", "", false);
+    TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PARENT_PATH, SAMPLE_SUB_PATH, "", "",
+        false);
     nestedBindings.offer(bindings);
     // The method should throw an exception because filterId is required when
     // hasParent is true
@@ -113,7 +111,8 @@ public class GetQueryTemplateFactoryTest {
     // Set up
     Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
     Queue<SparqlBinding> bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_PARENT_FIELD, SAMPLE_PARENT_PATH, SAMPLE_SUB_PATH, "", "",
+    TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_PARENT_FIELD, SAMPLE_PARENT_PATH, SAMPLE_SUB_PATH,
+        "", "",
         false);
     nestedBindings.offer(bindings);
     // Execute
@@ -132,7 +131,8 @@ public class GetQueryTemplateFactoryTest {
     // Set up
     Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
     Queue<SparqlBinding> bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_OPTIONAL_FIELD, SAMPLE_OPTIONAL_PATH, "", "", "", true);
+    TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_OPTIONAL_FIELD, SAMPLE_OPTIONAL_PATH, "", "", "",
+        true);
     nestedBindings.offer(bindings);
     // Execute
     Queue<String> results = TEMPLATE_FACTORY.write(
@@ -171,13 +171,14 @@ public class GetQueryTemplateFactoryTest {
   void testGetSequence() {
     Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
     Queue<SparqlBinding> bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_OPTIONAL_FIELD, SAMPLE_PRED_PATH, "", "", "3", false);
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_PARENT_FIELD, SAMPLE_PRED_PATH, "", "", "1", false);
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", "", "0", false);
+    TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_OPTIONAL_FIELD, SAMPLE_PRED_PATH, "", "", "3",
+        false);
+    TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_PARENT_FIELD, SAMPLE_PRED_PATH, "", "", "1", false);
+    TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", "", "0", false);
     nestedBindings.offer(bindings);
     bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_GROUP_FIELD, SAMPLE_NESTED_PRED_PATH, "", SAMPLE_PARENT_FIELD,
-        "1", false);
+    TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_GROUP_FIELD, SAMPLE_NESTED_PRED_PATH, "",
+        SAMPLE_PARENT_FIELD, "1", false);
     nestedBindings.offer(bindings);
     // Execute
     TEMPLATE_FACTORY.write(
@@ -195,52 +196,11 @@ public class GetQueryTemplateFactoryTest {
   public static Queue<Queue<SparqlBinding>> initTestBindings() {
     Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
     Queue<SparqlBinding> bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", "", "", false);
+    TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", "", "", false);
     nestedBindings.offer(bindings);
     bindings = new ArrayDeque<>();
-    genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_NESTED_PRED_PATH, "", "", "", false);
+    TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_NESTED_PRED_PATH, "", "", "", false);
     nestedBindings.offer(bindings);
     return nestedBindings;
-  }
-
-  /**
-   * Generates a mock version of one SPARQL binding.
-   * 
-   * @param resultBindings   Stores the binding generated
-   * @param clazz            The target class of the query
-   * @param varName          The variable name
-   * @param multiPathPred    The multi path for the predicate
-   * @param multiSubPathPred The multi sub path for the predicate
-   * @param nodeGroup        The parent group of the field
-   * @param order            The order of the field
-   * @param isOptional       Indicates if the field is optional
-   */
-  private static void genMockSPARQLBinding(Queue<SparqlBinding> resultBindings, String clazz, String varName,
-      String multiPathPred, String multiSubPathPred, String nodeGroup, String order, boolean isOptional) {
-    SparqlBinding binding = mock(SparqlBinding.class);
-    when(binding.getFieldValue(StringResource.CLAZZ_VAR)).thenReturn(clazz);
-    when(binding.getFieldValue(NAME_VAR)).thenReturn(varName);
-    // Only create mock interactions if there are values
-    if (!multiPathPred.isEmpty()) {
-      when(binding.containsField(MULTIPATH_VAR)).thenReturn(true);
-      when(binding.getFieldValue(MULTIPATH_VAR)).thenReturn(multiPathPred);
-    }
-
-    if (!multiSubPathPred.isEmpty()) {
-      when(binding.containsField(MULTISUBPATH_VAR)).thenReturn(true);
-      when(binding.getFieldValue(MULTISUBPATH_VAR)).thenReturn(multiSubPathPred);
-    }
-
-    if (!nodeGroup.isEmpty()) {
-      when(binding.containsField(StringResource.NODE_GROUP_VAR)).thenReturn(true);
-      when(binding.getFieldValue(StringResource.NODE_GROUP_VAR)).thenReturn(nodeGroup);
-    }
-
-    if (!order.isEmpty()) {
-      when(binding.containsField("order")).thenReturn(true);
-      when(binding.getFieldValue("order")).thenReturn(order);
-    }
-    when(binding.getFieldValue(IS_OPTIONAL_VAR)).thenReturn(String.valueOf(isOptional));
-    resultBindings.offer(binding);
   }
 }

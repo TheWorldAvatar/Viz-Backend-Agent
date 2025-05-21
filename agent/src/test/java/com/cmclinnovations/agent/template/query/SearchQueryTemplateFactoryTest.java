@@ -57,8 +57,11 @@ public class SearchQueryTemplateFactoryTest {
                 new QueryTemplateFactoryParameters(testBindings, new HashMap<>()));
         // Assert
         assertEquals(2, results.size());
-        assertEquals("SELECT DISTINCT ?iri WHERE {?iri a <http://example.com/Concept>.}", results.poll());
-        assertEquals("SELECT DISTINCT ?iri WHERE {?iri a/rdfs:subClassOf* <http://example.com/Concept>.}",
+        assertEquals(
+                "SELECT DISTINCT ?iri WHERE {?iri a <http://example.com/Concept>.?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.}",
+                results.poll());
+        assertEquals(
+                "SELECT DISTINCT ?iri WHERE {?iri a/rdfs:subClassOf* <http://example.com/Concept>.?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.}",
                 results.poll());
     }
 
@@ -123,42 +126,13 @@ public class SearchQueryTemplateFactoryTest {
     public static Queue<Queue<SparqlBinding>> initTestBindings() {
         Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
         Queue<SparqlBinding> bindings = new ArrayDeque<>();
-        genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", false);
+        TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", "", "", false);
         nestedBindings.offer(bindings);
         bindings = new ArrayDeque<>();
-        genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_NESTED_PRED_PATH, "", false);
+        TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_NESTED_PRED_PATH, "", "", "",
+                false);
         nestedBindings.offer(bindings);
         return nestedBindings;
-    }
-
-    /**
-     * Generates a mock version of one SPARQL binding.
-     * 
-     * @param resultBindings   Stores the binding generated
-     * @param clazz            The target class of the query
-     * @param multiPathPred    The multi path for the predicate
-     * @param multiSubPathPred The multi sub path for the predicate
-     * @param varName          The variable name
-     * @param isOptional       Indicates if the field is optional
-     */
-    private static void genMockSPARQLBinding(Queue<SparqlBinding> resultBindings, String clazz, String varName,
-            String multiPathPred, String multiSubPathPred, boolean isOptional) {
-        SparqlBinding binding = mock(SparqlBinding.class);
-        when(binding.getFieldValue(StringResource.CLAZZ_VAR)).thenReturn(clazz);
-        when(binding.getFieldValue(NAME_VAR)).thenReturn(varName);
-        // Only create mock interactions if there are values
-
-        if (!multiPathPred.isEmpty()) {
-            when(binding.containsField(MULTIPATH_VAR)).thenReturn(true);
-            when(binding.getFieldValue(MULTIPATH_VAR)).thenReturn(multiPathPred);
-        }
-        // Only create mock interactions if there are values
-        if (!multiSubPathPred.isEmpty()) {
-            when(binding.containsField(MULTISUBPATH_VAR)).thenReturn(true);
-            when(binding.getFieldValue(MULTISUBPATH_VAR)).thenReturn(multiSubPathPred);
-        }
-        when(binding.getFieldValue(IS_OPTIONAL_VAR)).thenReturn(String.valueOf(isOptional));
-        resultBindings.offer(binding);
     }
 
     /**
