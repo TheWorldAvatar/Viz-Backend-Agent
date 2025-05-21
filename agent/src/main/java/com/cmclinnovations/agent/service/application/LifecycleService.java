@@ -374,17 +374,14 @@ public class LifecycleService {
     params.put(LifecycleResource.REMARKS_KEY, remarksMsg);
     this.addOccurrenceParams(params, eventType);
 
-    if (eventType.equals(LifecycleEventType.SERVICE_ORDER_DISPATCHED)) {
-      // Attempt to delete any existing dispatch occurrence before any updates
-      ResponseEntity<ApiResponse> response = this.deleteService.delete(
-          LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(),
-          params.get("id").toString());
-      // Log responses
-      LOGGER.info(response.getBody().getMessage());
-    }
+    // Attempt to delete any existing occurrence before any updates
+    ResponseEntity<ApiResponse> response = this.deleteService.delete(
+        eventType.getId(), params.get("id").toString());
+    // Log responses
+    LOGGER.info(response.getBody().getMessage());
 
     // Ensure that the event identifier mapped directly to the jsonLd file name
-    ResponseEntity<ApiResponse> response = this.addService.instantiate(eventType.getId(), params);
+    response = this.addService.instantiate(eventType.getId(), params);
     if (response.getStatusCode() != HttpStatus.CREATED) {
       LOGGER.error(createErrorMsg, params.get(LifecycleResource.ORDER_KEY), response.getBody().getMessage());
     }
