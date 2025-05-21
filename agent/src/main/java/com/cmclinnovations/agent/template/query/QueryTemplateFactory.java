@@ -202,9 +202,6 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     Map<String, StringBuilder> arrayStatementsMap = new HashMap<>();
     propertyShapeMap.get(ShaclResource.GROUP_PROPERTY).forEach((key, propBinding) -> {
       String content = propBinding.write(true) + accumulatedStatementsByGroup.get(key);
-      if (propBinding.isOptional()) {
-        content = StringResource.genOptionalClause(content);
-      }
 
       // For arrays, attach them to a second map for further parsing
       if (propBinding.isArray()) {
@@ -213,8 +210,14 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         StringBuilder tempArrayBuilder = arrayStatementsMap.computeIfAbsent(propKey, k -> new StringBuilder());
         tempArrayBuilder.append(tempArrayBuilder.isEmpty() ? "" : ShaclResource.UNION_OPERATOR)
             .append(content);
-        // For simple groups, directly attach to the query block or branch
-      } else if (propBinding.getBranch().isEmpty()) {
+        return; // End loop early for arrays
+      }
+      // Optional clauses only for groups
+      if (propBinding.isOptional()) {
+        content = StringResource.genOptionalClause(content);
+      }
+      // For simple groups, directly attach to the query block or branch
+      if (propBinding.getBranch().isEmpty()) {
         queryBlock.append(StringResource.genGroupGraphPattern(content));
       } else {
         // Store them in a separate branch mappings if a branch is involved
