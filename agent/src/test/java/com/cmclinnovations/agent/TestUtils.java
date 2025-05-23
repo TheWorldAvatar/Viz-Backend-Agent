@@ -1,27 +1,21 @@
 package com.cmclinnovations.agent;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Queue;
 
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.util.ResourceUtils;
 
-import com.cmclinnovations.agent.model.SparqlBinding;
-import com.cmclinnovations.agent.template.query.GetQueryTemplateFactoryTest;
-import com.cmclinnovations.agent.utils.ShaclResource;
-import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class TestUtils {
+  public static String SPARQL_FILE_EXTENSION = ".sparql";
+
   /**
    * Check if the result response entity contains the expected substring.
    * 

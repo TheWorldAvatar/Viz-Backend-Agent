@@ -23,18 +23,12 @@ import com.cmclinnovations.agent.model.SparqlBinding;
 public class GetQueryTemplateFactoryTest {
   private static GetQueryTemplateFactory TEMPLATE_FACTORY;
 
-  public static final String EXPECTED_SIMPLE_FILE = "template/query/get/get_query_simple.sparql";
-  public static final String EXPECTED_SIMPLE_MIXED_FILE = "template/query/get/get_query_simple_mixed.sparql";
-  public static final String EXPECTED_SIMPLE_ID_FILE = "template/query/get/get_query_simple_id.sparql";
-  public static final String EXPECTED_SIMPLE_ID_MIXED_FILE = "template/query/get/get_query_simple_id_mixed.sparql";
-  private static final String EXPECTED_SIMPLE_PARENT_FILE = "template/query/get/get_query_simple_parent.sparql";
-  private static final String EXPECTED_SIMPLE_PARENT_MIXED_FILE = "template/query/get/get_query_simple_parent_mixed.sparql";
-  private static final String EXPECTED_SIMPLE_OPTIONAL_FILE = "template/query/get/get_query_simple_optional.sparql";
-  private static final String EXPECTED_SIMPLE_OPTIONAL_MIXED_FILE = "template/query/get/get_query_simple_optional_mixed.sparql";
-  private static final String EXPECTED_SIMPLE_ADDITIONAL_STATEMENT_FILE = "template/query/get/get_query_add_statement_only.sparql";
-  private static final String EXPECTED_SIMPLE_ADDITIONAL_STATEMENT_MIXED_FILE = "template/query/get/get_query_add_statement_only_mixed.sparql";
-  private static final String EXPECTED_COMPLEX_ADDITIONAL_FILE = "template/query/get/get_query_add_statement.sparql";
-  private static final String EXPECTED_COMPLEX_ADDITIONAL_MIXED_FILE = "template/query/get/get_query_add_statement_mixed.sparql";
+  public static final String EXPECTED_SIMPLE_FILE = "template/query/get/get_query_simple";
+  public static final String EXPECTED_SIMPLE_ID_FILE = "template/query/get/get_query_simple_id";
+  private static final String EXPECTED_SIMPLE_PARENT_FILE = "template/query/get/get_query_simple_parent";
+  private static final String EXPECTED_SIMPLE_OPTIONAL_FILE = "template/query/get/get_query_simple_optional";
+  private static final String EXPECTED_SIMPLE_ADDITIONAL_STATEMENT_FILE = "template/query/get/get_query_add_statement_only";
+  private static final String EXPECTED_COMPLEX_ADDITIONAL_FILE = "template/query/get/get_query_add_statement";
   private static final String SAMPLE_PREFIX = "http://example.com/";
   private static final String SAMPLE_CONCEPT = SAMPLE_PREFIX + "Concept";
   private static final String SAMPLE_PRED_PATH = SAMPLE_PREFIX + "propPath1";
@@ -66,9 +60,7 @@ public class GetQueryTemplateFactoryTest {
     Queue<String> results = TEMPLATE_FACTORY.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
     // Assert
-    assertEquals(2, results.size());
-    assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_FILE), results.poll());
-    assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_MIXED_FILE), results.poll());
+    validateTestOutput(results, EXPECTED_SIMPLE_FILE);
   }
 
   @Test
@@ -79,9 +71,7 @@ public class GetQueryTemplateFactoryTest {
     Queue<String> results = TEMPLATE_FACTORY
         .write(new QueryTemplateFactoryParameters(nestedBindings, SAMPLE_FILTER, null, "", new HashMap<>()));
     // Assert
-    assertEquals(2, results.size());
-    assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_ID_FILE), results.poll());
-    assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_ID_MIXED_FILE), results.poll());
+    validateTestOutput(results, EXPECTED_SIMPLE_ID_FILE);
   }
 
   @Test
@@ -121,12 +111,9 @@ public class GetQueryTemplateFactoryTest {
         new QueryTemplateFactoryParameters(nestedBindings, SAMPLE_FILTER,
             new ParentField(SAMPLE_FILTER, SAMPLE_PARENT_FIELD), "", new HashMap<>()));
     // Assert
-    assertEquals(2, results.size());
-    assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_PARENT_FILE), results.poll());
-    assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_PARENT_MIXED_FILE), results.poll());
+    validateTestOutput(results, EXPECTED_SIMPLE_PARENT_FILE);
   }
 
-  // Mock isOptional doesnt work at nested level
   @Test
   void testWrite_Simple_Optional() throws IOException {
     // Set up
@@ -142,9 +129,7 @@ public class GetQueryTemplateFactoryTest {
     Queue<String> results = TEMPLATE_FACTORY.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
     // Assert
-    assertEquals(2, results.size());
-    assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_OPTIONAL_FILE), results.poll());
-    assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_OPTIONAL_MIXED_FILE), results.poll());
+    validateTestOutput(results, EXPECTED_SIMPLE_OPTIONAL_FILE);
   }
 
   @Test
@@ -154,9 +139,7 @@ public class GetQueryTemplateFactoryTest {
     Queue<String> results = TEMPLATE_FACTORY.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, SAMPLE_ADDITIONAL_STATEMENT, new HashMap<>()));
     // Assert
-    assertEquals(2, results.size());
-    assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_ADDITIONAL_STATEMENT_FILE), results.poll());
-    assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_ADDITIONAL_STATEMENT_MIXED_FILE), results.poll());
+    validateTestOutput(results, EXPECTED_SIMPLE_ADDITIONAL_STATEMENT_FILE);
   }
 
   @Test
@@ -166,9 +149,7 @@ public class GetQueryTemplateFactoryTest {
     Queue<String> results = TEMPLATE_FACTORY.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, SAMPLE_ADDITIONAL_STATEMENT, SAMPLE_ADD_VARS));
     // Assert
-    assertEquals(2, results.size());
-    assertEquals(TestUtils.getSparqlQuery(EXPECTED_COMPLEX_ADDITIONAL_FILE), results.poll());
-    assertEquals(TestUtils.getSparqlQuery(EXPECTED_COMPLEX_ADDITIONAL_MIXED_FILE), results.poll());
+    validateTestOutput(results, EXPECTED_COMPLEX_ADDITIONAL_FILE);
   }
 
   @Test
@@ -226,5 +207,15 @@ public class GetQueryTemplateFactoryTest {
     bindings.offer(binding);
     nestedBindings.offer(bindings);
     return nestedBindings;
+  }
+
+  /**
+   * Validate test outputs
+   */
+  public static void validateTestOutput(Queue<String> results, String expectedSparql)
+      throws IOException {
+    assertEquals(2, results.size());
+    assertEquals(TestUtils.getSparqlQuery(expectedSparql + TestUtils.SPARQL_FILE_EXTENSION), results.poll());
+    assertEquals(TestUtils.getSparqlQuery(expectedSparql + "_mixed" + TestUtils.SPARQL_FILE_EXTENSION), results.poll());
   }
 }
