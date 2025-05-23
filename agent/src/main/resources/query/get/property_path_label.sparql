@@ -80,8 +80,8 @@ WHERE {
     OPTIONAL{?property sh:in ?classconcept}
     BIND(BOUND(?classconcept) AS ?isclass)
 
-    # Only retrieve results if there is either a multipath, multisubpath, or name_multipath
-    FILTER(BOUND(?multipath) || BOUND(?multisubpath) || BOUND(?name_multipath))
+    # Only retrieve results if there is either a multipath, or name_multipath
+    FILTER(BOUND(?multipath) || BOUND(?name_multipath))
   }
 
   [filter]

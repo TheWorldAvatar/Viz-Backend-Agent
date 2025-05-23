@@ -15,6 +15,8 @@ import org.junit.jupiter.api.Test;
 
 import com.cmclinnovations.agent.TestUtils;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
+import com.cmclinnovations.agent.model.ShaclPropertyBindingTest;
+import com.cmclinnovations.agent.model.ShaclPropertyBindingTest.SparqlBindingTestParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.utils.StringResource;
 
@@ -126,11 +128,17 @@ public class SearchQueryTemplateFactoryTest {
     public static Queue<Queue<SparqlBinding>> initTestBindings() {
         Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
         Queue<SparqlBinding> bindings = new ArrayDeque<>();
-        TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", "", "", false);
+        SparqlBinding binding = ShaclPropertyBindingTest
+                .genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_FIELD, SAMPLE_CONCEPT, null, null,
+                        SAMPLE_PRED_PATH, null, null, null, null, null,
+                        false, false, false, false));
+        bindings.offer(binding);
         nestedBindings.offer(bindings);
         bindings = new ArrayDeque<>();
-        TestUtils.genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_NESTED_PRED_PATH, "", "", "",
-                false);
+        binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_FIELD,
+                SAMPLE_CONCEPT, null, null, SAMPLE_NESTED_PRED_PATH, null, null, null, null, null,
+                false, false, false, false));
+        bindings.offer(binding);
         nestedBindings.offer(bindings);
         return nestedBindings;
     }
