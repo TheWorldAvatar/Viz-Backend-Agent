@@ -1,6 +1,10 @@
 package com.cmclinnovations.agent.utils;
 
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class ShaclResource {
   // JSON LD keys
@@ -110,5 +114,24 @@ public class ShaclResource {
       }
     }
     return key.toString();
+  }
+
+  /**
+   * Find the best matching fields in the mappings based on the field list.
+   * 
+   * @param fields           Full list of fields.
+   * @param arrayVarsMapping Mappings between a group and their fields.
+   */
+  public static Set<String> findBestMatchingGroup(Set<String> fields, Map<String, Set<String>> arrayVarsMapping) {
+    String bestMatchGroup = arrayVarsMapping.entrySet().stream().map(entry -> {
+      // Extract matching number of fields
+      Set<String> intersection = new HashSet<>(entry.getValue());
+      intersection.retainAll(fields);
+      return Map.entry(entry.getKey(), intersection.size());
+    }).filter(entry -> entry.getValue() > 0) // Filter out zero matches
+        // Retrieve the group with the most matches
+        .max(Comparator.comparingInt(Map.Entry::getValue))
+        .map(Map.Entry::getKey).orElse(null);
+    return arrayVarsMapping.getOrDefault(bestMatchGroup, new HashSet<>());
   }
 }

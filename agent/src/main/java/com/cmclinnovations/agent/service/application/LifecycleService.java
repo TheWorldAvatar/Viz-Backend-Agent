@@ -14,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
-import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
@@ -24,7 +23,6 @@ import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.StringResource;
-import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @Service
 public class LifecycleService {
@@ -214,27 +212,7 @@ public class LifecycleService {
     Queue<SparqlBinding> results = this.getService.getInstances(entityType, null, "", addQuery,
         true, varSequences);
     return results.stream()
-        .map(binding -> {
-          Map<String, Object> fields = binding.get();
-          // Extract the latest event occurrence through their priority levels
-          List<SparqlResponseField> events = TypeCastUtils.castToListObject(fields.get(LifecycleResource.EVENT_KEY),
-              SparqlResponseField.class);
-          List<SparqlResponseField> eventIds = TypeCastUtils.castToListObject(
-              fields.get(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY)),
-              SparqlResponseField.class);
-          int highestPriority = 0;
-          int highestPriorityIndex = 0;
-          for (int i = 0; i < events.size(); i++) {
-            SparqlResponseField respField = events.get(i);
-            if (highestPriority < LifecycleResource.getEventPriority(respField.value())) {
-              highestPriorityIndex = i;
-            }
-          }
-          fields.put(LifecycleResource.EVENT_KEY, events.get(highestPriorityIndex));
-          fields.put(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY),
-              eventIds.get(highestPriorityIndex));
-          return fields;
-        })
+        .map(SparqlBinding::get)
         .toList();
   }
 

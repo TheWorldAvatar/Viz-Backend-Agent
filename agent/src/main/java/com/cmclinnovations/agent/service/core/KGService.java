@@ -3,9 +3,12 @@ package com.cmclinnovations.agent.service.core;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -333,7 +336,8 @@ public class KGService {
           // iterate to check if there are any nested shapes with predicates
           continueLoop = hasResults;
           isFirstIteration = false;
-          // Filter should be updated to no longer present empty branches after the first iteration ever
+          // Filter should be updated to no longer present empty branches after the first
+          // iteration ever
           replacementFilterPath = FILTER_BOUNDED_PROPERTIES;
         }
       }
@@ -359,8 +363,11 @@ public class KGService {
    * 
    * @param firstQueue The first target queue.
    * @param secQueue   The second target queue.
+   * @param arrayVars  Mappings between each array group and their individual
+   *                   fields.
    */
-  public Queue<SparqlBinding> combineBindingQueue(Queue<SparqlBinding> firstQueue, Queue<SparqlBinding> secQueue) {
+  public Queue<SparqlBinding> combineBindingQueue(Queue<SparqlBinding> firstQueue, Queue<SparqlBinding> secQueue,
+      Map<String, Set<String>> arrayVars) {
     if (firstQueue.isEmpty() && secQueue.isEmpty()) {
       return new ArrayDeque<>();
     }
@@ -385,8 +392,15 @@ public class KGService {
       }
       SparqlBinding firstBinding = groupedBinding.get(0);
       if (groupedBinding.size() > 1) {
-        for (int i = 1; i < groupedBinding.size(); i++) {
-          firstBinding.addFieldArray(groupedBinding.get(i));
+        if (firstBinding.containsField(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY))) {
+          Optional<SparqlBinding> maxPriorityEvent = groupedBinding.stream().max(
+              Comparator.comparingInt(
+                  binding -> LifecycleResource.getEventPriority(binding.getFieldValue(LifecycleResource.EVENT_KEY))));
+          firstBinding = maxPriorityEvent.orElse(firstBinding);
+        } else if (!arrayVars.isEmpty()) {
+          for (int i = 1; i < groupedBinding.size(); i++) {
+            firstBinding.addFieldArray(groupedBinding.get(i), arrayVars);
+          }
         }
       }
       result.offer(firstBinding);

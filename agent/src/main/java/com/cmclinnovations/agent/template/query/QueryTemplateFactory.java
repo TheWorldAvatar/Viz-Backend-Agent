@@ -18,7 +18,15 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
   private boolean hasEmptyBranches;
   private List<String> sortedVars;
   protected Set<String> variables;
+  private Map<String, Set<String>> arrayVariables;
   protected Map<String, List<Integer>> varSequence;
+
+  /**
+   * Retrieve the mappings of array variables grouped by groups.
+   */
+  public Map<String, Set<String>> getArrayVariables() {
+    return this.arrayVariables;
+  }
 
   /**
    * Retrieve the sequence of the variables.
@@ -41,6 +49,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     this.hasEmptyBranches = false;
     this.sortedVars = new ArrayList<>();
     this.variables = new HashSet<>();
+    this.arrayVariables = new HashMap<>();
     this.varSequence = new HashMap<>();
   }
 
@@ -186,6 +195,10 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
           // Store them in a separate branch mappings if a branch is involved
           branchStatementMap.computeIfAbsent(propBinding.getBranch(), k -> new StringBuilder()).append(content);
         }
+        if (propBinding.isArray()) {
+          // Store individual array variables as well
+          this.arrayVariables.computeIfAbsent(propBinding.getName(), k -> new HashSet<>()).add(propBinding.getName());
+        }
       } else {
         this.varSequence.remove(group);
         // If there is an associated group, store the content to the associated group in
@@ -193,6 +206,8 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         // content should be appended to the previous batch
         String mappingKey = ShaclResource.getMappingKey("", group, propBinding.getBranch());
         accumulatedStatementsByGroup.computeIfAbsent(mappingKey, k -> new StringBuilder()).append(content);
+        // Store array variables in their groups
+        this.arrayVariables.computeIfAbsent(mappingKey, k -> new HashSet<>()).add(propBinding.getName());
       }
       // Store the variable for individual properties only
       this.variables.add(ShaclResource.VARIABLE_MARK + StringResource.parseQueryVariable(propBinding.getName()));
@@ -223,6 +238,9 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         // Store them in a separate branch mappings if a branch is involved
         branchStatementMap.computeIfAbsent(propBinding.getBranch(), k -> new StringBuilder()).append(content);
       }
+      // Remove non-array variables; This method is only accessed for non-arrays as
+      // arrays will have ended the loop earlier
+      this.arrayVariables.remove(key);
     });
     // Handle array parsing
     arrayStatementsMap.forEach((key, builder) -> {
