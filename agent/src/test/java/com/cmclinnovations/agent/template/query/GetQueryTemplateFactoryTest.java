@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.template.query;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,8 @@ public class GetQueryTemplateFactoryTest {
   public static final String EXPECTED_SIMPLE_ID_FILE = "template/query/get/get_query_simple_id";
   private static final String EXPECTED_SIMPLE_PARENT_FILE = "template/query/get/get_query_simple_parent";
   private static final String EXPECTED_SIMPLE_OPTIONAL_FILE = "template/query/get/get_query_simple_optional";
+  private static final String EXPECTED_SIMPLE_ARRAY_FILE = "template/query/get/get_query_simple_array";
+  private static final String EXPECTED_COMPLEX_ARRAY_FILE = "template/query/get/get_query_complex_array";
   private static final String EXPECTED_SIMPLE_ADDITIONAL_STATEMENT_FILE = "template/query/get/get_query_add_statement_only";
   private static final String EXPECTED_COMPLEX_ADDITIONAL_FILE = "template/query/get/get_query_add_statement";
   private static final String SAMPLE_PREFIX = "http://example.com/";
@@ -36,9 +40,12 @@ public class GetQueryTemplateFactoryTest {
   private static final String SAMPLE_PARENT_PATH = SAMPLE_PREFIX + "parentPath1";
   private static final String SAMPLE_OPTIONAL_PATH = SAMPLE_PREFIX + "optionalPath1";
   private static final String SAMPLE_FIELD = "field";
+  private static final String SAMPLE_ARRAY_FIELD = "array field";
   private static final String SAMPLE_GROUP_FIELD = "node field";
   private static final String SAMPLE_PARENT_FIELD = "parent field";
   private static final String SAMPLE_OPTIONAL_FIELD = "optional field";
+  private static final String SAMPLE_GROUP = "group test";
+  private static final String SAMPLE_ARRAY_GROUP = "array group test";
 
   public static final String SAMPLE_FILTER = "01j82";
   private static final String SAMPLE_ADDITIONAL_FIELD = "addProperty";
@@ -130,6 +137,79 @@ public class GetQueryTemplateFactoryTest {
         new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
     // Assert
     validateTestOutput(results, EXPECTED_SIMPLE_OPTIONAL_FILE);
+  }
+
+  @Test
+  void testWrite_Simple_Array() throws IOException {
+    // Set up
+    Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
+    Queue<SparqlBinding> bindings = new ArrayDeque<>();
+    SparqlBinding binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_GROUP,
+        SAMPLE_CONCEPT, null, null, SAMPLE_PRED_PATH, null, null, null, null, null,
+        false, true, false, false));
+    bindings.offer(binding);
+    nestedBindings.offer(bindings);
+
+    bindings = new ArrayDeque<>();
+    binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_FIELD,
+        SAMPLE_CONCEPT, SAMPLE_GROUP, null, SAMPLE_NESTED_PRED_PATH, null, null, null, null, null,
+        false, false, false, false));
+    bindings.offer(binding);
+
+    binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_ARRAY_FIELD,
+        SAMPLE_CONCEPT, SAMPLE_GROUP, null, SAMPLE_NESTED_PRED_PATH, null, null, null, null, null,
+        false, false, false, false));
+    bindings.offer(binding);
+    nestedBindings.offer(bindings);
+    // Execute
+    Queue<String> results = TEMPLATE_FACTORY.write(
+        new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
+    // Assert
+    validateTestOutput(results, EXPECTED_SIMPLE_ARRAY_FILE);
+    Map<String, Set<String>> arrayVarsMapping = TEMPLATE_FACTORY.getArrayVariables();
+    assertEquals(1, arrayVarsMapping.size());
+    arrayVarsMapping.forEach((key, arrayVars) -> {
+      assertEquals(2, arrayVars.size());
+      assertTrue(arrayVars.contains(SAMPLE_FIELD));
+      assertTrue(arrayVars.contains(SAMPLE_ARRAY_FIELD));
+    });
+  }
+
+  @Test
+  void testWrite_Complex_Array() throws IOException {
+    // Set up
+    Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
+    Queue<SparqlBinding> bindings = new ArrayDeque<>();
+    SparqlBinding binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_GROUP,
+        SAMPLE_CONCEPT, null, null, SAMPLE_PRED_PATH, null, null, null, null, null,
+        false, true, false, false));
+    bindings.offer(binding);
+    binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_ARRAY_GROUP,
+        SAMPLE_CONCEPT, null, null, SAMPLE_PRED_PATH, null, null, null, null, null,
+        false, true, false, false));
+    bindings.offer(binding);
+    nestedBindings.offer(bindings);
+
+    bindings = new ArrayDeque<>();
+    binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_FIELD,
+        SAMPLE_CONCEPT, SAMPLE_GROUP, null, SAMPLE_NESTED_PRED_PATH, null, null, null, null, null,
+        false, false, false, false));
+    bindings.offer(binding);
+
+    binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_ARRAY_FIELD,
+        SAMPLE_CONCEPT, SAMPLE_ARRAY_GROUP, null, SAMPLE_NESTED_PRED_PATH, null, null, null, null, null,
+        false, false, false, false));
+    bindings.offer(binding);
+    nestedBindings.offer(bindings);
+    // Execute
+    Queue<String> results = TEMPLATE_FACTORY.write(
+        new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
+    // Assert
+    validateTestOutput(results, EXPECTED_COMPLEX_ARRAY_FILE);
+    Map<String, Set<String>> arrayVarsMapping = TEMPLATE_FACTORY.getArrayVariables();
+    assertEquals(2, arrayVarsMapping.size());
+    assertTrue(arrayVarsMapping.get(SAMPLE_GROUP).contains(SAMPLE_FIELD));
+    assertTrue(arrayVarsMapping.get(SAMPLE_ARRAY_GROUP).contains(SAMPLE_ARRAY_FIELD));
   }
 
   @Test
