@@ -1,7 +1,9 @@
 package com.cmclinnovations.agent.service.core;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.FileSystemNotFoundException;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +13,10 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.federated.FedXFactory;
@@ -54,6 +60,7 @@ public class KGService {
   private static final String JSON_MEDIA_TYPE = "application/json";
   private static final String LD_JSON_MEDIA_TYPE = "application/ld+json";
   private static final String SPARQL_MEDIA_TYPE = "application/sparql-query";
+  private static final String TTL_MEDIA_TYPE = "text/turtle";
 
   public static final String INVALID_SHACL_ERROR_MSG = "Invalid knowledge model! SHACL restrictions have not been defined/instantiated in the knowledge graph.";
 
@@ -260,6 +267,52 @@ public class KGService {
   }
 
   /**
+   * Retrieves the SHACL rules associated with the target resource.
+   * 
+   * @param resourceID The target resource identifier for the instance.
+   */
+  public Model getShaclRules(String resourceId) {
+    LOGGER.debug("Retrieving SHACL rules for resource: {}", resourceId);
+    String query;
+    try {
+      String target = this.fileService.getTargetIri(resourceId);
+      query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target);
+    } catch (FileSystemNotFoundException e) {
+      // If no target is specified, return an empty model
+      LOGGER.warn("No target resource specified for SHACL rules retrieval. Returning an empty model.");
+      return ModelFactory.createDefaultModel();
+    }
+
+    List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
+    Model model = ModelFactory.createDefaultModel();
+    for (String endpoint : endpoints) {
+      LOGGER.debug("Querying at the endpoint {}...", endpoint);
+      String results = this.client.post()
+          .uri(endpoint)
+          .accept(MediaType.valueOf(TTL_MEDIA_TYPE))
+          .contentType(MediaType.valueOf(SPARQL_MEDIA_TYPE))
+          .body(query)
+          .retrieve()
+          .body(String.class);
+      Model resultModel = this.readStringModel(results, Lang.TURTLE);
+      model.add(resultModel);
+    }
+    return model;
+  }
+
+  /**
+   * Reads a string input as a Jena Model.
+   * 
+   * @param input   The string input to be converted.
+   * @param rdfType The type of RDF data (e.g., Turtle, RDF/XML, JSON-LD).
+   */
+  public Model readStringModel(String input, Lang rdfType) {
+    Model dataModel = ModelFactory.createDefaultModel();
+    RDFDataMgr.read(dataModel, new ByteArrayInputStream(input.getBytes()), rdfType);
+    return dataModel;
+  }
+
+  /**
    * Gets all available internal SPARQL endpoints within the stack of the
    * specified type.
    * 
@@ -417,37 +470,5 @@ public class KGService {
         .filter(JsonNode::isObject) // Ensure they are object node so that we can type cast
         .map(row -> new SparqlBinding((ObjectNode) row))
         .collect(Collectors.toCollection(ArrayDeque::new));
-  }
-
-  /**
-   * Retrieves the SHACL shape for a given target class IRI.
-   *
-   * @param targetClassIRI The full IRI of the target class.
-   * @return The RDF triples describing the SHACL shape in Turtle format.
-   */
-  public String getShaclShape(String targetClassIRI) {
-    LOGGER.debug("Retrieving SHACL shape for target class: {}", targetClassIRI);
-
-    // Load the SPARQL query from the classpath and replace the [target] placeholder
-    String constructQuery = fileService.getContentsWithReplacement(
-            FileService.SHACL_SHAPE_PATH_QUERY_RESOURCE, targetClassIRI
-    );
-
-    String endpoint = BlazegraphClient.getInstance()
-            .getRemoteStoreClient(this.namespace)
-            .getQueryEndpoint();
-
-    try {
-      return client.post()
-              .uri(endpoint)
-              .accept(MediaType.valueOf("text/turtle"))
-              .contentType(MediaType.valueOf("application/sparql-query"))
-              .body(constructQuery)
-              .retrieve()
-              .body(String.class);
-    } catch (Exception e) {
-      LOGGER.error("Error retrieving SHACL shape: ", e);
-      throw new RuntimeException("Failed to retrieve SHACL shape for " + targetClassIRI, e);
-    }
   }
 }

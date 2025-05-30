@@ -1,7 +1,8 @@
 package com.cmclinnovations.agent.service;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -14,9 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
 import org.apache.jena.riot.RDFWriter;
 import org.apache.logging.log4j.LogManager;
@@ -93,74 +92,45 @@ public class AddService {
     ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
     // Attempt to replace all placeholders in the JSON schema
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
-    return this.instantiateJsonLd(addJsonSchema, resourceID + " has been successfully instantiated!");
+    return this.instantiateJsonLd(addJsonSchema, resourceID, resourceID + " has been successfully instantiated!");
   }
 
   /**
    * Instantiate an instance based on a jsonLD object.
    * 
    * @param jsonLdSchema The target json LD object to instantiate.
+   * @param resourceID   The target resource identifier for the instance.
    * @param message      Successful message.
    */
-  public ResponseEntity<ApiResponse> instantiateJsonLd(JsonNode jsonLdSchema, String message) {
-    LOGGER.debug("Adding instance to endpoint...");
+  public ResponseEntity<ApiResponse> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID, String message) {
+    LOGGER.info("Adding instance to endpoint...");
     String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();
     String jsonString = jsonLdSchema.toString();
 
-    String instanceTypeIRI=jsonLdSchema.path(ShaclResource.TYPE_KEY).asText();
-
     ResponseEntity<String> response = this.kgService.add(jsonString);
 
-    if (!response.getStatusCode().is2xxSuccessful()) {
-        LOGGER.error("Failed to add main instance to KG.");
-        return new ResponseEntity<>(new ApiResponse(response), response.getStatusCode());
+    Model rules = this.kgService.getShaclRules(resourceID);
+    if (response.getStatusCode() == HttpStatus.OK && !rules.isEmpty()) {
+      LOGGER.info("Detected rules! Instantiating inferred instances to endpoint...");
+      Model dataModel = this.kgService.readStringModel(jsonString, Lang.JSONLD);
+      Model inferredData = RuleUtil.executeRules(dataModel, rules, null, null);
+      try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+        RDFWriter.create()
+            .source(inferredData)
+            .format(RDFFormat.JSONLD)
+            .output(out);
+        String stringifiedInferredData = out.toString(StandardCharsets.UTF_8);
+        response = this.kgService.add(stringifiedInferredData);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
     }
-    try {
-        //Retrieve SHACL shape from Blazegraph based on instance type
-        String shapeTurtle = this.kgService.getShaclShape(instanceTypeIRI);
-
-        //Check if the shape contains a SPARQL rule
-        if (shapeTurtle.contains("sh:rule")) {
-            LOGGER.info("Detected sh:rule, running SHACL inference...");
-
-            //Load data model from input JSON-LD
-            Model dataModel = ModelFactory.createDefaultModel();
-            RDFDataMgr.read(dataModel, new ByteArrayInputStream(jsonString.getBytes()), Lang.JSONLD);
-
-            //Load SHACL shape model from Turtle string
-            Model shapesModel = ModelFactory.createDefaultModel();
-            RDFDataMgr.read(shapesModel, new ByteArrayInputStream(shapeTurtle.getBytes(StandardCharsets.UTF_8)), Lang.TURTLE);
-
-            //Run SHACL rule inference using TopBraid library
-            Model inferredModel = RuleUtil.executeRules(dataModel, shapesModel, null, null);
-
-            //Serialize inferred triples to JSON-LD
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            RDFWriter.create()
-                .source(inferredModel)
-                .format(RDFFormat.JSONLD)
-                .output(out);
-
-            String inferredTriplesString = out.toString(StandardCharsets.UTF_8);
-
-            ResponseEntity<String> inferredResponse = this.kgService.add(inferredTriplesString);
-            if (!inferredResponse.getStatusCode().is2xxSuccessful()) {
-                LOGGER.warn("Failed to add inferred triples to KG.");
-                return new ResponseEntity<>(new ApiResponse("Instance added, but inference failed to store.", instanceIri), HttpStatus.ACCEPTED);
-            }
-            LOGGER.info("Inferred triples:\n" + inferredTriplesString);
-          }
-        } catch (Exception e) {
-            LOGGER.error("Error during SHACL SPARQLRule inference using TopBraid", e);
-            return new ResponseEntity<>(new ApiResponse("Instance added, but inference encountered an error.", instanceIri), HttpStatus.ACCEPTED);
-        }
 
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(message);
       return new ResponseEntity<>(new ApiResponse(message, instanceIri), HttpStatus.CREATED);
-    } else {
-      return new ResponseEntity<>(new ApiResponse(response), response.getStatusCode());
     }
+    return new ResponseEntity<>(new ApiResponse(response), response.getStatusCode());
   }
 
   /**

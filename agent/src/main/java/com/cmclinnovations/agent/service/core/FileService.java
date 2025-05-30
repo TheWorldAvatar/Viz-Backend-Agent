@@ -37,11 +37,11 @@ public class FileService {
   private static final String QUERY_CONSTR_DIR = QUERY_DIR + "construct/";
   private static final String QUERY_GET_DIR = QUERY_DIR + "get/";
   public static final String FORM_QUERY_RESOURCE = QUERY_CONSTR_DIR + "form.sparql";
+  public static final String SHACL_RULE_QUERY_RESOURCE = QUERY_CONSTR_DIR + "shacl_rule.sparql";
   public static final String ENDPOINT_QUERY_RESOURCE = QUERY_GET_DIR + "endpoint.sparql";
   public static final String INSTANCE_QUERY_RESOURCE = QUERY_GET_DIR + "instance.sparql";
   public static final String SHACL_PATH_QUERY_RESOURCE = QUERY_GET_DIR + "property_path.sparql";
   public static final String SHACL_PATH_LABEL_QUERY_RESOURCE = QUERY_GET_DIR + "property_path_label.sparql";
-  public static final String SHACL_SHAPE_PATH_QUERY_RESOURCE = QUERY_GET_DIR + "shacl_shape.sparql";
   public static final String LIFECYCLE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/lifecycle.jsonld";
   public static final String OCCURRENCE_INSTANT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_instant.jsonld";
   public static final String OCCURRENCE_LINK_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_link.jsonld";
