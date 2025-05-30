@@ -37,6 +37,7 @@ public class FileService {
   private static final String QUERY_CONSTR_DIR = QUERY_DIR + "construct/";
   private static final String QUERY_GET_DIR = QUERY_DIR + "get/";
   public static final String FORM_QUERY_RESOURCE = QUERY_CONSTR_DIR + "form.sparql";
+  public static final String SHACL_RULE_QUERY_RESOURCE = QUERY_CONSTR_DIR + "shacl_rule.sparql";
   public static final String ENDPOINT_QUERY_RESOURCE = QUERY_GET_DIR + "endpoint.sparql";
   public static final String INSTANCE_QUERY_RESOURCE = QUERY_GET_DIR + "instance.sparql";
   public static final String SHACL_PATH_QUERY_RESOURCE = QUERY_GET_DIR + "property_path.sparql";

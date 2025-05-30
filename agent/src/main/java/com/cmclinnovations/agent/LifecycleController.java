@@ -125,7 +125,7 @@ public class LifecycleController {
     } else {
       LOGGER.info("All orders has been successfully received!");
       JsonNode report = this.lifecycleReportService.genReportInstance(contractId);
-      ResponseEntity<ApiResponse> response = this.addService.instantiateJsonLd(report,
+      ResponseEntity<ApiResponse> response = this.addService.instantiateJsonLd(report, "report",
           "Report has been successfully instantiated!");
       if (response.getStatusCode() != HttpStatus.CREATED) {
         return response;
