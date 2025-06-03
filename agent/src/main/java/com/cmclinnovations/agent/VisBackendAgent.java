@@ -1,11 +1,13 @@
 package com.cmclinnovations.agent;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,21 +33,25 @@ public class VisBackendAgent {
   private final DeleteService deleteService;
   private final GetService getService;
   private final GeocodingService geocodingService;
+
+  private final MessageSource messageSource;
+
   private static final Logger LOGGER = LogManager.getLogger(VisBackendAgent.class);
 
   public VisBackendAgent(AddService addService, DeleteService deleteService, GetService getService,
-      GeocodingService geocodingService) {
+      GeocodingService geocodingService, MessageSource messageSource) {
     this.addService = addService;
     this.deleteService = deleteService;
     this.getService = getService;
     this.geocodingService = geocodingService;
+    this.messageSource = messageSource;
   }
 
   @GetMapping("/status")
-  public ResponseEntity<String> getStatus() {
+  public ResponseEntity<String> getStatus(Locale locale) {
     LOGGER.info("Detected request to get agent status...");
     return new ResponseEntity<>(
-        "Agent is ready to receive requests.",
+        this.messageSource.getMessage("status", null, locale),
         HttpStatus.OK);
   }
 
