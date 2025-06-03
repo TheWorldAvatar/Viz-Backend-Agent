@@ -1,5 +1,9 @@
 package com.cmclinnovations.agent.service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
@@ -10,11 +14,16 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFFormat;
+import org.apache.jena.riot.RDFWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.topbraid.shacl.rules.RuleUtil;
 
 import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.service.application.LifecycleReportService;
@@ -83,26 +92,45 @@ public class AddService {
     ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
     // Attempt to replace all placeholders in the JSON schema
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
-    return this.instantiateJsonLd(addJsonSchema, resourceID + " has been successfully instantiated!");
+    return this.instantiateJsonLd(addJsonSchema, resourceID, resourceID + " has been successfully instantiated!");
   }
 
   /**
    * Instantiate an instance based on a jsonLD object.
    * 
    * @param jsonLdSchema The target json LD object to instantiate.
+   * @param resourceID   The target resource identifier for the instance.
    * @param message      Successful message.
    */
-  public ResponseEntity<ApiResponse> instantiateJsonLd(JsonNode jsonLdSchema, String message) {
-    LOGGER.debug("Adding instance to endpoint...");
+  public ResponseEntity<ApiResponse> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID, String message) {
+    LOGGER.info("Adding instance to endpoint...");
     String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();
     String jsonString = jsonLdSchema.toString();
+
     ResponseEntity<String> response = this.kgService.add(jsonString);
+
+    Model rules = this.kgService.getShaclRules(resourceID);
+    if (response.getStatusCode() == HttpStatus.OK && !rules.isEmpty()) {
+      LOGGER.info("Detected rules! Instantiating inferred instances to endpoint...");
+      Model dataModel = this.kgService.readStringModel(jsonString, Lang.JSONLD);
+      Model inferredData = RuleUtil.executeRules(dataModel, rules, null, null);
+      try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+        RDFWriter.create()
+            .source(inferredData)
+            .format(RDFFormat.JSONLD)
+            .output(out);
+        String stringifiedInferredData = out.toString(StandardCharsets.UTF_8);
+        response = this.kgService.add(stringifiedInferredData);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(message);
       return new ResponseEntity<>(new ApiResponse(message, instanceIri), HttpStatus.CREATED);
-    } else {
-      return new ResponseEntity<>(new ApiResponse(response), response.getStatusCode());
     }
+    return new ResponseEntity<>(new ApiResponse(response), response.getStatusCode());
   }
 
   /**

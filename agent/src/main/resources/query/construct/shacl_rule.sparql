@@ -1,0 +1,17 @@
+PREFIX sh: <http://www.w3.org/ns/shacl#>
+
+CONSTRUCT {
+  ?shape a sh:NodeShape; 
+         sh:targetClass ?target;
+         sh:rule ?ruleShape .
+  ?ruleShape a ?ruleType;
+               ?pred ?object.
+}
+WHERE {
+  BIND([target] AS ?target)
+  ?shape a sh:NodeShape ;
+         sh:targetClass ?target;
+         sh:rule ?ruleShape .
+  ?ruleShape a ?ruleType ;
+               ?pred ?object.
+}

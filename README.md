@@ -292,6 +292,8 @@ To add a new instance, users must send a POST request with their corresponding p
 
 where `{type}` is the requested identifier that must correspond to a target file name in`./resources/application-service.json`. The request parameters will depend on the `JSON-LD` file defined. More information on the required schema can be found in [this section](#41-instantiation).
 
+[`SHACL rules`](https://www.w3.org/TR/shacl-af/#rules) can be implemented to derive additional triples. For an example, see the [`./resources` directory](./resources/README.md#1-shacl-derivation). Currently, only the [`SparqlRule`](https://www.w3.org/TR/shacl-af/#SPARQLRule) is fully supported, while [`TripleRule`](https://www.w3.org/TR/shacl-af/#TripleRule) functionality is limited, as nested conditions are not supported.".
+
 A successful request will return `{"message": "type has been successfully instantiated!", "iri" : "root iri that is instantiated"}`.
 
 #### 2.5.2 Delete route
