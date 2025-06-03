@@ -1,13 +1,11 @@
 package com.cmclinnovations.agent;
 
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,6 +25,7 @@ import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.GeocodingService;
 import com.cmclinnovations.agent.service.core.LocalisationService;
+import com.cmclinnovations.agent.utils.LocalisationResource;
 
 @RestController
 public class VisBackendAgent {
@@ -51,7 +50,7 @@ public class VisBackendAgent {
   public ResponseEntity<String> getStatus() {
     LOGGER.info("Detected request to get agent status...");
     return new ResponseEntity<>(
-        this.localisationService.getMessage("status"),
+        this.localisationService.getMessage(LocalisationResource.STATUS_KEY),
         HttpStatus.OK);
   }
 
