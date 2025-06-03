@@ -26,6 +26,7 @@ import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.GeocodingService;
+import com.cmclinnovations.agent.service.core.LocalisationService;
 
 @RestController
 public class VisBackendAgent {
@@ -33,25 +34,24 @@ public class VisBackendAgent {
   private final DeleteService deleteService;
   private final GetService getService;
   private final GeocodingService geocodingService;
-
-  private final MessageSource messageSource;
+  private final LocalisationService localisationService;
 
   private static final Logger LOGGER = LogManager.getLogger(VisBackendAgent.class);
 
   public VisBackendAgent(AddService addService, DeleteService deleteService, GetService getService,
-      GeocodingService geocodingService, MessageSource messageSource) {
+      GeocodingService geocodingService, LocalisationService localisationService) {
     this.addService = addService;
     this.deleteService = deleteService;
     this.getService = getService;
     this.geocodingService = geocodingService;
-    this.messageSource = messageSource;
+    this.localisationService = localisationService;
   }
 
   @GetMapping("/status")
-  public ResponseEntity<String> getStatus(Locale locale) {
+  public ResponseEntity<String> getStatus() {
     LOGGER.info("Detected request to get agent status...");
     return new ResponseEntity<>(
-        this.messageSource.getMessage("status", null, locale),
+        this.localisationService.getMessage("status"),
         HttpStatus.OK);
   }
 
