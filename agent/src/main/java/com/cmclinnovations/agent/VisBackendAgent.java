@@ -242,7 +242,8 @@ public class VisBackendAgent {
       if (addResponse.getStatusCode() == HttpStatus.CREATED) {
         LOGGER.info("{} has been successfully updated for {}", type, id);
         return new ResponseEntity<>(
-            new ApiResponse(type + " has been successfully updated for " + id,
+            new ApiResponse(
+                this.localisationService.getMessage(LocalisationResource.SUCCESS_UPDATE_KEY, type, id),
                 addResponse.getBody().getIri()),
             HttpStatus.CREATED);
       } else {

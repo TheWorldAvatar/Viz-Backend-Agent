@@ -36,6 +36,7 @@ import org.springframework.web.client.RestClient;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.stack.clients.blazegraph.BlazegraphClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -54,6 +55,7 @@ public class KGService {
   private final RestClient client;
   private final ObjectMapper objectMapper;
   private final FileService fileService;
+  private final LocalisationService localisationService;
   private final LoggingService loggingService;
 
   private static final String DEFAULT_NAMESPACE = "kb";
@@ -75,10 +77,11 @@ public class KGService {
    * @param fileService    File service for accessing file resources.
    * @param loggingService Service for logging statements.
    */
-  public KGService(FileService fileService, LoggingService loggingService) {
+  public KGService(FileService fileService, LoggingService loggingService, LocalisationService localisationService) {
     this.client = RestClient.create();
     this.objectMapper = new ObjectMapper();
     this.fileService = fileService;
+    this.localisationService = localisationService;
     this.loggingService = loggingService;
   }
 
@@ -109,11 +112,11 @@ public class KGService {
     if (statusCode == 200) {
       LOGGER.info("Instance has been successfully deleted!");
       return new ResponseEntity<>(
-          "Instance has been successfully deleted!",
+          this.localisationService.getMessage(LocalisationResource.SUCCESS_DELETE_KEY),
           HttpStatus.OK);
     } else {
       return new ResponseEntity<>(
-          "Error deleting instances from the KG. Please read the logs for more information!",
+          this.localisationService.getMessage(LocalisationResource.ERROR_DELETE_KEY),
           HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
