@@ -8,7 +8,9 @@ public class LocalisationResource {
   public static final String SUCCESS_ADD_KEY = SUCCESS_PREFIX + "add";
   public static final String SUCCESS_DELETE_KEY = SUCCESS_PREFIX + "delete";
   public static final String SUCCESS_UPDATE_KEY = SUCCESS_PREFIX + "update";
+  public static final String ERROR_CONTACT_KEY = ERROR_PREFIX + "contact";
   public static final String ERROR_DELETE_KEY = ERROR_PREFIX + "delete";
+  public static final String ERROR_TIMESTAMP_KEY = ERROR_PREFIX + "timestamp";
 
   // Private constructor to prevent instantiation
   private LocalisationResource() {
