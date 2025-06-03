@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.5.2
+
+### Features
+
+- Added derivation of additional triples when instantiating triples through SHACL rules
+
 ## 1.5.1
 
 ### Features
