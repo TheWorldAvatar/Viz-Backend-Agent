@@ -6,6 +6,9 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.LocalisationResource;
+
 @Service
 public class LocalisationService {
   private final MessageSource messageSource;
@@ -32,5 +35,34 @@ public class LocalisationService {
     // Locale is resolved from the current request context automatically
     Locale currentLocale = LocaleContextHolder.getLocale();
     return messageSource.getMessage(key, replacementArgs, currentLocale);
+  }
+
+  /**
+   * Retrieves the localised event status.
+   *
+   * @param event The event of interest.
+   */
+  public String getEvent(String event) {
+    String localisedKey;
+    switch (event) {
+      case LifecycleResource.EVENT_INCIDENT_REPORT:
+        localisedKey = LocalisationResource.STATUS_REPORT_KEY;
+        break;
+      case LifecycleResource.EVENT_CANCELLATION:
+        localisedKey = LocalisationResource.STATUS_CANCEL_KEY;
+        break;
+      case LifecycleResource.EVENT_DELIVERY:
+        localisedKey = LocalisationResource.STATUS_COMPLETED_KEY;
+        break;
+      case LifecycleResource.EVENT_DISPATCH:
+        localisedKey = LocalisationResource.STATUS_DISPATCH_KEY;
+        break;
+      case LifecycleResource.EVENT_ORDER_RECEIVED:
+        localisedKey = LocalisationResource.STATUS_ORDER_KEY;
+        break;
+      default:
+        throw new IllegalArgumentException("Unknown event: " + event);
+    }
+    return this.getMessage(localisedKey);
   }
 }
