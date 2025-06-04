@@ -556,6 +556,8 @@ Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/ser
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/complete/{id}` endpoint to retrieve the form template associated with the service completion event, where `id` is either the identifier of the service completion occurrence of interest, or `form` for an empty form template. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ServiceOrderCompletedOccurrenceShape` is defined in `./resources/shacl.ttl`, which can be extended for your specific requirements. Note that if you require any form of computation for the completion details, it is recommended to define a separate group using `sh:node` as evident by `WeightLogShape`.
 
+Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/complete` endpoint to update the completion details for a target order. The details are configurable as per the above.
+
 > Report unfulfilled service tasks
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/report/form` endpoint to retrieve the form template associated with the report event. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ServiceReportOccurrenceShape` is defined in `./resources/shacl.ttl`. At the moment, properties may ONLY include remarks.
@@ -932,7 +934,7 @@ base:StandaloneArrayShape
   ] .
 ```
 
-When there are several array fields, users can choose to group these fields into one or multiple groups to reduce the form complexity. Users may choose to implement these grouping using either the `sh:node` or `PropertyGroup` [approach](#312-property-groups). Non-array fields can also be included within the group.
+When there are several array fields, users can choose to group these fields into one or multiple groups to reduce the form complexity. A grouped array will be displayed as an array of one form section with multiple fields. Users may choose to implement these grouping using either the `sh:node` or `PropertyGroup` [approach](#312-property-groups).
 
 ```
 base:GroupArrayShape
@@ -958,6 +960,7 @@ base:GroupArrayShape
     sh:path rdfs:label ;
     sh:datatype xsd:string ;
     sh:minCount 1 ;
+    sh:maxCount 1 ;
   ] ;
   sh:property [
     sh:name "contact" ;
@@ -967,18 +970,25 @@ base:GroupArrayShape
     sh:path ontoexample:hasArray ;
     sh:datatype xsd:decimal ;
     sh:minCount 1 ;
+    sh:maxCount 1 ;
   ] .
 
 base:ExampleContactGroup
 	a sh:PropertyGroup ;
 	rdfs:label "contact details" ;
   sh:description "An example form section grouping properties of contact person and number through SHACL." ;
-	sh:order "1"^^xsd:integer .
-
+	sh:order "1"^^xsd:integer ;
+  sh:minCount 1 .
 ```
 
+> [!TIP]
+> To make an array group optional, set its `minCount` attribute to 0.
+
+> [!WARNING]
+> A grouped array field is determined by the group's `maxCount` property, the `maxCount` values of individual property shapes are disregarded in the form. Set them to 1 for validation if needed. To make individual properties optional, set their respective `minCount` value to 0.
+
 > [!CAUTION]
-> Array fields within a group must have the same `maxCount` property value. Array fields cannot be nested within a nested group, for example, `rootShape sh:property/sh:node propGroup. propGroup sh:property/sh:group nestedGroup.` will not work.
+> Array fields cannot be nested within a nested array group, for example, `rootShape sh:property/sh:node propGroup. propGroup sh:property/sh:group nestedGroup.` will not work.
 
 ### 3.1.5 Lifecycle-specific Feature
 

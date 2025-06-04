@@ -6,11 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -46,7 +50,7 @@ public class SparqlBindingTest {
     sampleInput.set(FIELD_ONE, genResponseField(FIELD_TYPE_LITERAL, FIELD_VALUE_ONE, null, null));
     sampleInput.set(FIELD_TWO, genResponseField(FIELD_TYPE_URI, FIELD_VALUE_TWO, FIELD_TWO_DATA_TYPE, null));
     sampleInput.set(FIELD_THREE, genResponseField(FIELD_TYPE_LITERAL, FIELD_VALUE_THREE, null, FIELD_THREE_LANGUAGE));
-    sampleBinding = new SparqlBinding(sampleInput);
+    this.sampleBinding = new SparqlBinding(sampleInput);
   }
 
   @Test
@@ -72,6 +76,35 @@ public class SparqlBindingTest {
   }
 
   @Test
+  void testAddFieldArray() {
+    // Generate a secondary binding
+    ObjectNode sampleInput = OBJECT_MAPPER.createObjectNode();
+    sampleInput.set(FIELD_ONE, genResponseField(FIELD_TYPE_LITERAL, FIELD_VALUE_TWO, null, null));
+    SparqlBinding secBinding = new SparqlBinding(sampleInput);
+    // Generate an array variable mapping
+    Map<String, Set<String>> sampleArrayVars = new HashMap<>();
+    sampleArrayVars.put("random", Set.of(FIELD_ONE));
+    this.sampleBinding.addFieldArray(secBinding, sampleArrayVars);
+
+    // Execute method
+    Map<String, Object> bindings = this.sampleBinding.get();
+    assertNotNull(bindings);
+    assertEquals(3, bindings.size());
+    validateResponseField((SparqlResponseField) bindings.get(FIELD_TWO), FIELD_TYPE_URI, FIELD_VALUE_TWO,
+        FIELD_TWO_DATA_TYPE, FIELD_DEFAULT_LANGUAGE);
+    validateResponseField((SparqlResponseField) bindings.get(FIELD_THREE), FIELD_TYPE_LITERAL, FIELD_VALUE_THREE,
+        FIELD_DEFAULT_DATA_TYPE, FIELD_THREE_LANGUAGE);
+
+    // Validate array field has been added
+    List<SparqlResponseField> fieldOneResults = (List<SparqlResponseField>) bindings.get(FIELD_ONE);
+    assertEquals(2, fieldOneResults.size());
+    validateResponseField(fieldOneResults.get(0), FIELD_TYPE_LITERAL, FIELD_VALUE_ONE,
+        FIELD_DEFAULT_DATA_TYPE, FIELD_DEFAULT_LANGUAGE);
+    validateResponseField(fieldOneResults.get(1), FIELD_TYPE_LITERAL, FIELD_VALUE_TWO,
+        FIELD_DEFAULT_DATA_TYPE, FIELD_DEFAULT_LANGUAGE);
+  }
+
+  @Test
   void testGetFieldValue() {
     assertEquals(FIELD_VALUE_ONE, this.sampleBinding.getFieldValue(FIELD_ONE),
         "Field one should return corresponding value!");
@@ -85,6 +118,20 @@ public class SparqlBindingTest {
   void testGetFieldValue_NonExistentField() {
     assertNull(this.sampleBinding.getFieldValue(MISSING_FIELD),
         "Missing field should return null!");
+  }
+
+  /**
+   * Adds a response field to the specified object node.
+   * 
+   * @param node  The target object node to add the new field.
+   * @param field The field to be added.
+   * @param value The value of the field.
+   */
+  public static void addResponseField(ObjectNode node, String field, String value) {
+    if (value != null) {
+      node.set(field,
+          SparqlBindingTest.genResponseField(ShaclResource.XSD_STRING, value, null, null));
+    }
   }
 
   /**

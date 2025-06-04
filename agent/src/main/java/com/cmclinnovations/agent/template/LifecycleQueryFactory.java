@@ -245,7 +245,7 @@ public class LifecycleQueryFactory {
         + ",\"Unknown\"))) AS ?" + LifecycleResource.STATUS_KEY
         + ")"
         + "FILTER(?" + LifecycleResource.STATUS_KEY + "!=\"Unknown\")";
-    query.append("{").append(tempBuilder).append("}")
+    query.append(StringResource.genGroupGraphPattern(tempBuilder.toString()))
         .append(statement);
   }
 
@@ -297,7 +297,7 @@ public class LifecycleQueryFactory {
     } else {
       constraintKeyword = "MINUS";
     }
-    query.append(constraintKeyword).append("{").append(contents).append("}");
+    query.append(constraintKeyword).append(StringResource.genGroupGraphPattern(contents));
   }
 
   /**

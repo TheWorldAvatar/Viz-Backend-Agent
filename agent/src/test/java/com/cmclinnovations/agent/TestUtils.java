@@ -14,6 +14,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class TestUtils {
+  public static String SPARQL_FILE_EXTENSION = ".sparql";
+
   /**
    * Check if the result response entity contains the expected substring.
    * 
@@ -80,5 +82,13 @@ public class TestUtils {
     File file = ResourceUtils.getFile("classpath:" + filePath);
     ObjectMapper mapper = new ObjectMapper();
     return mapper.readValue(file, ArrayNode.class);
+  }
+
+  /**
+   * Generates an empty Object node.
+   */
+  public static ObjectNode genEmptyObjectNode() {
+    ObjectMapper mapper = new ObjectMapper();
+    return mapper.createObjectNode();
   }
 }

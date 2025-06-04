@@ -143,24 +143,38 @@ public class LifecycleController {
   }
 
   /**
-   * Assign dispatch details for the specified event
+   * Updates a completed or dispatch event. Valid types include:
+   * 1) complete: Completes a specific service order
+   * 2) dispatch: Assign dispatch details for the specified event
    */
-  @PutMapping("/service/dispatch")
-  public ResponseEntity<ApiResponse> assignDispatchDetails(@RequestBody Map<String, Object> params) {
+  @PutMapping("/service/{type}")
+  public ResponseEntity<ApiResponse> assignDispatchDetails(@PathVariable String type,
+      @RequestBody Map<String, Object> params) {
     if (this.isInvalidParams(params, LifecycleResource.CONTRACT_KEY)) {
       return new ResponseEntity<>(
           new ApiResponse(MessageFormat.format(MISSING_FIELD_MSG_TEMPLATE, LifecycleResource.CONTRACT_KEY)),
           HttpStatus.BAD_REQUEST);
     }
-    LOGGER.info("Received request to assign the dispatch details for a service order...");
-    return this.lifecycleService.genDispatchOrDeliveryOccurrence(params, LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+    LifecycleEventType eventType = null;
+    switch (type.toLowerCase()) {
+      case "complete":
+        LOGGER.info("Received request to complete a service order with completion details...");
+        eventType = LifecycleEventType.SERVICE_EXECUTION;
+        break;
+      case "dispatch":
+        LOGGER.info("Received request to assign the dispatch details for a service order...");
+        eventType = LifecycleEventType.SERVICE_ORDER_DISPATCHED;
+        break;
+      default:
+        break;
+    }
+    return this.lifecycleService.genDispatchOrDeliveryOccurrence(params, eventType);
   }
 
   /**
    * Performs a service action for a specific service action. Valid types include:
-   * 1) complete: Completes a specific service order
-   * 2) report: Reports any unfulfilled service delivery
-   * 3) cancel: Cancel any upcoming service
+   * 1) report: Reports any unfulfilled service delivery
+   * 2) cancel: Cancel any upcoming service
    */
   @PostMapping("/service/{type}")
   public ResponseEntity<ApiResponse> performServiceAction(@PathVariable String type,
@@ -173,9 +187,6 @@ public class LifecycleController {
     }
     String successMsg = "";
     switch (type.toLowerCase()) {
-      case "complete":
-        LOGGER.info("Received request to complete a service order with completion details...");
-        return this.lifecycleService.genDispatchOrDeliveryOccurrence(params, LifecycleEventType.SERVICE_EXECUTION);
       case "cancel":
         LOGGER.info("Received request to cancel the upcoming service...");
         if (this.isInvalidParams(params, LifecycleResource.DATE_KEY)) {

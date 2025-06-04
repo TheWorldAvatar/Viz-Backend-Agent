@@ -1,5 +1,14 @@
 # Change Log
 
+## 1.6.0
+
+### Features
+
+- Modified the requirements to group arrays in SHACL constraints
+- Simplified the code for generating queries
+- Simplified the dynamically generated SPARQL queries for branches, arrays, and groups
+- Complete task is changed from a POST to PUT route
+
 ## 1.5.2
 
 ### Features

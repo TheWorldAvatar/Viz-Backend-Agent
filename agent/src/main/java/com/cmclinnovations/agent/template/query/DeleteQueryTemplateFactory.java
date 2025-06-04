@@ -188,7 +188,8 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
         StringResource.appendTriple(whereBuilder, subject, formattedPredicate, formattedObjVar);
       }
       // Further processing for array type
-      if (fieldNode.has(ShaclResource.REPLACE_KEY) && fieldNode.path(ShaclResource.TYPE_KEY).asText().equals("array")
+      if (fieldNode.has(ShaclResource.REPLACE_KEY)
+          && fieldNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)
           && fieldNode.has(ShaclResource.CONTENTS_KEY)) {
         // This should generate a DELETE query with a variable whenever IDs are detected
         this.recursiveParseNode(deleteBuilder, whereBuilder,

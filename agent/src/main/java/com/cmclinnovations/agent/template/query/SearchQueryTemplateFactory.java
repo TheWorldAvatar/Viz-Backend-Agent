@@ -1,6 +1,5 @@
 package com.cmclinnovations.agent.template.query;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
@@ -8,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public class SearchQueryTemplateFactory extends QueryTemplateFactory {
@@ -38,27 +38,24 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
    * @param criterias All the required search criteria.
    */
   public Queue<String> write(QueryTemplateFactoryParameters params) {
-    Map<String, String> queryLines = new HashMap<>();
     LOGGER.info("Generating a query template for getting the data that matches the search criteria...");
-    StringBuilder whereBuilder = new StringBuilder();
     StringBuilder filters = new StringBuilder();
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    super.sortBindings(params.bindings(), queryLines);
+    String whereClauseLines = super.genWhereClauseContent(params.bindings());
 
-    queryLines.entrySet().forEach(currentLine -> {
-      String variable = currentLine.getKey();
+    StringBuilder whereBuilder = new StringBuilder(whereClauseLines);
+    super.variables.forEach(variableWithMark -> {
+      String variable = variableWithMark.replace(ShaclResource.VARIABLE_MARK, "");
       // Do not generate or act on any id query lines
-      if (!variable.equals("id")) {
-        // note that if no criteria or empty string is passed in the API, the filter
-        // will not be added
-        if (params.criterias().containsKey(variable) && !params.criterias().get(variable).isEmpty()) {
-          // If there is no search filters to be added, this variable should not be added
-          String searchFilters = this.genSearchCriteria(variable, params.criterias());
-          if (!searchFilters.isEmpty()) {
-            whereBuilder.append(currentLine.getValue());
-            filters.append(searchFilters);
-          }
+      // note that if no criteria or empty string is passed in the API, the filter
+      // will not be added
+      if (!variable.equals("id") && params.criterias().containsKey(variable)
+          && !params.criterias().get(variable).isEmpty()) {
+        // If there is no search filters to be added, this variable should not be added
+        String searchFilters = this.genSearchCriteria(variable, params.criterias());
+        if (!searchFilters.isEmpty()) {
+          filters.append(searchFilters);
         }
       }
     });
