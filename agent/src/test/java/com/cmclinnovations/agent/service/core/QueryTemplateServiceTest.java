@@ -80,10 +80,7 @@ class QueryTemplateServiceTest {
     void testGenGetQuery() throws IOException {
         Queue<Queue<SparqlBinding>> testBindings = GetQueryTemplateFactoryTest.initTestBindings();
         Queue<String> results = testService.genGetQuery(testBindings);
-        assertEquals(2, results.size());
-        assertEquals(TestUtils.getSparqlQuery(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE), results.poll());
-        assertEquals(TestUtils.getSparqlQuery(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_MIXED_FILE),
-                results.poll());
+        GetQueryTemplateFactoryTest.validateTestOutput(results, GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE);
     }
 
     @Test
@@ -91,10 +88,7 @@ class QueryTemplateServiceTest {
         Queue<Queue<SparqlBinding>> testBindings = GetQueryTemplateFactoryTest.initTestBindings();
         Queue<String> results = testService.genGetQuery(testBindings, GetQueryTemplateFactoryTest.SAMPLE_FILTER, null,
                 "", new HashMap<>());
-        assertEquals(2, results.size());
-        assertEquals(TestUtils.getSparqlQuery(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_ID_FILE), results.poll());
-        assertEquals(TestUtils.getSparqlQuery(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_ID_MIXED_FILE),
-                results.poll());
+                        GetQueryTemplateFactoryTest.validateTestOutput(results, GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_ID_FILE);
     }
 
     @Test

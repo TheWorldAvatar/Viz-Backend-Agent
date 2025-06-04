@@ -50,6 +50,7 @@ public class FileService {
   public static final String REPLACEMENT_TARGET = "[target]";
   public static final String REPLACEMENT_SHAPE = "[shape]";
   public static final String REPLACEMENT_PATH = "[path]";
+  public static final String REPLACEMENT_FILTER = "[filter]";
 
   private static final String MISSING_RESOURCE_TEMPLATE_MSG = "Resource at {0} is not found. Please ensure you have a valid resource in the file path.";
   private static final Logger LOGGER = LogManager.getLogger(FileService.class);

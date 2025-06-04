@@ -127,7 +127,9 @@ public class GetService {
       // Removes the first instance from results as the core instance
       SparqlBinding firstInstance = results.poll();
       // Iterate over each result binding to append arrays if required
-      results.stream().forEach(firstInstance::addFieldArray);
+      results.stream().forEach(result -> {
+        firstInstance.addFieldArray(result, new HashMap<>());
+      });
       return firstInstance;
     }
     if (results.size() == 1) {
@@ -201,7 +203,8 @@ public class GetService {
     Queue<SparqlBinding> instances = this.kgService.query(getQuery.poll(), SparqlEndpointType.MIXED);
     // Query for secondary instances ie instances that are subclasses of parent
     Queue<SparqlBinding> secondaryInstances = this.kgService.query(getQuery.poll(), SparqlEndpointType.BLAZEGRAPH);
-    instances = this.kgService.combineBindingQueue(instances, secondaryInstances);
+    instances = this.kgService.combineBindingQueue(instances, secondaryInstances,
+        this.queryTemplateService.getArrayVariables());
     // If there is a variable sequence available, add the sequence to each binding,
     if (!varSequence.isEmpty()) {
       instances.forEach(instance -> instance.addSequence(varSequence));

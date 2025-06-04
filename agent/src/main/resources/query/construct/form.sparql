@@ -27,7 +27,9 @@ CONSTRUCT {
     rdfs:label ?group ;
     rdfs:comment ?groupdesc ;
     twa:role ?grouprole ;
-    sh:order ?grouporder.
+	sh:order ?grouporder;
+    sh:minCount ?mingroupcount ;
+    sh:maxCount ?maxgroupcount .
   ?nodegroup rdf:type sh:NodeShape ;
     rdfs:label ?nodename ;
     rdfs:comment ?nodedesc .
@@ -63,6 +65,14 @@ CONSTRUCT {
       }
     }
 
+    # Retrieve VALUE constraints to be assigned to group if available
+    OPTIONAL {
+      ?property sh:minCount ?mingcount .
+    }
+    OPTIONAL {
+      ?property sh:maxCount ?maxgcount .
+    }
+
     # Retrieve group directly if available
     OPTIONAL {
       ?subproperty sh:group ?groupobj .
@@ -74,10 +84,16 @@ CONSTRUCT {
       OPTIONAL {
         ?groupobj twa:role ?grouprole .
       }
+      OPTIONAL {
+        ?groupobj sh:minCount ?mingroupcount ;
+          sh:maxCount ?maxgroupcount .
+      }
     }
     # Else, populate group from the target of sh:node
     BIND (IF(BOUND(?group), ?group, IF(?property != ?subproperty, ?propname, ?null)) AS ?group)
     BIND (IF(BOUND(?groupdesc), ?groupdesc, IF(?property != ?subproperty, ?propdesc, ?null)) AS ?groupdesc)
+    BIND (IF(BOUND(?groupobj), ?mingroupcount, IF(?property != ?subproperty, ?mingcount, ?null)) AS ?mingroupcount)
+    BIND (IF(BOUND(?groupobj), ?maxgroupcount, IF(?property != ?subproperty, ?maxgcount, ?null)) AS ?maxgroupcount)
     BIND (IF(BOUND(?groupobj),
             IF(BOUND(?nodename),BNODE(CONCAT(?nodename,?group)),?groupobj),
             IF(?property != ?subproperty, 

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -188,6 +189,13 @@ public class QueryTemplateService {
    */
   public List<String> getFieldSequence() {
     return this.getQueryTemplateFactory.getSequence();
+  }
+
+  /**
+   * Retrieve the mappings of array variables grouped by groups.
+   */
+  public Map<String, Set<String>> getArrayVariables() {
+    return this.getQueryTemplateFactory.getArrayVariables();
   }
 
   /**

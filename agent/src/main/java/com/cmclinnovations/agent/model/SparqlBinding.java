@@ -109,61 +109,25 @@ public class SparqlBinding {
   /**
    * Add fields as an array only if there are distinct values.
    * 
-   * @param field      The field of interest.
    * @param secBinding The secondary binding for checking.
+   * @param arrayVars  Mappings between each array group and their individual
+   *                   fields.
    */
-  public void addFieldArray(SparqlBinding secBinding) {
-    // Check for the complete list of fields between the two to iterate over
-    Set<String> existingFields = this.getFields();
-    Set<String> fieldsForIteration = secBinding.getFields();
-    if (!existingFields.equals(fieldsForIteration) && existingFields.size() > fieldsForIteration.size()) {
-      fieldsForIteration = existingFields;
-    }
-
-    // Longest existing field array before iteration
-    int longestArraySize = this.getLongestFieldArray();
-    fieldsForIteration.forEach((field) -> {
-      // Create placeholder fields
-      SparqlResponseField existingField;
-      SparqlResponseField newField;
-      // When both bindings contain the field
-      if (this.bindings.containsKey(field) && secBinding.containsField(field)) {
-        // If the values are duplicates, skip the function
-        if (this.bindings.get(field).value().equals(secBinding.getFieldValue(field))) {
-          return;
-        }
-        // If the values are distinct,the fields should be added as they are
-        existingField = this.bindings.get(field);
-        newField = secBinding.getFieldResponse(field);
-      } else if (this.bindings.containsKey(field)) {
-        // Execute only if the primary/first binding contains the field
-        existingField = this.bindings.get(field);
-        // New field is empty value
-        newField = new SparqlResponseField(existingField.type(), "", existingField.dataType(), existingField.lang());
-      } else {
-        // Execute only if the secondary binding contains the field
-        newField = secBinding.getFieldResponse(field);
-        // Existing value should be empty
-        existingField = new SparqlResponseField(newField.type(), "", newField.dataType(), newField.lang());
-      }
-
-      List<SparqlResponseField> fields = this.bindingList.computeIfAbsent(field, k -> {
+  public void addFieldArray(SparqlBinding secBinding, Map<String, Set<String>> arrayVars) {
+    if (this.bindingList.isEmpty()) {
+      Set<String> bestMatchFields = ShaclResource.findBestMatchingGroup(this.getFields(), arrayVars);
+      bestMatchFields.forEach((field) -> {
         List<SparqlResponseField> initFields = new ArrayList<>();
-        // Do not move this outside the compute function to prevent duplicates
-        initFields.add(existingField);
-        // If null values are appended for the existing field, check if there should be
-        // more empty fields appended to the array
-        if (existingField.value().isEmpty()) {
-          // Prepend empty fields when there are least two array items in the max
-          for (int i = 1; i < longestArraySize; i++) {
-            initFields.add(existingField);
-          }
-        }
-        return initFields;
+        initFields.add(this.getFieldResponse(field));
+        this.bindingList.put(StringResource.parseQueryVariable(field), initFields);
       });
-      fields.add(newField);
+    }
+    Set<String> bestMatchFields = ShaclResource.findBestMatchingGroup(secBinding.getFields(), arrayVars);
+    bestMatchFields.forEach((field) -> {
+      List<SparqlResponseField> fields = this.bindingList.computeIfAbsent(StringResource.parseQueryVariable(field),
+          k -> new ArrayList<>());
+      fields.add(secBinding.getFieldResponse(field));
     });
-
   }
 
   /**
@@ -172,18 +136,28 @@ public class SparqlBinding {
    * @param field Field of interest
    */
   public SparqlResponseField getFieldResponse(String field) {
-    return this.bindings.get(field);
+    return this.bindings.get(StringResource.parseQueryVariable(field));
+  }
+
+  /**
+   * Retrieve the field value. Defaults to null if no value is found!
+   * 
+   * @param field Field of interest
+   */
+  public String getFieldValue(String field) {
+    return this.getFieldValue(field, null);
   }
 
   /**
    * Retrieve the field value.
    * 
-   * @param field Field of interest
+   * @param field        Field of interest
+   * @param defaultValue Fall back value.
    */
-  public String getFieldValue(String field) {
+  public String getFieldValue(String field, String defaultValue) {
     SparqlResponseField fieldBinding = this.bindings.get(field);
     if (fieldBinding == null) {
-      return null;
+      return defaultValue;
     }
     return fieldBinding.value();
   }
