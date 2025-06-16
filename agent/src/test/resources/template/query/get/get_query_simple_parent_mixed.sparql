@@ -1,5 +1,5 @@
 SELECT DISTINCT ?iri ?parent_field WHERE {
     ?iri a/rdfs:subClassOf* <http://example.com/Concept>.
     ?iri <http://example.com/parentPath1> ?parent_field.
-    FILTER STRENDS(STR(?parent_field), "01j82")
+    FILTER REGEX(STR(?parent_field), "(/|#)01j82$")
 }
