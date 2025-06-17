@@ -10,8 +10,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 public class KeycloakJwtRolesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
-    public static final String PREFIX_RESOURCE_ROLE = "ROLE_";
-
     private static final String CLAIM_RESOURCE_ACCESS = "resource_access";
     private static final String CLAIM_CLIENT = "viz";
     private static final String CLAIM_ROLES = "roles";
@@ -28,7 +26,7 @@ public class KeycloakJwtRolesConverter implements Converter<Jwt, Collection<Gran
         if (resourceAccess != null && !resourceAccess.isEmpty()) {
             resourceAccess.get(CLAIM_CLIENT).get(CLAIM_ROLES).forEach(
                     role -> grantedAuthorities
-                            .add(new SimpleGrantedAuthority(PREFIX_RESOURCE_ROLE + CLAIM_CLIENT + "_" + role)));
+                            .add(new SimpleGrantedAuthority(role)));
         }
 
         return grantedAuthorities;
