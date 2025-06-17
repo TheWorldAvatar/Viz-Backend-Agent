@@ -5,7 +5,7 @@
       "ContainerSpec": {
         "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.6.0-shacl-data-roles-SNAPSHOT",
         "Env": [
-          "KEYCLOAK_ISSUER_URI=http://192.168.50.106:8080/realms/wsp",
+          "KEYCLOAK_ISSUER_URI=http://<DOMAIN>/realms/<REALM>",
           "NAMESPACE=kb",
           "TASKS_ENABLED=false"
         ],
