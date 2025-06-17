@@ -34,12 +34,11 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    * ?iri <prop_path>/<prop_path2> ?property2.
    * }
    * 
-   * @param params An object containing four parameters to write, namely:
+   * @param params An object containing the following parameters to write, namely:
    *               bindings - SHACL restrictions
    *               targetId - Optional Filter constraint for a specific instance
    *               parent - Optional details if instances must be associated
    *               addQueryStatements - Optional additional query statements
-   *               roles - Optional set containing the roles
    *               addVars - Optional additional variables to be included in the
    *               query, along with their order sequence
    */

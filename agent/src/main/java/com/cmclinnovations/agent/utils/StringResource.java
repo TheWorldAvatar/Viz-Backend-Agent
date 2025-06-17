@@ -36,8 +36,6 @@ public class StringResource {
   public static final String RDF_TYPE = "rdf:type";
   public static final String REPLACEMENT_PLACEHOLDER = "[replace]";
 
-  public static final String HEADER_ROLES = "role";
-
   // Private constructor to prevent instantiation
   private StringResource() {
     throw new UnsupportedOperationException("This class cannot be instantiated!");

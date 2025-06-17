@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class QueryTemplateService {
+  private final AuthenticationService authenticationService;
   private final FileService fileService;
   private final FormTemplateFactory formTemplateFactory;
   private final DeleteQueryTemplateFactory deleteQueryTemplateFactory;
@@ -37,10 +38,15 @@ public class QueryTemplateService {
   /**
    * Constructs a new service.
    * 
-   * @param fileService   File service for accessing file resources.
-   * @param jsonLdService A service for interactions with JSON LD.
+   * 
+   * @param authenticationService Service to retrieve user roles and
+   *                              authentication information.
+   * @param fileService           File service for accessing file resources.
+   * @param jsonLdService         A service for interactions with JSON LD.
    */
-  public QueryTemplateService(FileService fileService, JsonLdService jsonLdService) {
+  public QueryTemplateService(AuthenticationService authenticationService, FileService fileService,
+      JsonLdService jsonLdService) {
+    this.authenticationService = authenticationService;
     this.formTemplateFactory = new FormTemplateFactory();
     this.deleteQueryTemplateFactory = new DeleteQueryTemplateFactory(jsonLdService);
     this.getQueryTemplateFactory = new GetQueryTemplateFactory();
@@ -133,23 +139,22 @@ public class QueryTemplateService {
    * Generates the form template as a JSON object.
    * 
    * @param shaclFormInputs the form inputs queried from the SHACL restrictions.
-   * @param roles           The roles associated with the user request.
    * @param defaultVals     the default values for the form.
    */
-  public Map<String, Object> genFormTemplate(ArrayNode shaclFormInputs, String roles,
+  public Map<String, Object> genFormTemplate(ArrayNode shaclFormInputs,
       Map<String, Object> defaultVals) {
     LOGGER.debug("Generating the form template from the found SHACL restrictions...");
-    return this.formTemplateFactory.genTemplate(StringResource.mapRoles(roles), shaclFormInputs, defaultVals);
+    Set<String> roles = this.authenticationService.getRoles();
+    return this.formTemplateFactory.genTemplate(roles, shaclFormInputs, defaultVals);
   }
 
   /**
    * Generates a SELECT SPARQL query to retrieve instances from the inputs.
    * 
    * @param queryVarsAndPaths The query construction requirements.
-   * @param roles             The roles associated with the user request.
    */
-  public Queue<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String roles) {
-    return this.genGetQuery(queryVarsAndPaths, "", null, roles, "", new HashMap<>());
+  public Queue<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
+    return this.genGetQuery(queryVarsAndPaths, "", null, "", new HashMap<>());
   }
 
   /**
@@ -158,18 +163,16 @@ public class QueryTemplateService {
    * @param queryVarsAndPaths  The query construction requirements.
    * @param targetId           An optional field to target at a specific instance.
    * @param parentField        Optional parent field.
-   * @param roles              The roles associated with the user request.
    * @param addQueryStatements Additional query statements to be added
    * @param addVars            Optional additional variables to be included in the
    *                           query, along with their order sequence
    */
   public Queue<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
-      ParentField parentField, String roles, String addQueryStatements, Map<String, List<Integer>> addVars) {
+      ParentField parentField, String addQueryStatements, Map<String, List<Integer>> addVars) {
     LOGGER.debug("Generating the SELECT query to get instances...");
     return this.getQueryTemplateFactory
         .write(
-            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetId, parentField, addQueryStatements, addVars,
-                StringResource.mapRoles(roles)));
+            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetId, parentField, addQueryStatements, addVars));
   }
 
   /**

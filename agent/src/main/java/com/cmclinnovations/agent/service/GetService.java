@@ -33,7 +33,8 @@ public class GetService {
    * @param kgService            KG service for performing the query.
    * @param queryTemplateService Service for generating query templates.
    */
-  public GetService(KGService kgService, QueryTemplateService queryTemplateService) {
+  public GetService(KGService kgService,
+      QueryTemplateService queryTemplateService) {
     this.kgService = kgService;
     this.queryTemplateService = queryTemplateService;
   }
@@ -56,9 +57,8 @@ public class GetService {
    * @param parentField  Optional parent field containing its id and name.
    * @param requireLabel Indicates if labels should be returned for all the
    *                     fields that are IRIs.
-   * @param roles        The roles associated with the user request.
    */
-  public Queue<SparqlBinding> getInstances(String resourceID, ParentField parentField, String targetId, String roles,
+  public Queue<SparqlBinding> getInstances(String resourceID, ParentField parentField, String targetId,
       String addQueryStatements, boolean requireLabel, Map<String, List<Integer>> addVars) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     if (requireLabel) {
@@ -67,8 +67,7 @@ public class GetService {
     }
     String query = this.queryTemplateService.getShaclQuery(resourceID, requireLabel);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    return this.getInstances(nestedVariablesAndPropertyPaths, targetId, roles, parentField,
-        addQueryStatements, addVars);
+    return this.getInstances(nestedVariablesAndPropertyPaths, targetId, parentField, addQueryStatements, addVars);
   }
 
   /**
@@ -76,13 +75,12 @@ public class GetService {
    * 
    * @param resourceID The target resource identifier for the instance
    *                   class.
-   * @param roles      The roles associated with the user request.
    */
-  public ResponseEntity<String> getInstancesInCSV(String resourceID, String roles) {
+  public ResponseEntity<String> getInstancesInCSV(String resourceID) {
     LOGGER.info("Retrieving all instances of {} in csv...", resourceID);
     String query = this.queryTemplateService.getShaclQuery(resourceID, true);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    Queue<String> queries = this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, roles);
+    Queue<String> queries = this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths);
     // Query for direct instances
     String[] resultRows = this.kgService.queryCSV(queries.poll(), SparqlEndpointType.MIXED);
     // Query for secondary instances ie instances that are subclasses of parent
@@ -151,13 +149,12 @@ public class GetService {
    * @param resourceID   The target resource identifier for the instance class.
    * @param requireLabel Indicates if labels should be returned for all the
    *                     fields that are IRIs.
-   * @param roles        The roles associated with the user request.
    */
-  public ResponseEntity<?> getInstance(String targetId, String resourceID, boolean requireLabel, String roles) {
+  public ResponseEntity<?> getInstance(String targetId, String resourceID, boolean requireLabel) {
     LOGGER.debug("Retrieving an instance of {} ...", resourceID);
     String query = this.queryTemplateService.getShaclQuery(resourceID, requireLabel);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    Queue<SparqlBinding> instances = this.getInstances(nestedVariablesAndPropertyPaths, targetId, roles, null, "",
+    Queue<SparqlBinding> instances = this.getInstances(nestedVariablesAndPropertyPaths, targetId, null, "",
         new HashMap<>());
     return this.getSingleInstanceResponse(instances);
   }
@@ -169,14 +166,13 @@ public class GetService {
    * @param requireLabel Indicates if labels should be returned for all the
    *                     fields that are IRIs.
    * @param replacement  The replacement value required.
-   * @param roles        The roles associated with the user request.
    */
-  public ResponseEntity<?> getInstance(String targetId, boolean requireLabel, String replacement, String roles) {
+  public ResponseEntity<?> getInstance(String targetId, boolean requireLabel, String replacement) {
     LOGGER.debug("Retrieving an instance ...");
     String query = this.queryTemplateService.getShaclQuery(requireLabel, replacement);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
     // Query for direct instances
-    Queue<SparqlBinding> instances = this.getInstances(nestedVariablesAndPropertyPaths, targetId, roles, null, "",
+    Queue<SparqlBinding> instances = this.getInstances(nestedVariablesAndPropertyPaths, targetId, null, "",
         new HashMap<>());
     return this.getSingleInstanceResponse(instances);
   }
@@ -188,15 +184,14 @@ public class GetService {
    * @param queryVarsAndPaths  The query construction requirements.
    * @param targetId           An optional field to target the query at a specific
    *                           instance.
-   * @param roles              The roles associated with the user request.
    * @param addQueryStatements Additional query statements to be added
    * @param addVars            Optional additional variables to be included in the
    *                           query, along with their order sequence
    */
   private Queue<SparqlBinding> getInstances(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
-      String roles, ParentField parentField, String addQueryStatements, Map<String, List<Integer>> addVars) {
+      ParentField parentField, String addQueryStatements, Map<String, List<Integer>> addVars) {
     Queue<String> getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetId,
-        parentField, roles, addQueryStatements, addVars);
+        parentField, addQueryStatements, addVars);
     LOGGER.debug("Querying the knowledge graph for the instances...");
     List<String> varSequence = this.queryTemplateService.getFieldSequence();
     // Query for direct instances
@@ -218,14 +213,13 @@ public class GetService {
    * @param shaclReplacement The replacement value of the SHACL query target
    * @param targetId         An optional field to target the query at a specific
    *                         instance.
-   * @param roles            The roles associated with the user request.
    * @param requireLabel     Indicates if labels should be returned
    */
-  public Queue<String> getQuery(String shaclReplacement, String targetId, String roles, boolean requireLabel) {
+  public Queue<String> getQuery(String shaclReplacement, String targetId, boolean requireLabel) {
     String query = this.queryTemplateService.getShaclQuery(requireLabel, shaclReplacement);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
     return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, targetId,
-        null, roles, "", new HashMap<>());
+        null, "", new HashMap<>());
   }
 
   /**
@@ -254,12 +248,11 @@ public class GetService {
    * Retrieve the form template for the target entity and its information.
    * 
    * @param resourceID    The target resource identifier for the instance class.
-   * @param roles         The roles associated with the user request.
    * @param isReplacement Indicates if the resource ID is a replacement value
    *                      rather than a resource.
    * @param currentEntity Current default entity if available.
    */
-  public ResponseEntity<Map<String, Object>> getForm(String resourceID, String roles, boolean isReplacement,
+  public ResponseEntity<Map<String, Object>> getForm(String resourceID, boolean isReplacement,
       Map<String, Object> currentEntity) {
     LOGGER.debug("Retrieving the form template for {} ...", resourceID);
     String query = this.queryTemplateService.getFormQuery(resourceID, isReplacement);
@@ -271,8 +264,7 @@ public class GetService {
       // Execute the query on the current endpoint and get the result
       ArrayNode formTemplateInputs = this.kgService.queryJsonLd(query, endpoint);
       if (!formTemplateInputs.isEmpty()) {
-        Map<String, Object> results = this.queryTemplateService.genFormTemplate(formTemplateInputs, roles,
-            currentEntity);
+        Map<String, Object> results = this.queryTemplateService.genFormTemplate(formTemplateInputs, currentEntity);
         LOGGER.info(SUCCESSFUL_REQUEST_MSG);
         return new ResponseEntity<>(results, HttpStatus.OK);
       }
