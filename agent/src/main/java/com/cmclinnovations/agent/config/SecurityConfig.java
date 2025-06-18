@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,6 +16,9 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+// Enable this configuration IF 'keycloak.issuer.uri' property is present and
+// has a value
+@ConditionalOnExpression("!'${keycloak.issuer.uri:}'.trim().isEmpty() && '${keycloak.issuer.uri:}'!=null")
 public class SecurityConfig {
     @Value("${KEYCLOAK_ISSUER_URI}")
     private String tokenIssuerUrl;
