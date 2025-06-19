@@ -72,6 +72,7 @@ The agent requires the following environment variables. These variables must be 
 
 - `NAMESPACE`: Specifies the SPARQL namespace identifier containing the corresponding instances (default: kb)
 - `TASKS_ENABLED`: Specifies if scheduled tasks must be executed. This is tentatively required only for lifecycle related tasks (default: false)
+- `KEYCLOAK_ISSUER_URI`: Optional parameter to enable web security via Keycloak. Format: `http://<DOMAIN>/realms/<REALM>`; To disable, either set an empty string or remove the variable entirely
 
 ##### Files
 

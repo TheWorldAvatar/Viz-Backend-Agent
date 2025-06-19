@@ -5,6 +5,7 @@ This directory provides examples for different applications of the agent.
 # Table of Contents
 
 - [1. SHACL Derivation](#1-shacl-derivation)
+- [2. Role-based data access](#2-role-based-data-access)
 
 ## 1. SHACL Derivation
 
@@ -88,3 +89,50 @@ ex:CalculationShape a sh:NodeShape ;
 ```
 
 A `POST` request should be sent to `<baseURL>/vis-backend-agent/calculation` with the `id` and `weight` parameters in the request body.
+
+## 2. Role-based data access
+
+Access to specific fields can be controlled through setting the optional `https://theworldavatar.io/kg/form/role` property in the `SHACL` shapes to a list of permissible roles. A simple example has been set up below.
+
+```
+base:ConceptShape
+  a sh:NodeShape ;
+  sh:targetClass ontoexample:Concept ;
+  sh:property [
+    sh:name "public"
+    sh:description "A field that can be view by anyone"
+    sh:order 0;
+    sh:path ontoexample:publicPath ;
+    sh:datatype xsd:string ;
+  ];
+  sh:property [
+    sh:name "operation"
+    sh:description "A field that can only be viewed by a user with the operation role"
+    sh:order 1;
+    sh:path ontoexample:operationPath ;
+    sh:datatype xsd:string ;
+    twa-form:role "operation" ;
+  ];
+  sh:property [
+    sh:name "task-viewer"
+    sh:description "A field that can only be viewed by a user with the task-viewer role"
+    sh:order 2;
+    sh:path ontoexample:taskViewerPath ;
+    sh:datatype xsd:string ;
+    twa-form:role "task-viewer" ;
+  ];
+  sh:property [
+    sh:name "multi-role"
+    sh:description "A field that can only be viewed by a user with either the operation or task-viewer role"
+    sh:order 3;
+    sh:path ontoexample:multiRolePath ;
+    sh:datatype xsd:string ;
+    twa-form:role "operation;task-viewer" ;
+  ].
+```
+
+> [!TIP]
+> Do **NOT** use the property IF the field should be accessed by anyone
+
+> [!IMPORTANT]
+> The property **MUST** target a string literal with semi-colon delimiters
