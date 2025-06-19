@@ -1,8 +1,6 @@
 package com.cmclinnovations.agent.template.query;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -10,18 +8,27 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.cmclinnovations.agent.TestUtils;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.ShaclPropertyBindingTest;
 import com.cmclinnovations.agent.model.ShaclPropertyBindingTest.SparqlBindingTestParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
-import com.cmclinnovations.agent.utils.StringResource;
+import com.cmclinnovations.agent.service.core.AuthenticationService;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class SearchQueryTemplateFactoryTest {
-    private static SearchQueryTemplateFactory TEMPLATE_FACTORY;
+    @Mock
+    private AuthenticationService authService;
+    private SearchQueryTemplateFactory testFactory;
 
     public static final String EXPECTED_SIMPLE_FILE = "template/query/search/search_query_simple.sparql";
     public static final String EXPECTED_SIMPLE_MIXED_FILE = "template/query/search/search_query_simple_mixed.sparql";
@@ -40,14 +47,9 @@ public class SearchQueryTemplateFactoryTest {
     public static final String SAMPLE_FIELD = "field";
     public static final String SAMPLE_FILTER = "01j82";
 
-    private static final String NAME_VAR = "name";
-    private static final String IS_OPTIONAL_VAR = "isoptional";
-    private static final String MULTIPATH_VAR = "multipath";
-    private static final String MULTISUBPATH_VAR = "multisubpath";
-
-    @BeforeAll
-    static void setup() {
-        TEMPLATE_FACTORY = new SearchQueryTemplateFactory();
+    @BeforeEach
+    void setup() {
+        this.testFactory = new SearchQueryTemplateFactory(authService);
     }
 
     @Test
@@ -55,7 +57,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = TEMPLATE_FACTORY.write(
+        Queue<String> results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings, new HashMap<>()));
         // Assert
         assertEquals(2, results.size());
@@ -72,7 +74,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = TEMPLATE_FACTORY.write(
+        Queue<String> results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings, genCriterias(SAMPLE_FIELD, SAMPLE_FILTER)));
         // Assert
         assertEquals(2, results.size());
@@ -85,7 +87,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = TEMPLATE_FACTORY.write(
+        Queue<String> results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings,
                         this.genMinMaxCriterias(SAMPLE_FIELD, SAMPLE_MIN_VAL, SAMPLE_MAX_VAL)));
         // Assert
@@ -99,7 +101,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = TEMPLATE_FACTORY.write(
+        Queue<String> results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings,
                         this.genMinMaxCriterias(SAMPLE_FIELD, SAMPLE_MIN_VAL, null)));
         // Assert
@@ -113,7 +115,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = TEMPLATE_FACTORY.write(
+        Queue<String> results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings,
                         this.genMinMaxCriterias(SAMPLE_FIELD, null, SAMPLE_MAX_VAL)));
         // Assert

@@ -8,10 +8,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 public class FormTemplateFactory {
+  private final AuthenticationService authenticationService;
+
   // Data stores
   private Queue<JsonNode> properties;
   private Map<String, Object> form;
@@ -30,9 +34,12 @@ public class FormTemplateFactory {
 
   /**
    * Constructs a new form template factory.
+   * 
+   * @param authService A service to perform authentication operations.
    */
-  public FormTemplateFactory() {
+  public FormTemplateFactory(AuthenticationService authenticationService) {
     this.objectMapper = new ObjectMapper();
+    this.authenticationService = authenticationService;
   }
 
   /**
@@ -126,9 +133,21 @@ public class FormTemplateFactory {
   private void parseInputs(Map<String, Object> defaultVals) {
     Map<String, Map<String, Map<String, Object>>> altProperties = new HashMap<>();
     Map<String, Map<String, Object>> defaultProperties = new HashMap<>();
-
+    Set<String> userRoles = this.authenticationService.getUserRoles();
     while (!this.properties.isEmpty()) {
       JsonNode currentProperty = this.properties.poll();
+      // If authorisation is enabled, and there are roles associated to the property,
+      // only show the form field IF the user has the authority to do so
+      if (this.authenticationService.isAuthenticationEnabled()
+          && currentProperty.has(ShaclResource.TWA_FORM_PREFIX + ShaclResource.ROLE_PROPERTY)) {
+        String unmappedPropertyRoles = currentProperty.path(ShaclResource.TWA_FORM_PREFIX + ShaclResource.ROLE_PROPERTY)
+            .get(0).path(ShaclResource.VAL_KEY).asText();
+        // Skip this iteration if permission is not given
+        if (this.authenticationService.isUnauthorised(userRoles, unmappedPropertyRoles)) {
+          continue;
+        }
+      }
+
       // If the property belongs to a node shape, extract the properties into another
       // set of mapping
       if (currentProperty.has(ShaclResource.TWA_FORM_PREFIX + ShaclResource.BELONGS_TO_PROPERTY)) {
@@ -144,6 +163,7 @@ public class FormTemplateFactory {
     }
     this.form.put(ShaclResource.PROPERTY_PROPERTY, this.genOutputs(defaultProperties));
 
+    // Branches
     List<Map<String, Object>> nodeShape = new ArrayList<>();
     this.nodes.forEach((key, node) -> {
       Map<String, Object> output = new HashMap<>();
@@ -282,9 +302,7 @@ public class FormTemplateFactory {
         propOrGroup.put(ShaclResource.PROPERTY_PROPERTY, groupProperties);
       }
       return propOrGroup;
-    })
-    // Sort the results based on order
-    .sorted(Comparator.comparingInt(map -> (int) map.get(ShaclResource.ORDER_PROPERTY)))
-    .toList();
+    }).sorted(Comparator.comparingInt(map -> (int) map.get(ShaclResource.ORDER_PROPERTY))) // Sort results by order
+        .toList();
   }
 }

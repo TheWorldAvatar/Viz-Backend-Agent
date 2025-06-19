@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class QueryTemplateService {
+  private final AuthenticationService authenticationService;
   private final FileService fileService;
   private final FormTemplateFactory formTemplateFactory;
   private final DeleteQueryTemplateFactory deleteQueryTemplateFactory;
@@ -37,14 +38,19 @@ public class QueryTemplateService {
   /**
    * Constructs a new service.
    * 
-   * @param fileService   File service for accessing file resources.
-   * @param jsonLdService A service for interactions with JSON LD.
+   * 
+   * @param authenticationService Service to retrieve user roles and
+   *                              authentication information.
+   * @param fileService           File service for accessing file resources.
+   * @param jsonLdService         A service for interactions with JSON LD.
    */
-  public QueryTemplateService(FileService fileService, JsonLdService jsonLdService) {
-    this.formTemplateFactory = new FormTemplateFactory();
+  public QueryTemplateService(AuthenticationService authenticationService, FileService fileService,
+      JsonLdService jsonLdService) {
+    this.authenticationService = authenticationService;
+    this.formTemplateFactory = new FormTemplateFactory(this.authenticationService);
     this.deleteQueryTemplateFactory = new DeleteQueryTemplateFactory(jsonLdService);
-    this.getQueryTemplateFactory = new GetQueryTemplateFactory();
-    this.searchQueryTemplateFactory = new SearchQueryTemplateFactory();
+    this.getQueryTemplateFactory = new GetQueryTemplateFactory(this.authenticationService);
+    this.searchQueryTemplateFactory = new SearchQueryTemplateFactory(this.authenticationService);
     this.fileService = fileService;
   }
 
@@ -135,7 +141,8 @@ public class QueryTemplateService {
    * @param shaclFormInputs the form inputs queried from the SHACL restrictions.
    * @param defaultVals     the default values for the form.
    */
-  public Map<String, Object> genFormTemplate(ArrayNode shaclFormInputs, Map<String, Object> defaultVals) {
+  public Map<String, Object> genFormTemplate(ArrayNode shaclFormInputs,
+      Map<String, Object> defaultVals) {
     LOGGER.debug("Generating the form template from the found SHACL restrictions...");
     return this.formTemplateFactory.genTemplate(shaclFormInputs, defaultVals);
   }
