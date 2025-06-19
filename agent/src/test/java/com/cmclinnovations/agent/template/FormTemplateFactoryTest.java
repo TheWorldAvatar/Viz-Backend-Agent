@@ -47,7 +47,7 @@ public class FormTemplateFactoryTest {
 
         @BeforeEach
         void setup() {
-                this.formTemplateFactory = new FormTemplateFactory();
+                this.formTemplateFactory = new FormTemplateFactory(authService);
         }
 
         @Test
@@ -55,8 +55,7 @@ public class FormTemplateFactoryTest {
                 // Set up
                 ArrayNode emptyData = objectMapper.createArrayNode();
                 // Execute
-                Map<String, Object> result = this.formTemplateFactory.genTemplate(authService, emptyData,
-                                new HashMap<>());
+                Map<String, Object> result = this.formTemplateFactory.genTemplate(emptyData, new HashMap<>());
                 // Assert
                 assertTrue(result.isEmpty(), "Template should be empty when input data is empty");
         }
@@ -71,7 +70,7 @@ public class FormTemplateFactoryTest {
                 sample.add(invalidShape);
                 // Execute & assert
                 IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-                        this.formTemplateFactory.genTemplate(authService, sample, new HashMap<>());
+                        this.formTemplateFactory.genTemplate(sample, new HashMap<>());
                 });
                 assertEquals("Invalid input node! Only property shape, property group, and node shape is allowed.",
                                 exception.getMessage());
@@ -82,8 +81,7 @@ public class FormTemplateFactoryTest {
                 // Set up
                 ArrayNode sample = TestUtils.getArrayJson(TEST_SIMPLE_FILE);
                 // Execute
-                Map<String, Object> result = this.formTemplateFactory.genTemplate(authService, sample,
-                                new HashMap<>());
+                Map<String, Object> result = this.formTemplateFactory.genTemplate(sample, new HashMap<>());
                 // Assert
                 assertEquals(TestUtils.getMapJson(EXPECTED_SIMPLE_FILE), result);
         }

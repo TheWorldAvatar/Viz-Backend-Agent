@@ -47,7 +47,7 @@ public class QueryTemplateService {
   public QueryTemplateService(AuthenticationService authenticationService, FileService fileService,
       JsonLdService jsonLdService) {
     this.authenticationService = authenticationService;
-    this.formTemplateFactory = new FormTemplateFactory();
+    this.formTemplateFactory = new FormTemplateFactory(this.authenticationService);
     this.deleteQueryTemplateFactory = new DeleteQueryTemplateFactory(jsonLdService);
     this.getQueryTemplateFactory = new GetQueryTemplateFactory();
     this.searchQueryTemplateFactory = new SearchQueryTemplateFactory();
@@ -144,7 +144,7 @@ public class QueryTemplateService {
   public Map<String, Object> genFormTemplate(ArrayNode shaclFormInputs,
       Map<String, Object> defaultVals) {
     LOGGER.debug("Generating the form template from the found SHACL restrictions...");
-    return this.formTemplateFactory.genTemplate(this.authenticationService, shaclFormInputs, defaultVals);
+    return this.formTemplateFactory.genTemplate(shaclFormInputs, defaultVals);
   }
 
   /**

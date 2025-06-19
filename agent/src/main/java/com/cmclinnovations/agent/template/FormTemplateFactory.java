@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 public class FormTemplateFactory {
+  private final AuthenticationService authenticationService;
+
   // Data stores
   private Queue<JsonNode> properties;
   private Map<String, Object> form;
@@ -32,21 +34,22 @@ public class FormTemplateFactory {
 
   /**
    * Constructs a new form template factory.
+   * 
+   * @param authService A service to perform authentication operations.
    */
-  public FormTemplateFactory() {
+  public FormTemplateFactory(AuthenticationService authenticationService) {
     this.objectMapper = new ObjectMapper();
+    this.authenticationService = authenticationService;
   }
 
   /**
    * Generate form template in JSON object format.
    * 
-   * @param authService A service to perform authentication operations.
    * @param data        Data to be parsed for form template.
    * @param defaultVals Default values for the form template if there is an
    *                    existing entity.
    */
-  public Map<String, Object> genTemplate(AuthenticationService authService, ArrayNode data,
-      Map<String, Object> defaultVals) {
+  public Map<String, Object> genTemplate(ArrayNode data, Map<String, Object> defaultVals) {
     this.reset(); // Reset each time method is called to prevent any data storage
     LOGGER.debug("Generating template from query results...");
     this.sortData(data);
@@ -56,7 +59,7 @@ public class FormTemplateFactory {
       return new HashMap<>();
     } else {
       this.addContext();
-      this.parseInputs(authService, defaultVals);
+      this.parseInputs(defaultVals);
     }
 
     return this.form;
@@ -124,24 +127,23 @@ public class FormTemplateFactory {
   /**
    * Parse the property inputs into Spring Boot compliant JSON response format.
    * 
-   * @param authenticationService A service to perform authentication operations.
-   * @param defaultVals           Default values for the form template if there is
-   *                              an existing entity.
+   * @param defaultVals Default values for the form template if there is an
+   *                    existing entity.
    */
-  private void parseInputs(AuthenticationService authenticationService, Map<String, Object> defaultVals) {
+  private void parseInputs(Map<String, Object> defaultVals) {
     Map<String, Map<String, Map<String, Object>>> altProperties = new HashMap<>();
     Map<String, Map<String, Object>> defaultProperties = new HashMap<>();
-    Set<String> userRoles = authenticationService.getUserRoles();
+    Set<String> userRoles = this.authenticationService.getUserRoles();
     while (!this.properties.isEmpty()) {
       JsonNode currentProperty = this.properties.poll();
       // If authorisation is enabled, and there are roles associated to the property,
       // only show the form field IF the user has the authority to do so
-      if (authenticationService.isAuthenticationEnabled()
+      if (this.authenticationService.isAuthenticationEnabled()
           && currentProperty.has(ShaclResource.TWA_FORM_PREFIX + ShaclResource.ROLE_PROPERTY)) {
         String unmappedPropertyRoles = currentProperty.path(ShaclResource.TWA_FORM_PREFIX + ShaclResource.ROLE_PROPERTY)
             .get(0).path(ShaclResource.VAL_KEY).asText();
         // Skip this iteration if permission is not given
-        if (authenticationService.isUnauthorised(userRoles, unmappedPropertyRoles)) {
+        if (this.authenticationService.isUnauthorised(userRoles, unmappedPropertyRoles)) {
           continue;
         }
       }
