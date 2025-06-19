@@ -12,14 +12,25 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.cmclinnovations.agent.TestUtils;
+import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class FormTemplateFactoryTest {
+        @Mock
+        private AuthenticationService authService;
+
         private FormTemplateFactory formTemplateFactory;
         private static ObjectMapper objectMapper;
 
@@ -44,7 +55,7 @@ public class FormTemplateFactoryTest {
                 // Set up
                 ArrayNode emptyData = objectMapper.createArrayNode();
                 // Execute
-                Map<String, Object> result = this.formTemplateFactory.genTemplate(new HashSet<>(), emptyData,
+                Map<String, Object> result = this.formTemplateFactory.genTemplate(authService, emptyData,
                                 new HashMap<>());
                 // Assert
                 assertTrue(result.isEmpty(), "Template should be empty when input data is empty");
@@ -60,7 +71,7 @@ public class FormTemplateFactoryTest {
                 sample.add(invalidShape);
                 // Execute & assert
                 IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-                        this.formTemplateFactory.genTemplate(new HashSet<>(), sample, new HashMap<>());
+                        this.formTemplateFactory.genTemplate(authService, sample, new HashMap<>());
                 });
                 assertEquals("Invalid input node! Only property shape, property group, and node shape is allowed.",
                                 exception.getMessage());
@@ -71,7 +82,7 @@ public class FormTemplateFactoryTest {
                 // Set up
                 ArrayNode sample = TestUtils.getArrayJson(TEST_SIMPLE_FILE);
                 // Execute
-                Map<String, Object> result = this.formTemplateFactory.genTemplate(new HashSet<>(), sample,
+                Map<String, Object> result = this.formTemplateFactory.genTemplate(authService, sample,
                                 new HashMap<>());
                 // Assert
                 assertEquals(TestUtils.getMapJson(EXPECTED_SIMPLE_FILE), result);

@@ -13,6 +13,7 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -39,12 +40,13 @@ public class FormTemplateFactory {
   /**
    * Generate form template in JSON object format.
    * 
-   * @param roles       The roles associated with the user request.
+   * @param authService A service to perform authentication operations.
    * @param data        Data to be parsed for form template.
    * @param defaultVals Default values for the form template if there is an
    *                    existing entity.
    */
-  public Map<String, Object> genTemplate(Set<String> roles, ArrayNode data, Map<String, Object> defaultVals) {
+  public Map<String, Object> genTemplate(AuthenticationService authService, ArrayNode data,
+      Map<String, Object> defaultVals) {
     this.reset(); // Reset each time method is called to prevent any data storage
     LOGGER.debug("Generating template from query results...");
     this.sortData(data);
@@ -54,7 +56,7 @@ public class FormTemplateFactory {
       return new HashMap<>();
     } else {
       this.addContext();
-      this.parseInputs(roles, defaultVals);
+      this.parseInputs(authService, defaultVals);
     }
 
     return this.form;
@@ -122,25 +124,24 @@ public class FormTemplateFactory {
   /**
    * Parse the property inputs into Spring Boot compliant JSON response format.
    * 
-   * @param roles       The roles associated with the user request.
-   * @param defaultVals Default values for the form template if there is an
-   *                    existing entity.
+   * @param authenticationService A service to perform authentication operations.
+   * @param defaultVals           Default values for the form template if there is
+   *                              an existing entity.
    */
-  private void parseInputs(Set<String> roles, Map<String, Object> defaultVals) {
+  private void parseInputs(AuthenticationService authenticationService, Map<String, Object> defaultVals) {
     Map<String, Map<String, Map<String, Object>>> altProperties = new HashMap<>();
     Map<String, Map<String, Object>> defaultProperties = new HashMap<>();
-
+    Set<String> userRoles = authenticationService.getUserRoles();
     while (!this.properties.isEmpty()) {
       JsonNode currentProperty = this.properties.poll();
       // If authorisation is enabled, and there are roles associated to the property,
       // only show the form field IF the user has the authority to do so
-      if (!roles.isEmpty() && currentProperty.has(ShaclResource.TWA_FORM_PREFIX + ShaclResource.ROLE_PROPERTY)) {
+      if (authenticationService.isAuthenticationEnabled()
+          && currentProperty.has(ShaclResource.TWA_FORM_PREFIX + ShaclResource.ROLE_PROPERTY)) {
         String unmappedPropertyRoles = currentProperty.path(ShaclResource.TWA_FORM_PREFIX + ShaclResource.ROLE_PROPERTY)
             .get(0).path(ShaclResource.VAL_KEY).asText();
-        Set<String> propertyRoles = StringResource.mapRoles(unmappedPropertyRoles);
-        propertyRoles.retainAll(roles);
         // Skip this iteration if permission is not given
-        if (propertyRoles.isEmpty()) {
+        if (authenticationService.isUnauthorised(userRoles, unmappedPropertyRoles)) {
           continue;
         }
       }

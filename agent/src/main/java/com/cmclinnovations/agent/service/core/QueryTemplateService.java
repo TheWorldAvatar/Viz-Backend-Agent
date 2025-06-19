@@ -144,8 +144,7 @@ public class QueryTemplateService {
   public Map<String, Object> genFormTemplate(ArrayNode shaclFormInputs,
       Map<String, Object> defaultVals) {
     LOGGER.debug("Generating the form template from the found SHACL restrictions...");
-    Set<String> roles = this.authenticationService.getRoles();
-    return this.formTemplateFactory.genTemplate(roles, shaclFormInputs, defaultVals);
+    return this.formTemplateFactory.genTemplate(this.authenticationService, shaclFormInputs, defaultVals);
   }
 
   /**
