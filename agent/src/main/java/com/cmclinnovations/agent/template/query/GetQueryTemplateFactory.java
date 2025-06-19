@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
+import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
@@ -20,8 +21,8 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
   /**
    * Constructs a new query template factory.
    */
-  public GetQueryTemplateFactory() {
-    // no initialisation step is required
+  public GetQueryTemplateFactory(AuthenticationService authenticationService) {
+    super(authenticationService);
   }
 
   /**

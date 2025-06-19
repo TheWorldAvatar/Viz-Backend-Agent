@@ -1,6 +1,5 @@
 package com.cmclinnovations.agent.template.query;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 
@@ -8,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
+import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
@@ -18,8 +18,8 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
    * Constructs a new query template factory.
    * 
    */
-  public SearchQueryTemplateFactory() {
-    // no initialisation step is required
+  public SearchQueryTemplateFactory(AuthenticationService authenticationService) {
+    super(authenticationService);
   }
 
   /**
