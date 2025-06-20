@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.6.1
+
+### Features
+
+- Use exact ID matching instead of STRENDS qualifiers for both IRI and string literal matching
+
 ## 1.6.0
 
 ### Features
