@@ -102,12 +102,12 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       }
       query.append("FILTER REGEX(STR(")
           .append(parsedFieldName)
-          .append("), \"(/|#)")
+          .append("), \"(^|/|#)")
           .append(parentField.id())
           .append("$\")");
     } else if (!filterId.isEmpty()) {
       // Add filter clause if there is a valid filter ID
-      query.append("FILTER REGEX(STR(?id), \"(/|#)")
+      query.append("FILTER REGEX(STR(?id), \"(^|/|#)")
           .append(filterId)
           .append("$\")");
     }
