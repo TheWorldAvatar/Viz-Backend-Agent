@@ -1,24 +1,24 @@
-package com.cmclinnovations.agent.service.core;
+package com.cmclinnovations.agent.component;
 
 import java.util.Locale;
 
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 
-@Service
-public class LocalisationService {
-  private final MessageSource messageSource;
+@Component
+public class LocalisationTranslator {
+  private static MessageSource MESSAGE_SOURCE;
 
   /**
    * Constructs a service for retrieving localised messages based on the language
    * preferences in the request.
    */
-  public LocalisationService(MessageSource messageSource) {
-    this.messageSource = messageSource;
+  LocalisationTranslator(MessageSource messageSource) {
+    MESSAGE_SOURCE = messageSource;
   }
 
   /**
@@ -31,10 +31,10 @@ public class LocalisationService {
    *                        "{1,date}", "{2,time}" within a message), or
    *                        {@code null} if none.
    */
-  public String getMessage(String key, Object... replacementArgs) {
+  public static String getMessage(String key, Object... replacementArgs) {
     // Locale is resolved from the current request context automatically
     Locale currentLocale = LocaleContextHolder.getLocale();
-    return messageSource.getMessage(key, replacementArgs, currentLocale);
+    return MESSAGE_SOURCE.getMessage(key, replacementArgs, currentLocale);
   }
 
   /**
@@ -42,7 +42,7 @@ public class LocalisationService {
    *
    * @param event The event of interest.
    */
-  public String getEvent(String event) {
+  public static String getEvent(String event) {
     String localisedKey;
     switch (event) {
       case LifecycleResource.EVENT_INCIDENT_REPORT:
@@ -63,6 +63,6 @@ public class LocalisationService {
       default:
         throw new IllegalArgumentException("Unknown event: " + event);
     }
-    return this.getMessage(localisedKey);
+    return LocalisationTranslator.getMessage(localisedKey);
   }
 }

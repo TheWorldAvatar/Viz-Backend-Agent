@@ -1,4 +1,4 @@
-package com.cmclinnovations.agent.service.core;
+package com.cmclinnovations.agent.component;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -9,9 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.i18n.LocaleContextHolder;
 
@@ -20,15 +18,10 @@ import com.cmclinnovations.agent.config.MessageSourceIntegrationTest;
 
 @Import(I18nConfig.class)
 @SpringBootTest
-class LocalisationServiceIntegrationTest {
-    @Autowired
-    private MessageSource messageSource;
-
-    private LocalisationService localisationService;
+class LocalisationTranslatorIntegrationTest {
 
     @BeforeEach
-    void setUp() {
-        localisationService = new LocalisationService(messageSource);
+    void reset() {
         LocaleContextHolder.resetLocaleContext();
     }
 
@@ -44,7 +37,7 @@ class LocalisationServiceIntegrationTest {
     @MethodSource("provideParametersForLocaleMessage")
     void testLocaleMessage(Locale locale, String expectedMessage) {
         LocaleContextHolder.setLocale(locale);
-        String message = localisationService.getMessage("status");
+        String message = LocalisationTranslator.getMessage("status");
         assertEquals(expectedMessage, message);
     }
 
@@ -53,7 +46,7 @@ class LocalisationServiceIntegrationTest {
     void testLocaleMessage_InvalidKey(Locale locale, String expectedMessage) {
         String invalidKey = "invalid";
         LocaleContextHolder.setLocale(locale);
-        String message = localisationService.getMessage(invalidKey);
+        String message = LocalisationTranslator.getMessage(invalidKey);
         assertEquals(invalidKey, message);
     }
 }

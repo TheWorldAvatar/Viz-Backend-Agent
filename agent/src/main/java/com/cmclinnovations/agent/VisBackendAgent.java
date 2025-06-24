@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.ApiResponse;
@@ -24,7 +25,6 @@ import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.GeocodingService;
-import com.cmclinnovations.agent.service.core.LocalisationService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 
 @RestController
@@ -33,24 +33,22 @@ public class VisBackendAgent {
   private final DeleteService deleteService;
   private final GetService getService;
   private final GeocodingService geocodingService;
-  private final LocalisationService localisationService;
 
   private static final Logger LOGGER = LogManager.getLogger(VisBackendAgent.class);
 
   public VisBackendAgent(AddService addService, DeleteService deleteService, GetService getService,
-      GeocodingService geocodingService, LocalisationService localisationService) {
+      GeocodingService geocodingService) {
     this.addService = addService;
     this.deleteService = deleteService;
     this.getService = getService;
     this.geocodingService = geocodingService;
-    this.localisationService = localisationService;
   }
 
   @GetMapping("/status")
   public ResponseEntity<String> getStatus() {
     LOGGER.info("Detected request to get agent status...");
     return new ResponseEntity<>(
-        this.localisationService.getMessage(LocalisationResource.STATUS_KEY),
+        LocalisationTranslator.getMessage(LocalisationResource.STATUS_KEY),
         HttpStatus.OK);
   }
 
@@ -243,7 +241,7 @@ public class VisBackendAgent {
         LOGGER.info("{} has been successfully updated for {}", type, id);
         return new ResponseEntity<>(
             new ApiResponse(
-                this.localisationService.getMessage(LocalisationResource.SUCCESS_UPDATE_KEY, type, id),
+                LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_UPDATE_KEY, type, id),
                 addResponse.getBody().getIri()),
             HttpStatus.CREATED);
       } else {

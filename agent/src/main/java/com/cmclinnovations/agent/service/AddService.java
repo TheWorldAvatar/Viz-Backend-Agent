@@ -25,11 +25,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.topbraid.shacl.rules.RuleUtil;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.service.application.LifecycleReportService;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.service.core.KGService;
-import com.cmclinnovations.agent.service.core.LocalisationService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
@@ -43,7 +43,6 @@ public class AddService {
   private final JsonLdService jsonLdService;
   private final KGService kgService;
   private final LifecycleReportService lifecycleReportService;
-  private final LocalisationService localisationService;
   private final QueryTemplateService queryTemplateService;
 
   private static final Logger LOGGER = LogManager.getLogger(AddService.class);
@@ -55,16 +54,13 @@ public class AddService {
    * @param kgService              KG service for performing the query.
    * @param lifecycleReportService A service for reporting lifecycle matters such
    *                               as calculation instances.
-   * @param localisationService    A message service to retrieve a localised
-   *                               message.
    * @param queryTemplateService   Service for generating query templates.
    */
   public AddService(JsonLdService jsonLdService, KGService kgService, LifecycleReportService lifecycleReportService,
-      LocalisationService localisationService, QueryTemplateService queryTemplateService) {
+      QueryTemplateService queryTemplateService) {
     this.jsonLdService = jsonLdService;
     this.kgService = kgService;
     this.lifecycleReportService = lifecycleReportService;
-    this.localisationService = localisationService;
     this.queryTemplateService = queryTemplateService;
   }
 
@@ -99,7 +95,7 @@ public class AddService {
     // Attempt to replace all placeholders in the JSON schema
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
     return this.instantiateJsonLd(addJsonSchema, resourceID,
-        this.localisationService.getMessage(LocalisationResource.SUCCESS_ADD_KEY, resourceID));
+        LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_ADD_KEY, resourceID));
   }
 
   /**

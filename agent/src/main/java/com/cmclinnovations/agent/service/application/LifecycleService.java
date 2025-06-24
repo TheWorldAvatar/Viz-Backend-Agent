@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.ApiResponse;
@@ -21,7 +22,6 @@ import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
-import com.cmclinnovations.agent.service.core.LocalisationService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
@@ -34,7 +34,6 @@ public class LifecycleService {
   private final DateTimeService dateTimeService;
   private final DeleteService deleteService;
   private final GetService getService;
-  private final LocalisationService localisationService;
 
   private final LifecycleQueryFactory lifecycleQueryFactory;
   private final Map<String, List<Integer>> lifecycleVarSequence = new HashMap<>();
@@ -51,12 +50,11 @@ public class LifecycleService {
    * 
    */
   public LifecycleService(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
-      GetService getService, LocalisationService localisationService) {
+      GetService getService) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
     this.deleteService = deleteService;
     this.getService = getService;
-    this.localisationService = localisationService;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
 
     this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_DATE_KEY, List.of(2, 0));
@@ -236,10 +234,10 @@ public class LifecycleService {
             }
           }
           SparqlResponseField highestPriorityEvent = events.get(highestPriorityIndex);
-          fields.put(this.localisationService.getMessage(LocalisationResource.VAR_STATUS_KEY),
+          fields.put(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY),
               // Add a new response field
               new SparqlResponseField(highestPriorityEvent.type(),
-                  this.localisationService.getEvent(highestPriorityEvent.value()),
+                  LocalisationTranslator.getEvent(highestPriorityEvent.value()),
                   highestPriorityEvent.dataType(), highestPriorityEvent.lang()));
           fields.remove(LifecycleResource.EVENT_KEY);
           fields.put(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY),
