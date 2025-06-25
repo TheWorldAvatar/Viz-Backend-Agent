@@ -33,7 +33,8 @@ public class GetService {
    * @param kgService            KG service for performing the query.
    * @param queryTemplateService Service for generating query templates.
    */
-  public GetService(KGService kgService, QueryTemplateService queryTemplateService) {
+  public GetService(KGService kgService,
+      QueryTemplateService queryTemplateService) {
     this.kgService = kgService;
     this.queryTemplateService = queryTemplateService;
   }
@@ -66,8 +67,7 @@ public class GetService {
     }
     String query = this.queryTemplateService.getShaclQuery(resourceID, requireLabel);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    return this.getInstances(nestedVariablesAndPropertyPaths, targetId, parentField,
-        addQueryStatements, addVars);
+    return this.getInstances(nestedVariablesAndPropertyPaths, targetId, parentField, addQueryStatements, addVars);
   }
 
   /**

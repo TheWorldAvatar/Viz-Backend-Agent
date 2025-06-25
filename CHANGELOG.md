@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.7.0
+
+### Features
+
+- Added authentication workflows
+- Added role-based data access functionality
+
 ## 1.6.1
 
 ### Features

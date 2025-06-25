@@ -11,6 +11,7 @@ import java.util.Set;
 
 import com.cmclinnovations.agent.model.ShaclPropertyBinding;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
@@ -20,6 +21,11 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
   protected Set<String> variables;
   private Map<String, Set<String>> arrayVariables;
   protected Map<String, List<Integer>> varSequence;
+  private final AuthenticationService authenticationService;
+
+  protected QueryTemplateFactory(AuthenticationService authenticationService) {
+    this.authenticationService = authenticationService;
+  }
 
   /**
    * Retrieve the mappings of array variables grouped by groups.
@@ -102,6 +108,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     Set<String> referencedGroupIdentifiers = new HashSet<>();
     Map<String, ShaclPropertyBinding> groupPropertyMap = new HashMap<>();
     Map<String, ShaclPropertyBinding> indivPropertyMap = new HashMap<>();
+    Set<String> userRoles = this.authenticationService.getUserRoles();
 
     while (!shaclNodeShapeBindings.isEmpty()) {
       Queue<SparqlBinding> shaclPropertyShapeBindings = shaclNodeShapeBindings.poll();
@@ -110,6 +117,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         String property = binding.getFieldValue(ShaclResource.NAME_PROPERTY);
         String shGroup = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
         String branch = binding.getFieldValue(ShaclResource.BRANCH_VAR);
+        String permittedRoles = binding.getFieldValue(ShaclResource.ROLE_PROPERTY);
 
         // Any nested id properties in sh:node should be ignored
         if (binding.getFieldValue(ShaclResource.NODE_GROUP_VAR) != null && property.equals("id")) {
@@ -123,6 +131,18 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         }
 
         String mappingKey = ShaclResource.getMappingKey(property, shGroup, branch);
+
+        // If authentication is enabled along with associated roles BUT the user is
+        // unauthorised
+        if (this.authenticationService.isAuthenticationEnabled() && permittedRoles != null
+            && this.authenticationService.isUnauthorised(userRoles, permittedRoles)) {
+          // Remove any existing bindings if they exist
+          if (indivPropertyMap.containsKey(mappingKey)) {
+            indivPropertyMap.remove(mappingKey);
+          }
+          // Skip this iteration if permission is not given
+          continue;
+        }
 
         ShaclPropertyBinding propertyBinding;
         // For existing bindings
@@ -159,7 +179,9 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     }
 
     // Move the group bindings over to the right mappings
-    referencedGroupIdentifiers.forEach(groupIdentifier -> {
+    referencedGroupIdentifiers.forEach(groupIdentifier ->
+
+    {
       groupPropertyMap.put(groupIdentifier, indivPropertyMap.remove(groupIdentifier));
     });
 

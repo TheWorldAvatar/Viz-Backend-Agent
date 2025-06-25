@@ -414,6 +414,7 @@ public class LifecycleController {
   @GetMapping("/service/dispatch/form")
   public ResponseEntity<?> getDispatchForm() {
     LOGGER.info("Received request to get form template for order dispatch...");
+    // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_ORDER_DISPATCHED, null);
   }
 
@@ -432,6 +433,7 @@ public class LifecycleController {
   @GetMapping("/service/complete/form")
   public ResponseEntity<?> getOrderCompleteForm() {
     LOGGER.info("Received request to get form template for order completion...");
+    // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_EXECUTION, null);
   }
 
@@ -450,6 +452,7 @@ public class LifecycleController {
   @GetMapping("/service/report/form")
   public ResponseEntity<?> getOrderReportForm() {
     LOGGER.info("Received request to get form template to report the order...");
+    // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_INCIDENT_REPORT, null);
   }
 
@@ -459,6 +462,7 @@ public class LifecycleController {
   @GetMapping("/service/cancel/form")
   public ResponseEntity<?> getOrderCancellationForm() {
     LOGGER.info("Received request to get form template to cancel the order...");
+    // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_CANCELLATION, null);
   }
 
@@ -468,6 +472,7 @@ public class LifecycleController {
   @GetMapping("/archive/rescind/form")
   public ResponseEntity<?> getContractRescissionForm() {
     LOGGER.info("Received request to get form template to rescind the contract...");
+    // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.ARCHIVE_RESCINDMENT, null);
   }
 
@@ -478,6 +483,7 @@ public class LifecycleController {
   @GetMapping("/archive/terminate/form")
   public ResponseEntity<?> getContractTerminationForm() {
     LOGGER.info("Received request to get form template to terminate the contract...");
+    // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.ARCHIVE_TERMINATION, null);
   }
 

@@ -11,6 +11,7 @@ CONSTRUCT {
     sh:class ?dataclass ;
     twa:belongsTo ?nodegroup ;
     twa:dependentOn ?dependentShape ;
+    twa:role ?role ;
     sh:group ?groupobj ;
     sh:minCount ?mincount ;
     sh:maxCount ?maxcount ;
@@ -25,7 +26,8 @@ CONSTRUCT {
   ?groupobj rdf:type sh:PropertyGroup ;
     rdfs:label ?group ;
     rdfs:comment ?groupdesc ;
-    sh:order ?grouporder;
+    twa:role ?grouprole ;
+	sh:order ?grouporder;
     sh:minCount ?mingroupcount ;
     sh:maxCount ?maxgroupcount .
   ?nodegroup rdf:type sh:NodeShape ;
@@ -75,8 +77,13 @@ CONSTRUCT {
     OPTIONAL {
       ?subproperty sh:group ?groupobj .
       ?groupobj rdfs:label ?group;
-      sh:description ?groupdesc;
-      sh:order ?grouporder.
+      sh:description ?groupdesc.      
+      OPTIONAL{
+        ?groupobj sh:order ?grouporder.
+      }
+      OPTIONAL {
+        ?groupobj twa:role ?grouprole .
+      }
       OPTIONAL {
         ?groupobj sh:minCount ?mingroupcount ;
           sh:maxCount ?maxgroupcount .
@@ -94,6 +101,12 @@ CONSTRUCT {
               ?null)
           ) AS ?groupobj)
 
+    OPTIONAL {
+      ?property twa:role ?grouprole .
+    }
+    OPTIONAL {
+      ?subproperty twa:role ?role .
+    }
     OPTIONAL {
       ?property sh:order ?proporder .
       ?subproperty sh:order ?order .
