@@ -3,7 +3,7 @@ version: "3.9"
 services:
   agent:
     container_name: vis-backend-agent-test
-    image: ghcr.io/theworldavatar/vis-backend-agent-test:1.6.0-internationalization-SNAPSHOT
+    image: ghcr.io/theworldavatar/vis-backend-agent-test:1.7.1-internationalization-SNAPSHOT
     build:
       context: ..
       target: test

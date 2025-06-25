@@ -5,9 +5,12 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.FileSystemNotFoundException;
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -38,6 +41,7 @@ import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.stack.clients.blazegraph.BlazegraphClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -68,6 +72,7 @@ public class KGService {
 
   private static final String RDF_LIST_PATH_PREFIX = "/rdf:rest";
   private static final String SUB_SHAPE_PATH = "sh:node/sh:property";
+  private static final String FILTER_BOUNDED_PROPERTIES = "FILTER(BOUND(?name))";
 
   private static final Logger LOGGER = LogManager.getLogger(KGService.class);
 
@@ -346,6 +351,7 @@ public class KGService {
     // Initialise a queue to store all values
     Queue<Queue<SparqlBinding>> results = new ArrayDeque<>();
     String replacementShapePath = ""; // Initial replacement string
+    String replacementFilterPath = ""; // Initial replacement string
     boolean continueLoop = true; // Initialise a continue indicator
     // Iterate to get predicates at the hierarchy of shapes enforced via sh:node
     while (continueLoop) {
@@ -360,7 +366,8 @@ public class KGService {
         // Replace the [subproperty] and [path] with the respective values
         String executableQuery = shaclPathQuery
             .replace(FileService.REPLACEMENT_SHAPE, replacementShapePath)
-            .replace(FileService.REPLACEMENT_PATH, replacementPath);
+            .replace(FileService.REPLACEMENT_PATH, replacementPath)
+            .replace(FileService.REPLACEMENT_FILTER, replacementFilterPath);
         // SHACL restrictions are only found within one Blazegraph endpoint, and can be
         // queried without using FedX
         for (String endpoint : endpoints) {
@@ -373,6 +380,7 @@ public class KGService {
             hasResults = true;
           }
         }
+
         if (hasResults) {
           // Extend replacement path based on the current level
           replacementPath = replacementPath.isEmpty() ? RDF_LIST_PATH_PREFIX + "/rdf:first" // first level
@@ -383,6 +391,9 @@ public class KGService {
           // iterate to check if there are any nested shapes with predicates
           continueLoop = hasResults;
           isFirstIteration = false;
+          // Filter should be updated to no longer present empty branches after the first
+          // iteration ever
+          replacementFilterPath = FILTER_BOUNDED_PROPERTIES;
         }
       }
       if (!variablesAndPropertyPaths.isEmpty()) {
@@ -390,8 +401,9 @@ public class KGService {
       }
       // Extend to get the next level of shape if any
       replacementShapePath = replacementShapePath.isEmpty() ? " ?nestedshape." +
-          "?nestedshape sh:name ?" + StringResource.NODE_GROUP_VAR + ";sh:node/sh:targetClass ?"
-          + StringResource.NESTED_CLASS_VAR + ";" + SUB_SHAPE_PATH
+          "OPTIONAL{?nestedshape twa:role ?nestedrole.}" +
+		  "?nestedshape sh:name ?" + ShaclResource.NODE_GROUP_VAR + ";sh:node/sh:targetClass ?"
+          + ShaclResource.NESTED_CLASS_VAR + ";" + SUB_SHAPE_PATH
           : "/" + SUB_SHAPE_PATH + replacementShapePath;
     }
     if (results.isEmpty()) {
@@ -407,8 +419,11 @@ public class KGService {
    * 
    * @param firstQueue The first target queue.
    * @param secQueue   The second target queue.
+   * @param arrayVars  Mappings between each array group and their individual
+   *                   fields.
    */
-  public Queue<SparqlBinding> combineBindingQueue(Queue<SparqlBinding> firstQueue, Queue<SparqlBinding> secQueue) {
+  public Queue<SparqlBinding> combineBindingQueue(Queue<SparqlBinding> firstQueue, Queue<SparqlBinding> secQueue,
+      Map<String, Set<String>> arrayVars) {
     if (firstQueue.isEmpty() && secQueue.isEmpty()) {
       return new ArrayDeque<>();
     }
@@ -433,8 +448,15 @@ public class KGService {
       }
       SparqlBinding firstBinding = groupedBinding.get(0);
       if (groupedBinding.size() > 1) {
-        for (int i = 1; i < groupedBinding.size(); i++) {
-          firstBinding.addFieldArray(groupedBinding.get(i));
+        if (firstBinding.containsField(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY))) {
+          Optional<SparqlBinding> maxPriorityEvent = groupedBinding.stream().max(
+              Comparator.comparingInt(
+                  binding -> LifecycleResource.getEventPriority(binding.getFieldValue(LifecycleResource.EVENT_KEY))));
+          firstBinding = maxPriorityEvent.orElse(firstBinding);
+        } else if (!arrayVars.isEmpty()) {
+          for (int i = 1; i < groupedBinding.size(); i++) {
+            firstBinding.addFieldArray(groupedBinding.get(i), arrayVars);
+          }
         }
       }
       result.offer(firstBinding);

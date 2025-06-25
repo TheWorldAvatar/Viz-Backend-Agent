@@ -143,24 +143,38 @@ public class LifecycleController {
   }
 
   /**
-   * Assign dispatch details for the specified event
+   * Updates a completed or dispatch event. Valid types include:
+   * 1) complete: Completes a specific service order
+   * 2) dispatch: Assign dispatch details for the specified event
    */
-  @PutMapping("/service/dispatch")
-  public ResponseEntity<ApiResponse> assignDispatchDetails(@RequestBody Map<String, Object> params) {
+  @PutMapping("/service/{type}")
+  public ResponseEntity<ApiResponse> assignDispatchDetails(@PathVariable String type,
+      @RequestBody Map<String, Object> params) {
     if (this.isInvalidParams(params, LifecycleResource.CONTRACT_KEY)) {
       return new ResponseEntity<>(
           new ApiResponse(MessageFormat.format(MISSING_FIELD_MSG_TEMPLATE, LifecycleResource.CONTRACT_KEY)),
           HttpStatus.BAD_REQUEST);
     }
-    LOGGER.info("Received request to assign the dispatch details for a service order...");
-    return this.lifecycleService.genDispatchOrDeliveryOccurrence(params, LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+    LifecycleEventType eventType = null;
+    switch (type.toLowerCase()) {
+      case "complete":
+        LOGGER.info("Received request to complete a service order with completion details...");
+        eventType = LifecycleEventType.SERVICE_EXECUTION;
+        break;
+      case "dispatch":
+        LOGGER.info("Received request to assign the dispatch details for a service order...");
+        eventType = LifecycleEventType.SERVICE_ORDER_DISPATCHED;
+        break;
+      default:
+        break;
+    }
+    return this.lifecycleService.genDispatchOrDeliveryOccurrence(params, eventType);
   }
 
   /**
    * Performs a service action for a specific service action. Valid types include:
-   * 1) complete: Completes a specific service order
-   * 2) report: Reports any unfulfilled service delivery
-   * 3) cancel: Cancel any upcoming service
+   * 1) report: Reports any unfulfilled service delivery
+   * 2) cancel: Cancel any upcoming service
    */
   @PostMapping("/service/{type}")
   public ResponseEntity<ApiResponse> performServiceAction(@PathVariable String type,
@@ -173,9 +187,6 @@ public class LifecycleController {
     }
     String successMsg = "";
     switch (type.toLowerCase()) {
-      case "complete":
-        LOGGER.info("Received request to complete a service order with completion details...");
-        return this.lifecycleService.genDispatchOrDeliveryOccurrence(params, LifecycleEventType.SERVICE_EXECUTION);
       case "cancel":
         LOGGER.info("Received request to cancel the upcoming service...");
         if (this.isInvalidParams(params, LifecycleResource.DATE_KEY)) {
@@ -403,6 +414,7 @@ public class LifecycleController {
   @GetMapping("/service/dispatch/form")
   public ResponseEntity<?> getDispatchForm() {
     LOGGER.info("Received request to get form template for order dispatch...");
+    // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_ORDER_DISPATCHED, null);
   }
 
@@ -421,6 +433,7 @@ public class LifecycleController {
   @GetMapping("/service/complete/form")
   public ResponseEntity<?> getOrderCompleteForm() {
     LOGGER.info("Received request to get form template for order completion...");
+    // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_EXECUTION, null);
   }
 
@@ -439,6 +452,7 @@ public class LifecycleController {
   @GetMapping("/service/report/form")
   public ResponseEntity<?> getOrderReportForm() {
     LOGGER.info("Received request to get form template to report the order...");
+    // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_INCIDENT_REPORT, null);
   }
 
@@ -448,6 +462,7 @@ public class LifecycleController {
   @GetMapping("/service/cancel/form")
   public ResponseEntity<?> getOrderCancellationForm() {
     LOGGER.info("Received request to get form template to cancel the order...");
+    // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_CANCELLATION, null);
   }
 
@@ -457,6 +472,7 @@ public class LifecycleController {
   @GetMapping("/archive/rescind/form")
   public ResponseEntity<?> getContractRescissionForm() {
     LOGGER.info("Received request to get form template to rescind the contract...");
+    // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.ARCHIVE_RESCINDMENT, null);
   }
 
@@ -467,6 +483,7 @@ public class LifecycleController {
   @GetMapping("/archive/terminate/form")
   public ResponseEntity<?> getContractTerminationForm() {
     LOGGER.info("Received request to get form template to terminate the contract...");
+    // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.ARCHIVE_TERMINATION, null);
   }
 

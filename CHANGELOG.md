@@ -1,5 +1,27 @@
 # Change Log
 
+## 1.7.0
+
+### Features
+
+- Added authentication workflows
+- Added role-based data access functionality
+
+## 1.6.1
+
+### Features
+
+- Use exact ID matching instead of STRENDS qualifiers for both IRI and string literal matching
+
+## 1.6.0
+
+### Features
+
+- Modified the requirements to group arrays in SHACL constraints
+- Simplified the code for generating queries
+- Simplified the dynamically generated SPARQL queries for branches, arrays, and groups
+- Complete task is changed from a POST to PUT route
+
 ## 1.5.2
 
 ### Features

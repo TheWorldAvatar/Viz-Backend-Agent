@@ -2,9 +2,7 @@ package com.cmclinnovations.agent.template.query;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
@@ -12,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
+import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
@@ -22,8 +21,8 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
   /**
    * Constructs a new query template factory.
    */
-  public GetQueryTemplateFactory() {
-    // no initialisation step is required
+  public GetQueryTemplateFactory(AuthenticationService authenticationService) {
+    super(authenticationService);
   }
 
   /**
@@ -36,7 +35,7 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    * ?iri <prop_path>/<prop_path2> ?property2.
    * }
    * 
-   * @param params An object containing four parameters to write, namely:
+   * @param params An object containing the following parameters to write, namely:
    *               bindings - SHACL restrictions
    *               targetId - Optional Filter constraint for a specific instance
    *               parent - Optional details if instances must be associated
@@ -45,13 +44,11 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    *               query, along with their order sequence
    */
   public Queue<String> write(QueryTemplateFactoryParameters params) {
-    Map<String, String> queryLines = new HashMap<>();
     LOGGER.info("Generating a query template for getting data...");
     StringBuilder selectVariableBuilder = new StringBuilder();
-    StringBuilder whereBuilder = new StringBuilder();
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    super.sortBindings(params.bindings(), queryLines);
+    String whereClauseLines = super.genWhereClauseContent(params.bindings());
 
     // Retrieve only the property fields if no sequence of variable is present
     if (super.varSequence.isEmpty()) {
@@ -72,7 +69,8 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
           .append(ShaclResource.WHITE_SPACE));
       super.setSequence(sortedSequence);
     }
-    queryLines.values().forEach(whereBuilder::append);
+
+    StringBuilder whereBuilder = new StringBuilder(whereClauseLines);
     this.appendOptionalIdFilters(whereBuilder, params.targetId(), params.parent());
     whereBuilder.append(params.addQueryStatements());
     return super.genFederatedQuery(selectVariableBuilder.toString(), whereBuilder.toString(), targetClass);
@@ -103,16 +101,16 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
         throw new IllegalArgumentException(
             MessageFormat.format("Unable to find matching variable for parent field: {0}", parentField.name()));
       }
-      query.append("FILTER STRENDS(STR(")
+      query.append("FILTER REGEX(STR(")
           .append(parsedFieldName)
-          .append("), \"")
+          .append("), \"(^|/|#)")
           .append(parentField.id())
-          .append("\")");
+          .append("$\")");
     } else if (!filterId.isEmpty()) {
       // Add filter clause if there is a valid filter ID
-      query.append("FILTER STRENDS(STR(?id), \"")
+      query.append("FILTER REGEX(STR(?id), \"(^|/|#)")
           .append(filterId)
-          .append("\")");
+          .append("$\")");
     }
   }
 }

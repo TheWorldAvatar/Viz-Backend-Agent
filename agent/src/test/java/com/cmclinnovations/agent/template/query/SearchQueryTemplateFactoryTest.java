@@ -1,8 +1,6 @@
 package com.cmclinnovations.agent.template.query;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -10,16 +8,27 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.cmclinnovations.agent.TestUtils;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
+import com.cmclinnovations.agent.model.ShaclPropertyBindingTest;
+import com.cmclinnovations.agent.model.ShaclPropertyBindingTest.SparqlBindingTestParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
-import com.cmclinnovations.agent.utils.StringResource;
+import com.cmclinnovations.agent.service.core.AuthenticationService;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class SearchQueryTemplateFactoryTest {
-    private static SearchQueryTemplateFactory TEMPLATE_FACTORY;
+    @Mock
+    private AuthenticationService authService;
+    private SearchQueryTemplateFactory testFactory;
 
     public static final String EXPECTED_SIMPLE_FILE = "template/query/search/search_query_simple.sparql";
     public static final String EXPECTED_SIMPLE_MIXED_FILE = "template/query/search/search_query_simple_mixed.sparql";
@@ -38,14 +47,9 @@ public class SearchQueryTemplateFactoryTest {
     public static final String SAMPLE_FIELD = "field";
     public static final String SAMPLE_FILTER = "01j82";
 
-    private static final String NAME_VAR = "name";
-    private static final String IS_OPTIONAL_VAR = "isoptional";
-    private static final String MULTIPATH_VAR = "multipath";
-    private static final String MULTISUBPATH_VAR = "multisubpath";
-
-    @BeforeAll
-    static void setup() {
-        TEMPLATE_FACTORY = new SearchQueryTemplateFactory();
+    @BeforeEach
+    void setup() {
+        this.testFactory = new SearchQueryTemplateFactory(authService);
     }
 
     @Test
@@ -53,12 +57,15 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = TEMPLATE_FACTORY.write(
+        Queue<String> results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings, new HashMap<>()));
         // Assert
         assertEquals(2, results.size());
-        assertEquals("SELECT DISTINCT ?iri WHERE {?iri a <http://example.com/Concept>.}", results.poll());
-        assertEquals("SELECT DISTINCT ?iri WHERE {?iri a/rdfs:subClassOf* <http://example.com/Concept>.}",
+        assertEquals(
+                "SELECT DISTINCT ?iri WHERE {?iri a <http://example.com/Concept>.?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.}",
+                results.poll());
+        assertEquals(
+                "SELECT DISTINCT ?iri WHERE {?iri a/rdfs:subClassOf* <http://example.com/Concept>.?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.}",
                 results.poll());
     }
 
@@ -67,7 +74,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = TEMPLATE_FACTORY.write(
+        Queue<String> results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings, genCriterias(SAMPLE_FIELD, SAMPLE_FILTER)));
         // Assert
         assertEquals(2, results.size());
@@ -80,7 +87,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = TEMPLATE_FACTORY.write(
+        Queue<String> results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings,
                         this.genMinMaxCriterias(SAMPLE_FIELD, SAMPLE_MIN_VAL, SAMPLE_MAX_VAL)));
         // Assert
@@ -94,7 +101,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = TEMPLATE_FACTORY.write(
+        Queue<String> results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings,
                         this.genMinMaxCriterias(SAMPLE_FIELD, SAMPLE_MIN_VAL, null)));
         // Assert
@@ -108,7 +115,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = TEMPLATE_FACTORY.write(
+        Queue<String> results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings,
                         this.genMinMaxCriterias(SAMPLE_FIELD, null, SAMPLE_MAX_VAL)));
         // Assert
@@ -123,42 +130,19 @@ public class SearchQueryTemplateFactoryTest {
     public static Queue<Queue<SparqlBinding>> initTestBindings() {
         Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
         Queue<SparqlBinding> bindings = new ArrayDeque<>();
-        genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_PRED_PATH, "", false);
+        SparqlBinding binding = ShaclPropertyBindingTest
+                .genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_FIELD, SAMPLE_CONCEPT, null, null,
+                        SAMPLE_PRED_PATH, null, null, null, null, null,
+                        false, false, false, false));
+        bindings.offer(binding);
         nestedBindings.offer(bindings);
         bindings = new ArrayDeque<>();
-        genMockSPARQLBinding(bindings, SAMPLE_CONCEPT, SAMPLE_FIELD, SAMPLE_NESTED_PRED_PATH, "", false);
+        binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_FIELD,
+                SAMPLE_CONCEPT, null, null, SAMPLE_NESTED_PRED_PATH, null, null, null, null, null,
+                false, false, false, false));
+        bindings.offer(binding);
         nestedBindings.offer(bindings);
         return nestedBindings;
-    }
-
-    /**
-     * Generates a mock version of one SPARQL binding.
-     * 
-     * @param resultBindings   Stores the binding generated
-     * @param clazz            The target class of the query
-     * @param multiPathPred    The multi path for the predicate
-     * @param multiSubPathPred The multi sub path for the predicate
-     * @param varName          The variable name
-     * @param isOptional       Indicates if the field is optional
-     */
-    private static void genMockSPARQLBinding(Queue<SparqlBinding> resultBindings, String clazz, String varName,
-            String multiPathPred, String multiSubPathPred, boolean isOptional) {
-        SparqlBinding binding = mock(SparqlBinding.class);
-        when(binding.getFieldValue(StringResource.CLAZZ_VAR)).thenReturn(clazz);
-        when(binding.getFieldValue(NAME_VAR)).thenReturn(varName);
-        // Only create mock interactions if there are values
-
-        if (!multiPathPred.isEmpty()) {
-            when(binding.containsField(MULTIPATH_VAR)).thenReturn(true);
-            when(binding.getFieldValue(MULTIPATH_VAR)).thenReturn(multiPathPred);
-        }
-        // Only create mock interactions if there are values
-        if (!multiSubPathPred.isEmpty()) {
-            when(binding.containsField(MULTISUBPATH_VAR)).thenReturn(true);
-            when(binding.getFieldValue(MULTISUBPATH_VAR)).thenReturn(multiSubPathPred);
-        }
-        when(binding.getFieldValue(IS_OPTIONAL_VAR)).thenReturn(String.valueOf(isOptional));
-        resultBindings.offer(binding);
     }
 
     /**

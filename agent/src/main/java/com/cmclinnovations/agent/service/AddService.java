@@ -161,7 +161,7 @@ public class AddService {
         } else if (currentNode.path(ShaclResource.REPLACE_KEY).asText().equals("calculation")) {
           this.lifecycleReportService.appendCalculationRecord(parentNode, currentNode, replacements);
           // When parsing an array for an object node
-        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals("array")) {
+        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)) {
           ArrayNode resultArray = this.genFieldArray(currentNode, replacements);
           parentNode.set(parentField, resultArray);
           // Parse literal with data types differently
@@ -239,7 +239,7 @@ public class AddService {
             for (int i = 0; i < childrenNodes.size(); i++) {
               ObjectNode currentChildNode = this.jsonLdService.getObjectNode(childrenNodes.get(i));
               // If child node is an array field
-              if (currentChildNode.path(ShaclResource.TYPE_KEY).asText().equals("array")) {
+              if (currentChildNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)) {
                 ArrayNode resultArray = this.genFieldArray(currentChildNode, replacements);
                 // Store the results and removable index
                 for (JsonNode element : resultArray) {

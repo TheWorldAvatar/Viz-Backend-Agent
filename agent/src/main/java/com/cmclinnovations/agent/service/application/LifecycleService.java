@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.SparqlBinding;
-import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
@@ -26,7 +25,6 @@ import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.StringResource;
-import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @Service
 public class LifecycleService {
@@ -383,17 +381,14 @@ public class LifecycleService {
     params.put(LifecycleResource.REMARKS_KEY, remarksMsg);
     this.addOccurrenceParams(params, eventType);
 
-    if (eventType.equals(LifecycleEventType.SERVICE_ORDER_DISPATCHED)) {
-      // Attempt to delete any existing dispatch occurrence before any updates
-      ResponseEntity<ApiResponse> response = this.deleteService.delete(
-          LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(),
-          params.get("id").toString());
-      // Log responses
-      LOGGER.info(response.getBody().getMessage());
-    }
+    // Attempt to delete any existing occurrence before any updates
+    ResponseEntity<ApiResponse> response = this.deleteService.delete(
+        eventType.getId(), params.get("id").toString());
+    // Log responses
+    LOGGER.info(response.getBody().getMessage());
 
     // Ensure that the event identifier mapped directly to the jsonLd file name
-    ResponseEntity<ApiResponse> response = this.addService.instantiate(eventType.getId(), params);
+    response = this.addService.instantiate(eventType.getId(), params);
     if (response.getStatusCode() != HttpStatus.CREATED) {
       LOGGER.error(createErrorMsg, params.get(LifecycleResource.ORDER_KEY), response.getBody().getMessage());
     }

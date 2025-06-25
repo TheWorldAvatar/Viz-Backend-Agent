@@ -30,6 +30,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class QueryTemplateServiceTest {
     @Mock
+    private AuthenticationService authService;
+    @Mock
     private FileService fileService;
 
     private static QueryTemplateService testService;
@@ -39,7 +41,7 @@ class QueryTemplateServiceTest {
     @BeforeEach
     void setup() {
         JsonLdService jsonLdService = new JsonLdService(new ObjectMapper());
-        testService = new QueryTemplateService(fileService, jsonLdService);
+        testService = new QueryTemplateService(authService, fileService, jsonLdService);
     }
 
     @Test
@@ -80,10 +82,7 @@ class QueryTemplateServiceTest {
     void testGenGetQuery() throws IOException {
         Queue<Queue<SparqlBinding>> testBindings = GetQueryTemplateFactoryTest.initTestBindings();
         Queue<String> results = testService.genGetQuery(testBindings);
-        assertEquals(2, results.size());
-        assertEquals(TestUtils.getSparqlQuery(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE), results.poll());
-        assertEquals(TestUtils.getSparqlQuery(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_MIXED_FILE),
-                results.poll());
+        GetQueryTemplateFactoryTest.validateTestOutput(results, GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE);
     }
 
     @Test
@@ -91,10 +90,7 @@ class QueryTemplateServiceTest {
         Queue<Queue<SparqlBinding>> testBindings = GetQueryTemplateFactoryTest.initTestBindings();
         Queue<String> results = testService.genGetQuery(testBindings, GetQueryTemplateFactoryTest.SAMPLE_FILTER, null,
                 "", new HashMap<>());
-        assertEquals(2, results.size());
-        assertEquals(TestUtils.getSparqlQuery(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_ID_FILE), results.poll());
-        assertEquals(TestUtils.getSparqlQuery(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_ID_MIXED_FILE),
-                results.poll());
+        GetQueryTemplateFactoryTest.validateTestOutput(results, GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_ID_FILE);
     }
 
     @Test
