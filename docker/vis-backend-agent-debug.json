@@ -3,7 +3,7 @@
     "Name": "vis-backend-agent",
     "TaskTemplate": {
       "ContainerSpec": {
-        "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.6.0-shacl-data-roles-SNAPSHOT",
+        "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.7.0",
         "Env": [
           "KEYCLOAK_ISSUER_URI=http://<DOMAIN>/realms/<REALM>",
           "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005",
