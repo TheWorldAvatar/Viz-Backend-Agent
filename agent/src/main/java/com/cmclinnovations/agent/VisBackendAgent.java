@@ -18,9 +18,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.ApiResponse;
+import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
@@ -45,11 +47,9 @@ public class VisBackendAgent {
   }
 
   @GetMapping("/status")
-  public ResponseEntity<String> getStatus() {
+  public ResponseEntity<StandardApiResponse> getStatus() {
     LOGGER.info("Detected request to get agent status...");
-    return new ResponseEntity<>(
-        LocalisationTranslator.getMessage(LocalisationResource.STATUS_KEY),
-        HttpStatus.OK);
+    return ResponseEntityBuilder.success(LocalisationTranslator.getMessage(LocalisationResource.STATUS_KEY));
   }
 
   @GetMapping("/location")
