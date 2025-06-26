@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
@@ -25,6 +26,7 @@ import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.StringResource;
+import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @Service
 public class LifecycleService {
