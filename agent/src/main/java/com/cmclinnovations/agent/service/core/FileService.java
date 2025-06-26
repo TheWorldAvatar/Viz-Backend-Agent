@@ -16,7 +16,9 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
+import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -136,7 +138,7 @@ public class FileService {
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_FORM_RESOURCE);
     // Handle invalid target type
     if (targetClass.isEmpty()) {
-      throw new FileSystemNotFoundException(MessageFormat.format("Route is invalid at /{0}!", resourceID));
+      throw new InvalidRouteException(MessageFormat.format("Route is invalid at /{0}!", resourceID));
     }
     // For valid target type, return the associated target class
     return StringResource.parseIriForQuery(targetClass);
