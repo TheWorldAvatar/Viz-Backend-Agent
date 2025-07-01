@@ -24,8 +24,14 @@ public class AgentExceptionHandler {
     // No dependencies required
   }
 
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<StandardApiResponse> badRequestHandling(Exception exception, WebRequest request) {
+    LOGGER.error(exception.getMessage());
+    return ResponseEntityBuilder.error(exception.getMessage(), 400, HttpStatus.BAD_REQUEST);
+  }
+
   @ExceptionHandler(InvalidRouteException.class)
-  public ResponseEntity<StandardApiResponse> invalidResourceHandling(Exception exception, WebRequest request) {
+  public ResponseEntity<StandardApiResponse> invalidRouteHandling(Exception exception, WebRequest request) {
     LOGGER.error(exception.getMessage());
     return ResponseEntityBuilder.error(
         LocalisationTranslator.getMessage(LocalisationResource.ERROR_CONTACT_KEY, exception.getMessage()),
