@@ -53,14 +53,14 @@ public class VisBackendAgent {
   }
 
   @GetMapping("/location")
-  public ResponseEntity<?> getCoordinates(
+  public ResponseEntity<StandardApiResponse> getCoordinates(
       @RequestParam(required = true) String iri) {
     LOGGER.info("Received request to retrieve coordinates for {}...", iri);
     return this.geocodingService.getCoordinates(iri);
   }
 
   @GetMapping("/location/geocode")
-  public ResponseEntity<?> getGeoCoordinates(
+  public ResponseEntity<StandardApiResponse> getGeoCoordinates(
       @RequestParam(required = false) String block,
       @RequestParam(required = false) String street,
       @RequestParam(required = false) String city,
@@ -68,16 +68,15 @@ public class VisBackendAgent {
       @RequestParam(required = false) String postal_code) {
     LOGGER.info("Received geocoding request...");
     if (block != null && street == null) {
-      String errorMsg = "Invalid geocoding parameters! Detected a block number but no street is provided!";
-      LOGGER.error(errorMsg);
-      return new ResponseEntity<>(errorMsg, HttpStatus.BAD_REQUEST);
+      throw new IllegalArgumentException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_GEOCODE_PARAMS_KEY));
     }
 
     return this.geocodingService.getCoordinates(block, street, city, country, postal_code);
   }
 
   @GetMapping("/location/addresses")
-  public ResponseEntity<?> getAddress(@RequestParam(required = true) String postal_code) {
+  public ResponseEntity<StandardApiResponse> getAddress(@RequestParam(required = true) String postal_code) {
     LOGGER.info("Received request to search for address...");
     return this.geocodingService.getAddress(postal_code);
   }
