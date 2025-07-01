@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.exception;
 
+import java.nio.file.FileSystemNotFoundException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -36,6 +37,12 @@ public class AgentExceptionHandler {
     return ResponseEntityBuilder.error(
         LocalisationTranslator.getMessage(LocalisationResource.ERROR_CONTACT_KEY, exception.getMessage()),
         404, HttpStatus.NOT_FOUND);
+  }
+
+  @ExceptionHandler(FileSystemNotFoundException.class)
+  public ResponseEntity<StandardApiResponse> missingResourceHandling(Exception exception, WebRequest request) {
+    LOGGER.error(exception.getMessage());
+    return ResponseEntityBuilder.error(exception.getMessage(), 404, HttpStatus.NOT_FOUND);
   }
 
   @ExceptionHandler(Exception.class)

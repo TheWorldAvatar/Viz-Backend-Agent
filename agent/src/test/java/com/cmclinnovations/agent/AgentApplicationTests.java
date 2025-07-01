@@ -80,9 +80,10 @@ class AgentApplicationTests {
       "/form/missing" }) // getFormTemplate
   void testRoutes_MissingFormResource(String route) throws Exception {
     this.mockMvc.perform(get(route))
-        .andExpect(status().isInternalServerError())
-        .andExpect(TestUtils.contentContains(
-            "Resource at file:/usr/local/tomcat/resources/application-form.json is not found. Please ensure you have a valid resource in the file path."));
+        .andExpect(status().isNotFound())
+        .andExpect(content().json(genStandardErrorApiResponse(
+            "Resource at file:/usr/local/tomcat/resources/application-form.json is not found. Please ensure you have a valid resource in the file path.",
+            404)));
   }
 
   private static Stream<Arguments> provideParametersForInvalidRoutes() {
