@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
-import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
@@ -339,7 +338,7 @@ public class LifecycleController {
    * Retrieve the status of the contract
    */
   @GetMapping("/status/{id}")
-  public ResponseEntity<ApiResponse> getContractStatus(@PathVariable String id) {
+  public ResponseEntity<StandardApiResponse> getContractStatus(@PathVariable String id) {
     LOGGER.info("Received request to retrieve the status for the contract: {}...", id);
     return this.lifecycleService.getContractStatus(id);
   }

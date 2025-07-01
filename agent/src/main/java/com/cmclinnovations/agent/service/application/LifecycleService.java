@@ -14,9 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
-import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
@@ -130,15 +130,15 @@ public class LifecycleService {
    * 
    * @param contract The target contract id.
    */
-  public ResponseEntity<ApiResponse> getContractStatus(String contract) {
+  public ResponseEntity<StandardApiResponse> getContractStatus(String contract) {
     LOGGER.debug("Retrieving the status of the contract...");
     String query = this.lifecycleQueryFactory.getServiceStatusQuery(contract);
     SparqlBinding result = this.getService.getInstance(query);
     LOGGER.info("Successfuly retrieved contract status!");
-    return new ResponseEntity<>(
-        new ApiResponse(result.getFieldValue(LifecycleResource.STATUS_KEY),
-            result.getFieldValue(LifecycleResource.IRI_KEY)),
-        HttpStatus.OK);
+    Map<String, Object> responseData = new HashMap<>();
+    responseData.put(LifecycleResource.STATUS_KEY, result.getFieldValue(LifecycleResource.STATUS_KEY));
+    responseData.put(LifecycleResource.IRI_KEY, result.getFieldValue(LifecycleResource.IRI_KEY));
+    return ResponseEntityBuilder.success(responseData);
   }
 
   /**

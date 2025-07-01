@@ -48,6 +48,17 @@ public class ResponseEntityBuilder {
   }
 
   /**
+   * Builds a successful response with other success data.
+   *
+   * @param successData Fields to include in the response.
+   */
+  public static ResponseEntity<StandardApiResponse> success(Map<String, Object> successData) {
+    return new ResponseEntity<>(
+        new StandardApiResponse(API_VERSION, successData, null),
+        HttpStatus.OK);
+  }
+
+  /**
    * Builds error response based on the required message.
    *
    * @param message  The error message to include in the response.
