@@ -21,7 +21,6 @@ import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
-import com.cmclinnovations.agent.model.response.ApiResponse;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
@@ -212,7 +211,7 @@ public class VisBackendAgent {
    * Instantiates a new instance in the knowledge graph.
    */
   @PostMapping("/{type}")
-  public ResponseEntity<ApiResponse> addInstance(@PathVariable String type,
+  public ResponseEntity<StandardApiResponse> addInstance(@PathVariable String type,
       @RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to add one {}...", type);
     return this.addService.instantiate(type, instance);
@@ -222,7 +221,7 @@ public class VisBackendAgent {
    * Removes the specified instance from the knowledge graph.
    */
   @DeleteMapping("/{type}/{id}")
-  public ResponseEntity<ApiResponse> removeEntity(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<StandardApiResponse> removeEntity(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to delete {}...", type);
     return this.deleteService.delete(type, id);
   }
@@ -231,19 +230,17 @@ public class VisBackendAgent {
    * Update the target instance in the knowledge graph.
    */
   @PutMapping("/{type}/{id}")
-  public ResponseEntity<ApiResponse> updateEntity(@PathVariable String type, @PathVariable String id,
+  public ResponseEntity<StandardApiResponse> updateEntity(@PathVariable String type, @PathVariable String id,
       @RequestBody Map<String, Object> updatedEntity) {
     LOGGER.info("Received request to update {}...", type);
-    ResponseEntity<ApiResponse> deleteResponse = this.deleteService.delete(type, id);
+    ResponseEntity<StandardApiResponse> deleteResponse = this.deleteService.delete(type, id);
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
-      ResponseEntity<ApiResponse> addResponse = this.addService.instantiate(type, id, updatedEntity);
-      if (addResponse.getStatusCode() == HttpStatus.CREATED) {
+      ResponseEntity<StandardApiResponse> addResponse = this.addService.instantiate(type, id, updatedEntity);
+      if (addResponse.getStatusCode() == HttpStatus.OK) {
         LOGGER.info("{} has been successfully updated for {}", type, id);
-        return new ResponseEntity<>(
-            new ApiResponse(
-                LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_UPDATE_KEY, type, id),
-                addResponse.getBody().getIri()),
-            HttpStatus.CREATED);
+        return ResponseEntityBuilder.success(
+            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_UPDATE_KEY, type, id),
+            addResponse.getBody().data());
       } else {
         return addResponse;
       }

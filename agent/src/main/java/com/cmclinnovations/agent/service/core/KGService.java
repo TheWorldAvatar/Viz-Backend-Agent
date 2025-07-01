@@ -30,14 +30,15 @@ import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
 import org.eclipse.rdf4j.query.resultio.text.csv.SPARQLResultsCSVWriter;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
@@ -110,19 +111,15 @@ public class KGService {
    * @param query    The DELETE query for execution.
    * @param targetId The target instance IRI.
    */
-  public ResponseEntity<String> delete(String query, String targetId) {
+  public ResponseEntity<StandardApiResponse> delete(String query, String targetId) {
     LOGGER.debug("Deleting instances...");
     int statusCode = this.executeUpdate(query);
     if (statusCode == 200) {
       LOGGER.info("Instance has been successfully deleted!");
-      return new ResponseEntity<>(
-          LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_DELETE_KEY),
-          HttpStatus.OK);
-    } else {
-      return new ResponseEntity<>(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_DELETE_KEY),
-          HttpStatus.INTERNAL_SERVER_ERROR);
+      return ResponseEntityBuilder.success(
+          LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_DELETE_KEY));
     }
+    throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_DELETE_KEY));
   }
 
   /**
@@ -402,7 +399,7 @@ public class KGService {
       // Extend to get the next level of shape if any
       replacementShapePath = replacementShapePath.isEmpty() ? " ?nestedshape." +
           "OPTIONAL{?nestedshape twa:role ?nestedrole.}" +
-		  "?nestedshape sh:name ?" + ShaclResource.NODE_GROUP_VAR + ";sh:node/sh:targetClass ?"
+          "?nestedshape sh:name ?" + ShaclResource.NODE_GROUP_VAR + ";sh:node/sh:targetClass ?"
           + ShaclResource.NESTED_CLASS_VAR + ";" + SUB_SHAPE_PATH
           : "/" + SUB_SHAPE_PATH + replacementShapePath;
     }

@@ -6,6 +6,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -26,7 +27,8 @@ import org.springframework.stereotype.Service;
 import org.topbraid.shacl.rules.RuleUtil;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
-import com.cmclinnovations.agent.model.response.ApiResponse;
+import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.application.LifecycleReportService;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.service.core.KGService;
@@ -72,7 +74,7 @@ public class AddService {
    * @param resourceID The target resource identifier for the instance.
    * @param param      Request parameters.
    */
-  public ResponseEntity<ApiResponse> instantiate(String resourceID, Map<String, Object> param) {
+  public ResponseEntity<StandardApiResponse> instantiate(String resourceID, Map<String, Object> param) {
     String id = param.getOrDefault("id", UUID.randomUUID()).toString();
     return instantiate(resourceID, id, param);
   }
@@ -85,7 +87,7 @@ public class AddService {
    * @param targetId   The target instance IRI.
    * @param param      Request parameters.
    */
-  public ResponseEntity<ApiResponse> instantiate(String resourceID, String targetId,
+  public ResponseEntity<StandardApiResponse> instantiate(String resourceID, String targetId,
       Map<String, Object> param) {
     LOGGER.info("Instantiating an instance of {} ...", resourceID);
     // Update ID value to target ID
@@ -94,18 +96,19 @@ public class AddService {
     ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
     // Attempt to replace all placeholders in the JSON schema
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
-    return this.instantiateJsonLd(addJsonSchema, resourceID,
-        LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_ADD_KEY, resourceID));
+    return this.instantiateJsonLd(addJsonSchema, resourceID, LocalisationResource.SUCCESS_ADD_KEY);
   }
 
   /**
    * Instantiate an instance based on a jsonLD object.
    * 
-   * @param jsonLdSchema The target json LD object to instantiate.
-   * @param resourceID   The target resource identifier for the instance.
-   * @param message      Successful message.
+   * @param jsonLdSchema    The target json LD object to instantiate.
+   * @param resourceID      The target resource identifier for the instance.
+   * @param messageResource The resource id of the message to be displayed when
+   *                        successful.
    */
-  public ResponseEntity<ApiResponse> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID, String message) {
+  public ResponseEntity<StandardApiResponse> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID,
+      String messageResource) {
     LOGGER.info("Adding instance to endpoint...");
     String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();
     String jsonString = jsonLdSchema.toString();
@@ -130,10 +133,14 @@ public class AddService {
     }
 
     if (response.getStatusCode() == HttpStatus.OK) {
-      LOGGER.info(message);
-      return new ResponseEntity<>(new ApiResponse(message, instanceIri), HttpStatus.CREATED);
+      LOGGER.info("Instantiation is successful!");
+      Map<String, Object> responseData = new HashMap<>();
+      responseData.put(LifecycleResource.IRI_KEY, instanceIri);
+      return ResponseEntityBuilder.success(LocalisationTranslator.getMessage(messageResource, instanceIri),
+          responseData);
     }
-    return new ResponseEntity<>(new ApiResponse(response), response.getStatusCode());
+    LOGGER.warn(response.getBody());
+    throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ADD_KEY));
   }
 
   /**

@@ -17,6 +17,7 @@ import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.ApiResponse;
+import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
@@ -314,12 +315,12 @@ public class LifecycleService {
       // set new id each time
       params.put("id", orderPrefix + UUID.randomUUID());
       params.put(LifecycleResource.DATE_KEY, occurrenceDate);
-      ResponseEntity<ApiResponse> response = this.addService.instantiate(
+      ResponseEntity<StandardApiResponse> response = this.addService.instantiate(
           LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
       // Error logs for any specified occurrence
-      if (response.getStatusCode() != HttpStatus.CREATED) {
-        LOGGER.error("Error encountered while creating order for {} on {}! Read error message for more details: {}",
-            contract, occurrenceDate, response.getBody().getMessage());
+      if (response.getStatusCode() != HttpStatus.OK) {
+        LOGGER.error("Error encountered while creating order for {} on {}! Read error logs for more details",
+            contract, occurrenceDate);
         hasError = true;
       }
     }
@@ -341,12 +342,12 @@ public class LifecycleService {
       String currentContract = results.poll().getFieldValue(LifecycleResource.IRI_KEY);
       params.put(LifecycleResource.CONTRACT_KEY, currentContract);
       this.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_COMPLETION);
-      ResponseEntity<ApiResponse> response = this.addService.instantiate(
+      ResponseEntity<StandardApiResponse> response = this.addService.instantiate(
           LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
       // Error logs for any specified occurrence
-      if (response.getStatusCode() != HttpStatus.CREATED) {
-        LOGGER.error("Error encountered while discharging the contract for {}! Read error message for more details: {}",
-            currentContract, response.getBody().getMessage());
+      if (response.getStatusCode() != HttpStatus.OK) {
+        LOGGER.error("Error encountered while discharging the contract for {}! Read error logs for more details.",
+            currentContract);
       }
     }
   }
@@ -359,42 +360,39 @@ public class LifecycleService {
    *                  instantiate the occurrence.
    * @param eventType Target event type.
    */
-  public ResponseEntity<ApiResponse> genDispatchOrDeliveryOccurrence(Map<String, Object> params,
+  public ResponseEntity<StandardApiResponse> genDispatchOrDeliveryOccurrence(Map<String, Object> params,
       LifecycleEventType eventType) {
     String remarksMsg;
-    String createErrorMsg;
-    String successMsg;
+    String successMsgId;
     switch (eventType) {
       case LifecycleEventType.SERVICE_EXECUTION:
         remarksMsg = ORDER_COMPLETE_MESSAGE;
-        createErrorMsg = "Error encountered while completing the order : {}! Read error message for more details: {}";
-        successMsg = "Service has been completed successfully!";
+        successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_COMPLETE_KEY;
         break;
       case LifecycleEventType.SERVICE_ORDER_DISPATCHED:
         remarksMsg = ORDER_DISPATCH_MESSAGE;
-        createErrorMsg = "Error encountered while dispatching details for the order: {}! Read error message for more details: {}";
-        successMsg = "Assigment of dispatch details is successful!";
+        successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_ASSIGN_KEY;
         break;
       default:
-        return new ResponseEntity<>(
-            new ApiResponse("Invalid event type invocation!"),
-            HttpStatus.INTERNAL_SERVER_ERROR);
+        throw new IllegalStateException(
+            LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     }
     params.put(LifecycleResource.REMARKS_KEY, remarksMsg);
     this.addOccurrenceParams(params, eventType);
 
     // Attempt to delete any existing occurrence before any updates
-    ResponseEntity<ApiResponse> response = this.deleteService.delete(
+    ResponseEntity<StandardApiResponse> response = this.deleteService.delete(
         eventType.getId(), params.get("id").toString());
     // Log responses
-    LOGGER.info(response.getBody().getMessage());
-
+    LOGGER.info(response.getBody().data());
     // Ensure that the event identifier mapped directly to the jsonLd file name
-    response = this.addService.instantiate(eventType.getId(), params);
-    if (response.getStatusCode() != HttpStatus.CREATED) {
-      LOGGER.error(createErrorMsg, params.get(LifecycleResource.ORDER_KEY), response.getBody().getMessage());
+    try {
+      response = this.addService.instantiate(eventType.getId(), params);
+    } catch (IllegalArgumentException exception) {
+      LOGGER.error(LocalisationTranslator.getMessage(successMsgId), params.get(LifecycleResource.ORDER_KEY),
+          exception.getMessage());
     }
-    LOGGER.info(successMsg);
+    LOGGER.info(successMsgId);
     return response;
   }
 

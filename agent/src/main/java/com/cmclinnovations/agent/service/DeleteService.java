@@ -7,7 +7,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.cmclinnovations.agent.model.response.ApiResponse;
+import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
 
@@ -35,13 +35,9 @@ public class DeleteService {
    * @param resourceID The target resource identifier for the instance.
    * @param targetId   The target instance IRI.
    */
-  public ResponseEntity<ApiResponse> delete(String resourceID, String targetId) {
+  public ResponseEntity<StandardApiResponse> delete(String resourceID, String targetId) {
     LOGGER.debug("Deleting {} instance of {} ...", resourceID, targetId);
-
     Queue<String> outputs = this.queryTemplateService.genDeleteQuery(resourceID, targetId);
-    ResponseEntity<String> response = this.kgService.delete(outputs.poll(), targetId);
-    return new ResponseEntity<>(
-        new ApiResponse(response.getBody(), outputs.poll()),
-        response.getStatusCode());
+    return this.kgService.delete(outputs.poll(), targetId);
   }
 }
