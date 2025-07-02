@@ -357,7 +357,7 @@ public class LifecycleController {
    * Retrieve all draft contracts ie awaiting approval.
    */
   @GetMapping("/draft")
-  public ResponseEntity<?> getDraftContracts(
+  public ResponseEntity<StandardApiResponse> getDraftContracts(
       @RequestParam(required = true) String type,
       @RequestParam(defaultValue = "false") boolean label) {
     LOGGER.info("Received request to retrieve draft contracts...");
@@ -368,7 +368,7 @@ public class LifecycleController {
    * Retrieve all contracts that are currently in progress.
    */
   @GetMapping("/service")
-  public ResponseEntity<?> getInProgressContracts(
+  public ResponseEntity<StandardApiResponse> getInProgressContracts(
       @RequestParam(required = true) String type,
       @RequestParam(defaultValue = "false") boolean label) {
     LOGGER.info("Received request to retrieve contracts in progress...");
@@ -379,7 +379,7 @@ public class LifecycleController {
    * Retrieve all archived contracts.
    */
   @GetMapping("/archive")
-  public ResponseEntity<?> getArchivedContracts(
+  public ResponseEntity<StandardApiResponse> getArchivedContracts(
       @RequestParam(required = true) String type,
       @RequestParam(defaultValue = "false") boolean label) {
     LOGGER.info("Received request to retrieve archived contracts...");
@@ -390,7 +390,7 @@ public class LifecycleController {
    * Retrieve all tasks for the specified contract or date in UNIX timestamp.
    */
   @GetMapping("/service/{task}")
-  public ResponseEntity<?> getAllTasksOnTimestamp(
+  public ResponseEntity<StandardApiResponse> getAllTasksOnTimestamp(
       @PathVariable(name = "task") String input,
       @RequestParam(required = true) String type) {
     // Attempt to parse the input into a long, indicating this is a timestamp
@@ -409,7 +409,7 @@ public class LifecycleController {
    * Retrieves the form template for the dispatch order from the knowledge graph.
    */
   @GetMapping("/service/dispatch/form")
-  public ResponseEntity<?> getDispatchForm() {
+  public ResponseEntity<StandardApiResponse> getDispatchForm() {
     LOGGER.info("Received request to get form template for order dispatch...");
     // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_ORDER_DISPATCHED, null);
@@ -419,7 +419,7 @@ public class LifecycleController {
    * Retrieve dispatch details for the specified event
    */
   @GetMapping("/service/dispatch/{id}")
-  public ResponseEntity<?> getDispatchDetails(@PathVariable String id) {
+  public ResponseEntity<StandardApiResponse> getDispatchDetails(@PathVariable String id) {
     LOGGER.info("Received request to get form template with order dispatch details...");
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_ORDER_DISPATCHED, id);
   }
@@ -428,7 +428,7 @@ public class LifecycleController {
    * Retrieves the form template to complete an order from the knowledge graph.
    */
   @GetMapping("/service/complete/form")
-  public ResponseEntity<?> getOrderCompleteForm() {
+  public ResponseEntity<StandardApiResponse> getOrderCompleteForm() {
     LOGGER.info("Received request to get form template for order completion...");
     // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_EXECUTION, null);
@@ -438,7 +438,7 @@ public class LifecycleController {
    * Retrieve the order complete details for the specified event
    */
   @GetMapping("/service/complete/{id}")
-  public ResponseEntity<?> getOrderCompleteDetails(@PathVariable String id) {
+  public ResponseEntity<StandardApiResponse> getOrderCompleteDetails(@PathVariable String id) {
     LOGGER.info("Received request to get form template with order completion details...");
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_EXECUTION, id);
   }
@@ -447,7 +447,7 @@ public class LifecycleController {
    * Retrieves the form template to report the order from the knowledge graph.
    */
   @GetMapping("/service/report/form")
-  public ResponseEntity<?> getOrderReportForm() {
+  public ResponseEntity<StandardApiResponse> getOrderReportForm() {
     LOGGER.info("Received request to get form template to report the order...");
     // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_INCIDENT_REPORT, null);
@@ -457,7 +457,7 @@ public class LifecycleController {
    * Retrieves the form template to cancel the order from the knowledge graph.
    */
   @GetMapping("/service/cancel/form")
-  public ResponseEntity<?> getOrderCancellationForm() {
+  public ResponseEntity<StandardApiResponse> getOrderCancellationForm() {
     LOGGER.info("Received request to get form template to cancel the order...");
     // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.SERVICE_CANCELLATION, null);
@@ -467,7 +467,7 @@ public class LifecycleController {
    * Retrieves the form template to rescind the contract from the knowledge graph.
    */
   @GetMapping("/archive/rescind/form")
-  public ResponseEntity<?> getContractRescissionForm() {
+  public ResponseEntity<StandardApiResponse> getContractRescissionForm() {
     LOGGER.info("Received request to get form template to rescind the contract...");
     // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.ARCHIVE_RESCINDMENT, null);
@@ -478,7 +478,7 @@ public class LifecycleController {
    * graph.
    */
   @GetMapping("/archive/terminate/form")
-  public ResponseEntity<?> getContractTerminationForm() {
+  public ResponseEntity<StandardApiResponse> getContractTerminationForm() {
     LOGGER.info("Received request to get form template to terminate the contract...");
     // Access to this form is prefiltered on the UI and need not be enforced here
     return this.lifecycleService.getForm(LifecycleEventType.ARCHIVE_TERMINATION, null);

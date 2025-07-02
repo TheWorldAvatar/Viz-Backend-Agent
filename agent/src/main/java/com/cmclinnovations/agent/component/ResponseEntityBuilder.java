@@ -47,6 +47,17 @@ public class ResponseEntityBuilder {
   }
 
   /**
+   * Builds a successful response for multiple items.
+   *
+   * @param message An optional message for its corresponding key in the data
+   *                payload.
+   * @param items   A collection of instances/data.
+   */
+  public static ResponseEntity<StandardApiResponse> success(String message, List<Map<String, Object>> items) {
+    return success(null, message, null, items);
+  }
+
+  /**
    * Builds a successful response with the data payload.
    *
    * @param id      An optional id for its corresponding key in the data payload.
@@ -59,6 +70,18 @@ public class ResponseEntityBuilder {
   public static ResponseEntity<StandardApiResponse> success(String id, String message, Boolean deleted,
       List<Map<String, Object>> items) {
     DataPayload<Map<String, Object>> dataPayload = new DataPayload<>(id, message, deleted, items);
+    return new ResponseEntity<>(
+        new StandardApiResponse(API_VERSION, dataPayload, null),
+        HttpStatus.OK);
+  }
+
+  /**
+   * Builds a successful response with the data payload for a list of strings.
+   *
+   * @param items An optional collection of strings.
+   */
+  public static ResponseEntity<StandardApiResponse> success(List<String> items) {
+    DataPayload<String> dataPayload = new DataPayload<>(null, null, null, items);
     return new ResponseEntity<>(
         new StandardApiResponse(API_VERSION, dataPayload, null),
         HttpStatus.OK);

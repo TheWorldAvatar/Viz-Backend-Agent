@@ -85,16 +85,15 @@ public class VisBackendAgent {
    * graph.
    */
   @GetMapping("/{type}")
-  public ResponseEntity<?> getAllInstances(
+  public ResponseEntity<StandardApiResponse> getAllInstances(
       @PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get all instances for {}...", type);
     // This route does not require further restriction on parent instances
     Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", false, new HashMap<>());
-    return new ResponseEntity<>(
+    return ResponseEntityBuilder.success(null,
         instances.stream()
             .map(SparqlBinding::get)
-            .toList(),
-        HttpStatus.OK);
+            .toList());
   }
 
   /**
@@ -102,16 +101,15 @@ public class VisBackendAgent {
    * graph, and include human readable labels for all properties.
    */
   @GetMapping("/{type}/label")
-  public ResponseEntity<?> getAllInstancesWithLabel(
+  public ResponseEntity<StandardApiResponse> getAllInstancesWithLabel(
       @PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get all instances with labels for {}...", type);
     // This route does not require further restriction on parent instances
     Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", true, new HashMap<>());
-    return new ResponseEntity<>(
+    return ResponseEntityBuilder.success(null,
         instances.stream()
             .map(SparqlBinding::get)
-            .toList(),
-        HttpStatus.OK);
+            .toList());
   }
 
   /**
@@ -120,25 +118,24 @@ public class VisBackendAgent {
    * parent resource identifier.
    */
   @GetMapping("/{parent}/{id}/{type}")
-  public ResponseEntity<?> getAllInstancesWithParent(@PathVariable(name = "parent") String parent,
+  public ResponseEntity<StandardApiResponse> getAllInstancesWithParent(@PathVariable(name = "parent") String parent,
       @PathVariable(name = "id") String id,
       @PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get all instances of target {} associated with the parent type {}...", type,
         parent);
     Queue<SparqlBinding> instances = this.getService.getInstances(type, new ParentField(id, parent), "", "", false,
         new HashMap<>());
-    return new ResponseEntity<>(
+    return ResponseEntityBuilder.success(null,
         instances.stream()
             .map(SparqlBinding::get)
-            .toList(),
-        HttpStatus.OK);
+            .toList());
   }
 
   /**
    * Retrieve the target instance of the specified type in the knowledge graph.
    */
   @GetMapping("/{type}/{id}")
-  public ResponseEntity<?> getInstance(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<StandardApiResponse> getInstance(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to get a specific instance of {}...", type);
     return this.getService.getInstance(id, type, false);
   }
@@ -148,7 +145,7 @@ public class VisBackendAgent {
    * with human readable properties.
    */
   @GetMapping("/{type}/label/{id}")
-  public ResponseEntity<?> getInstanceWithLabels(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<StandardApiResponse> getInstanceWithLabels(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to get a specific instance of {} with human readable data...", type);
     return this.getService.getInstance(id, type, true);
   }
@@ -157,7 +154,8 @@ public class VisBackendAgent {
    * Retrieve the instances that matches the search criterias.
    */
   @PostMapping("/{type}/search")
-  public ResponseEntity<?> getMatchingInstances(@PathVariable String type, @RequestBody Map<String, String> criterias) {
+  public ResponseEntity<StandardApiResponse> getMatchingInstances(@PathVariable String type,
+      @RequestBody Map<String, String> criterias) {
     LOGGER.info("Received request to get matching instances of {}...", type);
     return this.getService.getMatchingInstances(type, criterias);
   }
@@ -176,7 +174,7 @@ public class VisBackendAgent {
    * Retrieves the form template for the specified type from the knowledge graph.
    */
   @GetMapping("/form/{type}")
-  public ResponseEntity<Map<String, Object>> getFormTemplate(@PathVariable(name = "type") String type) {
+  public ResponseEntity<StandardApiResponse> getFormTemplate(@PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get the form template for {}...", type);
     // Access to this empty form is prefiltered on the UI and need not be enforced
     return this.getService.getForm(type, false, new HashMap<>());
@@ -187,12 +185,12 @@ public class VisBackendAgent {
    * the knowledge graph.
    */
   @GetMapping("/form/{type}/{id}")
-  public ResponseEntity<Map<String, Object>> retrieveFormTemplate(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<StandardApiResponse> retrieveFormTemplate(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to get specific form template for {} ...", type);
     Map<String, Object> currentEntity = new HashMap<>();
-    ResponseEntity<?> currentEntityResponse = this.getService.getInstance(id, type, false);
+    ResponseEntity<StandardApiResponse> currentEntityResponse = this.getService.getInstance(id, type, false);
     if (currentEntityResponse.getStatusCode() == HttpStatus.OK) {
-      currentEntity = (Map<String, Object>) currentEntityResponse.getBody();
+      currentEntity = (Map<String, Object>) currentEntityResponse.getBody().data().items().get(0);
     }
     return this.getService.getForm(type, false, currentEntity);
   }
@@ -202,7 +200,7 @@ public class VisBackendAgent {
    * with the specified type in the knowledge graph.
    */
   @GetMapping("/type")
-  public ResponseEntity<?> getConceptMetadata(@RequestParam(name = "uri") String uri) {
+  public ResponseEntity<StandardApiResponse> getConceptMetadata(@RequestParam(name = "uri") String uri) {
     LOGGER.info("Received request to get the metadata for the concept: {}...", uri);
     return this.getService.getConceptMetadata(uri);
   }
