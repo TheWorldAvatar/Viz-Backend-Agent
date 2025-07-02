@@ -67,13 +67,12 @@ public class ResponseEntityBuilder {
   /**
    * Builds error response based on the required message.
    *
-   * @param message  The error message to include in the response.
-   * @param httpCode The HTTP status code.
-   * @param status   The HTTP status to be generated.
+   * @param message    The error message to include in the response.
+   * @param httpStatus The HTTP status.
    */
-  public static ResponseEntity<StandardApiResponse> error(String message, int httpCode, HttpStatus status) {
+  public static ResponseEntity<StandardApiResponse> error(String message, HttpStatus httpStatus) {
     return new ResponseEntity<>(
-        new StandardApiResponse(API_VERSION, null, new ErrorPayload(httpCode, message)),
-        status);
+        new StandardApiResponse(API_VERSION, null, new ErrorPayload(httpStatus.value(), message)),
+        httpStatus);
   }
 }

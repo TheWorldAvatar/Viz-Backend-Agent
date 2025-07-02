@@ -28,7 +28,7 @@ public class AgentExceptionHandler {
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<StandardApiResponse> badRequestHandling(Exception exception, WebRequest request) {
     LOGGER.error(exception.getMessage());
-    return ResponseEntityBuilder.error(exception.getMessage(), 400, HttpStatus.BAD_REQUEST);
+    return ResponseEntityBuilder.error(exception.getMessage(), HttpStatus.BAD_REQUEST);
   }
 
   @ExceptionHandler(InvalidRouteException.class)
@@ -36,13 +36,13 @@ public class AgentExceptionHandler {
     LOGGER.error(exception.getMessage());
     return ResponseEntityBuilder.error(
         LocalisationTranslator.getMessage(LocalisationResource.ERROR_CONTACT_KEY, exception.getMessage()),
-        404, HttpStatus.NOT_FOUND);
+        HttpStatus.NOT_FOUND);
   }
 
   @ExceptionHandler(FileSystemNotFoundException.class)
   public ResponseEntity<StandardApiResponse> missingResourceHandling(Exception exception, WebRequest request) {
     LOGGER.error(exception.getMessage());
-    return ResponseEntityBuilder.error(exception.getMessage(), 404, HttpStatus.NOT_FOUND);
+    return ResponseEntityBuilder.error(exception.getMessage(), HttpStatus.NOT_FOUND);
   }
 
   @ExceptionHandler(Exception.class)
@@ -53,6 +53,6 @@ public class AgentExceptionHandler {
     return ResponseEntityBuilder.error(
         LocalisationTranslator.getMessage(LocalisationResource.ERROR_TIMESTAMP_KEY, currentTime.format(formatter),
             exception.getMessage()),
-        500, HttpStatus.INTERNAL_SERVER_ERROR);
+        HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }
