@@ -58,7 +58,7 @@ public class ResponseEntityBuilder {
    */
   public static ResponseEntity<StandardApiResponse> success(String id, String message, Boolean deleted,
       List<Map<String, Object>> items) {
-    DataPayload dataPayload = new DataPayload(id, message, deleted, items);
+    DataPayload<Map<String, Object>> dataPayload = new DataPayload<>(id, message, deleted, items);
     return new ResponseEntity<>(
         new StandardApiResponse(API_VERSION, dataPayload, null),
         HttpStatus.OK);
