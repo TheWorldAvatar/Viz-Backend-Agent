@@ -163,9 +163,6 @@ public class AddService {
         // Add a different interaction for schedule types
         if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals("schedule")) {
           this.replaceDayOfWeekSchedule(parentNode, parentField, replacements);
-          // Add a different interaction for calculations
-        } else if (currentNode.path(ShaclResource.REPLACE_KEY).asText().equals("calculation")) {
-          this.lifecycleReportService.appendCalculationRecord(parentNode, currentNode, replacements);
           // When parsing an array for an object node
         } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)) {
           ArrayNode resultArray = this.genFieldArray(currentNode, replacements);

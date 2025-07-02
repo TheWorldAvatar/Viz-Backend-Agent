@@ -314,9 +314,8 @@ There are several routes for retrieving instances associated with a specific `ty
 1. Get all instances
 2. Get a specific instance
 3. Get all instances with human readable fields
-4. Get all instances in `csv` format
-5. Get all instances associated with a specific parent instance
-6. Get all instances matching the search criteria
+4. Get all instances associated with a specific parent instance
+5. Get all instances matching the search criteria
 
 ##### Get all instances
 
@@ -346,16 +345,6 @@ This route retrieves all instances with human-readable fields. Users can send a 
 
 ```
 <baseURL>/vis-backend-agent/{type}/label
-```
-
-where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`.
-
-##### Get all instances in csv format
-
-This route retrieves all instances in the csv format. Users can send a `GET` request to
-
-```
-<baseURL>/vis-backend-agent/csv/{type}
 ```
 
 where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`.

@@ -75,37 +75,6 @@ public class GetService {
   }
 
   /**
-   * Retrieve all target instances and their information in the CSV format.
-   * 
-   * @param resourceID The target resource identifier for the instance
-   *                   class.
-   */
-  public ResponseEntity<String> getInstancesInCSV(String resourceID) {
-    LOGGER.info("Retrieving all instances of {} in csv...", resourceID);
-    String query = this.queryTemplateService.getShaclQuery(resourceID, true);
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    Queue<String> queries = this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths);
-    // Query for direct instances
-    String[] resultRows = this.kgService.queryCSV(queries.poll(), SparqlEndpointType.MIXED);
-    // Query for secondary instances ie instances that are subclasses of parent
-    String[] secondaryResultRows = this.kgService.queryCSV(queries.poll(), SparqlEndpointType.BLAZEGRAPH);
-    StringBuilder results = new StringBuilder();
-    // First row will always be column names and should be appended
-    for (String row : resultRows) {
-      results.append(row).append(System.getProperty("line.separator"));
-    }
-    // Ignore first row of secondary results as these are duplicate column names
-    if (secondaryResultRows.length > 1) {
-      for (int i = 1; i < secondaryResultRows.length; i++) {
-        results.append(secondaryResultRows[i]).append(System.getProperty("line.separator"));
-      }
-    }
-    return new ResponseEntity<>(
-        results.toString(),
-        HttpStatus.OK);
-  }
-
-  /**
    * Retrieve only the specific instance based on the query. The query must have
    * iri as its variable.
    * 

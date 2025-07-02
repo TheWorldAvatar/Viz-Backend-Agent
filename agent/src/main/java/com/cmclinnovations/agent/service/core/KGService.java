@@ -27,7 +27,6 @@ import org.eclipse.rdf4j.federated.repository.FedXRepository;
 import org.eclipse.rdf4j.federated.repository.FedXRepositoryConnection;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
-import org.eclipse.rdf4j.query.resultio.text.csv.SPARQLResultsCSVWriter;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -205,40 +204,6 @@ public class KGService {
       LOGGER.error(e);
     }
     return new ArrayDeque<>();
-  }
-
-  /**
-   * Executes the query at the target endpoint to retrieve results in the CSV
-   * format.
-   * 
-   * @param query        the query for execution.
-   * @param endpointType the type of endpoint. Options include Mixed, Blazegraph,
-   *                     and Ontop.
-   * 
-   * @return the query results as CSV rows.
-   */
-  public String[] queryCSV(String query, SparqlEndpointType endpointType) {
-    List<String> endpoints = this.getEndpoints(endpointType);
-    try {
-      StringWriter stringWriter = new StringWriter();
-      FedXRepository repository = FedXFactory.createSparqlFederation(endpoints);
-      try (FedXRepositoryConnection conn = repository.getConnection()) {
-        TupleQuery tq = conn.prepareTupleQuery(query);
-        // Extend execution time as required
-        tq.setMaxExecutionTime(600);
-        SPARQLResultsCSVWriter csvWriter = new SPARQLResultsCSVWriter(stringWriter);
-        tq.evaluate(csvWriter);
-        // Results are in csv in one string
-        String csvData = stringWriter.toString();
-        // Split into rows
-        return csvData.split("\\r?\\n");
-      } catch (RepositoryException e) {
-        LOGGER.error(e);
-      }
-    } catch (Exception e) {
-      LOGGER.error(e);
-    }
-    return new String[0];
   }
 
   /**
