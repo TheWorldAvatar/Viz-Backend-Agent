@@ -135,10 +135,8 @@ public class AddService {
 
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Instantiation is successful!");
-      Map<String, Object> responseData = new HashMap<>();
-      responseData.put(LifecycleResource.IRI_KEY, instanceIri);
-      return ResponseEntityBuilder.success(LocalisationTranslator.getMessage(messageResource, instanceIri),
-          responseData);
+      return ResponseEntityBuilder.success(instanceIri,
+          LocalisationTranslator.getMessage(messageResource, instanceIri));
     }
     LOGGER.warn(response.getBody());
     throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ADD_KEY));

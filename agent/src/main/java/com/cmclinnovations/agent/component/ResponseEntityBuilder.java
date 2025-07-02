@@ -1,19 +1,20 @@
 package com.cmclinnovations.agent.component;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
+import com.cmclinnovations.agent.model.response.DataPayload;
 import com.cmclinnovations.agent.model.response.ErrorPayload;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 
 @Component
 public class ResponseEntityBuilder {
   private static final String API_VERSION = "1.7.0";
-  private static final String DATA_MESSAGE_KEY = "message";
 
   /**
    * Constructs a component to build the response entity.
@@ -22,39 +23,44 @@ public class ResponseEntityBuilder {
   }
 
   /**
-   * Builds a successful response with the given message.
+   * Builds a successful response with the data payload without a deleted key.
    *
-   * @param message An optional message to include in the response under the
-   *                message key.
+   * @param id      An optional id for its corresponding key in the data payload.
+   * @param message An optional message for its corresponding key in the data
+   *                payload.
    */
-  public static ResponseEntity<StandardApiResponse> success(String message) {
-    return success(message, new HashMap<>());
+  public static ResponseEntity<StandardApiResponse> success(String id, String message) {
+    return success(id, message, null, null);
   }
 
   /**
-   * Builds a successful response with the given message and other success data.
+   * Builds a successful response for one item.
    *
-   * @param message     An optional message to include in the response under the
-   *                    message key.
-   * @param successData Remaining fields to include in the response.
+   * @param message An optional message for its corresponding key in the data
+   *                payload.
+   * @param item    An item to be added into the response payload's collection.
    */
-  public static ResponseEntity<StandardApiResponse> success(String message, Map<String, Object> successData) {
-    if (message != null) {
-      successData.put(DATA_MESSAGE_KEY, message);
-    }
-    return new ResponseEntity<>(
-        new StandardApiResponse(API_VERSION, successData, null),
-        HttpStatus.OK);
+  public static ResponseEntity<StandardApiResponse> success(String message, Map<String, Object> item) {
+    List<Map<String, Object>> items = new ArrayList<>();
+    items.add(item);
+    return success(null, message, null, items);
   }
 
   /**
-   * Builds a successful response with other success data.
+   * Builds a successful response with the data payload.
    *
-   * @param successData Fields to include in the response.
+   * @param id      An optional id for its corresponding key in the data payload.
+   * @param message An optional message for its corresponding key in the data
+   *                payload.
+   * @param deleted An optional boolean to indicate the deleted status for any
+   *                DELETE request.
+   * @param items   An optional collection of instances/data.
    */
-  public static ResponseEntity<StandardApiResponse> success(Map<String, Object> successData) {
+  public static ResponseEntity<StandardApiResponse> success(String id, String message, Boolean deleted,
+      List<Map<String, Object>> items) {
+    DataPayload dataPayload = new DataPayload(id, message, deleted, items);
     return new ResponseEntity<>(
-        new StandardApiResponse(API_VERSION, successData, null),
+        new StandardApiResponse(API_VERSION, dataPayload, null),
         HttpStatus.OK);
   }
 

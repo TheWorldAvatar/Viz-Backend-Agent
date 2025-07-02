@@ -116,8 +116,8 @@ public class KGService {
     int statusCode = this.executeUpdate(query);
     if (statusCode == 200) {
       LOGGER.info("Instance has been successfully deleted!");
-      return ResponseEntityBuilder.success(
-          LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_DELETE_KEY));
+      return ResponseEntityBuilder.success(null,
+          LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_DELETE_KEY), true, null);
     }
     throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_DELETE_KEY));
   }

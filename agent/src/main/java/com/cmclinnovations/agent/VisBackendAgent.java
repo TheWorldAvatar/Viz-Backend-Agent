@@ -48,7 +48,7 @@ public class VisBackendAgent {
   @GetMapping("/status")
   public ResponseEntity<StandardApiResponse> getStatus() {
     LOGGER.info("Detected request to get agent status...");
-    return ResponseEntityBuilder.success(LocalisationTranslator.getMessage(LocalisationResource.STATUS_KEY));
+    return ResponseEntityBuilder.success(null, LocalisationTranslator.getMessage(LocalisationResource.STATUS_KEY));
   }
 
   @GetMapping("/location")
@@ -238,9 +238,8 @@ public class VisBackendAgent {
       ResponseEntity<StandardApiResponse> addResponse = this.addService.instantiate(type, id, updatedEntity);
       if (addResponse.getStatusCode() == HttpStatus.OK) {
         LOGGER.info("{} has been successfully updated for {}", type, id);
-        return ResponseEntityBuilder.success(
-            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_UPDATE_KEY, type, id),
-            addResponse.getBody().data());
+        return ResponseEntityBuilder.success(addResponse.getBody().data().id(),
+            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_UPDATE_KEY, type, id));
       } else {
         return addResponse;
       }

@@ -135,10 +135,8 @@ public class LifecycleService {
     String query = this.lifecycleQueryFactory.getServiceStatusQuery(contract);
     SparqlBinding result = this.getService.getInstance(query);
     LOGGER.info("Successfuly retrieved contract status!");
-    Map<String, Object> responseData = new HashMap<>();
-    responseData.put(LifecycleResource.STATUS_KEY, result.getFieldValue(LifecycleResource.STATUS_KEY));
-    responseData.put(LifecycleResource.IRI_KEY, result.getFieldValue(LifecycleResource.IRI_KEY));
-    return ResponseEntityBuilder.success(responseData);
+    return ResponseEntityBuilder.success(result.getFieldValue(LifecycleResource.IRI_KEY),
+        result.getFieldValue(LifecycleResource.STATUS_KEY));
   }
 
   /**

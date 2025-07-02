@@ -71,10 +71,10 @@ public class LifecycleController {
       // Execute request for schedule as well
       ResponseEntity<StandardApiResponse> scheduleResponse = this.genContractSchedule(params);
       if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
-        Map<String, Object> successData = scheduleResponse.getBody().data();
         LOGGER.info("Contract has been successfully drafted!");
         return ResponseEntityBuilder
-            .success(LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY), successData);
+            .success(scheduleResponse.getBody().data().id(),
+                LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY));
       }
       return scheduleResponse;
     } else {
@@ -98,9 +98,9 @@ public class LifecycleController {
         params);
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Schedule has been successfully drafted for contract!");
-      Map<String, Object> successData = response.getBody().data();
       return ResponseEntityBuilder
-          .success(LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY), successData);
+          .success(response.getBody().data().id(),
+              LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY));
     } else {
       return response;
     }
@@ -135,7 +135,8 @@ public class LifecycleController {
       if (response.getStatusCode() == HttpStatus.OK) {
         LOGGER.info("Contract has been approved for service execution!");
         return ResponseEntityBuilder
-            .success(LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY));
+            .success(response.getBody().data().id(),
+                LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY));
       } else {
         return response;
       }
@@ -224,7 +225,7 @@ public class LifecycleController {
         LifecycleResource.OCCURRENCE_LINK_RESOURCE, params);
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(successMsgId);
-      return ResponseEntityBuilder.success(
+      return ResponseEntityBuilder.success(response.getBody().data().id(),
           LocalisationTranslator.getMessage(successMsgId, type));
     }
     return response;
@@ -246,7 +247,7 @@ public class LifecycleController {
         LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Contract has been successfully rescinded!");
-      return ResponseEntityBuilder.success(
+      return ResponseEntityBuilder.success(response.getBody().data().id(),
           LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_RESCIND_KEY));
     } else {
       return response;
@@ -269,7 +270,7 @@ public class LifecycleController {
         LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Contract has been successfully terminated!");
-      return ResponseEntityBuilder.success(
+      return ResponseEntityBuilder.success(response.getBody().data().id(),
           LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_TERMINATE_KEY));
     } else {
       return response;
@@ -296,9 +297,8 @@ public class LifecycleController {
         ResponseEntity<StandardApiResponse> scheduleResponse = this.updateContractSchedule(params);
         if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
           LOGGER.info("Draft contract has been successfully updated!");
-          Map<String, Object> respData = scheduleResponse.getBody().data();
-          return ResponseEntityBuilder.success(
-              LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY, respData));
+          return ResponseEntityBuilder.success(scheduleResponse.getBody().data().id(),
+              LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY));
         }
         return scheduleResponse;
       } else {
@@ -324,9 +324,8 @@ public class LifecycleController {
           targetId, params);
       if (addResponse.getStatusCode() == HttpStatus.CREATED) {
         LOGGER.info("Draft schedule has been successfully updated!");
-        Map<String, Object> respData = addResponse.getBody().data();
-        return ResponseEntityBuilder.success(
-            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY, respData));
+        return ResponseEntityBuilder.success(addResponse.getBody().data().id(),
+            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY));
       } else {
         return addResponse;
       }

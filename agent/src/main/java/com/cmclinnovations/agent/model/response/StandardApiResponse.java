@@ -1,7 +1,5 @@
 package com.cmclinnovations.agent.model.response;
 
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
@@ -10,5 +8,5 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * Fields with null values will be excluded from the JSON output.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record StandardApiResponse(String apiVersion, Map<String, Object> data, ErrorPayload error) {
+public record StandardApiResponse(String apiVersion, DataPayload data, ErrorPayload error) {
 }

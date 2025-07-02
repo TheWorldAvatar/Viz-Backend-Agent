@@ -67,7 +67,7 @@ public class GeocodingService {
     if (results.isEmpty()) {
       LOGGER.info("No address found!");
       return ResponseEntityBuilder
-          .success(LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_NO_ADDRESS_KEY));
+          .success(null, LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_NO_ADDRESS_KEY));
     } else {
       LOGGER.info("Found address(es) associated with the request!");
       List<Map<String, String>> parsedResults = new ArrayList<>();
@@ -254,7 +254,7 @@ public class GeocodingService {
     if (results.isEmpty()) {
       LOGGER.info("No coordinates found...");
       return ResponseEntityBuilder
-          .success(LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_NO_COORDINATE_KEY));
+          .success(null, LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_NO_COORDINATE_KEY));
     } else {
       LOGGER.info("Found the associated geocoordinates!");
       // Returns the first geoPoint as the same location may have multiple results
