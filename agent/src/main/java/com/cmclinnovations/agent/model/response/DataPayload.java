@@ -10,5 +10,5 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * Fields with null values will be excluded from the JSON output.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record DataPayload(String id, String message, boolean deleted, List<Map<String, Object>> items) {
+public record DataPayload(String id, String message, Boolean deleted, List<Map<String, Object>> items) {
 }
