@@ -95,7 +95,7 @@ public class ShaclPropertyBinding {
         }
 
         // Simply bind the iri as the id if it is self-targeting
-        if (this.property.equals("id") && this.verifySelfTargetIdField(jointPredicate)) {
+        if (this.property.equals(StringResource.ID_KEY) && this.verifySelfTargetIdField(jointPredicate)) {
             return "BIND(?iri AS ?id)";
         }
 

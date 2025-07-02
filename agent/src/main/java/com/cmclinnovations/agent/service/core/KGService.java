@@ -431,7 +431,7 @@ public class KGService {
         .collect(Collectors.groupingBy(binding -> {
           String id = binding.containsField(LifecycleResource.IRI_KEY)
               ? binding.getFieldValue(LifecycleResource.IRI_KEY)
-              : binding.getFieldValue("id");
+              : binding.getFieldValue(StringResource.ID_KEY);
           // If this is a lifecycle event occurrence, group them by date and id
           if (binding.containsField(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY))) {
             return id + binding.getFieldValue(LifecycleResource.DATE_KEY);

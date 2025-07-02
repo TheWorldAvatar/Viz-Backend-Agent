@@ -173,7 +173,7 @@ public class LifecycleResource {
     Map<String, List<Integer>> varSequence = new HashMap<>();
     for (int i = 0; i < variables.length; i++) {
       String varName = variables[i].trim();
-      if (varName.isEmpty() || varName.equals("id")) {
+      if (varName.isEmpty() || varName.equals(StringResource.ID_KEY)) {
         continue; // Skip empty variables and ID key
       }
       varSequence.put(varName, List.of(groupIndex, i));

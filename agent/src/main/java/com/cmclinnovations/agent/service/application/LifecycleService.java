@@ -106,7 +106,7 @@ public class LifecycleService {
     LOGGER.debug("Adding occurrence parameters for {}...", contractId);
     String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
     String stage = this.getService.getInstance(query).getFieldValue(LifecycleResource.IRI_KEY);
-    params.putIfAbsent("id",
+    params.putIfAbsent(StringResource.ID_KEY,
         StringResource.getPrefix(stage) + "/" + eventType.getId() + "/"
             + UUID.randomUUID());
     params.put(LifecycleResource.STAGE_KEY, stage);
@@ -313,7 +313,7 @@ public class LifecycleService {
       // Retrieve and update the date of occurrence
       String occurrenceDate = occurrences.poll();
       // set new id each time
-      params.put("id", orderPrefix + UUID.randomUUID());
+      params.put(StringResource.ID_KEY, orderPrefix + UUID.randomUUID());
       params.put(LifecycleResource.DATE_KEY, occurrenceDate);
       ResponseEntity<StandardApiResponse> response = this.addService.instantiate(
           LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
@@ -382,7 +382,7 @@ public class LifecycleService {
 
     // Attempt to delete any existing occurrence before any updates
     ResponseEntity<StandardApiResponse> response = this.deleteService.delete(
-        eventType.getId(), params.get("id").toString());
+        eventType.getId(), params.get(StringResource.ID_KEY).toString());
     // Log responses
     LOGGER.info(response.getBody().data());
     // Ensure that the event identifier mapped directly to the jsonLd file name

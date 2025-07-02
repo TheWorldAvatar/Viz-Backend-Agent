@@ -26,6 +26,7 @@ import com.cmclinnovations.agent.service.application.LifecycleService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
 
 @RestController
@@ -281,7 +282,7 @@ public class LifecycleController {
   @PutMapping("/draft")
   public ResponseEntity<StandardApiResponse> updateDraftContract(@RequestBody Map<String, Object> params) {
     LOGGER.info("Received request to update draft contract...");
-    String targetId = params.get("id").toString();
+    String targetId = params.get(StringResource.ID_KEY).toString();
     ResponseEntity<StandardApiResponse> deleteResponse = this.deleteService.delete(LifecycleResource.LIFECYCLE_RESOURCE,
         targetId);
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
@@ -315,7 +316,7 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse> updateContractSchedule(@RequestBody Map<String, Object> params) {
     LOGGER.info("Received request to update a draft schedule...");
     this.lifecycleService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
-    String targetId = params.get("id").toString();
+    String targetId = params.get(StringResource.ID_KEY).toString();
     ResponseEntity<StandardApiResponse> deleteResponse = this.deleteService.delete(LifecycleResource.SCHEDULE_RESOURCE,
         targetId);
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {

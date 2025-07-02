@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class StringResource {
+  public static final String ID_KEY = "id";
   public static final String QUERY_TEMPLATE_PREFIX = "PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>"
       + "PREFIX cmns-dt: <https://www.omg.org/spec/Commons/DatesAndTimes/>"
       + "PREFIX cmns-dsg: <https://www.omg.org/spec/Commons/Designators/>"
