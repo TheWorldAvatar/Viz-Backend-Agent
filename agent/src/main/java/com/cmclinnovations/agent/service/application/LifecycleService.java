@@ -1,11 +1,14 @@
 package com.cmclinnovations.agent.service.application;
 
+import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -233,15 +236,28 @@ public class LifecycleService {
             }
           }
           SparqlResponseField highestPriorityEvent = events.get(highestPriorityIndex);
-          fields.put(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY),
-              // Add a new response field
-              new SparqlResponseField(highestPriorityEvent.type(),
-                  LocalisationTranslator.getEvent(highestPriorityEvent.value()),
-                  highestPriorityEvent.dataType(), highestPriorityEvent.lang()));
-          fields.remove(LifecycleResource.EVENT_KEY);
-          fields.put(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY),
-              eventIds.get(highestPriorityIndex));
-          return fields;
+          SparqlResponseField highestPriorityEventId = eventIds.get(highestPriorityIndex);
+          Map<String, Object> updatedFields = fields.entrySet().stream()
+              .map(entry -> {
+                if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
+                  return new AbstractMap.SimpleEntry<>(
+                      LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY),
+                      // Add a new response field
+                      new SparqlResponseField(highestPriorityEvent.type(),
+                          LocalisationTranslator.getEvent(highestPriorityEvent.value()),
+                          highestPriorityEvent.dataType(), highestPriorityEvent.lang()));
+                } else if (entry.getKey().equals(LifecycleResource.EVENT_ID_KEY)) {
+                  return new AbstractMap.SimpleEntry<>(entry.getKey(), highestPriorityEventId);
+                } else {
+                  return entry;
+                }
+              })
+              .collect(Collectors.toMap(
+                  Map.Entry::getKey,
+                  Map.Entry::getValue,
+                  (oldVal, newVal) -> oldVal,
+                  LinkedHashMap::new));
+          return updatedFields;
         })
         .toList();
   }
