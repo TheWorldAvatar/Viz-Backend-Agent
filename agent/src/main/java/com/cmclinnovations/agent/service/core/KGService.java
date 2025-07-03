@@ -36,6 +36,7 @@ import org.springframework.web.client.RestClient;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
@@ -246,7 +247,7 @@ public class KGService {
     try {
       String target = this.fileService.getTargetIri(resourceId);
       query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target);
-    } catch (FileSystemNotFoundException e) {
+    } catch (InvalidRouteException e) {
       // If no target is specified, return an empty model
       LOGGER.warn("No target resource specified for SHACL rules retrieval. Returning an empty model.");
       return ModelFactory.createDefaultModel();
