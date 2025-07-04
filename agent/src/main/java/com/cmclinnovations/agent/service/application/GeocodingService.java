@@ -70,10 +70,10 @@ public class GeocodingService {
           .success(null, LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_NO_ADDRESS_KEY));
     } else {
       LOGGER.info("Found address(es) associated with the request!");
-      List<Map<String, String>> parsedResults = new ArrayList<>();
+      List<Map<String, Object>> parsedResults = new ArrayList<>();
       while (!results.isEmpty()) {
         SparqlBinding addressInstance = results.poll();
-        Map<String, String> address = new HashMap<>();
+        Map<String, Object> address = new HashMap<>();
         // Block is optional which results in a null
         if (addressInstance.getFieldValue(BLOCK_VAR) != null) {
           address.put(BLOCK_VAR, addressInstance.getFieldValue(BLOCK_VAR));
@@ -83,9 +83,7 @@ public class GeocodingService {
         address.put(COUNTRY_VAR, addressInstance.getFieldValue(COUNTRY_VAR));
         parsedResults.add(address);
       }
-      Map<String, Object> responseFields = new HashMap<>();
-      responseFields.put(ADDRESS_VAR, parsedResults);
-      return ResponseEntityBuilder.success(null, responseFields);
+      return ResponseEntityBuilder.success(null, parsedResults);
     }
   }
 
