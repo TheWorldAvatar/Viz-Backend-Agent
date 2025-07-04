@@ -17,13 +17,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
-import com.cmclinnovations.agent.model.response.ApiResponse;
+import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.GeocodingService;
+import com.cmclinnovations.agent.utils.LocalisationResource;
 
 @RestController
 public class VisBackendAgent {
@@ -31,6 +34,7 @@ public class VisBackendAgent {
   private final DeleteService deleteService;
   private final GetService getService;
   private final GeocodingService geocodingService;
+
   private static final Logger LOGGER = LogManager.getLogger(VisBackendAgent.class);
 
   public VisBackendAgent(AddService addService, DeleteService deleteService, GetService getService,
@@ -42,22 +46,20 @@ public class VisBackendAgent {
   }
 
   @GetMapping("/status")
-  public ResponseEntity<String> getStatus() {
+  public ResponseEntity<StandardApiResponse> getStatus() {
     LOGGER.info("Detected request to get agent status...");
-    return new ResponseEntity<>(
-        "Agent is ready to receive requests.",
-        HttpStatus.OK);
+    return ResponseEntityBuilder.success(null, LocalisationTranslator.getMessage(LocalisationResource.STATUS_KEY));
   }
 
   @GetMapping("/location")
-  public ResponseEntity<?> getCoordinates(
+  public ResponseEntity<StandardApiResponse> getCoordinates(
       @RequestParam(required = true) String iri) {
     LOGGER.info("Received request to retrieve coordinates for {}...", iri);
     return this.geocodingService.getCoordinates(iri);
   }
 
   @GetMapping("/location/geocode")
-  public ResponseEntity<?> getGeoCoordinates(
+  public ResponseEntity<StandardApiResponse> getGeoCoordinates(
       @RequestParam(required = false) String block,
       @RequestParam(required = false) String street,
       @RequestParam(required = false) String city,
@@ -65,16 +67,15 @@ public class VisBackendAgent {
       @RequestParam(required = false) String postal_code) {
     LOGGER.info("Received geocoding request...");
     if (block != null && street == null) {
-      String errorMsg = "Invalid geocoding parameters! Detected a block number but no street is provided!";
-      LOGGER.error(errorMsg);
-      return new ResponseEntity<>(errorMsg, HttpStatus.BAD_REQUEST);
+      throw new IllegalArgumentException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_GEOCODE_PARAMS_KEY));
     }
 
     return this.geocodingService.getCoordinates(block, street, city, country, postal_code);
   }
 
   @GetMapping("/location/addresses")
-  public ResponseEntity<?> getAddress(@RequestParam(required = true) String postal_code) {
+  public ResponseEntity<StandardApiResponse> getAddress(@RequestParam(required = true) String postal_code) {
     LOGGER.info("Received request to search for address...");
     return this.geocodingService.getAddress(postal_code);
   }
@@ -84,16 +85,15 @@ public class VisBackendAgent {
    * graph.
    */
   @GetMapping("/{type}")
-  public ResponseEntity<?> getAllInstances(
+  public ResponseEntity<StandardApiResponse> getAllInstances(
       @PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get all instances for {}...", type);
     // This route does not require further restriction on parent instances
     Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", false, new HashMap<>());
-    return new ResponseEntity<>(
+    return ResponseEntityBuilder.success(null,
         instances.stream()
             .map(SparqlBinding::get)
-            .toList(),
-        HttpStatus.OK);
+            .toList());
   }
 
   /**
@@ -101,16 +101,15 @@ public class VisBackendAgent {
    * graph, and include human readable labels for all properties.
    */
   @GetMapping("/{type}/label")
-  public ResponseEntity<?> getAllInstancesWithLabel(
+  public ResponseEntity<StandardApiResponse> getAllInstancesWithLabel(
       @PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get all instances with labels for {}...", type);
     // This route does not require further restriction on parent instances
     Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", true, new HashMap<>());
-    return new ResponseEntity<>(
+    return ResponseEntityBuilder.success(null,
         instances.stream()
             .map(SparqlBinding::get)
-            .toList(),
-        HttpStatus.OK);
+            .toList());
   }
 
   /**
@@ -119,25 +118,24 @@ public class VisBackendAgent {
    * parent resource identifier.
    */
   @GetMapping("/{parent}/{id}/{type}")
-  public ResponseEntity<?> getAllInstancesWithParent(@PathVariable(name = "parent") String parent,
+  public ResponseEntity<StandardApiResponse> getAllInstancesWithParent(@PathVariable(name = "parent") String parent,
       @PathVariable(name = "id") String id,
       @PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get all instances of target {} associated with the parent type {}...", type,
         parent);
     Queue<SparqlBinding> instances = this.getService.getInstances(type, new ParentField(id, parent), "", "", false,
         new HashMap<>());
-    return new ResponseEntity<>(
+    return ResponseEntityBuilder.success(null,
         instances.stream()
             .map(SparqlBinding::get)
-            .toList(),
-        HttpStatus.OK);
+            .toList());
   }
 
   /**
    * Retrieve the target instance of the specified type in the knowledge graph.
    */
   @GetMapping("/{type}/{id}")
-  public ResponseEntity<?> getInstance(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<StandardApiResponse> getInstance(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to get a specific instance of {}...", type);
     return this.getService.getInstance(id, type, false);
   }
@@ -147,7 +145,7 @@ public class VisBackendAgent {
    * with human readable properties.
    */
   @GetMapping("/{type}/label/{id}")
-  public ResponseEntity<?> getInstanceWithLabels(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<StandardApiResponse> getInstanceWithLabels(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to get a specific instance of {} with human readable data...", type);
     return this.getService.getInstance(id, type, true);
   }
@@ -156,26 +154,17 @@ public class VisBackendAgent {
    * Retrieve the instances that matches the search criterias.
    */
   @PostMapping("/{type}/search")
-  public ResponseEntity<?> getMatchingInstances(@PathVariable String type, @RequestBody Map<String, String> criterias) {
+  public ResponseEntity<StandardApiResponse> getMatchingInstances(@PathVariable String type,
+      @RequestBody Map<String, String> criterias) {
     LOGGER.info("Received request to get matching instances of {}...", type);
     return this.getService.getMatchingInstances(type, criterias);
-  }
-
-  /**
-   * Retrieves all instances belonging to the specified type in the knowledge
-   * graph in the csv format.
-   */
-  @GetMapping("/csv/{type}")
-  public ResponseEntity<String> getAllInstancesInCSV(@PathVariable(name = "type") String type) {
-    LOGGER.info("Received request to get all instances of {} type in the CSV format...", type);
-    return this.getService.getInstancesInCSV(type);
   }
 
   /**
    * Retrieves the form template for the specified type from the knowledge graph.
    */
   @GetMapping("/form/{type}")
-  public ResponseEntity<Map<String, Object>> getFormTemplate(@PathVariable(name = "type") String type) {
+  public ResponseEntity<StandardApiResponse> getFormTemplate(@PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get the form template for {}...", type);
     // Access to this empty form is prefiltered on the UI and need not be enforced
     return this.getService.getForm(type, false, new HashMap<>());
@@ -186,12 +175,12 @@ public class VisBackendAgent {
    * the knowledge graph.
    */
   @GetMapping("/form/{type}/{id}")
-  public ResponseEntity<Map<String, Object>> retrieveFormTemplate(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<StandardApiResponse> retrieveFormTemplate(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to get specific form template for {} ...", type);
     Map<String, Object> currentEntity = new HashMap<>();
-    ResponseEntity<?> currentEntityResponse = this.getService.getInstance(id, type, false);
+    ResponseEntity<StandardApiResponse> currentEntityResponse = this.getService.getInstance(id, type, false);
     if (currentEntityResponse.getStatusCode() == HttpStatus.OK) {
-      currentEntity = (Map<String, Object>) currentEntityResponse.getBody();
+      currentEntity = (Map<String, Object>) currentEntityResponse.getBody().data().items().get(0);
     }
     return this.getService.getForm(type, false, currentEntity);
   }
@@ -201,7 +190,7 @@ public class VisBackendAgent {
    * with the specified type in the knowledge graph.
    */
   @GetMapping("/type")
-  public ResponseEntity<?> getConceptMetadata(@RequestParam(name = "uri") String uri) {
+  public ResponseEntity<StandardApiResponse> getConceptMetadata(@RequestParam(name = "uri") String uri) {
     LOGGER.info("Received request to get the metadata for the concept: {}...", uri);
     return this.getService.getConceptMetadata(uri);
   }
@@ -210,7 +199,7 @@ public class VisBackendAgent {
    * Instantiates a new instance in the knowledge graph.
    */
   @PostMapping("/{type}")
-  public ResponseEntity<ApiResponse> addInstance(@PathVariable String type,
+  public ResponseEntity<StandardApiResponse> addInstance(@PathVariable String type,
       @RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to add one {}...", type);
     return this.addService.instantiate(type, instance);
@@ -220,7 +209,7 @@ public class VisBackendAgent {
    * Removes the specified instance from the knowledge graph.
    */
   @DeleteMapping("/{type}/{id}")
-  public ResponseEntity<ApiResponse> removeEntity(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<StandardApiResponse> removeEntity(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to delete {}...", type);
     return this.deleteService.delete(type, id);
   }
@@ -229,18 +218,16 @@ public class VisBackendAgent {
    * Update the target instance in the knowledge graph.
    */
   @PutMapping("/{type}/{id}")
-  public ResponseEntity<ApiResponse> updateEntity(@PathVariable String type, @PathVariable String id,
+  public ResponseEntity<StandardApiResponse> updateEntity(@PathVariable String type, @PathVariable String id,
       @RequestBody Map<String, Object> updatedEntity) {
     LOGGER.info("Received request to update {}...", type);
-    ResponseEntity<ApiResponse> deleteResponse = this.deleteService.delete(type, id);
+    ResponseEntity<StandardApiResponse> deleteResponse = this.deleteService.delete(type, id);
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
-      ResponseEntity<ApiResponse> addResponse = this.addService.instantiate(type, id, updatedEntity);
-      if (addResponse.getStatusCode() == HttpStatus.CREATED) {
+      ResponseEntity<StandardApiResponse> addResponse = this.addService.instantiate(type, id, updatedEntity);
+      if (addResponse.getStatusCode() == HttpStatus.OK) {
         LOGGER.info("{} has been successfully updated for {}", type, id);
-        return new ResponseEntity<>(
-            new ApiResponse(type + " has been successfully updated for " + id,
-                addResponse.getBody().getIri()),
-            HttpStatus.CREATED);
+        return ResponseEntityBuilder.success(addResponse.getBody().data().id(),
+            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_UPDATE_KEY, type, id));
       } else {
         return addResponse;
       }

@@ -664,36 +664,7 @@ Form branches adapt to selected categories by displaying different field sets. D
 > Users will be required to add a `JSON-LD` for the `ServiceDispatchEvent`. This event should assign dispatch details before the service executes. A sample file has been created in `./jsonld/dispatch.jsonld`, and users must not modify line 1 - 39. The relevant route(s) is found in the `Service dispatch` section [over here](../README.md#265-service-order-route).
 
 > [!IMPORTANT]
-> Users will be required to add a `JSON-LD` for the `ServiceDeliveryEvent`. This event should execute upon completion of the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/complete.jsonld`, and users must not modify line 1 - 39. The relevant route(s) is found in the `Service completion` section [over here](#265-service-order-route). Users can also define a special replacement `JSON` object for performing any calculation based upon the completion logs as follows:
-
-```json
-{
-  "@replace": "calculation", # do not change this
-  "@type": "difference", # expected calculation type - difference, total
-  # an array of variable objects for the expression
-  "variable": [
-    {
-      "@id": "parameter 1", # parameter name
-      "@type": "https://www.omg.org/spec/Commons/QuantitiesAndUnits/ScalarQuantityValue", # the class of the scalar quantity; optional and defaults to the `https://www.omg.org/spec/Commons/QuantitiesAndUnits/ScalarQuantityValue` concept
-      "unit": "https://www.omg.org/spec/Commons/QuantitiesAndUnits/MeasurementUnit" # measurement unit; optional and defaults to the `https://www.omg.org/spec/Commons/QuantitiesAndUnits/MeasurementUnit` concept
-    },
-    {
-      "@id": "parameter 2" # parameter name
-    }
-  ],
-  # a variable object to represent the output
-  "output": {
-    "@id": "parameter 1",
-    "@type": "https://www.omg.org/spec/Commons/QuantitiesAndUnits/ScalarQuantityValue",
-    "unit": "https://www.theworldavatar.com/kg/ontoservice/tonne"
-  }
-}
-```
-
-The following calculation types are supported:
-
-1. Difference: The second and subsequent variable(s) will be deducted from the first parameter in the array at the `variable` field
-2. Total: Sum of all the variables in the array at the `variable` field
+> Users will be required to add a `JSON-LD` for the `ServiceDeliveryEvent`. This event should execute upon completion of the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/complete.jsonld`, and users must not modify line 1 - 39. The relevant route(s) is found in the `Service completion` section [over here](#265-service-order-route). 
 
 ### 2.2 Geocoding
 

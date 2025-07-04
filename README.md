@@ -122,7 +122,25 @@ If you are developing in VSCode, please add the following `launch.json` to the `
 
 ## 2. Agent Route
 
-The agent currently offers the following API route(s):
+The agent currently offers the following API route(s). All routes will return the following response following [Google's JSON API style guide](https://google.github.io/styleguide/jsoncstyleguide.xml):
+
+```json
+{
+  "apiVersion": "1.0.0",
+  // Returns a data object on successful request
+  "data": {
+    "id" : "Optional identifier string",
+    "message": "Optional messages",
+    "deleted": "A boolean indicator mainly for DELETE requests",
+    "items": [{...}, {...}] // An optional array of data objects
+  },
+  // Returns an error object on any errors with the request
+  "error": {
+    "code": 400, // HTTP status code
+    "message": "Error message"
+  }
+}
+```
 
 ### 2.1 Status Route: `<baseURL>/vis-backend-agent/status`
 
@@ -132,7 +150,14 @@ This route serves as a health check to confirm that the agent has been successfu
 curl localhost:3838/vis-backend-agent/status
 ```
 
-If successful, the response will return `Agent is ready to receive requests.`.
+If successful, the response will return
+
+```json
+{
+  "apiVersion": "1.0.0",
+  "data": { "message": "Agent is ready to receive requests." }
+}
+```
 
 ### 2.2 Geocoding Route: `<baseURL>/vis-backend-agent/location`
 
@@ -148,7 +173,14 @@ To retrieve the geographic coordinates, users can send a `GET` request to `<base
 4. `city`: The city name of the address
 5. `country`: The country IRI of the address following [this ontology](https://www.omg.org/spec/LCC/Countries/ISO3166-1-CountryCodes)
 
-If successful, the response will return the coordinates in the `[longitude, latitude]` format that is compliant with `JSON`.
+If successful, the response will return the coordinates in the `[longitude, latitude]` format that is compliant with `JSON`:
+
+```json
+{
+  "apiVersion": "1.0.0",
+  "data": { "items": [{ "coordinates": "[longitude, latitude]" }] }
+}
+```
 
 Users may also send a `GET` request to `<baseURL>/vis-backend-agent/location?iri={location}` where `location` is the location IRI, to retrieve the associated geocoordinates.
 
@@ -161,19 +193,24 @@ To search for the address based on postal code, users can send a `GET` request t
 If successful, the response will return the addresses as an array in the following `JSON` format:
 
 ```json
-[
-  {
-    "block": "block number",
-    "street": "street name",
-    "city": "city name",
-    "country": "country IRI"
-  },
-  {
-    "street": "street name",
-    "city": "city name",
-    "country": "country IRI"
+{
+  "apiVersion": "1.0.0",
+  "data": {
+    "items": [
+      {
+        "block": "block number",
+        "street": "street name",
+        "city": "city name",
+        "country": "country IRI"
+      },
+      {
+        "street": "street name",
+        "city": "city name",
+        "country": "country IRI"
+      }
+    ]
   }
-]
+}
 ```
 
 ### 2.3 Form Route: `<baseURL>/vis-backend-agent/form/{type}`
@@ -186,29 +223,9 @@ If successful, the response will return a form template in the following (minima
 
 ```json
 {
-  "http://www.w3.org/ns/shacl#property": [
-    {
-      "@id": "PROPERTY IRI",
-      "@type": "http://www.w3.org/ns/shacl#PropertyShape",
-      "http://www.w3.org/ns/shacl#name": {
-        "@value": "form field name"
-      },
-      "http://www.w3.org/ns/shacl#description": {
-        "@value": "description."
-      },
-      "http://www.w3.org/ns/shacl#group": {
-        "@id": "GROUP IRI"
-      }
-    },
-    {
-      "@id": "GROUP IRI",
-      "@type": "http://www.w3.org/ns/shacl#PropertyGroup",
-      "http://www.w3.org/2000/01/rdf-schema#comment": {
-        "@value": "Description of group."
-      },
-      "http://www.w3.org/2000/01/rdf-schema#label": {
-        "@value": "property group name"
-      },
+  "apiVersion": "1.0.0",
+  "data": {
+    "items": [{
       "http://www.w3.org/ns/shacl#property": [
         {
           "@id": "PROPERTY IRI",
@@ -223,10 +240,35 @@ If successful, the response will return a form template in the following (minima
             "@id": "GROUP IRI"
           }
         },
-        ...
+        {
+          "@id": "GROUP IRI",
+          "@type": "http://www.w3.org/ns/shacl#PropertyGroup",
+          "http://www.w3.org/2000/01/rdf-schema#comment": {
+            "@value": "Description of group."
+          },
+          "http://www.w3.org/2000/01/rdf-schema#label": {
+            "@value": "property group name"
+          },
+          "http://www.w3.org/ns/shacl#property": [
+            {
+              "@id": "PROPERTY IRI",
+              "@type": "http://www.w3.org/ns/shacl#PropertyShape",
+              "http://www.w3.org/ns/shacl#name": {
+                "@value": "form field name"
+              },
+              "http://www.w3.org/ns/shacl#description": {
+                "@value": "description."
+              },
+              "http://www.w3.org/ns/shacl#group": {
+                "@id": "GROUP IRI"
+              }
+            },
+            ...
+          ]
+        }
       ]
-    }
-  ]
+    }]
+  }
 }
 ```
 
@@ -234,7 +276,7 @@ If successful, the response will return a form template in the following (minima
 
 This route serves as an endpoint to retrieve all available ontology classes and subclasses along with their human readable labels and descriptions associated with the type. Users can send a `GET` request to `<baseURL>/vis-backend-agent/type` with the `uri` query parameter and value of the required ontology class.
 
-If successful, the response will return an array of objects in the following format:
+If successful, the response will return an array of objects in the `data.items` keys in the following format:
 
 ```json
 {
@@ -281,7 +323,17 @@ where `{type}` is the requested identifier that must correspond to a target file
 
 [`SHACL rules`](https://www.w3.org/TR/shacl-af/#rules) can be implemented to derive additional triples. For an example, see the [`./resources` directory](./resources/README.md#13-shacl-derivation). Currently, only the [`SparqlRule`](https://www.w3.org/TR/shacl-af/#SPARQLRule) is fully supported, while [`TripleRule`](https://www.w3.org/TR/shacl-af/#TripleRule) functionality is limited, as nested conditions are not supported.".
 
-A successful request will return `{"message": "type has been successfully instantiated!", "iri" : "root iri that is instantiated"}`.
+A successful request will return:
+
+```json
+{
+  "apiVersion": "1.0.0",
+  "data": {
+    "id": "IRI",
+    "message": "type has been successfully instantiated!"
+  }
+}
+```
 
 #### 2.5.2 Delete route
 
@@ -293,7 +345,18 @@ To delete an instance, users must send a DELETE request to
 
 where `{type}` is the requested identifier that must correspond to a target file name in`./resources/application-service.json`, and `{id}` is the specific instance's identifier. The instance representation will be deleted according to the `JSON-LD` file defined for adding a new instance. More information on the required schema can be found in [this section](./resources/README.md#21-instantiation).
 
-A successful request will return `{"message": "Instance has been successfully deleted!", "iri" : "root iri that is instantiated"}`.
+A successful request will return:
+
+```json
+{
+  "apiVersion": "1.0.0",
+  "data": {
+    "id": "IRI",
+    "message": "Instance has been successfully deleted!",
+    "deleted": true
+  }
+}
+```
 
 #### 2.5.3 Update route
 
@@ -305,7 +368,17 @@ To update an instance, users must send a PUT request with their corresponding pa
 
 where `{type}` is the requested identifier that must correspond to a target file name in`./resources/application-service.json`, and `{id}` is the specific instance's identifier. The request parameters will depend on the `JSON-LD` file defined for adding a new instance. More information on the required schema can be found in [this section](./resources/README.md#21-instantiation).
 
-A successful request will return `{"message": "type  has been successfully updated for id!", "iri" : "root iri that is instantiated"}`.
+A successful request will return:
+
+```json
+{
+  "apiVersion": "1.0.0",
+  "data": {
+    "id": "IRI",
+    "message": "type has been successfully updated for id!"
+  }
+}
+```
 
 #### 2.5.4 Get route
 
@@ -314,9 +387,8 @@ There are several routes for retrieving instances associated with a specific `ty
 1. Get all instances
 2. Get a specific instance
 3. Get all instances with human readable fields
-4. Get all instances in `csv` format
-5. Get all instances associated with a specific parent instance
-6. Get all instances matching the search criteria
+4. Get all instances associated with a specific parent instance
+5. Get all instances matching the search criteria
 
 ##### Get all instances
 
@@ -346,16 +418,6 @@ This route retrieves all instances with human-readable fields. Users can send a 
 
 ```
 <baseURL>/vis-backend-agent/{type}/label
-```
-
-where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`.
-
-##### Get all instances in csv format
-
-This route retrieves all instances in the csv format. Users can send a `GET` request to
-
-```
-<baseURL>/vis-backend-agent/csv/{type}
 ```
 
 where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`.
@@ -401,7 +463,17 @@ This endpoint serves to retrieve the status of a contract using a `GET` request 
 <baseURL>/vis-backend-agent/contracts/status/{id}
 ```
 
-where `{id}`is the requested contract ID. A successful request will return `{"message": "Pending, Active, or Archived status", "iri" : "associated contract instance"}`.
+where `{id}`is the requested contract ID. A successful request will return:
+
+```json
+{
+  "apiVersion": "1.0.0",
+  "data": {
+    "id": "Contract IRI",
+    "message": "Pending, Active, or Archived status"
+  }
+}
+```
 
 #### 2.6.2 Draft route
 
@@ -437,7 +509,17 @@ Note that this route will interact with the [schedule route](#263-schedule-route
 }
 ```
 
-A successful request will return `{"message": "Contract has been successfully drafted/updated!", "iri" : "root iri that is instantiated"}`.
+A successful request will return:
+
+```json
+{
+  "apiVersion": "1.0.0",
+  "data": {
+    "id": "Contract IRI",
+    "message": "Contract has been successfully drafted/updated!"
+  }
+}
+```
 
 > Get all draft contracts
 
@@ -463,7 +545,9 @@ Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/sch
 This endpoint serves to assign the upcoming schedule for the services for the specified contract. **WARNING**: It is not intended that this route is called directly, as the [draft route](#262-draft-route) will call this route when a request is received. Users can _EITHER_ send a `POST` request to create a new instance _OR_ send a `PUT` request to update the draft lifecycle at the following endpoint:
 
 ```
+
 <baseURL>/vis-backend-agent/contracts/schedule
+
 ```
 
 Note that this route does require the following `JSON` request parameters:
@@ -486,7 +570,17 @@ Note that this route does require the following `JSON` request parameters:
 }
 ```
 
-A successful request will return `{"message": "Schedule has been successfully drafted for the contract! _OR_ Draft schedule has been successfully updated!", "iri" : "root iri that is instantiated"}`.
+A successful request will return:
+
+```json
+{
+  "apiVersion": "1.0.0",
+  "data": {
+    "id": "Contract IRI",
+    "message": "Schedule has been successfully drafted for the contract! _OR_ Draft schedule has been successfully updated!"
+  }
+}
+```
 
 #### 2.6.4 Service commencement route
 
@@ -506,7 +600,17 @@ Note that this route does require the following `JSON` request parameters:
 }
 ```
 
-A successful request will return `{"message": "Contract has been approved for service execution!", "iri" : "root iri that is instantiated"}`.
+A successful request will return:
+
+```json
+{
+  "apiVersion": "1.0.0",
+  "data": {
+    "id": "Contract IRI",
+    "message": "Contract has been approved for service execution!"
+  }
+}
+```
 
 #### 2.6.5 Service order route
 
@@ -560,8 +664,6 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/se
 }
 ```
 
-A successful request will return `{"message": "Report for an unfulfilled service has been successfully lodged!", "iri" : "root iri that is instantiated"}`.
-
 > Cancel service tasks
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/cancel/form` endpoint to retrieve the form template associated with the cancellation event. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ServiceTerminationOccurrenceShape` is defined in `./resources/shacl.ttl`. At the moment, properties may ONLY include remarks.
@@ -576,8 +678,6 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/se
   "date": "Upcoming service date to be cancelled in the YYYY-MM-DD format; Date must be today or in future"
 }
 ```
-
-A successful request will return `{"message": "Service has been successfully cancelled!", "iri" : "root iri that is instantiated"}`.
 
 #### 2.6.6 Archive contract route
 
@@ -603,8 +703,6 @@ Users must send a `POST` request to rescind an ongoing contract at the `<baseURL
 }
 ```
 
-A successful request will return `{"message": "Contract has been successfully rescinded!", "iri" : "root iri that is instantiated"}`.
-
 > Terminate an ongoing contract
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/archive/terminate/form` endpoint to retrieve the form template associated with the contract rescission event. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ContractTerminationOccurrenceShape` is defined in `./resources/shacl.ttl`. At the moment, properties may ONLY include remarks.
@@ -618,5 +716,3 @@ Users must send a `POST` request to terminate an ongoing contract at the `<baseU
   "remarks": "Reasons for the early termination"
 }
 ```
-
-A successful request will return `{"message": "Contract has been successfully terminated!", "iri" : "root iri that is instantiated"}`.

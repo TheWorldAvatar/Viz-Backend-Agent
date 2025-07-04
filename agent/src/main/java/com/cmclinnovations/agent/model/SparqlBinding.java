@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.OptionalInt;
 import java.util.Set;
 
 import com.cmclinnovations.agent.utils.ShaclResource;
@@ -169,17 +168,6 @@ public class SparqlBinding {
    */
   public boolean containsField(String field) {
     return this.bindings.containsKey(field);
-  }
-
-  /**
-   * Retrieve the longest field array size.
-   */
-  private int getLongestFieldArray() {
-    OptionalInt maxSize = this.bindingList.values().stream()
-        .filter(Objects::nonNull) // Filter out null lists
-        .mapToInt(List::size) // Map each list to its size
-        .max();
-    return maxSize.orElse(0);
   }
 
   @Override

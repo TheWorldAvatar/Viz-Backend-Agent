@@ -27,18 +27,21 @@ import org.eclipse.rdf4j.federated.repository.FedXRepository;
 import org.eclipse.rdf4j.federated.repository.FedXRepositoryConnection;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
-import org.eclipse.rdf4j.query.resultio.text.csv.SPARQLResultsCSVWriter;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.stack.clients.blazegraph.BlazegraphClient;
@@ -108,19 +111,15 @@ public class KGService {
    * @param query    The DELETE query for execution.
    * @param targetId The target instance IRI.
    */
-  public ResponseEntity<String> delete(String query, String targetId) {
+  public ResponseEntity<StandardApiResponse> delete(String query, String targetId) {
     LOGGER.debug("Deleting instances...");
     int statusCode = this.executeUpdate(query);
     if (statusCode == 200) {
       LOGGER.info("Instance has been successfully deleted!");
-      return new ResponseEntity<>(
-          "Instance has been successfully deleted!",
-          HttpStatus.OK);
-    } else {
-      return new ResponseEntity<>(
-          "Error deleting instances from the KG. Please read the logs for more information!",
-          HttpStatus.INTERNAL_SERVER_ERROR);
+      return ResponseEntityBuilder.success(null,
+          LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_DELETE_KEY), true, null);
     }
+    throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_DELETE_KEY));
   }
 
   /**
@@ -209,40 +208,6 @@ public class KGService {
   }
 
   /**
-   * Executes the query at the target endpoint to retrieve results in the CSV
-   * format.
-   * 
-   * @param query        the query for execution.
-   * @param endpointType the type of endpoint. Options include Mixed, Blazegraph,
-   *                     and Ontop.
-   * 
-   * @return the query results as CSV rows.
-   */
-  public String[] queryCSV(String query, SparqlEndpointType endpointType) {
-    List<String> endpoints = this.getEndpoints(endpointType);
-    try {
-      StringWriter stringWriter = new StringWriter();
-      FedXRepository repository = FedXFactory.createSparqlFederation(endpoints);
-      try (FedXRepositoryConnection conn = repository.getConnection()) {
-        TupleQuery tq = conn.prepareTupleQuery(query);
-        // Extend execution time as required
-        tq.setMaxExecutionTime(600);
-        SPARQLResultsCSVWriter csvWriter = new SPARQLResultsCSVWriter(stringWriter);
-        tq.evaluate(csvWriter);
-        // Results are in csv in one string
-        String csvData = stringWriter.toString();
-        // Split into rows
-        return csvData.split("\\r?\\n");
-      } catch (RepositoryException e) {
-        LOGGER.error(e);
-      }
-    } catch (Exception e) {
-      LOGGER.error(e);
-    }
-    return new String[0];
-  }
-
-  /**
    * Executes the query at the target endpoint to retrieve JSON LD results.
    * 
    * @param query the query for execution.
@@ -282,7 +247,7 @@ public class KGService {
     try {
       String target = this.fileService.getTargetIri(resourceId);
       query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target);
-    } catch (FileSystemNotFoundException e) {
+    } catch (InvalidRouteException e) {
       // If no target is specified, return an empty model
       LOGGER.warn("No target resource specified for SHACL rules retrieval. Returning an empty model.");
       return ModelFactory.createDefaultModel();
@@ -400,7 +365,7 @@ public class KGService {
       // Extend to get the next level of shape if any
       replacementShapePath = replacementShapePath.isEmpty() ? " ?nestedshape." +
           "OPTIONAL{?nestedshape twa:role ?nestedrole.}" +
-		  "?nestedshape sh:name ?" + ShaclResource.NODE_GROUP_VAR + ";sh:node/sh:targetClass ?"
+          "?nestedshape sh:name ?" + ShaclResource.NODE_GROUP_VAR + ";sh:node/sh:targetClass ?"
           + ShaclResource.NESTED_CLASS_VAR + ";" + SUB_SHAPE_PATH
           : "/" + SUB_SHAPE_PATH + replacementShapePath;
     }
@@ -432,7 +397,7 @@ public class KGService {
         .collect(Collectors.groupingBy(binding -> {
           String id = binding.containsField(LifecycleResource.IRI_KEY)
               ? binding.getFieldValue(LifecycleResource.IRI_KEY)
-              : binding.getFieldValue("id");
+              : binding.getFieldValue(StringResource.ID_KEY);
           // If this is a lifecycle event occurrence, group them by date and id
           if (binding.containsField(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY))) {
             return id + binding.getFieldValue(LifecycleResource.DATE_KEY);

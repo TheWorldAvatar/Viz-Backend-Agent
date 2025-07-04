@@ -8,7 +8,6 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystemNotFoundException;
-import java.text.MessageFormat;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -17,6 +16,9 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.exception.InvalidRouteException;
+import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,7 +54,6 @@ public class FileService {
   public static final String REPLACEMENT_PATH = "[path]";
   public static final String REPLACEMENT_FILTER = "[filter]";
 
-  private static final String MISSING_RESOURCE_TEMPLATE_MSG = "Resource at {0} is not found. Please ensure you have a valid resource in the file path.";
   private static final Logger LOGGER = LogManager.getLogger(FileService.class);
 
   /**
@@ -79,7 +80,8 @@ public class FileService {
       contents = this.parseSparqlFile(inputStream);
       contents = contents.replace(REPLACEMENT_TARGET, replacement);
     } catch (FileNotFoundException e) {
-      throw new FileSystemNotFoundException(MessageFormat.format(MISSING_RESOURCE_TEMPLATE_MSG, resourceFilePath));
+      throw new FileSystemNotFoundException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FILE_KEY, resourceFilePath));
     } catch (IOException e) {
       LOGGER.error(e);
       throw new UncheckedIOException(e);
@@ -98,7 +100,8 @@ public class FileService {
     try (InputStream inputStream = this.resourceLoader.getResource(resourceFilePath).getInputStream()) {
       resourceNode = this.objectMapper.readTree(inputStream);
     } catch (FileNotFoundException e) {
-      throw new FileSystemNotFoundException(MessageFormat.format(MISSING_RESOURCE_TEMPLATE_MSG, resourceFilePath));
+      throw new FileSystemNotFoundException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FILE_KEY, resourceFilePath));
     } catch (IOException e) {
       LOGGER.error(e);
       throw new UncheckedIOException(e);
@@ -118,7 +121,8 @@ public class FileService {
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_SERVICE_RESOURCE);
     // Handle invalid target type
     if (targetFileName.isEmpty()) {
-      throw new FileSystemNotFoundException(MessageFormat.format(MISSING_RESOURCE_TEMPLATE_MSG, resourceID));
+      throw new FileSystemNotFoundException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FILE_KEY, resourceID));
     }
     return targetFileName;
   }
@@ -136,7 +140,8 @@ public class FileService {
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_FORM_RESOURCE);
     // Handle invalid target type
     if (targetClass.isEmpty()) {
-      throw new FileSystemNotFoundException(MessageFormat.format("Route is invalid at /{0}!", resourceID));
+      throw new InvalidRouteException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, resourceID));
     }
     // For valid target type, return the associated target class
     return StringResource.parseIriForQuery(targetClass);
@@ -160,7 +165,8 @@ public class FileService {
       }
       return this.objectMapper.treeToValue(resourceNode, String.class);
     } catch (FileNotFoundException e) {
-      throw new FileSystemNotFoundException(MessageFormat.format(MISSING_RESOURCE_TEMPLATE_MSG, resourceFilePath));
+      throw new FileSystemNotFoundException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FILE_KEY, resourceFilePath));
     } catch (IOException e) {
       LOGGER.info(e.getMessage());
       throw new UncheckedIOException(e);

@@ -1,7 +1,6 @@
 package com.cmclinnovations.agent.exception;
 
 import java.nio.file.FileSystemNotFoundException;
-import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -13,25 +12,47 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.utils.LocalisationResource;
+
 @ControllerAdvice
 public class AgentExceptionHandler {
-  private static final String TECHNICAL_ASSIST_MSG = "Please contact your technical team for assistance!";
   private static final Logger LOGGER = LogManager.getLogger(AgentExceptionHandler.class);
 
-  @ExceptionHandler(FileSystemNotFoundException.class)
-  public ResponseEntity<String> invalidResourceHandling(Exception exception, WebRequest request) {
+  public AgentExceptionHandler() {
+    // No dependencies required
+  }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<StandardApiResponse> badRequestHandling(Exception exception, WebRequest request) {
     LOGGER.error(exception.getMessage());
-    return new ResponseEntity<>(MessageFormat.format("{0} {1}", exception.getMessage(), TECHNICAL_ASSIST_MSG),
-        HttpStatus.BAD_REQUEST);
+    return ResponseEntityBuilder.error(exception.getMessage(), HttpStatus.BAD_REQUEST);
+  }
+
+  @ExceptionHandler(InvalidRouteException.class)
+  public ResponseEntity<StandardApiResponse> invalidRouteHandling(Exception exception, WebRequest request) {
+    LOGGER.error(exception.getMessage());
+    return ResponseEntityBuilder.error(
+        LocalisationTranslator.getMessage(LocalisationResource.ERROR_CONTACT_KEY, exception.getMessage()),
+        HttpStatus.NOT_FOUND);
+  }
+
+  @ExceptionHandler(FileSystemNotFoundException.class)
+  public ResponseEntity<StandardApiResponse> missingResourceHandling(Exception exception, WebRequest request) {
+    LOGGER.error(exception.getMessage());
+    return ResponseEntityBuilder.error(exception.getMessage(), HttpStatus.NOT_FOUND);
   }
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<String> globalExceptionHandling(Exception exception, WebRequest request) {
+  public ResponseEntity<StandardApiResponse> globalExceptionHandling(Exception exception, WebRequest request) {
     LocalDateTime currentTime = LocalDateTime.now();
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
     LOGGER.error("Error encountered:", exception);
-    return new ResponseEntity<>(
-        MessageFormat.format("Error encountered at {0}: {1}", currentTime.format(formatter), exception.getMessage()),
+    return ResponseEntityBuilder.error(
+        LocalisationTranslator.getMessage(LocalisationResource.ERROR_TIMESTAMP_KEY, currentTime.format(formatter),
+            exception.getMessage()),
         HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }

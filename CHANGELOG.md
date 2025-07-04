@@ -1,5 +1,14 @@
 # Change Log
 
+## 1.8.0
+
+### Features
+
+- Added translations for the backend
+- Restructured JSON body for responses to follow the Google API style guide
+- Removed deprecated csv and calculation route
+- Improved security configuration
+
 ## 1.7.0
 
 ### Features

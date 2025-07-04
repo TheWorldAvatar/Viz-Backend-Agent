@@ -138,7 +138,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       String replacementId = replacementNode.path(ShaclResource.REPLACE_KEY).asText();
       String replacementType = replacementNode.path(ShaclResource.TYPE_KEY).asText();
       // Only the id replacement field with prefixes will be returned as an IRI
-      if (replacementType.equals(LifecycleResource.IRI_KEY) && replacementId.equals("id")) {
+      if (replacementType.equals(LifecycleResource.IRI_KEY) && replacementId.equals(StringResource.ID_KEY)) {
         return StringResource.parseIriForQuery(replacementNode.path("prefix").asText() + targetId);
       }
       return ShaclResource.VARIABLE_MARK + StringResource.parseQueryVariable(replacementId);

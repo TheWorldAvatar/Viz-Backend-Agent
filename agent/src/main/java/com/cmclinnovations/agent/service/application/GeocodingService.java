@@ -11,15 +11,18 @@ import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.GeoLocationType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.KGService;
+import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
@@ -28,6 +31,7 @@ public class GeocodingService {
   private final FileService fileService;
   private final KGService kgService;
 
+  private static final String COORDINATE_KEY = "coordinates";
   private static final String ADDRESS_VAR = "address";
   private static final String LOCATION_VAR = "location";
   private static final String BLOCK_VAR = "block";
@@ -52,7 +56,7 @@ public class GeocodingService {
    * 
    * @param postalCode Postal code identifier.
    */
-  public ResponseEntity<?> getAddress(String postalCode) {
+  public ResponseEntity<StandardApiResponse> getAddress(String postalCode) {
     LOGGER.debug("Retrieving geocoding endpoint...");
     // The geocoding endpoint must be added as the value of the "geocode" field
     String geocodingEndpoint = this.fileService.getTargetFileName("geocode");
@@ -62,15 +66,14 @@ public class GeocodingService {
     Queue<SparqlBinding> results = this.kgService.query(query, geocodingEndpoint);
     if (results.isEmpty()) {
       LOGGER.info("No address found!");
-      return new ResponseEntity<>(
-          "There are no address associated with the parameters in the knowledge graph.",
-          HttpStatus.NOT_FOUND);
+      return ResponseEntityBuilder
+          .success(null, LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_NO_ADDRESS_KEY));
     } else {
       LOGGER.info("Found address(es) associated with the request!");
-      List<Map<String, String>> parsedResults = new ArrayList<>();
+      List<Map<String, Object>> parsedResults = new ArrayList<>();
       while (!results.isEmpty()) {
         SparqlBinding addressInstance = results.poll();
-        Map<String, String> address = new HashMap<>();
+        Map<String, Object> address = new HashMap<>();
         // Block is optional which results in a null
         if (addressInstance.getFieldValue(BLOCK_VAR) != null) {
           address.put(BLOCK_VAR, addressInstance.getFieldValue(BLOCK_VAR));
@@ -80,9 +83,7 @@ public class GeocodingService {
         address.put(COUNTRY_VAR, addressInstance.getFieldValue(COUNTRY_VAR));
         parsedResults.add(address);
       }
-      return new ResponseEntity<>(
-          parsedResults,
-          HttpStatus.OK);
+      return ResponseEntityBuilder.success(null, parsedResults);
     }
   }
 
@@ -91,7 +92,7 @@ public class GeocodingService {
    * 
    * @param location The IRI of the location.
    */
-  public ResponseEntity<?> getCoordinates(String location) {
+  public ResponseEntity<StandardApiResponse> getCoordinates(String location) {
     LOGGER.debug("Querying for coordinates...");
     String query = this.genCoordinateQuery(location);
     List<String> endpoints = this.kgService.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
@@ -113,7 +114,8 @@ public class GeocodingService {
    *                   https://www.omg.org/spec/LCC/Countries/ISO3166-1-CountryCodes.
    * @param postalCode Postal code identifier.
    */
-  public ResponseEntity<?> getCoordinates(String block, String street, String city, String country, String postalCode) {
+  public ResponseEntity<StandardApiResponse> getCoordinates(String block, String street, String city, String country,
+      String postalCode) {
     LOGGER.debug("Retrieving geocoding endpoint...");
     // The geocoding endpoint must be added as the value of the "geocode" field
     String geocodingEndpoint = this.fileService.getTargetFileName("geocode");
@@ -246,19 +248,18 @@ public class GeocodingService {
    * 
    * @param results The query results.
    */
-  private ResponseEntity<?> parseCoordinates(Queue<SparqlBinding> results) {
+  private ResponseEntity<StandardApiResponse> parseCoordinates(Queue<SparqlBinding> results) {
     if (results.isEmpty()) {
       LOGGER.info("No coordinates found...");
-      return new ResponseEntity<>(
-          "There are no coordinates associated with the parameters in the knowledge graph.",
-          HttpStatus.NOT_FOUND);
+      return ResponseEntityBuilder
+          .success(null, LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_NO_COORDINATE_KEY));
     } else {
       LOGGER.info("Found the associated geocoordinates!");
       // Returns the first geoPoint as the same location may have multiple results
       String geoPoint = results.poll().getFieldValue(LOCATION_VAR);
-      return new ResponseEntity<>(
-          this.parseCoordinates(geoPoint),
-          HttpStatus.OK);
+      Map<String, Object> responseFields = new HashMap<>();
+      responseFields.put(COORDINATE_KEY, this.parseCoordinates(geoPoint));
+      return ResponseEntityBuilder.success(null, responseFields);
     }
   }
 
