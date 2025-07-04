@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.8.1
+
+### Bug fix
+
+- Fixed translated german status being uppercase
+
 ## 1.8.0
 
 ### Features
