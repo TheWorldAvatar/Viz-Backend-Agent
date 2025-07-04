@@ -18,7 +18,7 @@ public class DisabledSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity.authorizeHttpRequests(authorize -> authorize
                 .anyRequest().permitAll())
-                .csrf((csrf) -> csrf.disable())
+                .csrf((csrf) -> csrf.ignoringRequestMatchers("/**"))
                 .build();
     }
 }
