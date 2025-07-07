@@ -242,7 +242,7 @@ public class FormTemplateFactory {
           if (!defaultVals.isEmpty()) {
             String parsedField = nameLiteral.get(ShaclResource.VAL_KEY).toString().replace(ShaclResource.WHITE_SPACE,
                 "_");
-            inputModel.put("defaultValue", defaultVals.get(parsedField));
+            inputModel.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultVals.get(parsedField));
           }
           break;
         case ShaclResource.SHACL_ORDER_PROPERTY:
