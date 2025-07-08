@@ -127,7 +127,8 @@ The following SHACL value constraints will be extracted and present in the form 
 7. sh:minLength
 8. sh:maxLength
 9. sh:pattern
-10. <https://theworldavatar.io/kg/form/step>
+10. `sh:defaultValue`: Accepts either an IRI `<iri>`or string literal `"string"`
+11. <https://theworldavatar.io/kg/form/step>
 
 ### 1.1.1 Branching Form
 
