@@ -41,7 +41,9 @@ public class ShaclResource {
   public static final String GROUP_PROPERTY = "group";
   public static final String PROPERTY_PROPERTY = "property";
   public static final String DEFAULT_VAL_PROPERTY = "defaultValue";
+  public static final String SHACL_DEFAULT_VAL_PROPERTY = SHACL_PREFIX + DEFAULT_VAL_PROPERTY;
   public static final String CLASS_PROPERTY = "class";
+  public static final String SHACL_CLASS_PROPERTY = SHACL_PREFIX + CLASS_PROPERTY;
   public static final String DATA_TYPE_PROPERTY = "datatype";
   public static final String SHACL_DATA_TYPE_PROPERTY = SHACL_PREFIX + DATA_TYPE_PROPERTY;
   public static final String IN_PROPERTY = "in";

@@ -13,6 +13,7 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
@@ -243,6 +244,20 @@ public class FormTemplateFactory {
             String parsedField = nameLiteral.get(ShaclResource.VAL_KEY).toString().replace(ShaclResource.WHITE_SPACE,
                 "_");
             inputModel.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultVals.get(parsedField));
+          }
+          break;
+        case ShaclResource.SHACL_DEFAULT_VAL_PROPERTY:
+          // If there is no pre-existing values ie this is either a new entity or optional
+          // field, set the default value
+          if (defaultVals.isEmpty()) {
+            JsonNode defaultValueNode = shapeFieldNode.get(0);
+            String defaultVal = defaultValueNode.has(ShaclResource.ID_KEY)
+                ? defaultValueNode.get(ShaclResource.ID_KEY).asText()
+                : defaultValueNode.get(ShaclResource.VAL_KEY).asText();
+            String fieldType = input.has(ShaclResource.SHACL_IN_PROPERTY)
+                || input.has(ShaclResource.SHACL_CLASS_PROPERTY) ? "uri" : "literal";
+            SparqlResponseField defaultValNode = new SparqlResponseField(fieldType, defaultVal, "", "");
+            inputModel.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultValNode);
           }
           break;
         case ShaclResource.SHACL_ORDER_PROPERTY:

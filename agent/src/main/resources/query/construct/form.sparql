@@ -9,6 +9,7 @@ CONSTRUCT {
     sh:datatype ?type ;
     sh:in ?range ;
     sh:class ?dataclass ;
+    sh:defaultValue ?defaultValue ;
     twa:belongsTo ?nodegroup ;
     twa:dependentOn ?dependentShape ;
     twa:role ?role ;
@@ -117,7 +118,11 @@ CONSTRUCT {
     }
     BIND (IF(BOUND(?order), ?order, 0) AS ?order)
     BIND (IF(BOUND(?grouporder), ?grouporder, 0) AS ?grouporder)
-    
+
+    OPTIONAL {
+      ?subproperty sh:defaultValue ?defaultValue .
+    }
+
     # Value constraints
     OPTIONAL {
       ?subproperty sh:minCount ?mincount .
