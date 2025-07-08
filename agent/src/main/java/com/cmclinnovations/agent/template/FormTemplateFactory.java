@@ -247,9 +247,16 @@ public class FormTemplateFactory {
           }
           break;
         case ShaclResource.SHACL_DEFAULT_VAL_PROPERTY:
-          // If there is no pre-existing values ie this is either a new entity or optional
-          // field, set the default value
-          if (defaultVals.isEmpty()) {
+          // Extract field name
+          String fieldName = this.objectMapper
+              .convertValue(input.get(ShaclResource.SHACL_NAME_PROPERTY).get(0), Map.class).get(ShaclResource.VAL_KEY)
+              .toString().replace(ShaclResource.WHITE_SPACE,
+                  "_");
+          // When there are no pre-existing values for this field stored in defaultVals,
+          // default to the default value set in the SHACL shape
+          // This condition is necessary to prevent users from overwriting the
+          // pre-existing value if any
+          if (defaultVals.isEmpty() || defaultVals.containsKey(fieldName)) {
             JsonNode defaultValueNode = shapeFieldNode.get(0);
             String defaultVal = defaultValueNode.has(ShaclResource.ID_KEY)
                 ? defaultValueNode.get(ShaclResource.ID_KEY).asText()
