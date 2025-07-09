@@ -156,6 +156,20 @@ public class AddService {
    */
   private void recursiveReplacePlaceholders(ObjectNode currentNode, ObjectNode parentNode, String parentField,
       Map<String, Object> replacements) {
+    // If the current node has a single ID replacement key, verify if there is an
+    // associated replacement value
+    if (currentNode.size() == 1 && currentNode.has(ShaclResource.ID_KEY)
+        && currentNode.get(ShaclResource.ID_KEY).has(ShaclResource.REPLACE_KEY)) {
+      String replacement = this.jsonLdService.getReplacementValue((ObjectNode) currentNode.get(ShaclResource.ID_KEY),
+          replacements);
+      // When there is a missing replacement value, remove this field entirely and end
+      // the method early; This step prevents the addition of blank nodes with empty
+      // ID fields
+      if (replacement.isEmpty()) {
+        parentNode.remove(parentField);
+        return;
+      }
+    }
     // If the current node is a replacement object, replace current node with
     // replacement value
     if (currentNode.has(ShaclResource.REPLACE_KEY)) {
