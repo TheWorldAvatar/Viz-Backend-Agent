@@ -1,5 +1,15 @@
 # Change Log
 
+## 1.8.2
+
+### Features
+
+- Users can set a default value for each form field in the SHACL shapes
+
+### Bug fix
+
+- Fixed optional IRI fields being added as blank nodes
+
 ## 1.8.1
 
 ### Bug fix
