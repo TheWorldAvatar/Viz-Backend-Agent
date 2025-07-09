@@ -13,6 +13,7 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
@@ -242,7 +243,28 @@ public class FormTemplateFactory {
           if (!defaultVals.isEmpty()) {
             String parsedField = nameLiteral.get(ShaclResource.VAL_KEY).toString().replace(ShaclResource.WHITE_SPACE,
                 "_");
-            inputModel.put("defaultValue", defaultVals.get(parsedField));
+            inputModel.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultVals.get(parsedField));
+          }
+          break;
+        case ShaclResource.SHACL_DEFAULT_VAL_PROPERTY:
+          // Extract field name
+          String fieldName = this.objectMapper
+              .convertValue(input.get(ShaclResource.SHACL_NAME_PROPERTY).get(0), Map.class).get(ShaclResource.VAL_KEY)
+              .toString().replace(ShaclResource.WHITE_SPACE,
+                  "_");
+          // When there are no pre-existing values for this field stored in defaultVals,
+          // default to the default value set in the SHACL shape
+          // This condition is necessary to prevent users from overwriting the
+          // pre-existing value if any
+          if (defaultVals.isEmpty() || defaultVals.containsKey(fieldName)) {
+            JsonNode defaultValueNode = shapeFieldNode.get(0);
+            String defaultVal = defaultValueNode.has(ShaclResource.ID_KEY)
+                ? defaultValueNode.get(ShaclResource.ID_KEY).asText()
+                : defaultValueNode.get(ShaclResource.VAL_KEY).asText();
+            String fieldType = input.has(ShaclResource.SHACL_IN_PROPERTY)
+                || input.has(ShaclResource.SHACL_CLASS_PROPERTY) ? "uri" : "literal";
+            SparqlResponseField defaultValNode = new SparqlResponseField(fieldType, defaultVal, "", "");
+            inputModel.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultValNode);
           }
           break;
         case ShaclResource.SHACL_ORDER_PROPERTY:

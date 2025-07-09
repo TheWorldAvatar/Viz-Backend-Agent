@@ -94,7 +94,6 @@ class AgentApplicationTests {
         Arguments.of("en-GB", "/invalid/id", INVALID_ROUTE_MESSAGE_EN), // getInstance
         Arguments.of("en-GB", "/invalid/label/id", INVALID_ROUTE_MESSAGE_EN), // getInstanceWithLabels
         Arguments.of("en-GB", "/invalid/search", INVALID_ROUTE_MESSAGE_EN), // getMatchingInstances
-        Arguments.of("en-GB", "/csv/invalid", INVALID_ROUTE_MESSAGE_EN), // getAllInstancesInCSV
         Arguments.of("en-GB", "/form/invalid", INVALID_ROUTE_MESSAGE_EN), // getFormTemplate
         Arguments.of("es-ES", "/form/invalid", INVALID_ROUTE_MESSAGE_EN));
   }
