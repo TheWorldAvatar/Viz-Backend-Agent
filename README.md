@@ -624,9 +624,13 @@ There is also an additional optional parameter `label` to retrieve in progress c
 
 > Records of service tasks
 
-For tasks on a selected date, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/{timestamp}?type={contractType}` endpoint to retrieve all tasks for the target date, where `timestamp` is the UNIX timestamp and `contractType` is the resource ID of the contract type.
-
 For tasks associated with a contract, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/{contract}?type={contractType}` endpoint to retrieve all tasks for the target contract, where `contract` is the contract's identifier and `contractType` is the resource ID of the contract type.
+
+For outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding?type={contractType}` endpoint to retrieve all outstanding open tasks, where `contractType` is the resource ID of the contract type.
+
+For upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled?type={contractType}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all scheduled tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. The start date must occur after today.
+
+For closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed?type={contractType}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all closed tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in.
 
 > Service dispatch
 
