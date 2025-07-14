@@ -34,21 +34,23 @@ public class VisBackendAgent {
   private final DeleteService deleteService;
   private final GetService getService;
   private final GeocodingService geocodingService;
+  private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final Logger LOGGER = LogManager.getLogger(VisBackendAgent.class);
 
   public VisBackendAgent(AddService addService, DeleteService deleteService, GetService getService,
-      GeocodingService geocodingService) {
+      GeocodingService geocodingService, ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.deleteService = deleteService;
     this.getService = getService;
     this.geocodingService = geocodingService;
+    this.responseEntityBuilder = responseEntityBuilder;
   }
 
   @GetMapping("/status")
   public ResponseEntity<StandardApiResponse> getStatus() {
     LOGGER.info("Detected request to get agent status...");
-    return ResponseEntityBuilder.success(null, LocalisationTranslator.getMessage(LocalisationResource.STATUS_KEY));
+    return this.responseEntityBuilder.success(null, LocalisationTranslator.getMessage(LocalisationResource.STATUS_KEY));
   }
 
   @GetMapping("/location")
@@ -90,7 +92,7 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances for {}...", type);
     // This route does not require further restriction on parent instances
     Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", false, new HashMap<>());
-    return ResponseEntityBuilder.success(null,
+    return this.responseEntityBuilder.success(null,
         instances.stream()
             .map(SparqlBinding::get)
             .toList());
@@ -106,7 +108,7 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances with labels for {}...", type);
     // This route does not require further restriction on parent instances
     Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", true, new HashMap<>());
-    return ResponseEntityBuilder.success(null,
+    return this.responseEntityBuilder.success(null,
         instances.stream()
             .map(SparqlBinding::get)
             .toList());
@@ -125,7 +127,7 @@ public class VisBackendAgent {
         parent);
     Queue<SparqlBinding> instances = this.getService.getInstances(type, new ParentField(id, parent), "", "", false,
         new HashMap<>());
-    return ResponseEntityBuilder.success(null,
+    return this.responseEntityBuilder.success(null,
         instances.stream()
             .map(SparqlBinding::get)
             .toList());
@@ -226,7 +228,7 @@ public class VisBackendAgent {
       ResponseEntity<StandardApiResponse> addResponse = this.addService.instantiate(type, id, updatedEntity);
       if (addResponse.getStatusCode() == HttpStatus.OK) {
         LOGGER.info("{} has been successfully updated for {}", type, id);
-        return ResponseEntityBuilder.success(addResponse.getBody().data().id(),
+        return this.responseEntityBuilder.success(addResponse.getBody().data().id(),
             LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_UPDATE_KEY, type, id));
       } else {
         return addResponse;

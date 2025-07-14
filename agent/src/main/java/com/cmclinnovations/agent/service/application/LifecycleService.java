@@ -38,6 +38,7 @@ public class LifecycleService {
   private final DateTimeService dateTimeService;
   private final DeleteService deleteService;
   private final GetService getService;
+  private final ResponseEntityBuilder responseEntityBuilder;
 
   private final LifecycleQueryFactory lifecycleQueryFactory;
   private final Map<String, List<Integer>> lifecycleVarSequence = new HashMap<>();
@@ -54,11 +55,12 @@ public class LifecycleService {
    * 
    */
   public LifecycleService(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
-      GetService getService) {
+      GetService getService, ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
     this.deleteService = deleteService;
     this.getService = getService;
+    this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
 
     this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_DATE_KEY, List.of(2, 0));
@@ -138,7 +140,7 @@ public class LifecycleService {
     String query = this.lifecycleQueryFactory.getServiceStatusQuery(contract);
     SparqlBinding result = this.getService.getInstance(query);
     LOGGER.info("Successfuly retrieved contract status!");
-    return ResponseEntityBuilder.success(result.getFieldValue(LifecycleResource.IRI_KEY),
+    return this.responseEntityBuilder.success(result.getFieldValue(LifecycleResource.IRI_KEY),
         result.getFieldValue(LifecycleResource.STATUS_KEY));
   }
 
@@ -168,7 +170,7 @@ public class LifecycleService {
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, null, "", additionalQueryStatement,
         requireLabel, this.lifecycleVarSequence);
-    return ResponseEntityBuilder.success(null,
+    return this.responseEntityBuilder.success(null,
         instances.stream()
             .map(SparqlBinding::get)
             .toList());
@@ -185,7 +187,7 @@ public class LifecycleService {
     String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(contract, null, null);
     List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, null);
     LOGGER.info("Successfuly retrieved all associated services!");
-    return ResponseEntityBuilder.success(null, occurrences);
+    return this.responseEntityBuilder.success(null, occurrences);
   }
 
   /**
@@ -220,7 +222,7 @@ public class LifecycleService {
     String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetStartDate, targetEndDate);
     List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, isClosed);
     LOGGER.info("Successfuly retrieved tasks!");
-    return ResponseEntityBuilder.success(null, occurrences);
+    return this.responseEntityBuilder.success(null, occurrences);
   }
 
   /**
@@ -487,7 +489,7 @@ public class LifecycleService {
       targetOccurrence = this.getService.getInstance(query)
           .getFieldValue(LifecycleResource.IRI_KEY);
     } catch (NullPointerException e) {
-      return ResponseEntityBuilder.error(null, HttpStatus.NOT_FOUND);
+      return this.responseEntityBuilder.error(null, HttpStatus.NOT_FOUND);
     }
     LOGGER.debug("Retrieving relevant entity information for occurrence of {}...", eventType);
     return this.getService.getInstance(targetOccurrence, requireLabel, replacementQueryLine);

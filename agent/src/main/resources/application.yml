@@ -2,3 +2,5 @@ spring:
   application:
     name:
       - agent
+app:
+  version: '@project.version@'

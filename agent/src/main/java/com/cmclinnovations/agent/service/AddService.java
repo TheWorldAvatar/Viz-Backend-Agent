@@ -45,26 +45,25 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class AddService {
   private final JsonLdService jsonLdService;
   private final KGService kgService;
-  private final LifecycleReportService lifecycleReportService;
   private final QueryTemplateService queryTemplateService;
+  private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final Logger LOGGER = LogManager.getLogger(AddService.class);
 
   /**
    * Constructs a new service with the following dependencies.
    * 
-   * @param jsonLdService          A service for interactions with JSON LD.
-   * @param kgService              KG service for performing the query.
-   * @param lifecycleReportService A service for reporting lifecycle matters such
-   *                               as calculation instances.
-   * @param queryTemplateService   Service for generating query templates.
+   * @param jsonLdService         A service for interactions with JSON LD.
+   * @param kgService             KG service for performing the query.
+   * @param queryTemplateService  Service for generating query templates.
+   * @param responseEntityBuilder A component to build the response entity.
    */
-  public AddService(JsonLdService jsonLdService, KGService kgService, LifecycleReportService lifecycleReportService,
-      QueryTemplateService queryTemplateService) {
+  public AddService(JsonLdService jsonLdService, KGService kgService, QueryTemplateService queryTemplateService,
+      ResponseEntityBuilder responseEntityBuilder) {
     this.jsonLdService = jsonLdService;
     this.kgService = kgService;
-    this.lifecycleReportService = lifecycleReportService;
     this.queryTemplateService = queryTemplateService;
+    this.responseEntityBuilder = responseEntityBuilder;
   }
 
   /**
@@ -135,7 +134,7 @@ public class AddService {
 
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Instantiation is successful!");
-      return ResponseEntityBuilder.success(instanceIri,
+      return this.responseEntityBuilder.success(instanceIri,
           LocalisationTranslator.getMessage(messageResource, instanceIri));
     }
     LOGGER.warn(response.getBody());

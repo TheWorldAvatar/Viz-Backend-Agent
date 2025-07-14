@@ -19,22 +19,24 @@ import com.cmclinnovations.agent.utils.LocalisationResource;
 
 @ControllerAdvice
 public class AgentExceptionHandler {
+  private final ResponseEntityBuilder responseEntityBuilder;
+
   private static final Logger LOGGER = LogManager.getLogger(AgentExceptionHandler.class);
 
-  public AgentExceptionHandler() {
-    // No dependencies required
+  public AgentExceptionHandler(ResponseEntityBuilder responseEntityBuilder) {
+    this.responseEntityBuilder = responseEntityBuilder;
   }
 
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<StandardApiResponse> badRequestHandling(Exception exception, WebRequest request) {
     LOGGER.error(exception.getMessage());
-    return ResponseEntityBuilder.error(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    return this.responseEntityBuilder.error(exception.getMessage(), HttpStatus.BAD_REQUEST);
   }
 
   @ExceptionHandler(InvalidRouteException.class)
   public ResponseEntity<StandardApiResponse> invalidRouteHandling(Exception exception, WebRequest request) {
     LOGGER.error(exception.getMessage());
-    return ResponseEntityBuilder.error(
+    return this.responseEntityBuilder.error(
         LocalisationTranslator.getMessage(LocalisationResource.ERROR_CONTACT_KEY, exception.getMessage()),
         HttpStatus.NOT_FOUND);
   }
@@ -42,7 +44,7 @@ public class AgentExceptionHandler {
   @ExceptionHandler(FileSystemNotFoundException.class)
   public ResponseEntity<StandardApiResponse> missingResourceHandling(Exception exception, WebRequest request) {
     LOGGER.error(exception.getMessage());
-    return ResponseEntityBuilder.error(exception.getMessage(), HttpStatus.NOT_FOUND);
+    return this.responseEntityBuilder.error(exception.getMessage(), HttpStatus.NOT_FOUND);
   }
 
   @ExceptionHandler(Exception.class)
@@ -50,7 +52,7 @@ public class AgentExceptionHandler {
     LocalDateTime currentTime = LocalDateTime.now();
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
     LOGGER.error("Error encountered:", exception);
-    return ResponseEntityBuilder.error(
+    return this.responseEntityBuilder.error(
         LocalisationTranslator.getMessage(LocalisationResource.ERROR_TIMESTAMP_KEY, currentTime.format(formatter),
             exception.getMessage()),
         HttpStatus.INTERNAL_SERVER_ERROR);
