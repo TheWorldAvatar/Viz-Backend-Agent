@@ -182,25 +182,34 @@ public class LifecycleService {
    * @param entityType Target resource ID.
    */
   public ResponseEntity<StandardApiResponse> getOccurrences(String contract, String entityType) {
-    String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(contract, null);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery);
+    String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(contract, null, null);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, null);
     LOGGER.info("Successfuly retrieved all associated services!");
     return ResponseEntityBuilder.success(null, occurrences);
   }
 
   /**
    * Retrieve all service related occurrences in the lifecycle for the specified
-   * date.
+   * date(s).
    * 
-   * @param timestamp  Timestamp in UNIX format.
-   * @param entityType Target resource ID.
+   * @param startTimestamp Start timestamp in UNIX format.
+   * @param endTimestamp   End timestamp in UNIX format.
+   * @param entityType     Target resource ID.
+   * @param isClosed       Indicates whether to retrieve closed tasks.
    */
-  public ResponseEntity<StandardApiResponse> getOccurrences(long timestamp, String entityType) {
-    // Get date from timestamp
-    String targetDate = this.dateTimeService.getDateFromTimestamp(timestamp);
-    String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetDate);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery);
-    LOGGER.info("Successfuly retrieved services in progress!");
+  public ResponseEntity<StandardApiResponse> getOccurrences(String startTimestamp, String endTimestamp,
+      String entityType, boolean isClosed) {
+    String targetStartDate = "";
+    String targetEndDate = "";
+    if (startTimestamp == null && endTimestamp == null) {
+      targetEndDate = this.dateTimeService.getCurrentDate();
+    } else {
+      targetStartDate = this.dateTimeService.getDateFromTimestamp(startTimestamp);
+      targetEndDate = this.dateTimeService.getDateFromTimestamp(endTimestamp);
+    }
+    String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetStartDate, targetEndDate);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, isClosed);
+    LOGGER.info("Successfuly retrieved tasks!");
     return ResponseEntityBuilder.success(null, occurrences);
   }
 
@@ -209,8 +218,10 @@ public class LifecycleService {
    * 
    * @param entityType      Target resource ID.
    * @param additionalQuery Additional query to append to the main query.
+   * @param isClosed        Indicates whether to retrieve closed tasks.
    */
-  private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String additionalQuery) {
+  private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String additionalQuery,
+      Boolean isClosed) {
     Map<String, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = "";
     addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
@@ -258,6 +269,24 @@ public class LifecycleService {
                   (oldVal, newVal) -> oldVal,
                   LinkedHashMap::new));
           return updatedFields;
+        })
+        .filter(mapping -> {
+          // If filter is not required, break early
+          if (isClosed == null) {
+            return false;
+          }
+          // Verify if status matches closed or open state
+          SparqlResponseField statusField = (SparqlResponseField) mapping
+              .get(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY));
+          String status = statusField.value();
+          if (isClosed) {
+            return status.equals(LocalisationTranslator.getEvent(LifecycleResource.EVENT_DELIVERY)) ||
+                status.equals(LocalisationTranslator.getEvent(LifecycleResource.EVENT_CANCELLATION)) ||
+                status.equals(LocalisationTranslator.getEvent(LifecycleResource.EVENT_INCIDENT_REPORT));
+          } else {
+            return status.equals(LocalisationTranslator.getEvent(LifecycleResource.EVENT_DISPATCH)) ||
+                status.equals(LocalisationTranslator.getEvent(LifecycleResource.EVENT_ORDER_RECEIVED));
+          }
         })
         .toList();
   }

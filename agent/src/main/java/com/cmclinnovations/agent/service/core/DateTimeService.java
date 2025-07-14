@@ -60,9 +60,10 @@ public class DateTimeService {
    * 
    * @param timestamp The timestamp input in UNIX seconds.
    */
-  public String getDateFromTimestamp(long timestamp) {
+  public String getDateFromTimestamp(String timestamp) {
+    long parsedTimestamp = Long.parseLong(timestamp);
     // Convert Unix timestamp (seconds) to LocalDate
-    return Instant.ofEpochSecond(timestamp)
+    return Instant.ofEpochSecond(parsedTimestamp)
         .atZone(ZoneId.systemDefault()) // Adjust to the system default time zone
         .toLocalDate()
         .format(this.formatter);

@@ -387,22 +387,48 @@ public class LifecycleController {
   }
 
   /**
-   * Retrieve all tasks for the specified contract or date in UNIX timestamp.
+   * Retrieve all outstanding tasks.
    */
-  @GetMapping("/service/{task}")
-  public ResponseEntity<StandardApiResponse> getAllTasksOnTimestamp(
-      @PathVariable(name = "task") String input,
+  @GetMapping("/service/outstanding")
+  public ResponseEntity<StandardApiResponse> getAllOutstandingTasks(
       @RequestParam(required = true) String type) {
-    // Attempt to parse the input into a long, indicating this is a timestamp
-    try {
-      long timestamp = Long.parseLong(input);
-      LOGGER.info("Received request to retrieve services in progress for a specified date...");
-      return this.lifecycleService.getOccurrences(timestamp, type);
-    } catch (NumberFormatException e) {
-      // Any parsing errors will indicate that this is an identifier for the contract
-      LOGGER.info("Received request to retrieve services in progress for a specified contract...");
-      return this.lifecycleService.getOccurrences(input, type);
-    }
+    LOGGER.info("Received request to retrieve outstanding tasks...");
+    return this.lifecycleService.getOccurrences(null, null, type, false);
+  }
+
+  /**
+   * Retrieve all scheduled tasks for the specified date range in UNIX timestamp.
+   */
+  @GetMapping("/service/scheduled")
+  public ResponseEntity<StandardApiResponse> getAllScheduledTasks(
+      @RequestParam(required = true) String type,
+      @RequestParam(required = true) String startTimestamp,
+      @RequestParam(required = true) String endTimestamp) {
+    LOGGER.info("Received request to retrieve scheduled tasks for the specified dates...");
+    return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, false);
+  }
+
+  /**
+   * Retrieve all closed tasks for the specified date range in UNIX timestamp.
+   */
+  @GetMapping("/service/closed")
+  public ResponseEntity<StandardApiResponse> getAllClosedTasks(
+      @RequestParam(required = true) String type,
+      @RequestParam(required = true) String startTimestamp,
+      @RequestParam(required = true) String endTimestamp) {
+    LOGGER.info("Received request to retrieve closed tasks for the specified dates...");
+    return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, true);
+  }
+
+  /**
+   * Retrieve all tasks for the specified contract.
+   */
+  @GetMapping("/service/{id}")
+  public ResponseEntity<StandardApiResponse> getAllTasksForTargetContract(
+      @PathVariable(name = "id") String contract,
+      @RequestParam(required = true) String type) {
+    LOGGER.info("Received request to retrieve services in progress for a specified contract...");
+    return this.lifecycleService.getOccurrences(contract, type);
   }
 
   /**
