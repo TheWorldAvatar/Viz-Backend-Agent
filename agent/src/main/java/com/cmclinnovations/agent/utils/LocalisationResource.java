@@ -38,6 +38,8 @@ public class LocalisationResource {
   public static final String ERROR_MISSING_FILE_KEY = ERROR_PREFIX + "missing.file";
   public static final String ERROR_ORDERS_PARTIAL_KEY = ERROR_PREFIX + "orders.partial";
   public static final String ERROR_TIMESTAMP_KEY = ERROR_PREFIX + "timestamp";
+  public static final String ERROR_INVALID_DATE_CHRONOLOGY_KEY = ERROR_PREFIX + "invalid.date.chronology";
+  public static final String ERROR_INVALID_DATE_SCHEDULED_PRESENT_KEY = ERROR_PREFIX + "invalid.date.scheduledpresent";
   public static final String ERROR_INVALID_DATE_CANCEL_KEY = ERROR_PREFIX + "invalid.date.cancel";
   public static final String ERROR_INVALID_DATE_REPORT_KEY = ERROR_PREFIX + "invalid.date.report";
   public static final String ERROR_INVALID_EVENT_TYPE_KEY = ERROR_PREFIX + "invalid.event.type";

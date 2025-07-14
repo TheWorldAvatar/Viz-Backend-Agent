@@ -206,6 +206,16 @@ public class LifecycleService {
     } else {
       targetStartDate = this.dateTimeService.getDateFromTimestamp(startTimestamp);
       targetEndDate = this.dateTimeService.getDateFromTimestamp(endTimestamp);
+      // Verify that the end date occurs after the start date
+      if (this.dateTimeService.isFutureDate(targetStartDate, targetEndDate)) {
+        throw new IllegalArgumentException(
+            LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CHRONOLOGY_KEY));
+      }
+      // Users can only view upcoming scheduled tasks after today
+      if (!isClosed && !this.dateTimeService.isFutureDate(targetStartDate)) {
+        throw new IllegalArgumentException(
+            LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_SCHEDULED_PRESENT_KEY));
+      }
     }
     String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetStartDate, targetEndDate);
     List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, isClosed);
