@@ -37,16 +37,18 @@ public class LifecycleController {
   private final DeleteService deleteService;
   private final LifecycleService lifecycleService;
   private final LifecycleReportService lifecycleReportService;
+  private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final Logger LOGGER = LogManager.getLogger(LifecycleController.class);
 
   public LifecycleController(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
-      LifecycleService lifecycleService, LifecycleReportService lifecycleReportService) {
+      LifecycleService lifecycleService, LifecycleReportService lifecycleReportService, ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
     this.deleteService = deleteService;
     this.lifecycleService = lifecycleService;
     this.lifecycleReportService = lifecycleReportService;
+    this.responseEntityBuilder =  responseEntityBuilder;
   }
 
   /**
@@ -72,7 +74,7 @@ public class LifecycleController {
       ResponseEntity<StandardApiResponse> scheduleResponse = this.genContractSchedule(params);
       if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
         LOGGER.info("Contract has been successfully drafted!");
-        return ResponseEntityBuilder
+        return this.responseEntityBuilder
             .success(scheduleResponse.getBody().data().id(),
                 LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY));
       }
@@ -98,7 +100,7 @@ public class LifecycleController {
         params);
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Schedule has been successfully drafted for contract!");
-      return ResponseEntityBuilder
+      return this.responseEntityBuilder
           .success(response.getBody().data().id(),
               LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY));
     } else {
@@ -134,7 +136,7 @@ public class LifecycleController {
           LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
       if (response.getStatusCode() == HttpStatus.OK) {
         LOGGER.info("Contract has been approved for service execution!");
-        return ResponseEntityBuilder
+        return this.responseEntityBuilder
             .success(response.getBody().data().id(),
                 LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY));
       } else {
@@ -225,7 +227,7 @@ public class LifecycleController {
         LifecycleResource.OCCURRENCE_LINK_RESOURCE, params);
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(successMsgId);
-      return ResponseEntityBuilder.success(response.getBody().data().id(),
+      return this.responseEntityBuilder.success(response.getBody().data().id(),
           LocalisationTranslator.getMessage(successMsgId, type));
     }
     return response;
@@ -247,7 +249,7 @@ public class LifecycleController {
         LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Contract has been successfully rescinded!");
-      return ResponseEntityBuilder.success(response.getBody().data().id(),
+      return this.responseEntityBuilder.success(response.getBody().data().id(),
           LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_RESCIND_KEY));
     } else {
       return response;
@@ -270,7 +272,7 @@ public class LifecycleController {
         LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Contract has been successfully terminated!");
-      return ResponseEntityBuilder.success(response.getBody().data().id(),
+      return this.responseEntityBuilder.success(response.getBody().data().id(),
           LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_TERMINATE_KEY));
     } else {
       return response;
@@ -297,7 +299,7 @@ public class LifecycleController {
         ResponseEntity<StandardApiResponse> scheduleResponse = this.updateContractSchedule(params);
         if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
           LOGGER.info("Draft contract has been successfully updated!");
-          return ResponseEntityBuilder.success(scheduleResponse.getBody().data().id(),
+          return this.responseEntityBuilder.success(scheduleResponse.getBody().data().id(),
               LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY));
         }
         return scheduleResponse;
@@ -324,7 +326,7 @@ public class LifecycleController {
           targetId, params);
       if (addResponse.getStatusCode() == HttpStatus.CREATED) {
         LOGGER.info("Draft schedule has been successfully updated!");
-        return ResponseEntityBuilder.success(addResponse.getBody().data().id(),
+        return this.responseEntityBuilder.success(addResponse.getBody().data().id(),
             LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY));
       } else {
         return addResponse;
@@ -387,22 +389,48 @@ public class LifecycleController {
   }
 
   /**
-   * Retrieve all tasks for the specified contract or date in UNIX timestamp.
+   * Retrieve all outstanding tasks.
    */
-  @GetMapping("/service/{task}")
-  public ResponseEntity<StandardApiResponse> getAllTasksOnTimestamp(
-      @PathVariable(name = "task") String input,
+  @GetMapping("/service/outstanding")
+  public ResponseEntity<StandardApiResponse> getAllOutstandingTasks(
       @RequestParam(required = true) String type) {
-    // Attempt to parse the input into a long, indicating this is a timestamp
-    try {
-      long timestamp = Long.parseLong(input);
-      LOGGER.info("Received request to retrieve services in progress for a specified date...");
-      return this.lifecycleService.getOccurrences(timestamp, type);
-    } catch (NumberFormatException e) {
-      // Any parsing errors will indicate that this is an identifier for the contract
-      LOGGER.info("Received request to retrieve services in progress for a specified contract...");
-      return this.lifecycleService.getOccurrences(input, type);
-    }
+    LOGGER.info("Received request to retrieve outstanding tasks...");
+    return this.lifecycleService.getOccurrences(null, null, type, false);
+  }
+
+  /**
+   * Retrieve all scheduled tasks for the specified date range in UNIX timestamp.
+   */
+  @GetMapping("/service/scheduled")
+  public ResponseEntity<StandardApiResponse> getAllScheduledTasks(
+      @RequestParam(required = true) String type,
+      @RequestParam(required = true) String startTimestamp,
+      @RequestParam(required = true) String endTimestamp) {
+    LOGGER.info("Received request to retrieve scheduled tasks for the specified dates...");
+    return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, false);
+  }
+
+  /**
+   * Retrieve all closed tasks for the specified date range in UNIX timestamp.
+   */
+  @GetMapping("/service/closed")
+  public ResponseEntity<StandardApiResponse> getAllClosedTasks(
+      @RequestParam(required = true) String type,
+      @RequestParam(required = true) String startTimestamp,
+      @RequestParam(required = true) String endTimestamp) {
+    LOGGER.info("Received request to retrieve closed tasks for the specified dates...");
+    return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, true);
+  }
+
+  /**
+   * Retrieve all tasks for the specified contract.
+   */
+  @GetMapping("/service/{id}")
+  public ResponseEntity<StandardApiResponse> getAllTasksForTargetContract(
+      @PathVariable(name = "id") String contract,
+      @RequestParam(required = true) String type) {
+    LOGGER.info("Received request to retrieve services in progress for a specified contract...");
+    return this.lifecycleService.getOccurrences(contract, type);
   }
 
   /**

@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 public class GetService {
   private final KGService kgService;
   private final QueryTemplateService queryTemplateService;
+  private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final String SUCCESSFUL_REQUEST_MSG = "Request has been completed successfully!";
   private static final Logger LOGGER = LogManager.getLogger(GetService.class);
@@ -34,13 +35,15 @@ public class GetService {
   /**
    * Constructs a new service with the following dependencies.
    * 
-   * @param kgService            KG service for performing the query.
-   * @param queryTemplateService Service for generating query templates.
+   * @param kgService             KG service for performing the query.
+   * @param queryTemplateService  Service for generating query templates.
+   * @param responseEntityBuilder A component to build the response entity.
    */
-  public GetService(KGService kgService,
-      QueryTemplateService queryTemplateService) {
+  public GetService(KGService kgService, QueryTemplateService queryTemplateService,
+      ResponseEntityBuilder responseEntityBuilder) {
     this.kgService = kgService;
     this.queryTemplateService = queryTemplateService;
+    this.responseEntityBuilder = responseEntityBuilder;
   }
 
   /**
@@ -203,12 +206,12 @@ public class GetService {
    */
   private ResponseEntity<StandardApiResponse> getSingleInstanceResponse(Queue<SparqlBinding> inputs) {
     if (inputs.size() == 1) {
-      return ResponseEntityBuilder.success(null, inputs.poll().get());
+      return this.responseEntityBuilder.success(null, inputs.poll().get());
     } else if (inputs.isEmpty()) {
-      return ResponseEntityBuilder.error(
+      return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
     } else {
-      return ResponseEntityBuilder.error(
+      return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_MULTIPLE_INSTANCE_KEY),
           HttpStatus.CONFLICT);
     }
@@ -236,7 +239,7 @@ public class GetService {
       if (!formTemplateInputs.isEmpty()) {
         Map<String, Object> results = this.queryTemplateService.genFormTemplate(formTemplateInputs, currentEntity);
         LOGGER.info(SUCCESSFUL_REQUEST_MSG);
-        return ResponseEntityBuilder.success(null, results);
+        return this.responseEntityBuilder.success(null, results);
       }
     }
     LOGGER.error(KGService.INVALID_SHACL_ERROR_MSG);
@@ -261,7 +264,7 @@ public class GetService {
     } else {
       LOGGER.info(SUCCESSFUL_REQUEST_MSG);
     }
-    return ResponseEntityBuilder.success(null,
+    return this.responseEntityBuilder.success(null,
         results.stream().map(SparqlBinding::get).toList());
   }
 
@@ -282,7 +285,7 @@ public class GetService {
     Queue<SparqlBinding> secondaryInstances = this.kgService.query(searchQuery.poll(), SparqlEndpointType.BLAZEGRAPH);
     results.addAll(secondaryInstances);
     LOGGER.info(SUCCESSFUL_REQUEST_MSG);
-    return ResponseEntityBuilder.success(
+    return this.responseEntityBuilder.success(
         results.stream()
             .map(binding -> binding.getFieldValue(LifecycleResource.IRI_KEY))
             .toList());

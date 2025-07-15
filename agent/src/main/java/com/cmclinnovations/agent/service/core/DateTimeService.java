@@ -30,6 +30,27 @@ public class DateTimeService {
   }
 
   /**
+   * Checks if the input date is a future date after today.
+   * 
+   * @param input The target date in YYYY-MM-DD format.
+   */
+  public boolean isFutureDate(String input) {
+    return isFutureDate(input, this.getCurrentDate());
+  }
+
+  /**
+   * Checks if the input date occurs after the target date.
+   * 
+   * @param inputDate  The input date in YYYY-MM-DD format, which is intended to
+   *                   be compared to the benchmark.
+   * @param targetDate The target date in YYYY-MM-DD format, which acts as the
+   *                   benchmark of comparison.
+   */
+  public boolean isFutureDate(String inputDate, String targetDate) {
+    return this.parseDate(inputDate).isAfter(this.parseDate(targetDate));
+  }
+
+  /**
    * Get current date in YYYY-MM-DD format.
    */
   public String getCurrentDate() {
@@ -60,9 +81,10 @@ public class DateTimeService {
    * 
    * @param timestamp The timestamp input in UNIX seconds.
    */
-  public String getDateFromTimestamp(long timestamp) {
+  public String getDateFromTimestamp(String timestamp) {
+    long parsedTimestamp = Long.parseLong(timestamp);
     // Convert Unix timestamp (seconds) to LocalDate
-    return Instant.ofEpochSecond(timestamp)
+    return Instant.ofEpochSecond(parsedTimestamp)
         .atZone(ZoneId.systemDefault()) // Adjust to the system default time zone
         .toLocalDate()
         .format(this.formatter);

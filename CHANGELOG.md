@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.9.0
+
+### Features
+
+- Changed tasks route for a specific date into outstanding, scheduled, and closed routes
+- API version is directly extracted from `pom.xml` to remain updated
+
 ## 1.8.2
 
 ### Features

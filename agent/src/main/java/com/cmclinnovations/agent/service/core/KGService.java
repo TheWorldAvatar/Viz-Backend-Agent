@@ -62,6 +62,7 @@ public class KGService {
   private final ObjectMapper objectMapper;
   private final FileService fileService;
   private final LoggingService loggingService;
+  private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final String DEFAULT_NAMESPACE = "kb";
   private static final String JSON_MEDIA_TYPE = "application/json";
@@ -80,14 +81,17 @@ public class KGService {
   /**
    * Constructs a new service.
    * 
-   * @param fileService    File service for accessing file resources.
-   * @param loggingService Service for logging statements.
+   * @param fileService           File service for accessing file resources.
+   * @param loggingService        Service for logging statements.
+   * @param responseEntityBuilder A component to build the response entity.
    */
-  public KGService(FileService fileService, LoggingService loggingService) {
+  public KGService(FileService fileService, LoggingService loggingService,
+      ResponseEntityBuilder responseEntityBuilder) {
     this.client = RestClient.create();
     this.objectMapper = new ObjectMapper();
     this.fileService = fileService;
     this.loggingService = loggingService;
+    this.responseEntityBuilder = responseEntityBuilder;
   }
 
   /**
@@ -116,7 +120,7 @@ public class KGService {
     int statusCode = this.executeUpdate(query);
     if (statusCode == 200) {
       LOGGER.info("Instance has been successfully deleted!");
-      return ResponseEntityBuilder.success(null,
+      return this.responseEntityBuilder.success(null,
           LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_DELETE_KEY), true, null);
     }
     throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_DELETE_KEY));

@@ -30,6 +30,7 @@ import com.cmclinnovations.agent.utils.StringResource;
 public class GeocodingService {
   private final FileService fileService;
   private final KGService kgService;
+  private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final String COORDINATE_KEY = "coordinates";
   private static final String ADDRESS_VAR = "address";
@@ -43,12 +44,14 @@ public class GeocodingService {
   /**
    * Constructs a new service with the following dependencies.
    * 
-   * @param fileService File service for accessing file resources.
-   * @param kgService   KG service for performing the query.
+   * @param fileService           File service for accessing file resources.
+   * @param kgService             KG service for performing the query.
+   * @param responseEntityBuilder A component to build the response entity.
    */
-  public GeocodingService(FileService fileService, KGService kgService) {
+  public GeocodingService(FileService fileService, KGService kgService, ResponseEntityBuilder responseEntityBuilder) {
     this.fileService = fileService;
     this.kgService = kgService;
+    this.responseEntityBuilder = responseEntityBuilder;
   }
 
   /**
@@ -66,7 +69,7 @@ public class GeocodingService {
     Queue<SparqlBinding> results = this.kgService.query(query, geocodingEndpoint);
     if (results.isEmpty()) {
       LOGGER.info("No address found!");
-      return ResponseEntityBuilder
+      return this.responseEntityBuilder
           .success(null, LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_NO_ADDRESS_KEY));
     } else {
       LOGGER.info("Found address(es) associated with the request!");
@@ -83,7 +86,7 @@ public class GeocodingService {
         address.put(COUNTRY_VAR, addressInstance.getFieldValue(COUNTRY_VAR));
         parsedResults.add(address);
       }
-      return ResponseEntityBuilder.success(null, parsedResults);
+      return this.responseEntityBuilder.success(null, parsedResults);
     }
   }
 
@@ -251,7 +254,7 @@ public class GeocodingService {
   private ResponseEntity<StandardApiResponse> parseCoordinates(Queue<SparqlBinding> results) {
     if (results.isEmpty()) {
       LOGGER.info("No coordinates found...");
-      return ResponseEntityBuilder
+      return this.responseEntityBuilder
           .success(null, LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_NO_COORDINATE_KEY));
     } else {
       LOGGER.info("Found the associated geocoordinates!");
@@ -259,7 +262,7 @@ public class GeocodingService {
       String geoPoint = results.poll().getFieldValue(LOCATION_VAR);
       Map<String, Object> responseFields = new HashMap<>();
       responseFields.put(COORDINATE_KEY, this.parseCoordinates(geoPoint));
-      return ResponseEntityBuilder.success(null, responseFields);
+      return this.responseEntityBuilder.success(null, responseFields);
     }
   }
 
