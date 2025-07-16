@@ -107,6 +107,7 @@ public class LifecycleQueryFactory {
    */
   public String getServiceTasksQuery(String contract, String startDate, String endDate) {
     String eventDateVar = ShaclResource.VARIABLE_MARK + LifecycleResource.DATE_KEY;
+    String eventDatePlaceholderVar = ShaclResource.VARIABLE_MARK + "event_date";
     String eventVar = ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY;
     String eventIdVar = StringResource.parseQueryVariable(ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_ID_KEY);
 
@@ -116,20 +117,23 @@ public class LifecycleQueryFactory {
     if (contract == null && endDate != null) {
       // Start date filters are optional
       if (!startDate.isEmpty()) {
-        filterDateStatement = eventDateVar + ">=\"" + startDate + "\"^^xsd:date &&";
+        filterDateStatement = eventDateVar + ">=\"" + startDate + "\"^^xsd:date && ";
       }
-      filterDateStatement = "FILTER(" + filterDateStatement + eventDateVar + "<=\"" + endDate + "\"^^xsd:date)";
+      filterDateStatement = "FILTER(" + filterDateStatement + eventDateVar + "<=\"" + endDate
+          + "\"^^xsd:date)";
     }
     return "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
         + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
         + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
         + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
-        + StringResource.parseIriForQuery(LifecycleResource.EVENT_ORDER_RECEIVED) + ";"
-        + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> " + eventDateVar
-        + "." + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+        + StringResource.parseIriForQuery(LifecycleResource.EVENT_ORDER_RECEIVED) + "."
+        + "BIND(xsd:date(" + eventDatePlaceholderVar + ") AS " + eventDateVar + ")"
+        + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + eventVar + ";"
-        + "<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
+        + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
+        + eventDatePlaceholderVar
+        + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
         + filterDateStatement
         + filterContractStatement;
   }
