@@ -135,7 +135,7 @@ public class AddService {
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Instantiation is successful!");
       return this.responseEntityBuilder.success(instanceIri,
-          LocalisationTranslator.getMessage(messageResource, instanceIri));
+          LocalisationTranslator.getMessage(messageResource));
     }
     LOGGER.warn(response.getBody());
     throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ADD_KEY));
