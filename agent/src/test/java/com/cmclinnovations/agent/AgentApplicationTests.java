@@ -25,11 +25,11 @@ class AgentApplicationTests {
   @Autowired
   private MockMvc mockMvc;
 
-  private static final String API_VERSION = "1.9.1";
+  private static final String API_VERSION = "1.9.2";
   private static final String STATUS_MESSAGE_EN = "Agent is ready to receive requests.";
-  private static final String STATUS_MESSAGE_DE = "Der Agent ist bereit, Anfragen zu empfangen.";
+  private static final String STATUS_MESSAGE_DE = "Agent ist bereit, Anfragen zu empfangen.";
   private static final String INVALID_GEOCODING_MESSAGE_EN = "Invalid geocoding parameters! Detected a block number but no street is provided!";
-  private static final String INVALID_GEOCODING_MESSAGE_DE = "Ungültige Geokodierungsparameter! Es wurde eine Blocknummer erkannt, aber es ist keine Straße angegeben!";
+  private static final String INVALID_GEOCODING_MESSAGE_DE = "Ungültige Geokodierungsparameter! Blocknummer erkannt, aber keine Straße angegeben!";
   private static final String INVALID_ROUTE_MESSAGE_EN = "Route is invalid at /invalid! Please contact your technical team for assistance!";
 
   private static Stream<Arguments> provideParametersForStatusRoute() {

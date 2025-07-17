@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.9.2
+
+### Bug fix
+
+- Cancel, report, assign, and complete actions are now instantiated with the current date whether for adding or updating
+
 ## 1.9.1
 
 ### Features

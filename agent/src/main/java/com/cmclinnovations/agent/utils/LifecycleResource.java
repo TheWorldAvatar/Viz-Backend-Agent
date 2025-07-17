@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.cmclinnovations.agent.model.type.CalculationType;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.core.FileService;
 
@@ -110,28 +109,6 @@ public class LifecycleResource {
         return LifecycleEventType.SERVICE_ORDER_DISPATCHED;
       default:
         throw new IllegalArgumentException("Invalid order enum number!");
-    }
-  }
-
-  /**
-   * Retrieve the priority level of the specified event.
-   * 
-   * @param event Target event.
-   */
-  public static int getEventPriority(String event) {
-    switch (event) {
-      case EVENT_INCIDENT_REPORT:
-        return 4;
-      case EVENT_CANCELLATION:
-        return 3;
-      case EVENT_DELIVERY:
-        return 2;
-      case EVENT_DISPATCH:
-        return 1;
-      case EVENT_ORDER_RECEIVED:
-        return 0;
-      default:
-        return -1;
     }
   }
 

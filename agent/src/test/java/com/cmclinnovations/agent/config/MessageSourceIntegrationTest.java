@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Import;
 @SpringBootTest
 public class MessageSourceIntegrationTest {
     public static final String EXPECTED_DEFAULT_MESSAGE = "Agent is ready to receive requests.";
-    public static final String EXPECTED_GERMAN_MESSAGE = "Der Agent ist bereit, Anfragen zu empfangen.";
+    public static final String EXPECTED_GERMAN_MESSAGE = "Agent ist bereit, Anfragen zu empfangen.";
 
     @Autowired
     private MessageSource messageSource;

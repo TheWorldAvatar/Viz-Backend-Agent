@@ -107,6 +107,7 @@ public class LifecycleQueryFactory {
    */
   public String getServiceTasksQuery(String contract, String startDate, String endDate) {
     String eventDateVar = ShaclResource.VARIABLE_MARK + LifecycleResource.DATE_KEY;
+    String eventDatePlaceholderVar = ShaclResource.VARIABLE_MARK + "event_date";
     String eventVar = ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY;
     String eventIdVar = StringResource.parseQueryVariable(ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_ID_KEY);
 
@@ -114,24 +115,29 @@ public class LifecycleQueryFactory {
     // Filter dates
     String filterDateStatement = "";
     if (contract == null && endDate != null) {
-      // Start date filters are optional
+      // For outstanding tasks, start dates are omitted
       if (!startDate.isEmpty()) {
-        filterDateStatement = eventDateVar + ">=\"" + startDate + "\"^^xsd:date &&";
+        filterDateStatement = eventDateVar + ">=\"" + startDate + "\"^^xsd:date && ";
       }
-      filterDateStatement = "FILTER(" + filterDateStatement + eventDateVar + "<=\"" + endDate + "\"^^xsd:date)";
+      filterDateStatement = "FILTER(" + filterDateStatement + eventDateVar + "<=\"" + endDate
+          + "\"^^xsd:date)";
     }
     return "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
         + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
         + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
         + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
-        + StringResource.parseIriForQuery(LifecycleResource.EVENT_ORDER_RECEIVED) + ";"
-        + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> " + eventDateVar
-        + "." + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+        + StringResource.parseIriForQuery(LifecycleResource.EVENT_ORDER_RECEIVED) + "."
+        + "BIND(xsd:date(" + eventDatePlaceholderVar + ") AS " + eventDateVar + ")"
+        + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + eventVar + ";"
-        + "<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
+        + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
+        + eventDatePlaceholderVar
+        + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
         + filterDateStatement
-        + filterContractStatement;
+        + filterContractStatement
+        // Event must be the last in the chain ie no other events will succeed it
+        + "MINUS{" + eventIdVar + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}";
   }
 
   /**
@@ -173,20 +179,18 @@ public class LifecycleQueryFactory {
 
   /**
    * Retrieves the SPARQL query to retrieve the event instance associated with the
-   * target event type for a specific contract and date.
+   * target event type for a specific contract.
    * 
    * @param contract  The input contract instance.
-   * @param date      The date of occurrence.
    * @param eventType The target event type to retrieve.
    */
-  public String getEventQuery(String contract, String date, LifecycleEventType eventType) {
+  public String getContractEventQuery(String contract, LifecycleEventType eventType) {
     return StringResource.QUERY_TEMPLATE_PREFIX +
         "SELECT DISTINCT ?iri ?event WHERE{" +
         "?contract fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage." +
         "?stage cmns-col:comprises ?event;" +
         "cmns-col:comprises ?iri." +
         "?event fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;" +
-        "fibo-fnd-dt-oc:hasEventDate \"" + date + "\"^^xsd:date;" +
         "^cmns-dt:succeeds* ?iri." +
         "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
         "FILTER STRENDS(STR(?contract),\"" + contract + "\")" +

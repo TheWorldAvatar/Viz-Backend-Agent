@@ -33,4 +33,18 @@ public class TypeCastUtils {
     }
     throw new IllegalArgumentException("Invalid input. Object is not a list.");
   }
+
+  /**
+   * Cast object to the specified class.
+   * 
+   * @param obj        Target object to cast.
+   * @param targetType Target object class.
+   */
+  public static <T> T castToObject(Object obj, Class<T> targetType) throws ClassCastException {
+    if (targetType.isInstance(obj)) {
+      return targetType.cast(obj);
+    } else {
+      throw new ClassCastException("Object cannot be cast to " + targetType.getName());
+    }
+  }
 }

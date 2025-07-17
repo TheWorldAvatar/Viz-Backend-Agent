@@ -3,12 +3,9 @@ package com.cmclinnovations.agent.service.core;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.nio.file.FileSystemNotFoundException;
 import java.util.ArrayDeque;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -414,16 +411,9 @@ public class KGService {
         return;
       }
       SparqlBinding firstBinding = groupedBinding.get(0);
-      if (groupedBinding.size() > 1) {
-        if (firstBinding.containsField(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY))) {
-          Optional<SparqlBinding> maxPriorityEvent = groupedBinding.stream().max(
-              Comparator.comparingInt(
-                  binding -> LifecycleResource.getEventPriority(binding.getFieldValue(LifecycleResource.EVENT_KEY))));
-          firstBinding = maxPriorityEvent.orElse(firstBinding);
-        } else if (!arrayVars.isEmpty()) {
-          for (int i = 1; i < groupedBinding.size(); i++) {
-            firstBinding.addFieldArray(groupedBinding.get(i), arrayVars);
-          }
+      if (groupedBinding.size() > 1 && !arrayVars.isEmpty()) {
+        for (int i = 1; i < groupedBinding.size(); i++) {
+          firstBinding.addFieldArray(groupedBinding.get(i), arrayVars);
         }
       }
       result.offer(firstBinding);
