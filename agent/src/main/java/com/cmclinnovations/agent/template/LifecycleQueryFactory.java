@@ -179,20 +179,18 @@ public class LifecycleQueryFactory {
 
   /**
    * Retrieves the SPARQL query to retrieve the event instance associated with the
-   * target event type for a specific contract and date.
+   * target event type for a specific contract.
    * 
    * @param contract  The input contract instance.
-   * @param date      The date of occurrence.
    * @param eventType The target event type to retrieve.
    */
-  public String getEventQuery(String contract, String date, LifecycleEventType eventType) {
+  public String getContractEventQuery(String contract, LifecycleEventType eventType) {
     return StringResource.QUERY_TEMPLATE_PREFIX +
         "SELECT DISTINCT ?iri ?event WHERE{" +
         "?contract fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage." +
         "?stage cmns-col:comprises ?event;" +
         "cmns-col:comprises ?iri." +
         "?event fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;" +
-        "fibo-fnd-dt-oc:hasEventDate \"" + date + "\"^^xsd:date;" +
         "^cmns-dt:succeeds* ?iri." +
         "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
         "FILTER STRENDS(STR(?contract),\"" + contract + "\")" +

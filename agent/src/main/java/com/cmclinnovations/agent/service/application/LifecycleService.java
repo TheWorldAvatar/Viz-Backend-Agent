@@ -122,9 +122,8 @@ public class LifecycleService {
     // Update the order enum with the specific event instance if it exist
     params.computeIfPresent(LifecycleResource.ORDER_KEY, (key, value) -> {
       String orderEnum = value.toString();
-      String eventQuery = this.lifecycleQueryFactory.getEventQuery(
+      String eventQuery = this.lifecycleQueryFactory.getContractEventQuery(
           params.get(LifecycleResource.CONTRACT_KEY).toString(),
-          params.get(LifecycleResource.DATE_KEY).toString(),
           LifecycleResource.getEventClassFromOrderEnum(orderEnum));
       return this.getService.getInstance(eventQuery).getFieldValue(LifecycleResource.IRI_KEY);
     });
