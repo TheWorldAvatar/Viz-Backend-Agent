@@ -115,7 +115,7 @@ public class LifecycleQueryFactory {
     // Filter dates
     String filterDateStatement = "";
     if (contract == null && endDate != null) {
-      // Start date filters are optional
+      // For outstanding tasks, start dates are omitted
       if (!startDate.isEmpty()) {
         filterDateStatement = eventDateVar + ">=\"" + startDate + "\"^^xsd:date && ";
       }
@@ -135,7 +135,9 @@ public class LifecycleQueryFactory {
         + eventDatePlaceholderVar
         + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
         + filterDateStatement
-        + filterContractStatement;
+        + filterContractStatement
+        // Event must be the last in the chain ie no other events will succeed it
+        + "MINUS{" + eventIdVar + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}";
   }
 
   /**

@@ -242,63 +242,43 @@ public class LifecycleService {
     Queue<SparqlBinding> results = this.getService.getInstances(entityType, null, "", addQuery,
         true, varSequences);
     return results.stream()
-        .map(binding -> {
-          Map<String, Object> fields = binding.get();
-          // Extract the latest event occurrence through their priority levels
-          List<SparqlResponseField> events = TypeCastUtils.castToListObject(fields.get(LifecycleResource.EVENT_KEY),
-              SparqlResponseField.class);
-          List<SparqlResponseField> eventIds = TypeCastUtils.castToListObject(
-              fields.get(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY)),
-              SparqlResponseField.class);
-          int highestPriority = 0;
-          int highestPriorityIndex = 0;
-          for (int i = 0; i < events.size(); i++) {
-            SparqlResponseField respField = events.get(i);
-            if (highestPriority < LifecycleResource.getEventPriority(respField.value())) {
-              highestPriorityIndex = i;
-            }
+        .filter(binding -> {
+          // If filter is not required, break early
+          if (isClosed == null) {
+            return false;
           }
-          SparqlResponseField highestPriorityEvent = events.get(highestPriorityIndex);
-          SparqlResponseField highestPriorityEventId = eventIds.get(highestPriorityIndex);
-          Map<String, Object> updatedFields = fields.entrySet().stream()
+          String eventType = binding.getFieldValue(LifecycleResource.EVENT_KEY);
+          // Verify if event matches closed or open state
+          if (isClosed) {
+            return eventType.equals(LifecycleResource.EVENT_DELIVERY) ||
+                eventType.equals(LifecycleResource.EVENT_CANCELLATION) ||
+                eventType.equals(LifecycleResource.EVENT_INCIDENT_REPORT);
+          } else {
+            return eventType.equals(LifecycleResource.EVENT_DISPATCH) ||
+                eventType.equals(LifecycleResource.EVENT_ORDER_RECEIVED);
+          }
+        })
+        .map(binding -> {
+          return (Map<String, Object>) binding.get().entrySet().stream()
               .map(entry -> {
                 if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
+                  SparqlResponseField eventField = TypeCastUtils.castToObject(entry.getValue(),
+                      SparqlResponseField.class);
                   return new AbstractMap.SimpleEntry<>(
                       LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY),
                       // Add a new response field
-                      new SparqlResponseField(highestPriorityEvent.type(),
-                          LocalisationTranslator.getEvent(highestPriorityEvent.value()),
-                          highestPriorityEvent.dataType(), highestPriorityEvent.lang()));
-                } else if (entry.getKey().equals(LifecycleResource.EVENT_ID_KEY)) {
-                  return new AbstractMap.SimpleEntry<>(entry.getKey(), highestPriorityEventId);
+                      new SparqlResponseField(eventField.type(),
+                          LocalisationTranslator.getEvent(eventField.value()),
+                          eventField.dataType(), eventField.lang()));
                 } else {
                   return entry;
                 }
               })
               .collect(Collectors.toMap(
                   Map.Entry::getKey,
-                  Map.Entry::getValue,
+                  (entry -> TypeCastUtils.castToObject(entry.getValue(), Object.class)),
                   (oldVal, newVal) -> oldVal,
                   LinkedHashMap::new));
-          return updatedFields;
-        })
-        .filter(mapping -> {
-          // If filter is not required, break early
-          if (isClosed == null) {
-            return false;
-          }
-          // Verify if status matches closed or open state
-          SparqlResponseField statusField = (SparqlResponseField) mapping
-              .get(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY));
-          String status = statusField.value();
-          if (isClosed) {
-            return status.equals(LocalisationTranslator.getEvent(LifecycleResource.EVENT_DELIVERY)) ||
-                status.equals(LocalisationTranslator.getEvent(LifecycleResource.EVENT_CANCELLATION)) ||
-                status.equals(LocalisationTranslator.getEvent(LifecycleResource.EVENT_INCIDENT_REPORT));
-          } else {
-            return status.equals(LocalisationTranslator.getEvent(LifecycleResource.EVENT_DISPATCH)) ||
-                status.equals(LocalisationTranslator.getEvent(LifecycleResource.EVENT_ORDER_RECEIVED));
-          }
         })
         .toList();
   }
