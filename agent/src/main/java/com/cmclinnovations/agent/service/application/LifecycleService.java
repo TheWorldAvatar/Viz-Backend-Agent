@@ -72,6 +72,7 @@ public class LifecycleService {
     this.taskVarSequence.put(LifecycleResource.DATE_KEY, List.of(-3, 1));
     this.taskVarSequence.put(LifecycleResource.EVENT_KEY, List.of(-3, 2));
     this.taskVarSequence.put(LifecycleResource.EVENT_ID_KEY, List.of(1000, 999));
+    this.taskVarSequence.put(LifecycleResource.EVENT_STATUS_KEY, List.of(1000, 1000));
   }
 
   /**
@@ -247,27 +248,43 @@ public class LifecycleService {
             return false;
           }
           String eventType = binding.getFieldValue(LifecycleResource.EVENT_KEY);
+          String eventStatus = binding.getFieldValue(LifecycleResource.EVENT_STATUS_KEY);
           // Verify if event matches closed or open state
           if (isClosed) {
-            return eventType.equals(LifecycleResource.EVENT_DELIVERY) ||
+            // When event is delivery and has completed status, it is closed
+            return (eventType.equals(LifecycleResource.EVENT_DELIVERY)
+                && LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS.equals(eventStatus)) ||
                 eventType.equals(LifecycleResource.EVENT_CANCELLATION) ||
                 eventType.equals(LifecycleResource.EVENT_INCIDENT_REPORT);
           } else {
-            return eventType.equals(LifecycleResource.EVENT_DISPATCH) ||
+            // When event is delivery and has pending status, it is still open for changes
+            return (eventType.equals(LifecycleResource.EVENT_DELIVERY)
+                && LifecycleResource.COMPLETION_EVENT_PENDING_STATUS.equals(eventStatus)) ||
+                eventType.equals(LifecycleResource.EVENT_DISPATCH) ||
                 eventType.equals(LifecycleResource.EVENT_ORDER_RECEIVED);
           }
         })
         .map(binding -> {
+          String eventStatus = binding.getFieldValue(LifecycleResource.EVENT_STATUS_KEY);
+
           return (Map<String, Object>) binding.get().entrySet().stream()
               .map(entry -> {
                 if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
                   SparqlResponseField eventField = TypeCastUtils.castToObject(entry.getValue(),
                       SparqlResponseField.class);
+                  // For any pending completion events, simply reset it to the previous event
+                  // status as they are incomplete or in a saved state, and should still be
+                  // outstanding
+                  String eventType = eventField.value();
+                  if (eventType.equals(LifecycleResource.EVENT_DELIVERY)
+                      && LifecycleResource.COMPLETION_EVENT_PENDING_STATUS.equals(eventStatus)) {
+                    eventType = LifecycleResource.EVENT_DISPATCH;
+                  }
                   return new AbstractMap.SimpleEntry<>(
                       LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY),
                       // Add a new response field
                       new SparqlResponseField(eventField.type(),
-                          LocalisationTranslator.getEvent(eventField.value()),
+                          LocalisationTranslator.getEvent(eventType),
                           eventField.dataType(), eventField.lang()));
                 } else {
                   return entry;
