@@ -110,6 +110,8 @@ public class LifecycleQueryFactory {
     String eventDatePlaceholderVar = ShaclResource.VARIABLE_MARK + "event_date";
     String eventVar = ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY;
     String eventIdVar = StringResource.parseQueryVariable(ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_ID_KEY);
+    String eventStatusVar = StringResource
+        .parseQueryVariable(ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_STATUS_KEY);
 
     String filterContractStatement = contract != null ? "FILTER STRENDS(STR(?iri),\"" + contract + "\")" : "";
     // Filter dates
@@ -134,6 +136,7 @@ public class LifecycleQueryFactory {
         + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
         + eventDatePlaceholderVar
         + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
+        + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar + "}"
         + filterDateStatement
         + filterContractStatement
         // Event must be the last in the chain ie no other events will succeed it

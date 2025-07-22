@@ -154,7 +154,7 @@ public class SparqlBinding {
    * @param defaultValue Fall back value.
    */
   public String getFieldValue(String field, String defaultValue) {
-    SparqlResponseField fieldBinding = this.bindings.get(field);
+    SparqlResponseField fieldBinding = this.bindings.get(StringResource.parseQueryVariable(field));
     if (fieldBinding == null) {
       return defaultValue;
     }
