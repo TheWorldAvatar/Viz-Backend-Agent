@@ -24,6 +24,7 @@ public class LifecycleResource {
   public static final String DATE_TIME_KEY = "dateTime";
   public static final String EVENT_KEY = "event";
   public static final String EVENT_ID_KEY = "event id";
+  public static final String EVENT_STATUS_KEY = "event status";
   public static final String STAGE_KEY = "stage";
   public static final String STATUS_KEY = "status";
   public static final String REMARKS_KEY = "remarks";
@@ -67,6 +68,8 @@ public class LifecycleResource {
   public static final String EVENT_CONTRACT_COMPLETION = "https://www.theworldavatar.com/kg/ontoservice/ContractDischarge";
   public static final String EVENT_CONTRACT_RESCISSION = "https://www.theworldavatar.com/kg/ontoservice/ContractRescission";
   public static final String EVENT_CONTRACT_TERMINATION = "https://www.theworldavatar.com/kg/ontoservice/ContractTermination";
+  public static final String COMPLETION_EVENT_COMPLETED_STATUS = "https://www.theworldavatar.com/kg/ontoservice/CompletedStatus";
+  public static final String COMPLETION_EVENT_PENDING_STATUS = "https://www.theworldavatar.com/kg/ontoservice/PendingStatus";
   public static final String LIFECYCLE_RECORD = "https://www.omg.org/spec/Commons/Documents/Record";
   public static final String LIFECYCLE_REPORT = "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Reporting/Report";
   public static final String PAYMENT_OBLIGATION = "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation";
