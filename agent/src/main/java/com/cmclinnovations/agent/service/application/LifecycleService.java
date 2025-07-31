@@ -125,6 +125,7 @@ public class LifecycleService {
       String orderEnum = value.toString();
       String eventQuery = this.lifecycleQueryFactory.getContractEventQuery(
           params.get(LifecycleResource.CONTRACT_KEY).toString(),
+          params.get(LifecycleResource.DATE_KEY).toString(),
           LifecycleResource.getEventClassFromOrderEnum(orderEnum));
       return this.getService.getInstance(eventQuery).getFieldValue(LifecycleResource.IRI_KEY);
     });

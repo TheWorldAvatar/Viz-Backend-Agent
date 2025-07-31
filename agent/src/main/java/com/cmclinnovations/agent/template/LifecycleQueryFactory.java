@@ -187,7 +187,7 @@ public class LifecycleQueryFactory {
    * @param contract  The input contract instance.
    * @param eventType The target event type to retrieve.
    */
-  public String getContractEventQuery(String contract, LifecycleEventType eventType) {
+  public String getContractEventQuery(String contract, String date, LifecycleEventType eventType) {
     return StringResource.QUERY_TEMPLATE_PREFIX +
         "SELECT DISTINCT ?iri ?event WHERE{" +
         "?contract fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage." +
@@ -195,8 +195,10 @@ public class LifecycleQueryFactory {
         "cmns-col:comprises ?iri." +
         "?event fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;" +
         "^cmns-dt:succeeds* ?iri." +
-        "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
+        "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">;" +
+        "fibo-fnd-dt-oc:hasEventDate ?date." +
         "FILTER STRENDS(STR(?contract),\"" + contract + "\")" +
+        "FILTER(?date=\"" + date + "\"^^xsd:date)" +
         "}";
   }
 
