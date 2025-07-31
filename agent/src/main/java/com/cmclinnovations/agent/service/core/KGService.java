@@ -36,6 +36,7 @@ import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
@@ -244,15 +245,20 @@ public class KGService {
    */
   public Model getShaclRules(String resourceId) {
     LOGGER.debug("Retrieving SHACL rules for resource: {}", resourceId);
-    String query;
+    String target;
     try {
-      String target = this.fileService.getTargetIri(resourceId);
-      query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target);
+      target = this.fileService.getTargetIri(resourceId);
     } catch (InvalidRouteException e) {
-      // If no target is specified, return an empty model
-      LOGGER.warn("No target resource specified for SHACL rules retrieval. Returning an empty model.");
-      return ModelFactory.createDefaultModel();
+      LifecycleEventType eventType = LifecycleEventType.fromId(resourceId);
+      if (eventType != null) {
+        target = eventType.getShaclReplacement();
+      } else {
+        // If no target is specified, return an empty model
+        LOGGER.warn("No target resource specified for SHACL rules retrieval. Returning an empty model.");
+        return ModelFactory.createDefaultModel();
+      }
     }
+    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target);
 
     List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
     Model model = ModelFactory.createDefaultModel();
