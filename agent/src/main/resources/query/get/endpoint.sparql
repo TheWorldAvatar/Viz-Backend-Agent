@@ -3,6 +3,7 @@ PREFIX ser:   <https://theworldavatar.io/kg/service#>
 
 SELECT DISTINCT ?endpoint
 WHERE {
-  ?ontop a [target] ;
+  ?service a ?service_type ;
     dcat:endpointURL ?endpoint .
+  VALUES ?service_type { [target] }
 }
