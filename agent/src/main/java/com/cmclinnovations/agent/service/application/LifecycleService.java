@@ -447,7 +447,6 @@ public class LifecycleService {
       LOGGER.error(LocalisationTranslator.getMessage(successMsgId), params.get(LifecycleResource.ORDER_KEY),
           exception.getMessage());
     }
-    LOGGER.info(successMsgId);
     return response;
   }
 
