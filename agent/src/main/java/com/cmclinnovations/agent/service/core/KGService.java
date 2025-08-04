@@ -245,9 +245,12 @@ public class KGService {
   /**
    * Retrieves the SHACL rules associated with the target resource.
    * 
-   * @param resourceID The target resource identifier for the instance.
+   * @param resourceID             The target resource identifier for the
+   *                               instance.
+   * @param isSparqlConstructRules Extract only SPARQL CONSTRUCT rules if true,
+   *                               else, retrieve all other rules.
    */
-  public Model getShaclRules(String resourceId) {
+  public Model getShaclRules(String resourceId, boolean isSparqlConstructRules) {
     LOGGER.debug("Retrieving SHACL rules for resource: {}", resourceId);
     String target;
     try {
@@ -263,7 +266,9 @@ public class KGService {
       }
     }
     String query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target);
-
+    query = query.replace(FileService.REPLACEMENT_SHAPE,
+        isSparqlConstructRules ? ";a <http://www.w3.org/ns/shacl#SPARQLRule>."
+            : ".MINUS{?ruleShape a <http://www.w3.org/ns/shacl#SPARQLRule>}");
     List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
     Model model = ModelFactory.createDefaultModel();
     for (String endpoint : endpoints) {

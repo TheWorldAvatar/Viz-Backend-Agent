@@ -12,6 +12,7 @@ WHERE {
        sh:targetClass ?target;
        sh:targetClass [target];
        sh:node*/sh:rule ?ruleShape .
-  ?ruleShape a ?ruleType ;
-       ?pred ?object.
+  ?ruleShape a ?ruleType;
+       ?pred ?object
+       [shape]
 }

@@ -113,17 +113,19 @@ public class AddService {
 
     ResponseEntity<String> response = this.kgService.add(jsonString);
 
-    Model rules = this.kgService.getShaclRules(resourceID);
-    if (response.getStatusCode() == HttpStatus.OK && !rules.isEmpty()) {
+    Model sparqlConstructRules = this.kgService.getShaclRules(resourceID, true);
+    Model otherRules = this.kgService.getShaclRules(resourceID, false);
+    if (response.getStatusCode() == HttpStatus.OK && (!sparqlConstructRules.isEmpty() || !otherRules.isEmpty())) {
       LOGGER.info("Detected rules! Instantiating inferred instances to endpoint...");
-      this.kgService.execShaclRules(rules);
+      this.kgService.execShaclRules(sparqlConstructRules);
+
       Model dataModel = this.kgService.readStringModel(jsonString, Lang.JSONLD);
-      Model inferredData = RuleUtil.executeRules(dataModel, rules, null, null);
+      Model inferredData = RuleUtil.executeRules(dataModel, otherRules, null, null);
       try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
         RDFWriter.create()
-        .source(inferredData)
-        .format(RDFFormat.JSONLD)
-        .output(out);
+            .source(inferredData)
+            .format(RDFFormat.JSONLD)
+            .output(out);
         String stringifiedInferredData = out.toString(StandardCharsets.UTF_8);
         response = this.kgService.add(stringifiedInferredData);
       } catch (IOException e) {
