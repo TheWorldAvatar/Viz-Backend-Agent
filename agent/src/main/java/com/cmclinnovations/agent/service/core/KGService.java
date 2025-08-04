@@ -33,6 +33,7 @@ import org.springframework.web.client.RestClient;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.component.ShaclRuleProcesser;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
@@ -61,6 +62,7 @@ public class KGService {
   private final FileService fileService;
   private final LoggingService loggingService;
   private final ResponseEntityBuilder responseEntityBuilder;
+  private final ShaclRuleProcesser shaclRuleProcesser;
 
   private static final String DEFAULT_NAMESPACE = "kb";
   private static final String JSON_MEDIA_TYPE = "application/json";
@@ -82,14 +84,16 @@ public class KGService {
    * @param fileService           File service for accessing file resources.
    * @param loggingService        Service for logging statements.
    * @param responseEntityBuilder A component to build the response entity.
+   * @param shaclRuleProcesser    A component to process SHACL rules.
    */
   public KGService(FileService fileService, LoggingService loggingService,
-      ResponseEntityBuilder responseEntityBuilder) {
+      ResponseEntityBuilder responseEntityBuilder, ShaclRuleProcesser shaclRuleProcesser) {
     this.client = RestClient.create();
     this.objectMapper = new ObjectMapper();
     this.fileService = fileService;
     this.loggingService = loggingService;
     this.responseEntityBuilder = responseEntityBuilder;
+    this.shaclRuleProcesser = shaclRuleProcesser;
   }
 
   /**
@@ -275,6 +279,27 @@ public class KGService {
       model.add(resultModel);
     }
     return model;
+  }
+
+  /**
+   * Executes the SHACL SPARQL construct rules on all available endpoints.
+   * 
+   * @param rules The target SHACL rules.
+   */
+  public void execShaclRules(Model rules) {
+    LOGGER.info("Executing SHACL SPARQL construct rules directly in the knowledge graph...");
+    Queue<String> constructQueries = this.shaclRuleProcesser.getConstructQueries(rules);
+    while (!constructQueries.isEmpty()) {
+      String currentQuery = constructQueries.poll();
+      // Execute a SELECT query to retrieve all possible variables and their values in
+      // the WHERE clause
+      String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery);
+      Queue<SparqlBinding> results = this.query(queryForExecution, SparqlEndpointType.MIXED);
+      // Using the results of the SELECT query as replacements to the CONSTRUCT
+      // clause, generate the INSERT DATA query
+      String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(currentQuery, results);
+      this.executeUpdate(insertDataQuery);
+    }
   }
 
   /**
