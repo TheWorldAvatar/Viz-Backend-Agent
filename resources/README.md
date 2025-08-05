@@ -508,6 +508,12 @@ An example is provided below:
 
 2. `SHACL` rule in ttl
 
+> [!IMPORTANT]
+> The `order` property is required to execute the rules in the desired sequence as rules may be dependent on each other. 
+
+> [!TIP]
+> `SPARQL` rules (using `sh:construct`) will be executed across all `SPARQL` endpoints, while Triple rules will only be executed on the instance being instantiated. It is recommended to use `SPARQL` rules if you require a derivation based on existing knowledge stored in the endpoints OR the derived triples are complex with nested and/or multiple statements.
+
 ```
 @prefix ex:   <http://example.org/> .
 @prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
