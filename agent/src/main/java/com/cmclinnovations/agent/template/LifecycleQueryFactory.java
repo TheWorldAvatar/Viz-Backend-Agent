@@ -28,7 +28,7 @@ public class LifecycleQueryFactory {
         + "BIND(IF(?event_type=ontoservice:ContractDischarge||?event_type=ontoservice:ContractRescission||?event_type=ontoservice:ContractTermination,"
         + "2,IF(?event_type=ontoservice:ContractApproval,1,0)"
         + ") AS ?priority_val)"
-        + "FILTER STRENDS(STR(?iri),\"" + contractId + "\")"
+        + "FILTER REGEX(STR(?iri),\"(^|/|#)" + contractId + "$\")"
         + "}"
         + "GROUP BY ?iri}"
         + "BIND(IF(?priority=2,\"Archived\","
@@ -71,7 +71,7 @@ public class LifecycleQueryFactory {
         + "GROUP BY ?iri}"
         // WARNING: FedX seems to execute filters at the end and will return inaccurate
         // values otherwise
-        + "FILTER STRENDS(STR(?iri),\"" + contractId + "\")"
+        + "FILTER REGEX(STR(?iri),\"(^|/|#)" + contractId + "$\")"
         + "}";
   }
 
@@ -113,7 +113,7 @@ public class LifecycleQueryFactory {
     String eventStatusVar = StringResource
         .parseQueryVariable(ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_STATUS_KEY);
 
-    String filterContractStatement = contract != null ? "FILTER STRENDS(STR(?iri),\"" + contract + "\")" : "";
+    String filterContractStatement = contract != null ? "FILTER REGEX(STR(?iri),\"(^|/|#)" + contract + "$\")" : "";
     // Filter dates
     String filterDateStatement = "";
     if (contract == null && endDate != null) {
@@ -156,7 +156,7 @@ public class LifecycleQueryFactory {
         "?contract fibo-fnd-arr-lif:hasLifecycle ?lifecycle ." +
         "?lifecycle fibo-fnd-arr-lif:hasStage ?iri ." +
         "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getStage() + "> ." +
-        "FILTER STRENDS(STR(?contract),\"" + contract + "\")" +
+        "FILTER REGEX(STR(?contract),\"(^|/|#)" + contract + "$\")" +
         "}";
   }
 
@@ -176,7 +176,7 @@ public class LifecycleQueryFactory {
         "cmns-col:comprises ?iri." +
         "?event cmns-dt:succeeds? ?iri." +
         "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
-        "FILTER STRENDS(STR(?event),\"" + event + "\")" +
+        "FILTER REGEX(STR(?event),\"(^|/|#)" + event + "$\")" +
         "}";
   }
 
