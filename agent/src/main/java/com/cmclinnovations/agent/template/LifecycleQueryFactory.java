@@ -194,11 +194,13 @@ public class LifecycleQueryFactory {
         "?stage cmns-col:comprises ?event;" +
         "cmns-col:comprises ?iri." +
         "?event fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;" +
+        "^cmns-dt:succeeds* ?final_event;" +
         "^cmns-dt:succeeds* ?iri." +
+        "?final_event fibo-fnd-dt-oc:hasEventDate ?date." +
         "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">;" +
-        "fibo-fnd-dt-oc:hasEventDate ?date." +
-        "FILTER STRENDS(STR(?contract),\"" + contract + "\")" +
-        "FILTER(?date=\"" + date + "\"^^xsd:date)" +
+        "FILTER REGEX(STR(?contract),\"(^|/|#)" + contract + "$\")" +
+        "FILTER(xsd:date(?date)=\"" + date + "\"^^xsd:date)" +
+        "MINUS{?final_event ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}" +
         "}";
   }
 
