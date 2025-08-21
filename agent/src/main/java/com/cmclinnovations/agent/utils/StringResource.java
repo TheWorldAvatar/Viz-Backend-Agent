@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class StringResource {
   public static final String ID_KEY = "id";
   public static final String QUERY_TEMPLATE_PREFIX = "PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>"
+      + "PREFIX dc-terms: <http://purl.org/dc/terms/>"
       + "PREFIX cmns-dt: <https://www.omg.org/spec/Commons/DatesAndTimes/>"
       + "PREFIX cmns-dsg: <https://www.omg.org/spec/Commons/Designators/>"
       + "PREFIX cmns-qtu: <https://www.omg.org/spec/Commons/QuantitiesAndUnits/>"
@@ -29,7 +30,6 @@ public class StringResource {
       + "PREFIX fibo-fnd-pas-pas: <https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/>"
       + "PREFIX fibo-fnd-pas-psch: <https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/>"
       + "PREFIX geo: <http://www.opengis.net/ont/geosparql#>"
-      + "PREFIX ontobim: <https://www.theworldavatar.com/kg/ontobim/>"
       + "PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>"
       + "PREFIX xsd:<http://www.w3.org/2001/XMLSchema#>";
 

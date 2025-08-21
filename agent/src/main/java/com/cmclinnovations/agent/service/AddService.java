@@ -94,6 +94,8 @@ public class AddService {
     ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
     // Attempt to replace all placeholders in the JSON schema
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
+    // Add the static ID reference
+    this.jsonLdService.appendId(addJsonSchema, targetId);
     return this.instantiateJsonLd(addJsonSchema, resourceID, LocalisationResource.SUCCESS_ADD_KEY);
   }
 
@@ -414,5 +416,5 @@ public class AddService {
       }
     }
     parentNode.set(parentField, results);
-  }
+  } 
 }

@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class JsonLdService {
   private final ObjectMapper objectMapper;
 
-  private static final String RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
   private static final Logger LOGGER = LogManager.getLogger(JsonLdService.class);
 
   /**
@@ -79,15 +78,13 @@ public class JsonLdService {
   }
 
   /**
-   * Generates a instance object node with a readable label.
+   * Appends an ID to the target node.
    * 
-   * @param prefix  IRI prefix.
-   * @param concept The ontology concept class/type for the instance.
-   * @param label   The label for the instance.
+   * @param targetNode The target node.
+   * @param idValue    The value of the identifier.
    */
-  public ObjectNode genInstance(String prefix, String concept, String label) {
-    return this.genInstance(prefix, concept)
-        .put(RDFS_LABEL, label);
+  public void appendId(ObjectNode targetNode, String idValue) {
+    targetNode.put(ShaclResource.DC_TERMS_ID, idValue);
   }
 
   /**

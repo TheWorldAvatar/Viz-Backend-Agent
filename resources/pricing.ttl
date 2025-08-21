@@ -14,21 +14,9 @@ base:PricingModelShape
   a sh:NodeShape ;
   sh:targetClass fibo-fbc-fi-ip:PricingModel ;
   sh:property [
-    sh:name "id";
-    sh:description "The identifier for the pricing model.";
-    sh:order 0;
-    sh:path (
-        cmns-qtu:hasArgument
-        [sh:inversePath cmns-qtu:hasArgument]
-      ) ;
-    sh:datatype xsd:string ;
-    sh:minCount 1 ;
-    sh:maxCount 1 ;
-  ] ;
-  sh:property [
     sh:name "base fee";
     sh:description "A fixed base fee for each service delivered.";
-    sh:order 1;
+    sh:order 0;
     sh:path cmns-qtu:hasArgument ;
     sh:node base:BaseFeeShape ;
     sh:minCount 1 ;

@@ -22,6 +22,7 @@ public class ShaclResource {
   public static final String ARRAY_KEY = "array";
   // Namespaces
   public static final String BASE_PREFIX = "https://theworldavatar.io/kg/";
+  public static final String DC_TERMS_PREFIX = "http://purl.org/dc/terms/";
   public static final String RDFS_PREFIX = "http://www.w3.org/2000/01/rdf-schema#";
   public static final String SHACL_PREFIX = "http://www.w3.org/ns/shacl#";
   public static final String XSD_PREFIX = "http://www.w3.org/2001/XMLSchema#";
@@ -64,6 +65,7 @@ public class ShaclResource {
   public static final String IS_OPTIONAL_VAR = "isoptional";
   public static final String IS_CLASS_VAR = "isclass";
   // Query string elements
+  public static final String DC_TERMS_ID = DC_TERMS_PREFIX + "identifier";
   public static final String RDFS_LABEL_PREDICATE = "rdfs:label";
   public static final String FULL_STOP = ".";
   public static final String VARIABLE_MARK = "?";

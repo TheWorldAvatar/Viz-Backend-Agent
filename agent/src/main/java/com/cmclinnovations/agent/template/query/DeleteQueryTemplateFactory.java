@@ -43,6 +43,8 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     StringBuilder deleteBuilder = new StringBuilder();
     StringBuilder whereBuilder = new StringBuilder();
     this.recursiveParseNode(deleteBuilder, whereBuilder, params.rootNode(), params.targetId(), true);
+    StringResource.appendTriple(deleteBuilder, ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY,
+        StringResource.parseIriForQuery(ShaclResource.DC_TERMS_ID), StringResource.parseLiteral(params.targetId()));
     Queue<String> result = new ArrayDeque<>();
     result.offer(this.genDeleteTemplate(deleteBuilder, whereBuilder, this.deleteBranchBuilders));
     return result;
