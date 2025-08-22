@@ -8,10 +8,11 @@ CONSTRUCT {
                ?pred ?object.
 }
 WHERE {
-  BIND([target] AS ?target)
   ?shape a sh:NodeShape ;
-         sh:targetClass ?target;
-         sh:rule ?ruleShape .
-  ?ruleShape a ?ruleType ;
-               ?pred ?object.
+       sh:targetClass ?target;
+       sh:targetClass [target];
+       sh:node*/sh:rule ?ruleShape .
+  ?ruleShape a ?ruleType;
+       ?pred ?object
+       [shape]
 }

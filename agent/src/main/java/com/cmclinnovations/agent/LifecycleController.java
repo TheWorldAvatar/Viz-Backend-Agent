@@ -42,13 +42,14 @@ public class LifecycleController {
   private static final Logger LOGGER = LogManager.getLogger(LifecycleController.class);
 
   public LifecycleController(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
-      LifecycleService lifecycleService, LifecycleReportService lifecycleReportService, ResponseEntityBuilder responseEntityBuilder) {
+      LifecycleService lifecycleService, LifecycleReportService lifecycleReportService,
+      ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
     this.deleteService = deleteService;
     this.lifecycleService = lifecycleService;
     this.lifecycleReportService = lifecycleReportService;
-    this.responseEntityBuilder =  responseEntityBuilder;
+    this.responseEntityBuilder = responseEntityBuilder;
   }
 
   /**
@@ -126,7 +127,7 @@ public class LifecycleController {
     } else {
       LOGGER.info("All orders has been successfully received!");
       JsonNode report = this.lifecycleReportService.genReportInstance(contractId);
-      ResponseEntity<StandardApiResponse> response = this.addService.instantiateJsonLd(report, "report",
+      ResponseEntity<StandardApiResponse> response = this.addService.instantiateJsonLd(report, "unknown",
           LocalisationResource.SUCCESS_ADD_REPORT_KEY);
       if (response.getStatusCode() != HttpStatus.OK) {
         return response;
@@ -146,9 +147,10 @@ public class LifecycleController {
   }
 
   /**
-   * Updates a completed or dispatch event. Valid types include:
-   * 1) complete: Completes a specific service order
-   * 2) dispatch: Assign dispatch details for the specified event
+   * Updates a completed, saved, or dispatch event. Valid types include:
+   * 1) dispatch: Assign dispatch details for the specified event
+   * 2) saved: Saves a completed records in a pending state
+   * 3) complete: Completes a specific service order
    */
   @PutMapping("/service/{type}")
   public ResponseEntity<StandardApiResponse> assignDispatchDetails(@PathVariable String type,
@@ -162,11 +164,17 @@ public class LifecycleController {
     switch (type.toLowerCase()) {
       case "complete":
         LOGGER.info("Received request to complete a service order with completion details...");
+        params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS);
         eventType = LifecycleEventType.SERVICE_EXECUTION;
         break;
       case "dispatch":
         LOGGER.info("Received request to assign the dispatch details for a service order...");
         eventType = LifecycleEventType.SERVICE_ORDER_DISPATCHED;
+        break;
+      case "saved":
+        LOGGER.info("Received request to save a service order with completion details...");
+        params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.COMPLETION_EVENT_PENDING_STATUS);
+        eventType = LifecycleEventType.SERVICE_EXECUTION;
         break;
       default:
         break;

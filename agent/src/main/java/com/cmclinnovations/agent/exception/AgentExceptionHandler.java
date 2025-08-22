@@ -1,8 +1,6 @@
 package com.cmclinnovations.agent.exception;
 
 import java.nio.file.FileSystemNotFoundException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -49,12 +47,9 @@ public class AgentExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<StandardApiResponse> globalExceptionHandling(Exception exception, WebRequest request) {
-    LocalDateTime currentTime = LocalDateTime.now();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
     LOGGER.error("Error encountered:", exception);
     return this.responseEntityBuilder.error(
-        LocalisationTranslator.getMessage(LocalisationResource.ERROR_TIMESTAMP_KEY, currentTime.format(formatter),
-            exception.getMessage()),
+        LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_SERVER_KEY),
         HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }

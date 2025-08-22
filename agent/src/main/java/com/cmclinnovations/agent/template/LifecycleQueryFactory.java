@@ -28,7 +28,7 @@ public class LifecycleQueryFactory {
         + "BIND(IF(?event_type=ontoservice:ContractDischarge||?event_type=ontoservice:ContractRescission||?event_type=ontoservice:ContractTermination,"
         + "2,IF(?event_type=ontoservice:ContractApproval,1,0)"
         + ") AS ?priority_val)"
-        + "FILTER STRENDS(STR(?iri),\"" + contractId + "\")"
+        + "FILTER REGEX(STR(?iri),\"(^|/|#)" + contractId + "$\")"
         + "}"
         + "GROUP BY ?iri}"
         + "BIND(IF(?priority=2,\"Archived\","
@@ -71,7 +71,7 @@ public class LifecycleQueryFactory {
         + "GROUP BY ?iri}"
         // WARNING: FedX seems to execute filters at the end and will return inaccurate
         // values otherwise
-        + "FILTER STRENDS(STR(?iri),\"" + contractId + "\")"
+        + "FILTER REGEX(STR(?iri),\"(^|/|#)" + contractId + "$\")"
         + "}";
   }
 
@@ -110,8 +110,10 @@ public class LifecycleQueryFactory {
     String eventDatePlaceholderVar = ShaclResource.VARIABLE_MARK + "event_date";
     String eventVar = ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY;
     String eventIdVar = StringResource.parseQueryVariable(ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_ID_KEY);
+    String eventStatusVar = StringResource
+        .parseQueryVariable(ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_STATUS_KEY);
 
-    String filterContractStatement = contract != null ? "FILTER STRENDS(STR(?iri),\"" + contract + "\")" : "";
+    String filterContractStatement = contract != null ? "FILTER REGEX(STR(?iri),\"(^|/|#)" + contract + "$\")" : "";
     // Filter dates
     String filterDateStatement = "";
     if (contract == null && endDate != null) {
@@ -134,6 +136,7 @@ public class LifecycleQueryFactory {
         + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
         + eventDatePlaceholderVar
         + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
+        + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar + "}"
         + filterDateStatement
         + filterContractStatement
         // Event must be the last in the chain ie no other events will succeed it
@@ -153,7 +156,7 @@ public class LifecycleQueryFactory {
         "?contract fibo-fnd-arr-lif:hasLifecycle ?lifecycle ." +
         "?lifecycle fibo-fnd-arr-lif:hasStage ?iri ." +
         "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getStage() + "> ." +
-        "FILTER STRENDS(STR(?contract),\"" + contract + "\")" +
+        "FILTER REGEX(STR(?contract),\"(^|/|#)" + contract + "$\")" +
         "}";
   }
 
@@ -173,7 +176,7 @@ public class LifecycleQueryFactory {
         "cmns-col:comprises ?iri." +
         "?event cmns-dt:succeeds? ?iri." +
         "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
-        "FILTER STRENDS(STR(?event),\"" + event + "\")" +
+        "FILTER REGEX(STR(?event),\"(^|/|#)" + event + "$\")" +
         "}";
   }
 
@@ -184,16 +187,20 @@ public class LifecycleQueryFactory {
    * @param contract  The input contract instance.
    * @param eventType The target event type to retrieve.
    */
-  public String getContractEventQuery(String contract, LifecycleEventType eventType) {
+  public String getContractEventQuery(String contract, String date, LifecycleEventType eventType) {
     return StringResource.QUERY_TEMPLATE_PREFIX +
         "SELECT DISTINCT ?iri ?event WHERE{" +
         "?contract fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage." +
         "?stage cmns-col:comprises ?event;" +
         "cmns-col:comprises ?iri." +
         "?event fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;" +
+        "^cmns-dt:succeeds* ?final_event;" +
         "^cmns-dt:succeeds* ?iri." +
-        "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
-        "FILTER STRENDS(STR(?contract),\"" + contract + "\")" +
+        "?final_event fibo-fnd-dt-oc:hasEventDate ?date." +
+        "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">;" +
+        "FILTER REGEX(STR(?contract),\"(^|/|#)" + contract + "$\")" +
+        "FILTER(xsd:date(?date)=\"" + date + "\"^^xsd:date)" +
+        "MINUS{?final_event ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}" +
         "}";
   }
 

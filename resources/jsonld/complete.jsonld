@@ -17,6 +17,12 @@
     "@type": "literal",
     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
   },
+  "https://www.omg.org/spec/Commons/Designators/describes": {
+    "@id": {
+      "@replace": "event status",
+      "@type": "iri"
+    }
+  },
   "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies": {
     "@id": {
       "@replace": "event",

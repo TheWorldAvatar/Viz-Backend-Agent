@@ -9,7 +9,7 @@ public enum SparqlEndpointType {
             return Stream.of(values())
                     .filter(type -> type != SparqlEndpointType.MIXED)
                     .map(SparqlEndpointType::getIri)
-                    .collect(Collectors.joining(", "));
+                    .collect(Collectors.joining(" "));
         }
     },
     BLAZEGRAPH("ser:Blazegraph"),

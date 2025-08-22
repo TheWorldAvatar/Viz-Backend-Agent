@@ -37,7 +37,6 @@ public class LocalisationResource {
   public static final String ERROR_MISSING_FIELD_KEY = ERROR_PREFIX + "missing.field";
   public static final String ERROR_MISSING_FILE_KEY = ERROR_PREFIX + "missing.file";
   public static final String ERROR_ORDERS_PARTIAL_KEY = ERROR_PREFIX + "orders.partial";
-  public static final String ERROR_TIMESTAMP_KEY = ERROR_PREFIX + "timestamp";
   public static final String ERROR_INVALID_DATE_CHRONOLOGY_KEY = ERROR_PREFIX + "invalid.date.chronology";
   public static final String ERROR_INVALID_DATE_SCHEDULED_PRESENT_KEY = ERROR_PREFIX + "invalid.date.scheduledpresent";
   public static final String ERROR_INVALID_DATE_CANCEL_KEY = ERROR_PREFIX + "invalid.date.cancel";
@@ -47,6 +46,7 @@ public class LocalisationResource {
   public static final String ERROR_INVALID_INSTANCE_KEY = ERROR_PREFIX + "invalid.instance";
   public static final String ERROR_INVALID_MULTIPLE_INSTANCE_KEY = ERROR_PREFIX + "invalid.multiple.instance";
   public static final String ERROR_INVALID_ROUTE_KEY = ERROR_PREFIX + "invalid.route";
+  public static final String ERROR_INVALID_SERVER_KEY = ERROR_PREFIX + "invalid.server";
   public static final String VAR_STATUS_KEY = VAR_PREFIX + STATUS_KEY;
 
   // Private constructor to prevent instantiation

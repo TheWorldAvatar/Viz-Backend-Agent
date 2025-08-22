@@ -508,6 +508,12 @@ An example is provided below:
 
 2. `SHACL` rule in ttl
 
+> [!IMPORTANT]
+> The `order` property is required to execute the rules in the desired sequence as rules may be dependent on each other. 
+
+> [!TIP]
+> `SPARQL` rules (using `sh:construct`) will be executed across all `SPARQL` endpoints, while Triple rules will only be executed on the instance being instantiated. It is recommended to use `SPARQL` rules if you require a derivation based on existing knowledge stored in the endpoints OR the derived triples are complex with nested and/or multiple statements.
+
 ```
 @prefix ex:   <http://example.org/> .
 @prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
@@ -665,7 +671,7 @@ Form branches adapt to selected categories by displaying different field sets. D
 > Users will be required to add a `JSON-LD` for the `ServiceDispatchEvent`. This event should assign dispatch details before the service executes. A sample file has been created in `./jsonld/dispatch.jsonld`, and users must not modify line 1 - 39. The relevant route(s) is found in the `Service dispatch` section [over here](../README.md#265-service-order-route).
 
 > [!IMPORTANT]
-> Users will be required to add a `JSON-LD` for the `ServiceDeliveryEvent`. This event should execute upon completion of the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/complete.jsonld`, and users must not modify line 1 - 39. The relevant route(s) is found in the `Service completion` section [over here](#265-service-order-route). 
+> Users will be required to add a `JSON-LD` for the `ServiceDeliveryEvent`. This event should execute upon completion of the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/complete.jsonld`, and users must not modify line 1 - 44. The relevant route(s) is found in the `Service completion` section [over here](../README.md#265-service-order-route). 
 
 ### 2.2 Geocoding
 

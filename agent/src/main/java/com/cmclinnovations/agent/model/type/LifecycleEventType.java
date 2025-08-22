@@ -40,4 +40,18 @@ public enum LifecycleEventType {
     return "<https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence>;"
         + "sh:property/sh:hasValue " + StringResource.parseIriForQuery(this.getEvent());
   }
+
+  /**
+   * Retrieves a LifecycleEventType enum constant based on its ID.
+   *
+   * @param enumId The string representing the enum's constant name.
+   */
+  public static LifecycleEventType fromId(String enumId) {
+    for (LifecycleEventType event : LifecycleEventType.values()) {
+      if (event.getId().equals(enumId)) {
+        return event;
+      }
+    }
+    return null;
+  }
 }
