@@ -30,6 +30,7 @@ public class FormTemplateFactory {
   private Map<String, JsonNode> groups;
   private Map<String, JsonNode> nodes;
 
+  private final Map<String, String> context;
   private final ObjectMapper objectMapper;
   private static final Logger LOGGER = LogManager.getLogger(FormTemplateFactory.class);
 
@@ -41,6 +42,8 @@ public class FormTemplateFactory {
   public FormTemplateFactory(AuthenticationService authenticationService) {
     this.objectMapper = new ObjectMapper();
     this.authenticationService = authenticationService;
+    this.context = new HashMap<>();
+    this.setupContext();
   }
 
   /**
@@ -59,7 +62,7 @@ public class FormTemplateFactory {
     if (this.properties.isEmpty()) {
       return new HashMap<>();
     } else {
-      this.addContext();
+      this.form.put(ShaclResource.CONTEXT_KEY, this.context);
       this.parseInputs(defaultVals);
     }
 
@@ -77,26 +80,25 @@ public class FormTemplateFactory {
   }
 
   /**
-   * Adds the context for the form template.
+   * Initialise the context for the form template.
    */
-  private void addContext() {
-    Map<String, String> context = new HashMap<>();
-    context.put(ShaclResource.COMMENT_PROPERTY, ShaclResource.RDFS_PREFIX + ShaclResource.COMMENT_PROPERTY);
-    context.put(ShaclResource.LABEL_PROPERTY, ShaclResource.RDFS_PREFIX + ShaclResource.LABEL_PROPERTY);
-
-    context.put(ShaclResource.PROPERTY_GROUP, ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_GROUP);
-    context.put(ShaclResource.PROPERTY_SHAPE, ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_SHAPE);
-    context.put(ShaclResource.NAME_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.NAME_PROPERTY);
-    context.put(ShaclResource.DESCRIPTION_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.DESCRIPTION_PROPERTY);
-    context.put(ShaclResource.ORDER_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.ORDER_PROPERTY);
-    context.put(ShaclResource.NODE_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.NODE_PROPERTY);
-    context.put(ShaclResource.GROUP_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.GROUP_PROPERTY);
-    context.put(ShaclResource.PROPERTY_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_PROPERTY);
-    context.put(ShaclResource.DEFAULT_VAL_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.DEFAULT_VAL_PROPERTY);
-    context.put(ShaclResource.CLASS_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.CLASS_PROPERTY);
-    context.put(ShaclResource.DATA_TYPE_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.DATA_TYPE_PROPERTY);
-    context.put(ShaclResource.IN_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.IN_PROPERTY);
-    this.form.put(ShaclResource.CONTEXT_KEY, context);
+  private void setupContext() {
+    this.context.put(ShaclResource.COMMENT_PROPERTY, ShaclResource.RDFS_PREFIX + ShaclResource.COMMENT_PROPERTY);
+    this.context.put(ShaclResource.LABEL_PROPERTY, ShaclResource.RDFS_PREFIX + ShaclResource.LABEL_PROPERTY);
+    this.context.put(ShaclResource.PROPERTY_GROUP, ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_GROUP);
+    this.context.put(ShaclResource.PROPERTY_SHAPE, ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_SHAPE);
+    this.context.put(ShaclResource.NAME_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.NAME_PROPERTY);
+    this.context.put(ShaclResource.DESCRIPTION_PROPERTY,
+        ShaclResource.SHACL_PREFIX + ShaclResource.DESCRIPTION_PROPERTY);
+    this.context.put(ShaclResource.ORDER_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.ORDER_PROPERTY);
+    this.context.put(ShaclResource.NODE_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.NODE_PROPERTY);
+    this.context.put(ShaclResource.GROUP_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.GROUP_PROPERTY);
+    this.context.put(ShaclResource.PROPERTY_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_PROPERTY);
+    this.context.put(ShaclResource.DEFAULT_VAL_PROPERTY,
+        ShaclResource.SHACL_PREFIX + ShaclResource.DEFAULT_VAL_PROPERTY);
+    this.context.put(ShaclResource.CLASS_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.CLASS_PROPERTY);
+    this.context.put(ShaclResource.DATA_TYPE_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.DATA_TYPE_PROPERTY);
+    this.context.put(ShaclResource.IN_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.IN_PROPERTY);
   }
 
   /**
