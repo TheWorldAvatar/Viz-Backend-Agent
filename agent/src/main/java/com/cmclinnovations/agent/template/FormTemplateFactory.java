@@ -21,7 +21,6 @@ import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -37,7 +36,6 @@ public class FormTemplateFactory {
 
   private final Map<String, String> context;
   private final Map<String, Object> idPropertyShape;
-  private final ObjectMapper objectMapper;
   private static final Logger LOGGER = LogManager.getLogger(FormTemplateFactory.class);
 
   /**
@@ -47,7 +45,6 @@ public class FormTemplateFactory {
    * @param jsonLdService A service for interactions with JSON LD.
    */
   public FormTemplateFactory(AuthenticationService authenticationService, JsonLdService jsonLdService) {
-    this.objectMapper = new ObjectMapper();
     this.authenticationService = authenticationService;
     this.jsonLdService = jsonLdService;
     this.context = this.setupContext();
@@ -271,7 +268,9 @@ public class FormTemplateFactory {
           inputModel.put(shapeField, shapeFieldNode.get(0).asText());
           break;
         case ShaclResource.SHACL_NAME_PROPERTY:
-          Map<String, Object> nameLiteral = this.objectMapper.convertValue(shapeFieldNode.get(0), Map.class);
+          Map<String, Object> nameLiteral = this.jsonLdService.convertValue(shapeFieldNode.get(0),
+              new TypeReference<HashMap<String, Object>>() {
+              });
           inputModel.put(StringResource.getLocalName(shapeField), nameLiteral);
           if (!defaultVals.isEmpty()) {
             String parsedField = nameLiteral.get(ShaclResource.VAL_KEY).toString().replace(ShaclResource.WHITE_SPACE,
@@ -281,8 +280,11 @@ public class FormTemplateFactory {
           break;
         case ShaclResource.SHACL_DEFAULT_VAL_PROPERTY:
           // Extract field name
-          String fieldName = this.objectMapper
-              .convertValue(input.get(ShaclResource.SHACL_NAME_PROPERTY).get(0), Map.class).get(ShaclResource.VAL_KEY)
+          String fieldName = this.jsonLdService
+              .convertValue(input.get(ShaclResource.SHACL_NAME_PROPERTY).get(0),
+                  new TypeReference<HashMap<String, Object>>() {
+                  })
+              .get(ShaclResource.VAL_KEY)
               .toString().replace(ShaclResource.WHITE_SPACE,
                   "_");
           // When there are no pre-existing values for this field stored in defaultVals,
@@ -301,14 +303,18 @@ public class FormTemplateFactory {
           }
           break;
         case ShaclResource.SHACL_ORDER_PROPERTY:
-          Map<String, Object> orderMap = this.objectMapper.convertValue(shapeFieldNode.get(0), Map.class);
+          Map<String, Object> orderMap = this.jsonLdService.convertValue(shapeFieldNode.get(0),
+              new TypeReference<HashMap<String, Object>>() {
+              });
           inputModel.put(StringResource.getLocalName(shapeField),
               Integer.valueOf(orderMap.get(ShaclResource.VAL_KEY).toString()));
           break;
         case ShaclResource.SHACL_DATA_TYPE_PROPERTY:
           // Data types are stored in @id key with xsd namespace
           // But we are only interested in the local name and extract it accordingly
-          Map<String, Object> dataType = this.objectMapper.convertValue(shapeFieldNode.get(0), Map.class);
+          Map<String, Object> dataType = this.jsonLdService.convertValue(shapeFieldNode.get(0),
+              new TypeReference<HashMap<String, Object>>() {
+              });
           inputModel.put(StringResource.getLocalName(shapeField),
               StringResource.getLocalName(dataType.get(ShaclResource.ID_KEY).toString()));
           break;
@@ -327,13 +333,16 @@ public class FormTemplateFactory {
             }
           }
           // Convert the new array and append it into the output
-          inputModel.put(ShaclResource.IN_PROPERTY, this.objectMapper.convertValue(inArray, List.class));
+          inputModel.put(ShaclResource.IN_PROPERTY,
+              this.jsonLdService.convertValue(inArray, new TypeReference<List<HashMap<String, Object>>>() {
+              }));
           break;
         default:
           // Every other fields are stored as a nested JSON object of key:value pair
           // within a one item JSON array
           inputModel.put(StringResource.getLocalName(shapeField),
-              this.objectMapper.convertValue(shapeFieldNode.get(0), Map.class));
+              this.jsonLdService.convertValue(shapeFieldNode.get(0), new TypeReference<HashMap<String, Object>>() {
+              }));
           break;
       }
     }

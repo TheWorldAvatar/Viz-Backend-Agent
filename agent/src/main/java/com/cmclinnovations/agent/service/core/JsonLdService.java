@@ -184,12 +184,12 @@ public class JsonLdService {
   }
 
   /**
-   * Converts the object node into the type reference.
+   * Converts the json node into the type reference.
    * 
    * @param input   The node containing the JSON.
    * @param typeRef The output type for the conversion.
    */
-  public <T> T convertValue(ObjectNode input, TypeReference<T> typeRef) {
+  public <T> T convertValue(JsonNode input, TypeReference<T> typeRef) {
     return this.objectMapper.convertValue(input, typeRef);
   }
 
