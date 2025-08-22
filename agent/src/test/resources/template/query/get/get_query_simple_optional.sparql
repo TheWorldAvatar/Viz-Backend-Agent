@@ -1,4 +1,5 @@
-SELECT DISTINCT ?iri ?optional_field WHERE {
+SELECT DISTINCT ?iri ?id ?optional_field WHERE {
     ?iri a <http://example.com/Concept>.
+    ?iri <http://purl.org/dc/terms/identifier> ?id.
     OPTIONAL{?iri <http://example.com/optionalPath1> ?optional_field.}
 }

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -19,6 +20,7 @@ import org.mockito.quality.Strictness;
 
 import com.cmclinnovations.agent.TestUtils;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
+import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -31,6 +33,7 @@ public class FormTemplateFactoryTest {
         private AuthenticationService authService;
 
         private FormTemplateFactory formTemplateFactory;
+        private static JsonLdService jsonLdService;
         private static ObjectMapper objectMapper;
 
         public static final String TEST_SIMPLE_FILE = "template/form/test/form_simple.json";
@@ -42,17 +45,18 @@ public class FormTemplateFactoryTest {
         @BeforeAll
         static void init() {
                 objectMapper = new ObjectMapper();
+                jsonLdService = new JsonLdService(new ObjectMapper());
         }
 
         @BeforeEach
         void setup() {
-                this.formTemplateFactory = new FormTemplateFactory(authService);
+                this.formTemplateFactory = new FormTemplateFactory(authService, jsonLdService);
         }
 
         @Test
         void testGenTemplate_EmptyInput() {
                 // Set up
-                ArrayNode emptyData = objectMapper.createArrayNode();
+                ArrayNode emptyData = jsonLdService.genArrayNode();
                 // Execute
                 Map<String, Object> result = this.formTemplateFactory.genTemplate(emptyData, new HashMap<>());
                 // Assert
@@ -62,7 +66,7 @@ public class FormTemplateFactoryTest {
         @Test
         void testGenTemplate_InvalidInput() {
                 // Set up
-                ArrayNode sample = objectMapper.createArrayNode();
+                ArrayNode sample = jsonLdService.genArrayNode();
                 // Mocking an invalid JSON object that does not have a valid type
                 ObjectNode invalidShape = genPropertyShape("testInvalidShape", "invalidType", "invalid field",
                                 "This shape should fail", ShaclResource.XSD_PREFIX + XSD_STRING_TYPE, "");
@@ -81,8 +85,9 @@ public class FormTemplateFactoryTest {
                 ArrayNode sample = TestUtils.getArrayJson(TEST_SIMPLE_FILE);
                 // Execute
                 Map<String, Object> result = this.formTemplateFactory.genTemplate(sample, new HashMap<>());
+                ((List<Map<String, Object>>) result.get("property")).get(0).put(ShaclResource.ID_KEY, "string_id");
                 // Assert
-                assertEquals(TestUtils.getMapJson(EXPECTED_SIMPLE_FILE), result);
+                assertEquals(TestUtils.getMapJson(EXPECTED_SIMPLE_FILE), objectMapper.writeValueAsString(result));
         }
 
         /**
@@ -99,34 +104,34 @@ public class FormTemplateFactoryTest {
         public static ObjectNode genPropertyShape(String id, String typeClass, String name, String description,
                         String dataType, String order) {
                 // Init empty JSON object
-                ObjectNode propertyShape = objectMapper.createObjectNode();
+                ObjectNode propertyShape = jsonLdService.genObjectNode();
                 // Add ID
                 propertyShape.put(ShaclResource.ID_KEY, id);
                 // Add type as "@type:[class]"
-                ArrayNode typeValueNode = objectMapper.createArrayNode()
+                ArrayNode typeValueNode = jsonLdService.genArrayNode()
                                 .add(typeClass);
                 propertyShape.set(ShaclResource.TYPE_KEY, typeValueNode);
                 // Add name as`"sh:name":[{"@value" : "name"}]`
-                ObjectNode nameValueNode = objectMapper.createObjectNode()
+                ObjectNode nameValueNode = jsonLdService.genObjectNode()
                                 .put(ShaclResource.VAL_KEY, name);
                 propertyShape.set(ShaclResource.SHACL_PREFIX + ShaclResource.NAME_PROPERTY,
-                                objectMapper.createArrayNode().add(nameValueNode));
+                                jsonLdService.genArrayNode().add(nameValueNode));
                 // Add description as `"sh:description":[{"@value" : "description"}]`
-                ObjectNode descriptionValueNode = objectMapper.createObjectNode()
+                ObjectNode descriptionValueNode = jsonLdService.genObjectNode()
                                 .put(ShaclResource.VAL_KEY, description);
                 propertyShape.set(ShaclResource.SHACL_PREFIX + ShaclResource.DESCRIPTION_PROPERTY,
-                                objectMapper.createArrayNode().add(descriptionValueNode));
+                                jsonLdService.genArrayNode().add(descriptionValueNode));
                 // Add datatype as `"sh:datatype":[{"@id" : "data type"}]`
-                ObjectNode dataTypeValueNode = objectMapper.createObjectNode()
+                ObjectNode dataTypeValueNode = jsonLdService.genObjectNode()
                                 .put(ShaclResource.ID_KEY, dataType);
                 propertyShape.set(ShaclResource.SHACL_PREFIX + ShaclResource.DATA_TYPE_PROPERTY,
-                                objectMapper.createArrayNode().add(dataTypeValueNode));
+                                jsonLdService.genArrayNode().add(dataTypeValueNode));
                 // Add order as`"sh:order":[{"@type": "xsd:type", "@value" : "order"}]`
-                ObjectNode orderValueNode = objectMapper.createObjectNode()
+                ObjectNode orderValueNode = jsonLdService.genObjectNode()
                                 .put(ShaclResource.TYPE_KEY, ShaclResource.XSD_PREFIX + XSD_INTEGER_TYPE)
                                 .put(ShaclResource.VAL_KEY, order);
                 propertyShape.set(ShaclResource.SHACL_PREFIX + ShaclResource.ORDER_PROPERTY,
-                                objectMapper.createArrayNode().add(orderValueNode));
+                                jsonLdService.genArrayNode().add(orderValueNode));
                 // Return object
                 return propertyShape;
         }

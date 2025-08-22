@@ -52,8 +52,8 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
 
     // Retrieve only the property fields if no sequence of variable is present
     if (super.varSequence.isEmpty()) {
-      selectVariableBuilder.append(ShaclResource.VARIABLE_MARK).append(LifecycleResource.IRI_KEY);
-      selectVariableBuilder.append(ShaclResource.VARIABLE_MARK).append(StringResource.ID_KEY);
+      selectVariableBuilder.append(ShaclResource.VARIABLE_MARK).append(LifecycleResource.IRI_KEY)
+          .append(ShaclResource.WHITE_SPACE).append(ShaclResource.VARIABLE_MARK).append(StringResource.ID_KEY);
       super.variables.forEach(variable -> selectVariableBuilder.append(ShaclResource.WHITE_SPACE)
           .append(variable));
       params.addVars().forEach((field, fieldSequence) -> selectVariableBuilder.append(ShaclResource.WHITE_SPACE)

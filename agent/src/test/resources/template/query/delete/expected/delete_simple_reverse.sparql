@@ -1,6 +1,7 @@
 DELETE {
   <https://www.example.org/kg/person/01j82> rdf:type <https://www.example.org/kg/Person>.
   <https://www.example.org/kg/person/01j82> <https://www.example.org/kg/hasAddress> <https://www.example.org/kg/address/01j82>.
+  ?iri <http://purl.org/dc/terms/identifier> "01j82".
 } WHERE {
   <https://www.example.org/kg/person/01j82> rdf:type <https://www.example.org/kg/Person>.
   <https://www.example.org/kg/person/01j82> <https://www.example.org/kg/hasAddress> <https://www.example.org/kg/address/01j82>.

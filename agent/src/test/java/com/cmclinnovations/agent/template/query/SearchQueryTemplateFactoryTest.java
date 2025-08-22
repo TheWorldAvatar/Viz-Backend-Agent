@@ -62,10 +62,10 @@ public class SearchQueryTemplateFactoryTest {
         // Assert
         assertEquals(2, results.size());
         assertEquals(
-                "SELECT DISTINCT ?iri WHERE {?iri a <http://example.com/Concept>.?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.}",
+                "SELECT DISTINCT ?iri WHERE {?iri a <http://example.com/Concept>.?iri <http://purl.org/dc/terms/identifier> ?id.?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.}",
                 results.poll());
         assertEquals(
-                "SELECT DISTINCT ?iri WHERE {?iri a/rdfs:subClassOf* <http://example.com/Concept>.?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.}",
+                "SELECT DISTINCT ?iri WHERE {?iri a/rdfs:subClassOf* <http://example.com/Concept>.?iri <http://purl.org/dc/terms/identifier> ?id.?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.}",
                 results.poll());
     }
 
