@@ -1,5 +1,19 @@
 # Change Log
 
+## 1.10.0
+
+### Features
+
+- Added a saved route to save completion data if required
+- Extended SHACL rules for service lifecycle
+- Increase filter ID accuracy with REGEX instead of STRENDS
+
+### Bug fix
+
+- Fix query for mixed endpoints
+- Fix the query to return only the event for the specific date for the target contract
+- Updated stack client version and package registry
+
 ## 1.9.2
 
 ### Bug fix
