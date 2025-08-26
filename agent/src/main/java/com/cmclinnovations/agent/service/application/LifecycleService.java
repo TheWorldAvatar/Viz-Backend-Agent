@@ -82,8 +82,8 @@ public class LifecycleService {
    * @param eventType The target event type to retrieve.
    */
   public void addStageInstanceToParams(Map<String, Object> params, LifecycleEventType eventType) {
-    String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
-    LOGGER.debug("Adding stage parameters for {}...", contractId);
+    String contractId = params.get(StringResource.ID_KEY).toString();
+    LOGGER.debug("Adding stage parameters for contract...");
     String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
     String stage = this.getService.getInstance(query).getFieldValue(LifecycleResource.IRI_KEY);
     params.put(LifecycleResource.STAGE_KEY, stage);
