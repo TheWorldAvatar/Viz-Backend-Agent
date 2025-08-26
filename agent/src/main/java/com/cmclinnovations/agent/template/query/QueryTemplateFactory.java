@@ -202,9 +202,6 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     StringBuilder queryBlock = new StringBuilder();
     Map<String, StringBuilder> accumulatedStatementsByGroup = new HashMap<>();
     Map<String, StringBuilder> branchStatementMap = new HashMap<>();
-    StringResource.appendTriple(queryBlock, ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY,
-        StringResource.parseIriForQuery(ShaclResource.DC_TERMS_ID),
-        ShaclResource.VARIABLE_MARK + StringResource.ID_KEY);
     // Iterate over each property to add either directly or to the associated group
     // or branch
     propertyShapeMap.get(ShaclResource.PROPERTY_PROPERTY).values().forEach(propBinding -> {

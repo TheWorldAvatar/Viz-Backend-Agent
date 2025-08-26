@@ -88,6 +88,8 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    *                    parents.
    */
   private void appendOptionalIdFilters(StringBuilder query, String filterId, ParentField parentField) {
+    String subject = ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY;
+    String object = ShaclResource.VARIABLE_MARK + StringResource.ID_KEY;
     // Add filter clause for a parent field instead if available
     if (parentField != null) {
       String parsedFieldName = "";
@@ -106,7 +108,10 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       StringResource.appendTriple(query, parsedFieldName, StringResource.parseIriForQuery(ShaclResource.DC_TERMS_ID),
           StringResource.parseLiteral(parentField.id()));
     } else if (!filterId.isEmpty()) {
+      object = StringResource.parseLiteral(filterId);
       query.append("BIND(\"").append(filterId).append("\" AS ?").append(StringResource.ID_KEY).append(")");
     }
+
+    StringResource.appendTriple(query, subject, StringResource.parseIriForQuery(ShaclResource.DC_TERMS_ID), object);
   }
 }
