@@ -191,7 +191,11 @@ public class FormTemplateFactory {
       }
     }
     List<Map<String, Object>> outputDefaultProperties = this.genOutputs(defaultProperties);
-    outputDefaultProperties.add(0, this.idPropertyShape);
+    Map<String, Object> idShapeMappings = this.idPropertyShape;
+    if (defaultVals.containsKey(StringResource.ID_KEY)) {
+      idShapeMappings.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultVals.get(StringResource.ID_KEY));
+    }
+    outputDefaultProperties.add(0, idShapeMappings);
     this.form.put(ShaclResource.PROPERTY_PROPERTY, outputDefaultProperties);
 
     // Branches
