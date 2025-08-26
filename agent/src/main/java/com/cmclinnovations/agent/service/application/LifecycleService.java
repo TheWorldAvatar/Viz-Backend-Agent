@@ -269,6 +269,7 @@ public class LifecycleService {
           String eventStatus = binding.getFieldValue(LifecycleResource.EVENT_STATUS_KEY);
 
           return (Map<String, Object>) binding.get().entrySet().stream()
+              .filter(entry -> !entry.getKey().equals(StringResource.parseQueryVariable(LifecycleResource.EVENT_STATUS_KEY)))
               .map(entry -> {
                 if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
                   SparqlResponseField eventField = TypeCastUtils.castToObject(entry.getValue(),
@@ -287,9 +288,8 @@ public class LifecycleService {
                       new SparqlResponseField(eventField.type(),
                           LocalisationTranslator.getEvent(eventType),
                           eventField.dataType(), eventField.lang()));
-                } else {
-                  return entry;
                 }
+                return entry;
               })
               .collect(Collectors.toMap(
                   Map.Entry::getKey,
