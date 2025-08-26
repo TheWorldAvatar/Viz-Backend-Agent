@@ -182,7 +182,7 @@ public class LifecycleResource {
         .replaceFirst(
             "\\?iri a\\/rdfs\\:subClassOf\\* \\<https\\:\\/\\/spec\\.edmcouncil\\.org\\/fibo\\/ontology\\/FBC\\/ProductsAndServices\\/FinancialProductsAndServices\\/ContractLifecycleEventOccurrence\\>\\.",
             "")
-        .replaceFirst("BIND\\(\\?iri AS \\?id\\)", "")
+        .replaceFirst("\\?iri \\<http\\:\\/\\/purl\\.org\\/dc\\/terms\\/identifier\\> \\?id.", "")
         // Replace iri with event variable
         .replace(ShaclResource.VARIABLE_MARK + IRI_KEY, eventVar);
     return StringResource.genOptionalClause(
