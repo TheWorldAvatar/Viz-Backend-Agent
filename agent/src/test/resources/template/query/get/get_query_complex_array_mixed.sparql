@@ -1,6 +1,5 @@
 SELECT DISTINCT ?iri ?id ?field ?array_field WHERE {
     ?iri a/rdfs:subClassOf* <http://example.com/Concept>.
-    ?iri <http://purl.org/dc/terms/identifier> ?id.
     {
         ?iri <http://example.com/propPath1> ?array_group_test.
         ?array_group_test <http://example.com/propPath2> ?array_field.
@@ -8,4 +7,5 @@ SELECT DISTINCT ?iri ?id ?field ?array_field WHERE {
         ?iri <http://example.com/propPath1> ?group_test.
         ?group_test <http://example.com/propPath2> ?field.
     }
+    ?iri <http://purl.org/dc/terms/identifier> ?id.
 }
