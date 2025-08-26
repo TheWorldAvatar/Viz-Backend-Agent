@@ -480,18 +480,7 @@ public class LifecycleService {
    */
   private ResponseEntity<StandardApiResponse> getOccurrenceDetails(LifecycleEventType eventType, String targetId,
       boolean requireLabel) {
-    // Ensure that there is a specific event type target
-    String replacementQueryLine = eventType.getShaclReplacement();
-    String query = this.lifecycleQueryFactory.getEventQuery(targetId, eventType);
-    String targetOccurrence;
-    try {
-      targetOccurrence = this.getService.getInstance(query)
-          .getFieldValue(LifecycleResource.IRI_KEY);
-    } catch (NullPointerException e) {
-      return this.responseEntityBuilder.error(null, HttpStatus.NOT_FOUND);
-    }
     LOGGER.debug("Retrieving relevant entity information for occurrence of {}...", eventType);
-    return this.getService.getInstance(targetOccurrence, requireLabel, replacementQueryLine);
-
+    return this.getService.getInstance(targetId, requireLabel, eventType.getShaclReplacement());
   }
 }
