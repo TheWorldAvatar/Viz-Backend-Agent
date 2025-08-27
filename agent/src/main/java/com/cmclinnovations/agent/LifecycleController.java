@@ -242,6 +242,16 @@ public class LifecycleController {
   }
 
   /**
+   * Continues the task on the next working day by generating the same details on new occurrences.
+   */
+  @PostMapping("/service/continue")
+  public ResponseEntity<StandardApiResponse> continueTask(@RequestBody Map<String, Object> params) {
+    String taskId = params.get(StringResource.ID_KEY).toString();
+    String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
+    return this.lifecycleService.continueTaskOnNextWorkingDay(taskId, contractId);
+  }
+
+  /**
    * Rescind the ongoing contract specified.
    */
   @PostMapping("/archive/rescind")

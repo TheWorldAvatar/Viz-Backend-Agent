@@ -66,6 +66,17 @@ public class DateTimeService {
   }
 
   /**
+   * Get next working date (excluding weekend) in YYYY-MM-DD format.
+   */
+  public String getNextWorkingDate() {
+    LocalDate nextDay = LocalDate.now().plusDays(1);
+    while (nextDay.getDayOfWeek() == DayOfWeek.SATURDAY || nextDay.getDayOfWeek() == DayOfWeek.SUNDAY) {
+      nextDay = nextDay.plusDays(1);
+    }
+    return nextDay.format(this.formatter);
+  }
+
+  /**
    * Parses the date input string into a LocalDate object with the specified
    * formatter.
    * 

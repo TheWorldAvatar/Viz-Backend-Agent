@@ -164,11 +164,16 @@ public class LifecycleQueryFactory {
    * target event type for a specific contract.
    * 
    * @param contract  The input contract instance.
+   * @param date      Optional date for filtering.
    * @param eventType The target event type to retrieve.
    */
   public String getContractEventQuery(String contract, String date, LifecycleEventType eventType) {
+    String dateFilter = "";
+    if (date != null) {
+      dateFilter = "FILTER(xsd:date(?date)=\"" + date + "\"^^xsd:date)";
+    }
     return StringResource.QUERY_TEMPLATE_PREFIX +
-        "SELECT DISTINCT ?iri ?event WHERE{" +
+        "SELECT DISTINCT ?iri ?id WHERE{" +
         "?contract dc-terms:identifier \"" + contract + "\";" +
         "fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage." +
         "?stage cmns-col:comprises ?event;" +
@@ -177,8 +182,9 @@ public class LifecycleQueryFactory {
         "^cmns-dt:succeeds* ?final_event;" +
         "^cmns-dt:succeeds* ?iri." +
         "?final_event fibo-fnd-dt-oc:hasEventDate ?date." +
-        "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
-        "FILTER(xsd:date(?date)=\"" + date + "\"^^xsd:date)" +
+        "?iri dc-terms:identifier ?id;" +
+        "fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
+        dateFilter +
         "MINUS{?final_event ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}" +
         "}";
   }

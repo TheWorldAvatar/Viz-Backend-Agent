@@ -269,7 +269,8 @@ public class LifecycleService {
           String eventStatus = binding.getFieldValue(LifecycleResource.EVENT_STATUS_KEY);
 
           return (Map<String, Object>) binding.get().entrySet().stream()
-              .filter(entry -> !entry.getKey().equals(StringResource.parseQueryVariable(LifecycleResource.EVENT_STATUS_KEY)))
+              .filter(entry -> !entry.getKey()
+                  .equals(StringResource.parseQueryVariable(LifecycleResource.EVENT_STATUS_KEY)))
               .map(entry -> {
                 if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
                   SparqlResponseField eventField = TypeCastUtils.castToObject(entry.getValue(),
@@ -377,6 +378,56 @@ public class LifecycleService {
       }
     }
     return hasError;
+  }
+
+  /**
+   * Continues the task on next working day by generating a new occurrence for the
+   * order received and dispatch event of a specified contract.
+   * 
+   * @param taskId     The latest task ID.
+   * @param contractId Target contract.
+   */
+  public ResponseEntity<StandardApiResponse> continueTaskOnNextWorkingDay(String taskId, String contractId) {
+    LOGGER.info("Generating the task for the next working day...");
+    // First instantiate the order received occurrence
+    Map<String, Object> params = new HashMap<>();
+    // Contract ID is mandatory to help generate the other related parameters
+    params.put(LifecycleResource.CONTRACT_KEY, contractId);
+    params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
+    params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getNextWorkingDate());
+    this.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    // Generate a new unique ID for the occurrence by retrieving the prefix from the
+    // stage instance
+    String defaultPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
+    String orderIri = defaultPrefix + "/" + LifecycleEventType.SERVICE_ORDER_RECEIVED.getId() + "/" + UUID.randomUUID();
+    params.put(StringResource.ID_KEY, orderIri);
+
+    ResponseEntity<StandardApiResponse> response = this.addService.instantiate(
+        LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
+    if (response.getStatusCode() == HttpStatus.OK) {
+      LOGGER.info("Retrieving the current dispatch details...");
+      String query = this.lifecycleQueryFactory.getContractEventQuery(contractId, null,
+          LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+      String prevDispatchId = this.getService.getInstance(query).getFieldValue(StringResource.ID_KEY);
+      response = this.getOccurrenceDetails(LifecycleEventType.SERVICE_ORDER_DISPATCHED, prevDispatchId, false);
+      if (response.getStatusCode() == HttpStatus.OK) {
+        Map<String, String> currentEntity = ((Map<String, Object>) response.getBody().data().items()
+            .get(0)).entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> entry.getValue() instanceof SparqlResponseField
+                    ? ((SparqlResponseField) entry.getValue()).value()
+                    : ""));
+        params.putAll(currentEntity);
+        params.put(LifecycleResource.REMARKS_KEY, ORDER_DISPATCH_MESSAGE);
+        String dispatchPrefix = defaultPrefix + "/" + LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId() + "/";
+        params.put(StringResource.ID_KEY, dispatchPrefix + UUID.randomUUID());
+        params.put(LifecycleResource.ORDER_KEY, orderIri);
+        return this.addService.instantiate(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), params);
+      }
+    }
+    throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));
+
   }
 
   /**
