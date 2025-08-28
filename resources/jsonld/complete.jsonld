@@ -24,10 +24,7 @@
     }
   },
   "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies": {
-    "@id": {
-      "@replace": "event",
-      "@type": "iri"
-    }
+    "@id": "https://www.theworldavatar.com/kg/ontoservice/ServiceDeliveryEvent"
   },
   "https://www.omg.org/spec/Commons/DatesAndTimes/succeeds": {
     "@id": {

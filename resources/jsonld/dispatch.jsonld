@@ -18,10 +18,7 @@
     "datatype": "http://www.w3.org/2001/XMLSchema#date"
   },
   "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies": {
-    "@id": {
-      "@replace": "event",
-      "@type": "iri"
-    }
+    "@id": "https://www.theworldavatar.com/kg/ontoservice/ServiceDispatchEvent"
   },
   "https://www.omg.org/spec/Commons/DatesAndTimes/succeeds": {
     "@id": {
