@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -23,6 +24,7 @@ import com.cmclinnovations.agent.template.FormTemplateFactoryTest;
 import com.cmclinnovations.agent.template.query.DeleteQueryTemplateFactoryTest;
 import com.cmclinnovations.agent.template.query.GetQueryTemplateFactoryTest;
 import com.cmclinnovations.agent.template.query.SearchQueryTemplateFactoryTest;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -73,9 +75,10 @@ class QueryTemplateServiceTest {
     void testGenFormTemplate() throws IOException {
         Map<String, Object> result = testService
                 .genFormTemplate(TestUtils.getArrayJson(FormTemplateFactoryTest.TEST_SIMPLE_FILE), new HashMap<>());
+        ((List<Map<String, Object>>) result.get("property")).get(0).put(ShaclResource.ID_KEY, "string_id");
         assertEquals(
                 TestUtils.getMapJson(FormTemplateFactoryTest.EXPECTED_SIMPLE_FILE),
-                result);
+                new ObjectMapper().writeValueAsString(result));
     }
 
     @Test

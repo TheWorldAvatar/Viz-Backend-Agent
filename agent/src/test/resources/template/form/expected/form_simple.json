@@ -1,22 +1,26 @@
 {
-  "@context": {
-    "PropertyShape": "http://www.w3.org/ns/shacl#PropertyShape",
-    "PropertyGroup": "http://www.w3.org/ns/shacl#PropertyGroup",
-    "in": "http://www.w3.org/ns/shacl#in",
-    "defaultValue": "http://www.w3.org/ns/shacl#defaultValue",
-    "description": "http://www.w3.org/ns/shacl#description",
-    "label": "http://www.w3.org/2000/01/rdf-schema#label",
-    "node": "http://www.w3.org/ns/shacl#node",
-    "datatype": "http://www.w3.org/ns/shacl#datatype",
-    "name": "http://www.w3.org/ns/shacl#name",
-    "property": "http://www.w3.org/ns/shacl#property",
-    "comment": "http://www.w3.org/2000/01/rdf-schema#comment",
-    "class": "http://www.w3.org/ns/shacl#class",
-    "order": "http://www.w3.org/ns/shacl#order",
-    "group": "http://www.w3.org/ns/shacl#group"
-  },
   "node": [],
   "property": [
+    {
+      "datatype": "string",
+      "@type": "http://www.w3.org/ns/shacl#PropertyShape",
+      "name": {
+        "@value": "id"
+      },
+      "description": {
+        "@value": "ID"
+      },
+      "minCount": {
+        "@type": "http://www.w3.org/2001/XMLSchema#integer",
+        "@value": "1"
+      },
+      "@id": "string_id",
+      "maxCount": {
+        "@type": "http://www.w3.org/2001/XMLSchema#integer",
+        "@value": "1"
+      },
+      "order": -1
+    },
     {
       "datatype": "string",
       "@type": "http://www.w3.org/ns/shacl#PropertyShape",
@@ -41,5 +45,21 @@
       "@id": "dec_id",
       "order": 2
     }
-  ]
+  ],
+  "@context": {
+    "PropertyShape": "http://www.w3.org/ns/shacl#PropertyShape",
+    "PropertyGroup": "http://www.w3.org/ns/shacl#PropertyGroup",
+    "in": "http://www.w3.org/ns/shacl#in",
+    "defaultValue": "http://www.w3.org/ns/shacl#defaultValue",
+    "description": "http://www.w3.org/ns/shacl#description",
+    "label": "http://www.w3.org/2000/01/rdf-schema#label",
+    "node": "http://www.w3.org/ns/shacl#node",
+    "datatype": "http://www.w3.org/ns/shacl#datatype",
+    "name": "http://www.w3.org/ns/shacl#name",
+    "property": "http://www.w3.org/ns/shacl#property",
+    "comment": "http://www.w3.org/2000/01/rdf-schema#comment",
+    "class": "http://www.w3.org/ns/shacl#class",
+    "order": "http://www.w3.org/ns/shacl#order",
+    "group": "http://www.w3.org/ns/shacl#group"
+  }
 }

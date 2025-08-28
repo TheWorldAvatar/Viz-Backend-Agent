@@ -67,11 +67,10 @@ public class FileServiceTest {
 
   @Test
   void testGetContentsWithReplacement_MissingFile() {
+    FileService fileService = new FileService(resourceLoader, objectMapper);
     // Execute and assert
-    FileSystemNotFoundException exception = assertThrows(FileSystemNotFoundException.class, () -> {
-      new FileService(resourceLoader, objectMapper)
-          .getContentsWithReplacement(MISSING_RESOURCE_FILE, IRI_TEST_CASE1);
-    });
+    FileSystemNotFoundException exception = assertThrows(FileSystemNotFoundException.class,
+        () -> fileService.getContentsWithReplacement(MISSING_RESOURCE_FILE, IRI_TEST_CASE1));
     assertEquals("Resource at " + MISSING_RESOURCE_FILE
         + " is not found. Please ensure you have a valid resource in the file path.", exception.getMessage());
   }
@@ -130,11 +129,10 @@ public class FileServiceTest {
 
   @Test
   void testGetResourceTarget_MissingFile() {
+    FileService fileService = new FileService(resourceLoader, objectMapper);
     // Execute and assert
-    FileSystemNotFoundException exception = assertThrows(FileSystemNotFoundException.class, () -> {
-      new FileService(resourceLoader, objectMapper)
-          .getResourceTarget(INVALID_TEST_CASE, MISSING_RESOURCE_FILE);
-    });
+    FileSystemNotFoundException exception = assertThrows(FileSystemNotFoundException.class,
+        () -> fileService.getResourceTarget(INVALID_TEST_CASE, MISSING_RESOURCE_FILE));
     assertEquals("Resource at " + MISSING_RESOURCE_FILE
         + " is not found. Please ensure you have a valid resource in the file path.", exception.getMessage());
   }

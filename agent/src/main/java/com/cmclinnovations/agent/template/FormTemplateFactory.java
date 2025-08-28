@@ -9,20 +9,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
+import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class FormTemplateFactory {
   private final AuthenticationService authenticationService;
+  private final JsonLdService jsonLdService;
 
   // Data stores
   private Queue<JsonNode> properties;
@@ -30,17 +34,21 @@ public class FormTemplateFactory {
   private Map<String, JsonNode> groups;
   private Map<String, JsonNode> nodes;
 
-  private final ObjectMapper objectMapper;
+  private final Map<String, String> context;
+  private final Map<String, Object> idPropertyShape;
   private static final Logger LOGGER = LogManager.getLogger(FormTemplateFactory.class);
 
   /**
    * Constructs a new form template factory.
    * 
-   * @param authService A service to perform authentication operations.
+   * @param authService   A service to perform authentication operations.
+   * @param jsonLdService A service for interactions with JSON LD.
    */
-  public FormTemplateFactory(AuthenticationService authenticationService) {
-    this.objectMapper = new ObjectMapper();
+  public FormTemplateFactory(AuthenticationService authenticationService, JsonLdService jsonLdService) {
     this.authenticationService = authenticationService;
+    this.jsonLdService = jsonLdService;
+    this.context = this.setupContext();
+    this.idPropertyShape = this.setupIdPropertyShape();
   }
 
   /**
@@ -59,7 +67,7 @@ public class FormTemplateFactory {
     if (this.properties.isEmpty()) {
       return new HashMap<>();
     } else {
-      this.addContext();
+      this.form.put(ShaclResource.CONTEXT_KEY, this.context);
       this.parseInputs(defaultVals);
     }
 
@@ -77,26 +85,46 @@ public class FormTemplateFactory {
   }
 
   /**
-   * Adds the context for the form template.
+   * Initialise the context for the form template.
    */
-  private void addContext() {
-    Map<String, String> context = new HashMap<>();
-    context.put(ShaclResource.COMMENT_PROPERTY, ShaclResource.RDFS_PREFIX + ShaclResource.COMMENT_PROPERTY);
-    context.put(ShaclResource.LABEL_PROPERTY, ShaclResource.RDFS_PREFIX + ShaclResource.LABEL_PROPERTY);
+  private Map<String, String> setupContext() {
+    Map<String, String> contextHolder = new HashMap<>();
+    contextHolder.put(ShaclResource.COMMENT_PROPERTY, ShaclResource.RDFS_PREFIX + ShaclResource.COMMENT_PROPERTY);
+    contextHolder.put(ShaclResource.LABEL_PROPERTY, ShaclResource.RDFS_PREFIX + ShaclResource.LABEL_PROPERTY);
+    contextHolder.put(ShaclResource.PROPERTY_GROUP, ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_GROUP);
+    contextHolder.put(ShaclResource.PROPERTY_SHAPE, ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_SHAPE);
+    contextHolder.put(ShaclResource.NAME_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.NAME_PROPERTY);
+    contextHolder.put(ShaclResource.DESCRIPTION_PROPERTY,
+        ShaclResource.SHACL_PREFIX + ShaclResource.DESCRIPTION_PROPERTY);
+    contextHolder.put(ShaclResource.ORDER_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.ORDER_PROPERTY);
+    contextHolder.put(ShaclResource.NODE_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.NODE_PROPERTY);
+    contextHolder.put(ShaclResource.GROUP_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.GROUP_PROPERTY);
+    contextHolder.put(ShaclResource.PROPERTY_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_PROPERTY);
+    contextHolder.put(ShaclResource.DEFAULT_VAL_PROPERTY,
+        ShaclResource.SHACL_PREFIX + ShaclResource.DEFAULT_VAL_PROPERTY);
+    contextHolder.put(ShaclResource.CLASS_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.CLASS_PROPERTY);
+    contextHolder.put(ShaclResource.DATA_TYPE_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.DATA_TYPE_PROPERTY);
+    contextHolder.put(ShaclResource.IN_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.IN_PROPERTY);
+    return contextHolder;
+  }
 
-    context.put(ShaclResource.PROPERTY_GROUP, ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_GROUP);
-    context.put(ShaclResource.PROPERTY_SHAPE, ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_SHAPE);
-    context.put(ShaclResource.NAME_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.NAME_PROPERTY);
-    context.put(ShaclResource.DESCRIPTION_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.DESCRIPTION_PROPERTY);
-    context.put(ShaclResource.ORDER_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.ORDER_PROPERTY);
-    context.put(ShaclResource.NODE_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.NODE_PROPERTY);
-    context.put(ShaclResource.GROUP_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.GROUP_PROPERTY);
-    context.put(ShaclResource.PROPERTY_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_PROPERTY);
-    context.put(ShaclResource.DEFAULT_VAL_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.DEFAULT_VAL_PROPERTY);
-    context.put(ShaclResource.CLASS_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.CLASS_PROPERTY);
-    context.put(ShaclResource.DATA_TYPE_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.DATA_TYPE_PROPERTY);
-    context.put(ShaclResource.IN_PROPERTY, ShaclResource.SHACL_PREFIX + ShaclResource.IN_PROPERTY);
-    this.form.put(ShaclResource.CONTEXT_KEY, context);
+  /**
+   * Initialise the ID property shape for the form template.
+   */
+  private Map<String, Object> setupIdPropertyShape() {
+    ObjectNode idFieldNode = this.jsonLdService.genInstance("_:",
+        ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_SHAPE);
+    String idPropertyShapeDefinition = "{\"name\":{\"@value\":\"id\"}," +
+        "\"description\":{\"@value\":\"ID\"}," +
+        "\"order\":-1," +
+        "\"datatype\":\"string\"," +
+        "\"minCount\":{\"@type\":\"http://www.w3.org/2001/XMLSchema#integer\",\"@value\":\"1\"}," +
+        "\"maxCount\":{\"@type\":\"http://www.w3.org/2001/XMLSchema#integer\",\"@value\":\"1\"}" +
+        "}";
+    ObjectNode idRemainderPropertyShape = (ObjectNode) this.jsonLdService.readObjectNode(idPropertyShapeDefinition);
+    idFieldNode.setAll(idRemainderPropertyShape);
+    return this.jsonLdService.convertValue(idFieldNode, new TypeReference<HashMap<String, Object>>() {
+    });
   }
 
   /**
@@ -162,7 +190,13 @@ public class FormTemplateFactory {
         this.parseProperty(currentProperty, defaultVals, defaultProperties);
       }
     }
-    this.form.put(ShaclResource.PROPERTY_PROPERTY, this.genOutputs(defaultProperties));
+    List<Map<String, Object>> outputDefaultProperties = this.genOutputs(defaultProperties);
+    Map<String, Object> idShapeMappings = new HashMap<>(this.idPropertyShape);
+    if (defaultVals.containsKey(StringResource.ID_KEY)) {
+      idShapeMappings.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultVals.get(StringResource.ID_KEY));
+    }
+    outputDefaultProperties.add(0, idShapeMappings);
+    this.form.put(ShaclResource.PROPERTY_PROPERTY, outputDefaultProperties);
 
     // Branches
     List<Map<String, Object>> nodeShape = new ArrayList<>();
@@ -238,7 +272,9 @@ public class FormTemplateFactory {
           inputModel.put(shapeField, shapeFieldNode.get(0).asText());
           break;
         case ShaclResource.SHACL_NAME_PROPERTY:
-          Map<String, Object> nameLiteral = this.objectMapper.convertValue(shapeFieldNode.get(0), Map.class);
+          Map<String, Object> nameLiteral = this.jsonLdService.convertValue(shapeFieldNode.get(0),
+              new TypeReference<HashMap<String, Object>>() {
+              });
           inputModel.put(StringResource.getLocalName(shapeField), nameLiteral);
           if (!defaultVals.isEmpty()) {
             String parsedField = nameLiteral.get(ShaclResource.VAL_KEY).toString().replace(ShaclResource.WHITE_SPACE,
@@ -248,8 +284,11 @@ public class FormTemplateFactory {
           break;
         case ShaclResource.SHACL_DEFAULT_VAL_PROPERTY:
           // Extract field name
-          String fieldName = this.objectMapper
-              .convertValue(input.get(ShaclResource.SHACL_NAME_PROPERTY).get(0), Map.class).get(ShaclResource.VAL_KEY)
+          String fieldName = this.jsonLdService
+              .convertValue(input.get(ShaclResource.SHACL_NAME_PROPERTY).get(0),
+                  new TypeReference<HashMap<String, Object>>() {
+                  })
+              .get(ShaclResource.VAL_KEY)
               .toString().replace(ShaclResource.WHITE_SPACE,
                   "_");
           // When there are no pre-existing values for this field stored in defaultVals,
@@ -268,14 +307,18 @@ public class FormTemplateFactory {
           }
           break;
         case ShaclResource.SHACL_ORDER_PROPERTY:
-          Map<String, Object> orderMap = this.objectMapper.convertValue(shapeFieldNode.get(0), Map.class);
+          Map<String, Object> orderMap = this.jsonLdService.convertValue(shapeFieldNode.get(0),
+              new TypeReference<HashMap<String, Object>>() {
+              });
           inputModel.put(StringResource.getLocalName(shapeField),
               Integer.valueOf(orderMap.get(ShaclResource.VAL_KEY).toString()));
           break;
         case ShaclResource.SHACL_DATA_TYPE_PROPERTY:
           // Data types are stored in @id key with xsd namespace
           // But we are only interested in the local name and extract it accordingly
-          Map<String, Object> dataType = this.objectMapper.convertValue(shapeFieldNode.get(0), Map.class);
+          Map<String, Object> dataType = this.jsonLdService.convertValue(shapeFieldNode.get(0),
+              new TypeReference<HashMap<String, Object>>() {
+              });
           inputModel.put(StringResource.getLocalName(shapeField),
               StringResource.getLocalName(dataType.get(ShaclResource.ID_KEY).toString()));
           break;
@@ -294,13 +337,16 @@ public class FormTemplateFactory {
             }
           }
           // Convert the new array and append it into the output
-          inputModel.put(ShaclResource.IN_PROPERTY, this.objectMapper.convertValue(inArray, List.class));
+          inputModel.put(ShaclResource.IN_PROPERTY,
+              this.jsonLdService.convertValue(inArray, new TypeReference<List<HashMap<String, Object>>>() {
+              }));
           break;
         default:
           // Every other fields are stored as a nested JSON object of key:value pair
           // within a one item JSON array
           inputModel.put(StringResource.getLocalName(shapeField),
-              this.objectMapper.convertValue(shapeFieldNode.get(0), Map.class));
+              this.jsonLdService.convertValue(shapeFieldNode.get(0), new TypeReference<HashMap<String, Object>>() {
+              }));
           break;
       }
     }
@@ -325,6 +371,6 @@ public class FormTemplateFactory {
       }
       return propOrGroup;
     }).sorted(Comparator.comparingInt(map -> (int) map.get(ShaclResource.ORDER_PROPERTY))) // Sort results by order
-        .toList();
+        .collect(Collectors.toList());
   }
 }

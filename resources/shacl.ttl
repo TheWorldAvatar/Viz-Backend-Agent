@@ -18,21 +18,9 @@ base:ServiceDispatchOccurrenceShape
     sh:hasValue ontoservice:ServiceDispatchEvent ;
   ] ; 
   sh:property [
-    sh:name "id";
-    sh:description "The identifier for the dispatch occurrence.";
-    sh:order 0;
-    sh:path (
-        fibo-fnd-rel-rel:designates
-        [sh:inversePath fibo-fnd-rel-rel:designates]
-      ) ;
-    sh:datatype xsd:string ;
-    sh:minCount 1 ;
-    sh:maxCount 1 ;
-  ] ; 
-  sh:property [
     sh:name "driver";
     sh:description "Assign a driver to perform the service.";
-    sh:order 1;
+    sh:order 0;
     sh:path fibo-fnd-rel-rel:designates ;
     sh:class ontoprofile:EmployedDriver ;
     sh:minCount 0 ;
@@ -47,21 +35,9 @@ base:ServiceOrderCompletedOccurrenceShape
     sh:hasValue ontoservice:ServiceDeliveryEvent ;
   ] ; 
   sh:property [
-    sh:name "id";
-    sh:description "The identifier for the delivery occurrence.";
-    sh:order 0;
-    sh:path (
-        cmns-col:comprises
-        [sh:inversePath cmns-col:comprises]
-      ) ;
-    sh:datatype xsd:string ;
-    sh:minCount 1 ;
-    sh:maxCount 1 ;
-  ] ; 
-  sh:property [
     sh:name "weight log";
     sh:description "Records the weight measured at the end of the service.";
-    sh:order 1;
+    sh:order 0;
     sh:path (
         [sh:inversePath cmns-col:comprises]
         cmns-col:comprises
@@ -79,21 +55,9 @@ base:WeightLogShape
     sh:hasValue fibo-fnd-dt-oc:CalculationEvent ;
   ] ; 
   sh:property [
-    sh:name "id";
-    sh:description "The identifier for the calculation occurrence.";
-    sh:order 0;
-    sh:path (
-        cmns-qtu:hasExpression
-        [sh:inversePath cmns-qtu:hasExpression]
-      ) ;
-    sh:datatype xsd:string ;
-    sh:minCount 1 ;
-    sh:maxCount 1 ;
-  ] ; 
-  sh:property [
     sh:name "gross weight";
     sh:description "The weight of the delivered good.";
-    sh:order 1 ;
+    sh:order 0 ;
     sh:path (
         cmns-qtu:hasExpression
         cmns-qtu:hasArgument

@@ -274,8 +274,8 @@ public class GetQueryTemplateFactoryTest {
         new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
     // Assert
     List<String> sequence = this.testFactory.getSequence();
-    assertEquals(3, sequence.size());
-    assertEquals(List.of(SAMPLE_FIELD, SAMPLE_GROUP_FIELD, SAMPLE_OPTIONAL_FIELD), sequence);
+    assertEquals(4, sequence.size());
+    assertEquals(List.of("id", SAMPLE_FIELD, SAMPLE_GROUP_FIELD, SAMPLE_OPTIONAL_FIELD), sequence);
   }
 
   /**

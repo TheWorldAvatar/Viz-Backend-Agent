@@ -9,6 +9,7 @@ import java.util.Map;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.util.ResourceUtils;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -67,10 +68,11 @@ public class TestUtils {
    * 
    * @param filePath Input file.
    */
-  public static Map<String, Object> getMapJson(String filePath) throws IOException {
+  public static String getMapJson(String filePath) throws IOException {
     File file = ResourceUtils.getFile("classpath:" + filePath);
     ObjectMapper mapper = new ObjectMapper();
-    return mapper.readValue(file, Map.class);
+      JsonNode rootNode = mapper.readTree(file);
+      return mapper.writeValueAsString(rootNode);
   }
 
   /**

@@ -1,5 +1,6 @@
-SELECT DISTINCT ?iri ?field WHERE {
+SELECT DISTINCT ?iri ?id ?field WHERE {
     ?iri a <http://example.com/Concept>.
     ?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.
-    FILTER REGEX(STR(?id), "(^|/|#)01j82$")
+    BIND("01j82" AS ?id)
+    ?iri <http://purl.org/dc/terms/identifier> "01j82".
 }

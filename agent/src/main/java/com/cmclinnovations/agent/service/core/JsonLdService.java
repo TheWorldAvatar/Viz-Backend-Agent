@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -21,7 +23,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class JsonLdService {
   private final ObjectMapper objectMapper;
 
-  private static final String RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
   private static final Logger LOGGER = LogManager.getLogger(JsonLdService.class);
 
   /**
@@ -79,15 +80,13 @@ public class JsonLdService {
   }
 
   /**
-   * Generates a instance object node with a readable label.
+   * Appends an ID to the target node.
    * 
-   * @param prefix  IRI prefix.
-   * @param concept The ontology concept class/type for the instance.
-   * @param label   The label for the instance.
+   * @param targetNode The target node.
+   * @param idValue    The value of the identifier.
    */
-  public ObjectNode genInstance(String prefix, String concept, String label) {
-    return this.genInstance(prefix, concept)
-        .put(RDFS_LABEL, label);
+  public void appendId(ObjectNode targetNode, String idValue) {
+    targetNode.put(ShaclResource.DC_TERMS_ID, idValue);
   }
 
   /**
@@ -181,6 +180,29 @@ public class JsonLdService {
       String inputString = input.toPrettyString();
       LOGGER.error("Invalid array input: {}", inputString);
       throw new IllegalArgumentException(MessageFormat.format("Invalid array input: {}", inputString));
+    }
+  }
+
+  /**
+   * Converts the json node into the type reference.
+   * 
+   * @param input   The node containing the JSON.
+   * @param typeRef The output type for the conversion.
+   */
+  public <T> T convertValue(JsonNode input, TypeReference<T> typeRef) {
+    return this.objectMapper.convertValue(input, typeRef);
+  }
+
+  /**
+   * Reads the input JSON string into an object node.
+   * 
+   * @param input The JSON string.
+   */
+  public JsonNode readObjectNode(String input) {
+    try {
+      return this.objectMapper.readTree(input);
+    } catch (JsonProcessingException e) {
+      throw new IllegalStateException("Unable to read input as a JSON object.");
     }
   }
 }

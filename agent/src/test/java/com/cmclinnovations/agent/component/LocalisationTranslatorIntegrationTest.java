@@ -36,8 +36,10 @@ class LocalisationTranslatorIntegrationTest {
     @ParameterizedTest
     @MethodSource("provideParametersForLocaleMessage")
     void testLocaleMessage(Locale locale, String expectedMessage) {
+        Locale originalLocale = LocaleContextHolder.getLocale();
         LocaleContextHolder.setLocale(locale);
         String message = LocalisationTranslator.getMessage("status");
+        LocaleContextHolder.setLocale(originalLocale);
         assertEquals(expectedMessage, message);
     }
 
@@ -45,8 +47,10 @@ class LocalisationTranslatorIntegrationTest {
     @MethodSource("provideParametersForLocaleMessage")
     void testLocaleMessage_InvalidKey(Locale locale, String expectedMessage) {
         String invalidKey = "invalid";
+        Locale originalLocale = LocaleContextHolder.getLocale();
         LocaleContextHolder.setLocale(locale);
         String message = LocalisationTranslator.getMessage(invalidKey);
+        LocaleContextHolder.setLocale(originalLocale);
         assertEquals(invalidKey, message);
     }
 }

@@ -1,4 +1,4 @@
-SELECT DISTINCT ?iri ?field ?array_field WHERE {
+SELECT DISTINCT ?iri ?id ?field ?array_field WHERE {
     ?iri a <http://example.com/Concept>.
     {
         ?iri <http://example.com/propPath1> ?array_group_test.
@@ -7,4 +7,5 @@ SELECT DISTINCT ?iri ?field ?array_field WHERE {
         ?iri <http://example.com/propPath1> ?group_test.
         ?group_test <http://example.com/propPath2> ?field.
     }
+    ?iri <http://purl.org/dc/terms/identifier> ?id.
 }

@@ -94,21 +94,9 @@ base:ExampleClassShape
   a sh:NodeShape ;
   sh:targetClass ontoexample:ExampleClass ;
   sh:property [
-    sh:name "id";
-    sh:description "Identifier for the example class instance.";
-    sh:order 1;
-    sh:path (
-      rdfs:label
-      [sh:inversePath rdfs:label]
-    ) ;
-    sh:datatype xsd:string ;
-    sh:minCount 1 ;
-    sh:maxCount 1 ;
-  ] ;
-  sh:property [
     sh:name "name";
     sh:description "Name of the example class instance.";
-    sh:order 2;
+    sh:order 0;
     sh:path rdfs:label ;
     sh:datatype xsd:string ;
     sh:minCount 1 ;
@@ -129,6 +117,9 @@ The following SHACL value constraints will be extracted and present in the form 
 9. sh:pattern
 10. `sh:defaultValue`: Accepts either an IRI `<iri>`or string literal `"string"`
 11. <https://theworldavatar.io/kg/form/step>
+
+> [!IMPORTANT]  
+> There is no need to include an `id` property shape in the SHACL config, as the agent has its own mechanism to retrieve the identifier that is typically generated using the relationship `http://purl.org/dc/terms/identifier` IF the instance was added by the agent. If the instance was uploaded via other means, please ensure that the relevant instances contains the relationship so that the agent can return the right results when querying for specific instances.
 
 ### 1.1.1 Branching Form
 
@@ -224,21 +215,9 @@ base:ExampleGroupPropertyShape
   a sh:NodeShape ;
   sh:targetClass ontoexample:ExampleGroupClass ;
   sh:property [
-    sh:name "id";
-    sh:description "Identifier for the example class instance.";
-    sh:order 0;
-    sh:path (
-      rdfs:label
-      [sh:inversePath rdfs:label]
-    ) ;
-    sh:datatype xsd:string ;
-    sh:minCount 1 ;
-    sh:maxCount 1 ;
-  ] ;
-  sh:property [
     sh:name "name";
     sh:description "Name of the example group class instance.";
-    sh:order 1;
+    sh:order 0;
     sh:path rdfs:label ;
     sh:datatype xsd:string ;
     sh:minCount 1 ;
@@ -248,7 +227,7 @@ base:ExampleGroupPropertyShape
     sh:name "group string input";
     sh:description "String input for a form section.";
     sh:group base:ExampleFormSectionGroup ;
-    sh:order 2;
+    sh:order 1;
     sh:path ontoexample:hasInput ;
     sh:datatype xsd:string ;
     sh:minCount 1 ;
@@ -258,7 +237,7 @@ base:ExampleGroupPropertyShape
     sh:name "group dropdown";
     sh:description "A dropdown for a form section.";
     sh:group base:ExampleFormSectionGroup ;
-    sh:order 3;
+    sh:order 2;
     sh:path ontoexample:hasDropdownOption ;
     sh:class ontoexample:DropdownOption ;
     sh:minCount 1 ;
@@ -272,7 +251,8 @@ base:ExampleFormSectionGroup
   sh:order "2"^^xsd:integer .
 ```
 
-> [!IMPORTANT] > `PropertyGroup` are most useful for setting dependent form fields, which relies on some form field.
+> [!IMPORTANT] 
+> `PropertyGroup` are most useful for setting dependent form fields, which relies on some form field.
 
 ### 1.1.3 Dependent Form Fields
 
@@ -329,22 +309,10 @@ base:GroupArrayShape
   a sh:NodeShape ;
   sh:targetClass base:Concept ;
   sh:property [
-    sh:name "id";
-    sh:description "Identifier for the example class instance.";
-    sh:order 0;
-    sh:path (
-      rdfs:label
-      [sh:inversePath rdfs:label]
-    ) ;
-    sh:datatype xsd:string ;
-    sh:minCount 1 ;
-    sh:maxCount 1 ;
-  ] ;
-  sh:property [
     sh:name "name";
     sh:description "A sample property showing a standalone field array for the contact's name" ;
     sh:group base:ExampleContactGroup ;
-    sh:order 1;
+    sh:order 0;
     sh:path rdfs:label ;
     sh:datatype xsd:string ;
     sh:minCount 1 ;
@@ -354,7 +322,7 @@ base:GroupArrayShape
     sh:name "contact" ;
     sh:description "A sample property showing a standalone field array for contact information" ;
     sh:group base:ExampleContactGroup ;
-    sh:order 2 ;
+    sh:order 1 ;
     sh:path ontoexample:hasArray ;
     sh:datatype xsd:decimal ;
     sh:minCount 1 ;
@@ -596,6 +564,10 @@ A sample file can be found at `./example.jsonld`. It is recommended for users to
 > [!NOTE]
 > There are additional `@replace` options such as `schedule` that will be used by default in the agent, but it is not intended for users and should be ignored.
 
+> [!IMPORTANT]  
+> Users must submit an `id` field in their HTTP request when instantiating a new instance. The agent will automatically append the `id` using the relationship `http://purl.org/dc/terms/identifier`, and users need **NOT** specify any id literal in the SHACL config or JSON-LD. If an user wishes to upload triples directly to the KG, they must ensure that this relationship exists for the relevant instances so that the data is compatible with this agent.
+
+
 #### 2.1.1 Array
 
 The instantiation of array fields can be created using the following replacement object:
@@ -754,21 +726,9 @@ base:ServiceLocationShape
   a sh:NodeShape ;
   sh:targetClass fibo-fnd-plc-adr:ConventionalStreetAddress ;
   sh:property [
-    sh:name "id";
-    sh:description "Identifier for the address.";
-    sh:order 1;
-    sh:path (
-      fibo-fnd-plc-adr:hasPostalCode
-      [sh:inversePath fibo-fnd-plc-adr:hasPostalCode]
-    ) ;
-    sh:datatype xsd:string ;
-    sh:minCount 1 ;
-    sh:maxCount 1 ;
-  ] ;
-  sh:property [
     sh:name "postal code";
     sh:description "Postal code";
-    sh:order 2;
+    sh:order 0;
     sh:path fibo-fnd-plc-adr:hasPostalCode ;
     sh:datatype xsd:string ;
     sh:minCount 1 ;
@@ -780,7 +740,7 @@ base:ServiceLocationShape
   sh:property [
     sh:name "block";
     sh:description "The block number on the street if any";
-    sh:order 3;
+    sh:order 1;
     sh:path (
         fibo-fnd-plc-adr:hasStreetAddress
         fibo-fnd-plc-adr:hasPrimaryAddressNumber
@@ -793,7 +753,7 @@ base:ServiceLocationShape
   sh:property [
     sh:name "street";
     sh:description "The name of the street for the address";
-    sh:order 4;
+    sh:order 2;
     sh:path (
         fibo-fnd-plc-adr:hasStreetAddress
         fibo-fnd-plc-adr:hasStreetName
@@ -806,7 +766,7 @@ base:ServiceLocationShape
   sh:property [
     sh:name "city";
     sh:description "City";
-    sh:order 5;
+    sh:order 3;
     sh:path fibo-fnd-plc-loc:hasCityName ;
     sh:datatype xsd:string ;
     sh:minCount 1 ;
@@ -815,7 +775,7 @@ base:ServiceLocationShape
   sh:property [
     sh:name "country";
     sh:description "Country";
-    sh:order 6;
+    sh:order 4;
     sh:path (fibo-fnd-plc-loc:hasCountry <https://www.omg.org/spec/LCC/Countries/CountryRepresentation/hasEnglishShortName>);
     sh:in lcc-cr:Country ;
     sh:minCount 1 ;

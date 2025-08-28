@@ -82,8 +82,8 @@ public class LifecycleService {
    * @param eventType The target event type to retrieve.
    */
   public void addStageInstanceToParams(Map<String, Object> params, LifecycleEventType eventType) {
-    String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
-    LOGGER.debug("Adding stage parameters for {}...", contractId);
+    String contractId = params.get(StringResource.ID_KEY).toString();
+    LOGGER.debug("Adding stage parameters for contract...");
     String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
     String stage = this.getService.getInstance(query).getFieldValue(LifecycleResource.IRI_KEY);
     params.put(LifecycleResource.STAGE_KEY, stage);
@@ -269,6 +269,7 @@ public class LifecycleService {
           String eventStatus = binding.getFieldValue(LifecycleResource.EVENT_STATUS_KEY);
 
           return (Map<String, Object>) binding.get().entrySet().stream()
+              .filter(entry -> !entry.getKey().equals(StringResource.parseQueryVariable(LifecycleResource.EVENT_STATUS_KEY)))
               .map(entry -> {
                 if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
                   SparqlResponseField eventField = TypeCastUtils.castToObject(entry.getValue(),
@@ -287,9 +288,8 @@ public class LifecycleService {
                       new SparqlResponseField(eventField.type(),
                           LocalisationTranslator.getEvent(eventType),
                           eventField.dataType(), eventField.lang()));
-                } else {
-                  return entry;
                 }
+                return entry;
               })
               .collect(Collectors.toMap(
                   Map.Entry::getKey,
@@ -480,18 +480,7 @@ public class LifecycleService {
    */
   private ResponseEntity<StandardApiResponse> getOccurrenceDetails(LifecycleEventType eventType, String targetId,
       boolean requireLabel) {
-    // Ensure that there is a specific event type target
-    String replacementQueryLine = eventType.getShaclReplacement();
-    String query = this.lifecycleQueryFactory.getEventQuery(targetId, eventType);
-    String targetOccurrence;
-    try {
-      targetOccurrence = this.getService.getInstance(query)
-          .getFieldValue(LifecycleResource.IRI_KEY);
-    } catch (NullPointerException e) {
-      return this.responseEntityBuilder.error(null, HttpStatus.NOT_FOUND);
-    }
     LOGGER.debug("Retrieving relevant entity information for occurrence of {}...", eventType);
-    return this.getService.getInstance(targetOccurrence, requireLabel, replacementQueryLine);
-
+    return this.getService.getInstance(targetId, requireLabel, eventType.getShaclReplacement());
   }
 }

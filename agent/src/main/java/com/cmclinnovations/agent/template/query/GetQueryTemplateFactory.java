@@ -52,7 +52,8 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
 
     // Retrieve only the property fields if no sequence of variable is present
     if (super.varSequence.isEmpty()) {
-      selectVariableBuilder.append(ShaclResource.VARIABLE_MARK).append(LifecycleResource.IRI_KEY);
+      selectVariableBuilder.append(ShaclResource.VARIABLE_MARK).append(LifecycleResource.IRI_KEY)
+          .append(ShaclResource.WHITE_SPACE).append(ShaclResource.VARIABLE_MARK).append(StringResource.ID_KEY);
       super.variables.forEach(variable -> selectVariableBuilder.append(ShaclResource.WHITE_SPACE)
           .append(variable));
       params.addVars().forEach((field, fieldSequence) -> selectVariableBuilder.append(ShaclResource.WHITE_SPACE)
@@ -63,6 +64,7 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       List<String> sortedSequence = new ArrayList<>(super.varSequence.keySet());
       sortedSequence
           .sort((key1, key2) -> ShaclResource.compareLists(super.varSequence.get(key1), super.varSequence.get(key2)));
+      sortedSequence.add(0, StringResource.ID_KEY);
       // Append a ? before the property
       sortedSequence.forEach(variable -> selectVariableBuilder.append(ShaclResource.VARIABLE_MARK)
           .append(StringResource.parseQueryVariable(variable))
@@ -86,6 +88,8 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    *                    parents.
    */
   private void appendOptionalIdFilters(StringBuilder query, String filterId, ParentField parentField) {
+    String subject = ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY;
+    String object = ShaclResource.VARIABLE_MARK + StringResource.ID_KEY;
     // Add filter clause for a parent field instead if available
     if (parentField != null) {
       String parsedFieldName = "";
@@ -101,16 +105,13 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
         throw new IllegalArgumentException(
             MessageFormat.format("Unable to find matching variable for parent field: {0}", parentField.name()));
       }
-      query.append("FILTER REGEX(STR(")
-          .append(parsedFieldName)
-          .append("), \"(^|/|#)")
-          .append(parentField.id())
-          .append("$\")");
+      StringResource.appendTriple(query, parsedFieldName, StringResource.parseIriForQuery(ShaclResource.DC_TERMS_ID),
+          StringResource.parseLiteral(parentField.id()));
     } else if (!filterId.isEmpty()) {
-      // Add filter clause if there is a valid filter ID
-      query.append("FILTER REGEX(STR(?id), \"(^|/|#)")
-          .append(filterId)
-          .append("$\")");
+      object = StringResource.parseLiteral(filterId);
+      query.append("BIND(\"").append(filterId).append("\" AS ?").append(StringResource.ID_KEY).append(")");
     }
+
+    StringResource.appendTriple(query, subject, StringResource.parseIriForQuery(ShaclResource.DC_TERMS_ID), object);
   }
 }

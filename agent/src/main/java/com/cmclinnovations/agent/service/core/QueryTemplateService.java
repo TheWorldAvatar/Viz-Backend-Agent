@@ -47,7 +47,7 @@ public class QueryTemplateService {
   public QueryTemplateService(AuthenticationService authenticationService, FileService fileService,
       JsonLdService jsonLdService) {
     this.authenticationService = authenticationService;
-    this.formTemplateFactory = new FormTemplateFactory(this.authenticationService);
+    this.formTemplateFactory = new FormTemplateFactory(this.authenticationService, jsonLdService);
     this.deleteQueryTemplateFactory = new DeleteQueryTemplateFactory(jsonLdService);
     this.getQueryTemplateFactory = new GetQueryTemplateFactory(this.authenticationService);
     this.searchQueryTemplateFactory = new SearchQueryTemplateFactory(this.authenticationService);
