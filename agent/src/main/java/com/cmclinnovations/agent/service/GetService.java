@@ -16,6 +16,7 @@ import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
@@ -136,20 +137,20 @@ public class GetService {
   }
 
   /**
-   * Retrieve only the specific instance and its information.
+   * Retrieve only the specific instance for an associated lifecycle event.
    * 
-   * @param targetId     The target instance IRI.
-   * @param requireLabel Indicates if labels should be returned for all the
-   *                     fields that are IRIs.
-   * @param replacement  The replacement value required.
+   * @param targetId  The target instance IRI.
+   * @param eventType The target event type.
    */
-  public ResponseEntity<StandardApiResponse> getInstance(String targetId, boolean requireLabel, String replacement) {
+  public ResponseEntity<StandardApiResponse> getInstance(String targetId, LifecycleEventType eventType) {
     LOGGER.debug("Retrieving an instance ...");
-    String query = this.queryTemplateService.getShaclQuery(requireLabel, replacement);
+    String query = this.queryTemplateService.getShaclQuery(false, eventType.getShaclReplacement());
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
+    String addQueryStatement = "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
+        + eventType.getEvent() + ">";
     // Query for direct instances
-    Queue<SparqlBinding> instances = this.getInstances(nestedVariablesAndPropertyPaths, targetId, null, "",
-        new HashMap<>());
+    Queue<SparqlBinding> instances = this.getInstances(nestedVariablesAndPropertyPaths, targetId, null,
+        addQueryStatement, new HashMap<>());
     return this.getSingleInstanceResponse(instances);
   }
 

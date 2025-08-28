@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,6 +18,7 @@ public class LifecycleResource {
   public static final String OCCURRENCE_LINK_RESOURCE = "occurrence link";
 
   public static final String IRI_KEY = "iri";
+  public static final String INSTANCE_KEY = "id_instance";
   public static final String CONTRACT_KEY = "contract";
   public static final String ORDER_KEY = "order";
   public static final String CURRENT_DATE_KEY = "current date";
@@ -77,6 +79,22 @@ public class LifecycleResource {
   // Private constructor to prevent instantiation
   private LifecycleResource() {
     throw new UnsupportedOperationException("This class cannot be instantiated!");
+  }
+
+  /**
+   * Generates the ID and instance parameters. IDs will not be overwritten.
+   * 
+   * @param prefix    The prefix for the instance.
+   * @param eventType The target event type to support a unique instance IRI
+   * @param params    The source and destination of parameter mappings.
+   */
+  public static void genIdAndInstanceParameters(String prefix, LifecycleEventType eventType,
+      Map<String, Object> params) {
+    String identifier = params.containsKey(StringResource.ID_KEY) ? params.get(StringResource.ID_KEY).toString()
+        : UUID.randomUUID().toString();
+    params.putIfAbsent(StringResource.ID_KEY, identifier);
+    params.put(LifecycleResource.INSTANCE_KEY,
+        prefix + "/" + eventType.getId() + "/" + identifier);
   }
 
   /**
