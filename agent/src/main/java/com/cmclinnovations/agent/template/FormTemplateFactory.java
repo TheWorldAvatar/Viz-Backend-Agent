@@ -191,7 +191,7 @@ public class FormTemplateFactory {
       }
     }
     List<Map<String, Object>> outputDefaultProperties = this.genOutputs(defaultProperties);
-    Map<String, Object> idShapeMappings = this.idPropertyShape;
+    Map<String, Object> idShapeMappings = new HashMap<>(this.idPropertyShape);
     if (defaultVals.containsKey(StringResource.ID_KEY)) {
       idShapeMappings.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultVals.get(StringResource.ID_KEY));
     }

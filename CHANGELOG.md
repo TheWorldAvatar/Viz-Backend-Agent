@@ -1,5 +1,18 @@
 # Change Log
 
+## 1.11.0
+
+### Features
+
+- Standardised the predicates of identifiers using `dcterm:identifier` by default
+- Include an ID property shape by default for form templates
+- Id will be instantiated by default for all new instances
+- Update queries to retrieve by this ID property instead of using `FILTER`
+
+### Bug fix
+
+- Fixed mismatched queries with different IDs and IRIs
+
 ## 1.10.0
 
 ### Features
