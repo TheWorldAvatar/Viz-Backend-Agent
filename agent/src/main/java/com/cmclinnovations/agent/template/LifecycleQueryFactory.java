@@ -165,13 +165,15 @@ public class LifecycleQueryFactory {
    * 
    * @param contract  The input contract instance.
    * @param date      Optional date for filtering.
+   * @param taskId    Optional identifier of the final task for filtering.
    * @param eventType The target event type to retrieve.
    */
-  public String getContractEventQuery(String contract, String date, LifecycleEventType eventType) {
+  public String getContractEventQuery(String contract, String date, String taskId, LifecycleEventType eventType) {
     String dateFilter = "";
     if (date != null) {
       dateFilter = "FILTER(xsd:date(?date)=\"" + date + "\"^^xsd:date)";
     }
+    String finalTaskIdFilter = taskId != null ? "dc-terms:identifier " + StringResource.parseLiteral(taskId) + ";" : "";
     return StringResource.QUERY_TEMPLATE_PREFIX +
         "SELECT DISTINCT ?iri ?id WHERE{" +
         "?contract dc-terms:identifier \"" + contract + "\";" +
@@ -181,7 +183,7 @@ public class LifecycleQueryFactory {
         "?event fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;" +
         "^cmns-dt:succeeds* ?final_event;" +
         "^cmns-dt:succeeds* ?iri." +
-        "?final_event fibo-fnd-dt-oc:hasEventDate ?date." +
+        "?final_event " + finalTaskIdFilter + "fibo-fnd-dt-oc:hasEventDate ?date." +
         "?iri dc-terms:identifier ?id;" +
         "fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
         dateFilter +

@@ -123,6 +123,7 @@ public class LifecycleService {
       String eventQuery = this.lifecycleQueryFactory.getContractEventQuery(
           params.get(LifecycleResource.CONTRACT_KEY).toString(),
           params.get(LifecycleResource.DATE_KEY).toString(),
+          null,
           LifecycleResource.getEventClassFromOrderEnum(orderEnum));
       return this.getService.getInstance(eventQuery).getFieldValue(LifecycleResource.IRI_KEY);
     });
@@ -403,7 +404,7 @@ public class LifecycleService {
         LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
     if (orderInstantiatedResponse.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Retrieving the current dispatch details...");
-      String query = this.lifecycleQueryFactory.getContractEventQuery(contractId, null,
+      String query = this.lifecycleQueryFactory.getContractEventQuery(contractId, null, taskId,
           LifecycleEventType.SERVICE_ORDER_DISPATCHED);
       String prevDispatchId = this.getService.getInstance(query).getFieldValue(StringResource.ID_KEY);
       ResponseEntity<StandardApiResponse> response = this.getService.getInstance(prevDispatchId,
