@@ -655,9 +655,9 @@ Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/ser
 
 Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/complete` endpoint to update the completion details for a target order and complete this task. The details are configurable as per the above.
 
-Users can also send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/service/continue` endpoint to continue the task on the next working day (typically Saturday and Sunday will be excluded). This route will require the following parameters:
+Users can also send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/service/continue` endpoint **AFTER completing the task** to continue the task on the next working day (typically Saturday and Sunday will be excluded). This route will require the following parameters:
 
-1. `id`: the current task identifier
+1. `id`: the current completed task identifier
 2. `contract`: the identifier for the contract
 
 > Report unfulfilled service tasks
