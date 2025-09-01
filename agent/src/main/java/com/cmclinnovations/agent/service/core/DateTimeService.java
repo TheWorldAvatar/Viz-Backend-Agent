@@ -70,13 +70,12 @@ public class DateTimeService {
    */
   public String getNextWorkingDate() {
     LocalDate today = LocalDate.now();
-    LocalDate nextWorkingDate;
-    switch (today.getDayOfWeek()) {
-      case DayOfWeek.FRIDAY -> nextWorkingDate = today.plusDays(3);
-      case DayOfWeek.SATURDAY -> nextWorkingDate = today.plusDays(2);
-      default -> nextWorkingDate = today.plusDays(1);
-    }
-    return nextWorkingDate.format(this.formatter);
+    long daysToAdd = switch (today.getDayOfWeek()) {
+      case DayOfWeek.FRIDAY ->  3;
+      case DayOfWeek.SATURDAY ->  2;
+      default -> 1;
+    };
+    return today.plusDays(daysToAdd).format(this.formatter);
   }
 
   /**
