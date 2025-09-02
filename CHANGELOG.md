@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.12.0
+
+### Features
+
+- Added a route to continue task on the next working day
+- Added default `log4j.properties`
+- Updated the standard `complete` and `dispatch` JSON-LD
+
 ## 1.11.0
 
 ### Features
