@@ -3,7 +3,7 @@ version: "3.9"
 services:
   agent:
     container_name: vis-backend-agent
-    image: ghcr.io/theworldavatar/vis-backend-agent:1.12.0
+    image: ghcr.io/theworldavatar/vis-backend-agent:1.12.1-failed-to-edit-instances-SNAPSHOT
     build:
       context: ..
       target: agent
