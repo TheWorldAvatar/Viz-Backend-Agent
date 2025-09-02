@@ -3,7 +3,7 @@
     "xsd": "http://www.w3.org/2001/XMLSchema#"
   },
   "@id": {
-    "@replace": "id",
+    "@replace": "id_instance",
     "@type": "iri"
   },
   "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence",

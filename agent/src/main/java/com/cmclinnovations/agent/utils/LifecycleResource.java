@@ -1,9 +1,9 @@
 package com.cmclinnovations.agent.utils;
 
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,6 +17,7 @@ public class LifecycleResource {
   public static final String OCCURRENCE_LINK_RESOURCE = "occurrence link";
 
   public static final String IRI_KEY = "iri";
+  public static final String INSTANCE_KEY = "id_instance";
   public static final String CONTRACT_KEY = "contract";
   public static final String ORDER_KEY = "order";
   public static final String CURRENT_DATE_KEY = "current date";
@@ -80,23 +81,19 @@ public class LifecycleResource {
   }
 
   /**
-   * Check if the date input is either before and after the current date.
+   * Generates the ID and instance parameters. IDs will not be overwritten.
    * 
-   * @param dateParam   The date parameter for checking.
-   * @param checkBefore Indicator if the method should check if the date is before
-   *                    the current date. Use false to check if date is after the
-   *                    current date.
+   * @param prefix    The prefix for the instance.
+   * @param eventType The target event type to support a unique instance IRI
+   * @param params    The source and destination of parameter mappings.
    */
-  public static boolean checkDate(String dateParam, boolean checkBefore) {
-    // Parse input date
-    LocalDate inputDate = LocalDate.parse(dateParam);
-    LocalDate currentDate = LocalDate.now();
-
-    if (checkBefore) {
-      return inputDate.isBefore(currentDate); // Check if the date is before today
-    } else {
-      return inputDate.isAfter(currentDate); // Check if the date is after today
-    }
+  public static void genIdAndInstanceParameters(String prefix, LifecycleEventType eventType,
+      Map<String, Object> params) {
+    String identifier = params.containsKey(StringResource.ID_KEY) ? params.get(StringResource.ID_KEY).toString()
+        : UUID.randomUUID().toString();
+    params.putIfAbsent(StringResource.ID_KEY, identifier);
+    params.put(LifecycleResource.INSTANCE_KEY,
+        prefix + "/" + eventType.getId() + "/" + identifier);
   }
 
   /**

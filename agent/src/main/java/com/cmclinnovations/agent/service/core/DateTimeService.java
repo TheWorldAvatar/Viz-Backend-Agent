@@ -66,6 +66,19 @@ public class DateTimeService {
   }
 
   /**
+   * Get next working date (excluding weekend) in YYYY-MM-DD format.
+   */
+  public String getNextWorkingDate() {
+    LocalDate today = LocalDate.now();
+    long daysToAdd = switch (today.getDayOfWeek()) {
+      case DayOfWeek.FRIDAY ->  3;
+      case DayOfWeek.SATURDAY ->  2;
+      default -> 1;
+    };
+    return today.plusDays(daysToAdd).format(this.formatter);
+  }
+
+  /**
    * Parses the date input string into a LocalDate object with the specified
    * formatter.
    * 

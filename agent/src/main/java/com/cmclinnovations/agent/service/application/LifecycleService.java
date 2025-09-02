@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -112,9 +111,7 @@ public class LifecycleService {
     LOGGER.debug("Adding occurrence parameters for {}...", contractId);
     String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
     String stage = this.getService.getInstance(query).getFieldValue(LifecycleResource.IRI_KEY);
-    params.putIfAbsent(StringResource.ID_KEY,
-        StringResource.getPrefix(stage) + "/" + eventType.getId() + "/"
-            + UUID.randomUUID());
+    LifecycleResource.genIdAndInstanceParameters(StringResource.getPrefix(stage), eventType, params);
     params.put(LifecycleResource.STAGE_KEY, stage);
     params.put(LifecycleResource.EVENT_KEY, eventType.getEvent());
     // Only update the date field if there is no pre-existing field
@@ -126,6 +123,7 @@ public class LifecycleService {
       String eventQuery = this.lifecycleQueryFactory.getContractEventQuery(
           params.get(LifecycleResource.CONTRACT_KEY).toString(),
           params.get(LifecycleResource.DATE_KEY).toString(),
+          null,
           LifecycleResource.getEventClassFromOrderEnum(orderEnum));
       return this.getService.getInstance(eventQuery).getFieldValue(LifecycleResource.IRI_KEY);
     });
@@ -269,7 +267,8 @@ public class LifecycleService {
           String eventStatus = binding.getFieldValue(LifecycleResource.EVENT_STATUS_KEY);
 
           return (Map<String, Object>) binding.get().entrySet().stream()
-              .filter(entry -> !entry.getKey().equals(StringResource.parseQueryVariable(LifecycleResource.EVENT_STATUS_KEY)))
+              .filter(entry -> !entry.getKey()
+                  .equals(StringResource.parseQueryVariable(LifecycleResource.EVENT_STATUS_KEY)))
               .map(entry -> {
                 if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
                   SparqlResponseField eventField = TypeCastUtils.castToObject(entry.getValue(),
@@ -357,15 +356,15 @@ public class LifecycleService {
     params.put(LifecycleResource.CONTRACT_KEY, contract);
     params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
     this.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
-    String orderPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString()) + "/"
-        + LifecycleEventType.SERVICE_ORDER_RECEIVED.getId() + "/";
+    String orderPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
     // Instantiate each occurrence
     boolean hasError = false;
     while (!occurrences.isEmpty()) {
       // Retrieve and update the date of occurrence
       String occurrenceDate = occurrences.poll();
       // set new id each time
-      params.put(StringResource.ID_KEY, orderPrefix + UUID.randomUUID());
+      params.remove(StringResource.ID_KEY);
+      LifecycleResource.genIdAndInstanceParameters(orderPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
       params.put(LifecycleResource.DATE_KEY, occurrenceDate);
       ResponseEntity<StandardApiResponse> response = this.addService.instantiate(
           LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
@@ -377,6 +376,57 @@ public class LifecycleService {
       }
     }
     return hasError;
+  }
+
+  /**
+   * Continues the task on next working day by generating a new occurrence for the
+   * order received and dispatch event of a specified contract.
+   * 
+   * @param taskId     The latest task ID.
+   * @param contractId Target contract.
+   */
+  public ResponseEntity<StandardApiResponse> continueTaskOnNextWorkingDay(String taskId, String contractId) {
+    LOGGER.info("Generating the task for the next working day...");
+    // First instantiate the order received occurrence
+    Map<String, Object> params = new HashMap<>();
+    // Contract ID is mandatory to help generate the other related parameters
+    params.put(LifecycleResource.CONTRACT_KEY, contractId);
+    params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
+    params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getNextWorkingDate());
+    this.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    // Generate a new unique ID for the occurrence by retrieving the prefix from the
+    // stage instance
+    String defaultPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
+    params.remove(StringResource.ID_KEY);
+    LifecycleResource.genIdAndInstanceParameters(defaultPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
+
+    ResponseEntity<StandardApiResponse> orderInstantiatedResponse = this.addService.instantiate(
+        LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
+    if (orderInstantiatedResponse.getStatusCode() == HttpStatus.OK) {
+      LOGGER.info("Retrieving the current dispatch details...");
+      String query = this.lifecycleQueryFactory.getContractEventQuery(contractId, null, taskId,
+          LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+      String prevDispatchId = this.getService.getInstance(query).getFieldValue(StringResource.ID_KEY);
+      ResponseEntity<StandardApiResponse> response = this.getService.getInstance(prevDispatchId,
+          LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+      if (response.getStatusCode() == HttpStatus.OK) {
+        Map<String, String> currentEntity = ((Map<String, Object>) response.getBody().data().items()
+            .get(0)).entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> entry.getValue() instanceof SparqlResponseField
+                    ? ((SparqlResponseField) entry.getValue()).value()
+                    : ""));
+        params.putAll(currentEntity);
+        params.put(LifecycleResource.REMARKS_KEY, ORDER_DISPATCH_MESSAGE);
+        params.remove(StringResource.ID_KEY);
+        LifecycleResource.genIdAndInstanceParameters(defaultPrefix, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+            params);
+        params.put(LifecycleResource.ORDER_KEY, orderInstantiatedResponse.getBody().data().id());
+        return this.addService.instantiate(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), params);
+      }
+    }
+    throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));
   }
 
   /**
@@ -462,25 +512,12 @@ public class LifecycleService {
     Map<String, Object> currentEntity = new HashMap<>();
     if (targetId != null) {
       LOGGER.debug("Detected specific entity ID! Retrieving target event occurrence of {}...", eventType);
-      ResponseEntity<StandardApiResponse> currentEntityResponse = this.getOccurrenceDetails(eventType, targetId, false);
+      ResponseEntity<StandardApiResponse> currentEntityResponse = this.getService.getInstance(targetId, eventType);
+
       if (currentEntityResponse.getStatusCode() == HttpStatus.OK) {
         currentEntity = (Map<String, Object>) currentEntityResponse.getBody().data().items().get(0);
       }
     }
     return this.getService.getForm(replacementQueryLine, true, currentEntity);
-  }
-
-  /**
-   * Retrieves the occurrence's dynamic details for the specified event type.
-   * 
-   * @param eventType    The target event type.
-   * @param targetId     The target instance IRI.
-   * @param requireLabel Indicates if labels should be returned for all the
-   *                     fields that are IRIs.
-   */
-  private ResponseEntity<StandardApiResponse> getOccurrenceDetails(LifecycleEventType eventType, String targetId,
-      boolean requireLabel) {
-    LOGGER.debug("Retrieving relevant entity information for occurrence of {}...", eventType);
-    return this.getService.getInstance(targetId, requireLabel, eventType.getShaclReplacement());
   }
 }

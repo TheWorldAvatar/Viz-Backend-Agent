@@ -205,7 +205,10 @@ public class LifecycleController {
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY,
                   LifecycleResource.DATE_KEY));
         }
-        if (LifecycleResource.checkDate(params.get(LifecycleResource.DATE_KEY).toString(), true)) {
+
+        // Service date selected for cancellation cannot be a past date
+        if (this.dateTimeService.isFutureDate(this.dateTimeService.getCurrentDate(),
+            params.get(LifecycleResource.DATE_KEY).toString())) {
           throw new IllegalArgumentException(
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
         }
@@ -219,7 +222,8 @@ public class LifecycleController {
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY,
                   LifecycleResource.CONTRACT_KEY));
         }
-        if (LifecycleResource.checkDate(params.get(LifecycleResource.DATE_KEY).toString(), false)) {
+        // Service date selected for reporting an issue cannot be a future date
+        if (this.dateTimeService.isFutureDate(params.get(LifecycleResource.DATE_KEY).toString())) {
           throw new IllegalArgumentException(
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
         }
@@ -239,6 +243,17 @@ public class LifecycleController {
           LocalisationTranslator.getMessage(successMsgId, type));
     }
     return response;
+  }
+
+  /**
+   * Continues the task on the next working day by generating the same details on
+   * new occurrences.
+   */
+  @PostMapping("/service/continue")
+  public ResponseEntity<StandardApiResponse> continueTask(@RequestBody Map<String, Object> params) {
+    String taskId = params.get(StringResource.ID_KEY).toString();
+    String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
+    return this.lifecycleService.continueTaskOnNextWorkingDay(taskId, contractId);
   }
 
   /**
