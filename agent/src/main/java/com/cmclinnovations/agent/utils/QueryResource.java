@@ -1,6 +1,9 @@
 package com.cmclinnovations.agent.utils;
 
 import org.eclipse.rdf4j.model.vocabulary.XSD;
+import org.eclipse.rdf4j.sparqlbuilder.constraint.Expression;
+import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
+import org.eclipse.rdf4j.sparqlbuilder.constraint.SparqlFunction;
 import org.eclipse.rdf4j.sparqlbuilder.core.Prefix;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
@@ -74,6 +77,19 @@ public class QueryResource {
                         .distinct(isDistinct)
                         .where(whereClause)
                         .getQueryString();
+    }
+
+    /**
+     * Generates an expression that matches the literal value's string to its
+     * variable in lowercase. It is intended to pass this expression into a filter
+     * clause.
+     * 
+     * @param variable     The target variable for filtering.
+     * @param literalValue The literal value that should be matched.
+     */
+    public static Expression<?> genLowercaseExpression(Variable variable, String literalValue) {
+        return Expressions.equals(
+                Expressions.function(SparqlFunction.LCASE, variable), Rdf.literalOf(literalValue));
     }
 
     /**

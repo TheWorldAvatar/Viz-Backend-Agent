@@ -51,6 +51,13 @@ public class QueryResourceTest {
     }
 
     @Test
+    void testGenLowercaseExpression() {
+        String match = "match";
+        assertEquals("LCASE( " + TEST_VAR.getQueryString() + " ) = \"" + match + "\"",
+                QueryResource.genLowercaseExpression(TEST_VAR, match).getQueryString());
+    }
+
+    @Test
     void testGenSelectQuery() {
         String testClass = "Test";
         String selectQuery = QueryResource.genSelectQuery(TEST_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri(testClass)),

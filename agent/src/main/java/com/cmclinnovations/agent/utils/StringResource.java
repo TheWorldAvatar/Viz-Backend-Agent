@@ -8,30 +8,12 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class StringResource {
   public static final String ID_KEY = "id";
-  public static final String QUERY_TEMPLATE_PREFIX = "PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>"
-      + "PREFIX dc-terms: <http://purl.org/dc/terms/>"
-      + "PREFIX cmns-dt: <https://www.omg.org/spec/Commons/DatesAndTimes/>"
-      + "PREFIX cmns-dsg: <https://www.omg.org/spec/Commons/Designators/>"
-      + "PREFIX cmns-qtu: <https://www.omg.org/spec/Commons/QuantitiesAndUnits/>"
-      + "PREFIX cmns-rlcmp: <https://www.omg.org/spec/Commons/RolesAndCompositions/>"
-      + "PREFIX fibo-fnd-acc-cur: <https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/>"
-      + "PREFIX fibo-fnd-arr-id:<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/IdentifiersAndIndices/>"
-      + "PREFIX fibo-fnd-arr-lif: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/>"
-      + "PREFIX fibo-fnd-arr-rep: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Reporting/>"
-      + "PREFIX fibo-fnd-plc-adr:<https://spec.edmcouncil.org/fibo/ontology/FND/Places/Addresses/>"
-      + "PREFIX fibo-fnd-plc-loc:<https://spec.edmcouncil.org/fibo/ontology/FND/Places/Locations/>"
-      + "PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/>"
-      + "PREFIX fibo-fnd-dt-oc: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/>"
-      + "PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>"
-      + "PREFIX fibo-fnd-pas-pas: <https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/>"
-      + "PREFIX fibo-fnd-pas-psch: <https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/>"
-      + "PREFIX geo: <http://www.opengis.net/ont/geosparql#>"
-      + "PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>"
-      + "PREFIX xsd:<http://www.w3.org/2001/XMLSchema#>";
 
   public static final String CLAZZ_VAR = "clazz";
   public static final String RDF_TYPE = "rdf:type";
@@ -135,6 +117,7 @@ public class StringResource {
    * @param literal Target literal input.
    */
   public static String parseLiteral(String literal) {
+    Rdf.literalOf(literal);
     return "\"" + literal + "\"";
   }
 
