@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.template;
 
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
@@ -20,7 +21,7 @@ public class LifecycleQueryFactory {
    * @param contractId the target contract id.
    */
   public String getServiceStatusQuery(String contractId) {
-    return StringResource.QUERY_TEMPLATE_PREFIX
+    return QueryResource.PREFIX_TEMPLATE
         + "SELECT DISTINCT ?iri ?status WHERE{"
         + "{SELECT DISTINCT ?iri (MAX(?priority_val) AS ?priority) WHERE{"
         + "?iri dc-terms:identifier \"" + contractId + "\";"
@@ -54,7 +55,7 @@ public class LifecycleQueryFactory {
    * @param contractId the target contract id.
    */
   public String getServiceScheduleQuery(String contractId) {
-    return StringResource.QUERY_TEMPLATE_PREFIX
+    return QueryResource.PREFIX_TEMPLATE
         + "SELECT DISTINCT * WHERE{"
         + this.getScheduleTemplate()
         + "?iri dc-terms:identifier \"" + contractId + "\";"
@@ -82,7 +83,7 @@ public class LifecycleQueryFactory {
     StringBuilder activeFilter = new StringBuilder();
     this.appendFilterExists(activeFilter, true, LifecycleResource.EVENT_APPROVAL);
     this.appendArchivedFilterExists(activeFilter, false);
-    return StringResource.QUERY_TEMPLATE_PREFIX
+    return QueryResource.PREFIX_TEMPLATE
         + "SELECT DISTINCT ?iri WHERE{"
         + "?iri fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage."
         // Nested query for all days
@@ -150,7 +151,7 @@ public class LifecycleQueryFactory {
    * @param eventType The target event type to retrieve.
    */
   public String getStageQuery(String contract, LifecycleEventType eventType) {
-    return StringResource.QUERY_TEMPLATE_PREFIX
+    return QueryResource.PREFIX_TEMPLATE
         + "SELECT DISTINCT ?iri WHERE {" +
         "?contract fibo-fnd-arr-lif:hasLifecycle ?lifecycle;" +
         "dc-terms:identifier \"" + contract + "\"." +
@@ -174,7 +175,7 @@ public class LifecycleQueryFactory {
       dateFilter = "FILTER(xsd:date(?date)=\"" + date + "\"^^xsd:date)";
     }
     String finalTaskIdFilter = taskId != null ? "dc-terms:identifier " + StringResource.parseLiteral(taskId) + ";" : "";
-    return StringResource.QUERY_TEMPLATE_PREFIX +
+    return QueryResource.PREFIX_TEMPLATE +
         "SELECT DISTINCT ?iri ?id WHERE{" +
         "?contract dc-terms:identifier \"" + contract + "\";" +
         "fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage." +
@@ -197,7 +198,7 @@ public class LifecycleQueryFactory {
    * @param stage The target stage occurrence instance.
    */
   public String getReportQuery(String stage) {
-    return StringResource.QUERY_TEMPLATE_PREFIX
+    return QueryResource.PREFIX_TEMPLATE
         + "SELECT DISTINCT ?iri WHERE {"
         + "?iri a " + StringResource.parseIriForQuery(LifecycleResource.LIFECYCLE_REPORT) + ";"
         + StringResource.parseIriForQuery(LifecycleResource.IS_ABOUT_RELATIONS)
