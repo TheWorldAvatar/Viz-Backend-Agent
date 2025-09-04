@@ -1,16 +1,28 @@
 package com.cmclinnovations.agent.template.query;
 
 import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
+import org.eclipse.rdf4j.sparqlbuilder.core.TriplesTemplate;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfObject;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfSubject;
 
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,7 +31,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
-  private Queue<StringBuilder> deleteBranchBuilders;
+  private Map<String, String> anonymousVariableMappings;
+  private Queue<GraphPattern> whereClausePatterns;
+  private Queue<Queue<GraphPattern>> whereClauseBranchPatterns;
   private final JsonLdService jsonLdService;
   private static final Logger LOGGER = LogManager.getLogger(DeleteQueryTemplateFactory.class);
 
@@ -29,6 +43,8 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    */
   public DeleteQueryTemplateFactory(JsonLdService jsonLdService) {
     this.jsonLdService = jsonLdService;
+    this.whereClausePatterns = new ArrayDeque<>();
+    this.whereClauseBranchPatterns = new ArrayDeque<>();
   }
 
   /**
@@ -40,77 +56,78 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    */
   public Queue<String> write(QueryTemplateFactoryParameters params) {
     this.reset();
-    StringBuilder deleteBuilder = new StringBuilder();
-    StringBuilder whereBuilder = new StringBuilder();
-    this.recursiveParseNode(deleteBuilder, whereBuilder, params.rootNode(), params.targetId(), true);
-    StringResource.appendTriple(deleteBuilder, ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY,
-        StringResource.parseIriForQuery(ShaclResource.DC_TERMS_ID), StringResource.parseLiteral(params.targetId()));
+    TriplePattern identifierTriple = SparqlBuilder.var("id0").has(QueryResource.DC_TERM_ID,
+        Rdf.literalOf(params.targetId()));
+    TriplesTemplate deleteClause = SparqlBuilder.triplesTemplate(identifierTriple);
+    this.whereClausePatterns.offer(identifierTriple);
+    this.recursiveParseNode(deleteClause, this.whereClausePatterns, params.rootNode());
+
     Queue<String> result = new ArrayDeque<>();
-    result.offer(this.genDeleteTemplate(deleteBuilder, whereBuilder, this.deleteBranchBuilders));
+    result.offer(this.genDeleteTemplate(deleteClause));
     return result;
   }
 
   protected void reset() {
-    this.deleteBranchBuilders = new ArrayDeque<>();
+    this.whereClauseBranchPatterns = new ArrayDeque<>();
+    this.anonymousVariableMappings = new HashMap<>();
   }
 
   /**
    * Recursively parses the node to generate the DELETE query contents.
    * 
-   * @param deleteBuilder A query builder for the DELETE clause.
-   * @param whereBuilder  A query builder for the WHERE clause.
-   * @param currentNode   Input contents to perform operation on.
-   * @param targetId      The target instance IRI.
-   * @param isIdRequired  Indicator to generate an instance ID or an ID variable
-   *                      following targetId.
+   * @param deleteTriplesTemplate A collection of the triples required for the
+   *                              DELETE clause.
+   * @param wherePatterns         A collection containing graph patterns for the
+   *                              WHERE clause.
+   * @param currentNode           Input contents to perform operation on.
    */
-  private void recursiveParseNode(StringBuilder deleteBuilder, StringBuilder whereBuilder, ObjectNode currentNode,
-      String targetId, boolean isIdRequired) {
+  private void recursiveParseNode(TriplesTemplate deleteTriplesTemplate, Queue<GraphPattern> wherePatterns,
+      ObjectNode currentNode) {
     // First retrieve the ID value as a subject of the triple if required, else
     // default to target it
-    String idTripleSubject = isIdRequired ? this.getFormattedQueryVariable(currentNode.path(ShaclResource.ID_KEY),
-        targetId) : targetId;
+    JsonNode idNode = currentNode.path(ShaclResource.ID_KEY);
+    RdfSubject idTripleSubject = idNode.isObject() ? this.parseVariable((ObjectNode) idNode)
+        : Rdf.iri(((TextNode) idNode).textValue());
+
     Iterator<Map.Entry<String, JsonNode>> iterator = currentNode.fields();
     while (iterator.hasNext()) {
       Map.Entry<String, JsonNode> field = iterator.next();
-      JsonNode fieldNode = field.getValue();
-      String fieldKey = field.getKey();
-      switch (fieldKey) {
+      JsonNode objectNode = field.getValue();
+      String predicate = field.getKey();
+      switch (predicate) {
         case ShaclResource.TYPE_KEY:
           // Create the following query line for all @type fields
-          String typeTripleObject = this.getFormattedQueryVariable(fieldNode, targetId);
-          StringResource.appendTriple(deleteBuilder, idTripleSubject, StringResource.RDF_TYPE, typeTripleObject);
-          StringResource.appendTriple(whereBuilder, idTripleSubject, StringResource.RDF_TYPE, typeTripleObject);
+          RdfObject typeTripleObject = objectNode.isObject() ? this.parseVariable((ObjectNode) objectNode)
+              : Rdf.iri(((TextNode) objectNode).textValue());
+          this.appendTriples(idTripleSubject.isA(typeTripleObject), deleteTriplesTemplate, wherePatterns);
           break;
         case ShaclResource.BRANCH_KEY:
           // Iterate over all possible branches
-          ArrayNode branches = this.jsonLdService.getArrayNode(fieldNode);
+          ArrayNode branches = this.jsonLdService.getArrayNode(objectNode);
           for (JsonNode branch : branches) {
             // Generate the required delete template and store the template
-            StringBuilder deleteBranchBuilder = new StringBuilder();
-            StringBuilder deleteBranchWhereBuilder = new StringBuilder();
-            ObjectNode branchNode = this.jsonLdService.getObjectNode(branch);
             // Retain the current ID value
+            ObjectNode branchNode = this.jsonLdService.getObjectNode(branch);
             branchNode.set(ShaclResource.ID_KEY, currentNode.path(ShaclResource.ID_KEY));
-            this.recursiveParseNode(deleteBranchBuilder, deleteBranchWhereBuilder, branchNode, targetId, isIdRequired);
-            this.deleteBranchBuilders.offer(deleteBranchBuilder);
-            this.deleteBranchBuilders.offer(deleteBranchWhereBuilder);
+            Queue<GraphPattern> branchPatterns = new ArrayDeque<>();
+            this.recursiveParseNode(deleteTriplesTemplate, branchPatterns, branchNode);
+            this.whereClauseBranchPatterns.offer(branchPatterns);
           }
           break;
         case ShaclResource.REVERSE_KEY:
-          if (fieldNode.isArray()) {
+          if (objectNode.isArray()) {
             LOGGER.error(
                 "Invalid reverse predicate JSON-LD schema for {}! Fields must be stored in an object!",
                 idTripleSubject);
             throw new IllegalArgumentException(
                 "Invalid reverse predicate JSON-LD schema! Fields must be stored in an object!");
-          } else if (fieldNode.isObject()) {
+          } else if (objectNode.isObject()) {
             // Reverse fields must be an object that may contain one or multiple fields
-            Iterator<String> fieldIterator = fieldNode.fieldNames();
+            Iterator<String> fieldIterator = objectNode.fieldNames();
             while (fieldIterator.hasNext()) {
               String reversePredicate = fieldIterator.next();
-              this.parseNestedNode(currentNode.path(ShaclResource.ID_KEY), fieldNode.path(reversePredicate),
-                  reversePredicate, deleteBuilder, whereBuilder, targetId, true, isIdRequired);
+              this.parseNestedNode(currentNode.path(ShaclResource.ID_KEY), objectNode.path(reversePredicate),
+                  Rdf.iri(reversePredicate), deleteTriplesTemplate, wherePatterns, true);
             }
           }
           break;
@@ -118,141 +135,152 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
           // Ignore @id and @context fields
           break;
         default:
-          this.parseFieldNode(currentNode.path(ShaclResource.ID_KEY), fieldNode, idTripleSubject, field.getKey(),
-              deleteBuilder, whereBuilder, targetId, isIdRequired);
+          this.parseFieldNode(currentNode.path(ShaclResource.ID_KEY), objectNode, idTripleSubject, Rdf.iri(predicate),
+              deleteTriplesTemplate, wherePatterns);
           break;
       }
     }
   }
 
   /**
-   * Retrieves the query variable from the replacement node as either an IRI or
-   * query variable.
+   * Appends the same triple to both the delete and where clause templates.
    * 
-   * @param replacementNode Target for retrieval. Node must be an Object or Text
-   *                        Node.
-   * @param targetId        The target instance IRI.
+   * @param triple                The triple statement to attach.
+   * @param deleteTriplesTemplate A collection of the triples required for the
+   *                              DELETE clause.
+   * @param wherePatterns         A collection containing graph patterns for the
+   *                              WHERE clause.
    */
-  private String getFormattedQueryVariable(JsonNode replacementNode, String targetId) {
-    // If it is an object, it is definitely a replacement object, and retriving the
+  private void appendTriples(TriplePattern triple, TriplesTemplate deleteTriplesTemplate,
+      Queue<GraphPattern> wherePatterns) {
+    deleteTriplesTemplate.and(triple);
+    wherePatterns.offer(triple);
+  }
+
+  /**
+   * Retrieves the variable from the replacement object node as a query variable.
+   * 
+   * @param replacementNode Target for retrieval. Node must be an Object Node.
+   */
+  private Variable parseVariable(ObjectNode replacementNode) {
+    // If it is an object, it is definitely a replacement object, and retrieving the
     // @replace key is sufficient;
-    if (replacementNode.isObject()) {
-      String replacementId = replacementNode.path(ShaclResource.REPLACE_KEY).asText();
-      String replacementType = replacementNode.path(ShaclResource.TYPE_KEY).asText();
-      // Only the id replacement field with prefixes will be returned as an IRI
-      if (replacementType.equals(LifecycleResource.IRI_KEY) && replacementId.equals(StringResource.ID_KEY)) {
-        return StringResource.parseIriForQuery(replacementNode.path("prefix").asText() + targetId);
-      }
-      return ShaclResource.VARIABLE_MARK + StringResource.parseQueryVariable(replacementId);
-    } else {
-      // Otherwise, default to text
-      return StringResource.parseIriForQuery(((TextNode) replacementNode).textValue());
+    String replacementId = replacementNode.path(ShaclResource.REPLACE_KEY).asText();
+    String replacementType = replacementNode.path(ShaclResource.TYPE_KEY).asText();
+    // Id replacement fields with prefixes should be generated as query variables
+    // Code will attempt to retrieve existing query variable for the same prefix,
+    // but if it is new, the id will be incremented according to the mapping size
+    if (replacementType.equals(LifecycleResource.IRI_KEY) && replacementId.equals(StringResource.ID_KEY)) {
+      String idPrefix = replacementNode.path("prefix").asText();
+      String idVar = this.anonymousVariableMappings.computeIfAbsent(idPrefix,
+          k -> StringResource.ID_KEY + this.anonymousVariableMappings.size());
+      return SparqlBuilder.var(idVar);
     }
+    return SparqlBuilder.var(StringResource.parseQueryVariable(replacementId));
   }
 
   /**
    * Parses any field node.
    * 
-   * @param idNode        The ID node of the current node.
-   * @param fieldNode     The field node of the current node.
-   * @param subject       The node acting as the subject of the triple.
-   * @param predicate     The predicate path of the triple.
-   * @param deleteBuilder A query builder for the DELETE clause.
-   * @param whereBuilder  A query builder for the WHERE clause.
-   * @param targetId      The target instance IRI.
-   * @param isIdRequired  Indicator to generate an instance ID or an ID variable
-   *                      following targetId.
+   * @param idNode                The ID node of the current node.
+   * @param objectNode            The node that is the target/ object of the
+   *                              triple statement.
+   * @param subject               The subject of the triple.
+   * @param predicate             The predicate path of the triple.
+   * @param deleteTriplesTemplate A collection of the triples required for the
+   *                              DELETE clause.
+   * @param wherePatterns         A collection containing graph patterns for the
+   *                              WHERE clause.
    */
-  private void parseFieldNode(JsonNode idNode, JsonNode fieldNode, String subject, String predicate,
-      StringBuilder deleteBuilder, StringBuilder whereBuilder, String targetId, boolean isIdRequired) {
+  private void parseFieldNode(JsonNode idNode, JsonNode objectNode, RdfSubject subject, Iri predicate,
+      TriplesTemplate deleteTriplesTemplate, Queue<GraphPattern> wherePatterns) {
     // For object field node
-    if (fieldNode.isObject()) {
-      JsonNode targetTripleObjectNode = fieldNode.has(ShaclResource.REPLACE_KEY)
-          ? fieldNode
-          : fieldNode.path(ShaclResource.ID_KEY);
-      String formattedPredicate = StringResource.parseIriForQuery(predicate);
-      String formattedObjVar = this.getFormattedQueryVariable(targetTripleObjectNode, targetId);
-      String parsedId = targetId;
-      // If this is a nested array element, where no id is required but this is an id
-      // field, not literal, extend the target id with the predicate
-      if (!isIdRequired && formattedObjVar.startsWith("<") && formattedObjVar.endsWith(">")
-          && targetId.contains(ShaclResource.VARIABLE_MARK)) {
-        parsedId = targetId + StringResource.getLocalName(predicate);
-        formattedObjVar = parsedId;
-      }
-      StringResource.appendTriple(deleteBuilder, subject, formattedPredicate, formattedObjVar);
-      if (fieldNode.has(ShaclResource.REPLACE_KEY)
-          && fieldNode.path(ShaclResource.TYPE_KEY).asText().equals("literal")) {
-        StringBuilder optionalBuilder = new StringBuilder();
-        StringResource.appendTriple(optionalBuilder, subject, formattedPredicate, formattedObjVar);
-        whereBuilder.append(StringResource.genOptionalClause(optionalBuilder.toString()));
+    if (objectNode.isObject()) {
+      JsonNode targetTripleObjectNode = objectNode.has(ShaclResource.REPLACE_KEY)
+          ? objectNode
+          : objectNode.path(ShaclResource.ID_KEY);
+
+      RdfObject sparqlObject = targetTripleObjectNode.isObject()
+          ? this.parseVariable((ObjectNode) targetTripleObjectNode)
+          : Rdf.iri(((TextNode) targetTripleObjectNode).textValue());
+
+      // Add the triple statement directly to DELETE clause
+      TriplePattern tripleStatement = subject.has(predicate, sparqlObject);
+      deleteTriplesTemplate.and(tripleStatement);
+
+      // But add optional clause when required
+      if (objectNode.has(ShaclResource.REPLACE_KEY)
+          && objectNode.path(ShaclResource.TYPE_KEY).asText().equals("literal")) {
+        wherePatterns.offer(GraphPatterns.optional(tripleStatement));
       } else {
-        StringResource.appendTriple(whereBuilder, subject, formattedPredicate, formattedObjVar);
+        wherePatterns.offer(tripleStatement);
       }
       // Further processing for array type
-      if (fieldNode.has(ShaclResource.REPLACE_KEY)
-          && fieldNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)
-          && fieldNode.has(ShaclResource.CONTENTS_KEY)) {
+      if (objectNode.has(ShaclResource.REPLACE_KEY)
+          && objectNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)
+          && objectNode.has(ShaclResource.CONTENTS_KEY)) {
         // This should generate a DELETE query with a variable whenever IDs are detected
-        this.recursiveParseNode(deleteBuilder, whereBuilder,
-            this.jsonLdService.getObjectNode(fieldNode.path(ShaclResource.CONTENTS_KEY)),
-            formattedObjVar, false);
+        this.recursiveParseNode(deleteTriplesTemplate, wherePatterns,
+            this.jsonLdService.getObjectNode(objectNode.path(ShaclResource.CONTENTS_KEY)));
       }
       // No further processing required for objects intended for replacement, @value,
-      if (!fieldNode.has(ShaclResource.REPLACE_KEY) && !fieldNode.has(ShaclResource.VAL_KEY) &&
+      if (!objectNode.has(ShaclResource.REPLACE_KEY) && !objectNode.has(ShaclResource.VAL_KEY) &&
       // or a one line instance link to a TextNode eg: "@id" : "instanceIri"
-          !(fieldNode.has(ShaclResource.ID_KEY) && fieldNode.size() == 1
-              && fieldNode.path(ShaclResource.ID_KEY).isTextual())) {
-        this.recursiveParseNode(deleteBuilder, whereBuilder, (ObjectNode) fieldNode, parsedId, isIdRequired);
+          !(objectNode.has(ShaclResource.ID_KEY) && objectNode.size() == 1
+              && objectNode.path(ShaclResource.ID_KEY).isTextual())) {
+        this.recursiveParseNode(deleteTriplesTemplate, wherePatterns, (ObjectNode) objectNode);
       }
       // For arrays,iterate through each object and parse the nested node
-    } else if (fieldNode.isArray()) {
-      ArrayNode fieldArray = (ArrayNode) fieldNode;
+    } else if (objectNode.isArray()) {
+      ArrayNode fieldArray = (ArrayNode) objectNode;
       for (JsonNode tripleObjNode : fieldArray) {
-        this.parseNestedNode(idNode, tripleObjNode, predicate, deleteBuilder, whereBuilder, targetId, false,
-            isIdRequired);
+        this.parseNestedNode(idNode, tripleObjNode, predicate, deleteTriplesTemplate, wherePatterns, false);
       }
+    } else {
+      // Text nodes are string literals
+      this.appendTriples(subject.has(predicate, Rdf.literalOf(((TextNode) objectNode).textValue())),
+          deleteTriplesTemplate, wherePatterns);
     }
   }
 
   /**
    * Parses a nested node (two layers down) with the required parameters.
    * 
-   * @param idNode        The ID node of the current top level node.
-   * @param objectNode    The node acting as the object of the triple.
-   * @param predicatePath The predicate path of the triple.
-   * @param deleteBuilder A query builder for the DELETE clause.
-   * @param whereBuilder  A query builder for the WHERE clause.
-   * @param targetId      The target instance IRI.
-   * @param isReverse     Indicates if the variable should be inverse or not.
-   * @param isIdRequired  Indicator to generate an instance ID or an ID variable
-   *                      following targetId.
+   * @param idNode                The ID node of the current top level node.
+   * @param objectNode            The node acting as the object of the triple.
+   * @param predicatePath         The predicate path of the triple.
+   * @param deleteTriplesTemplate A collection of the triples required for the
+   *                              DELETE clause.
+   * @param wherePatterns         A collection containing graph patterns for the
+   *                              WHERE clause.
+   * @param isReverse             Indicates if the variable should be inverse or
+   *                              not.
    */
-  private void parseNestedNode(JsonNode idNode, JsonNode objectNode, String predicatePath, StringBuilder deleteBuilder,
-      StringBuilder whereBuilder,
-      String targetId, boolean isReverse, boolean isIdRequired) {
+  private void parseNestedNode(JsonNode idNode, JsonNode objectNode, Iri predicatePath,
+      TriplesTemplate deleteTriplesTemplate, Queue<GraphPattern> wherePatterns, boolean isReverse) {
     if (isReverse) {
       if (objectNode.isObject()) {
         // A reverse node indicates that the replacement object should now be the
         // subject and the Id Node should become the object
         if (objectNode.has(ShaclResource.REPLACE_KEY)) {
-          String replacementVar = this.getFormattedQueryVariable(objectNode, targetId);
+          RdfSubject replacementVar = this.parseVariable((ObjectNode) objectNode);
           this.parseFieldNode(null, idNode, replacementVar, predicatePath,
-              deleteBuilder, whereBuilder, targetId, isIdRequired);
+              deleteTriplesTemplate, wherePatterns);
         } else {
           // A reverse node indicates that the original object should now be the subject
           // And the Id Node should become the object
           ObjectNode nestedReverseNode = (ObjectNode) objectNode;
-          nestedReverseNode.set(predicatePath, idNode);
-          this.recursiveParseNode(deleteBuilder, whereBuilder, nestedReverseNode, targetId, isIdRequired);
+          // Ensure the predicate path excludes the enclosing <>
+          String predicate = predicatePath.getQueryString();
+          nestedReverseNode.set(predicate.substring(1, predicate.length() - 1), idNode);
+          this.recursiveParseNode(deleteTriplesTemplate, wherePatterns, nestedReverseNode);
         }
       } else if (objectNode.isArray()) {
         // For reverse arrays, iterate and recursively parse each object as a reverse
         // node
         ArrayNode objArray = (ArrayNode) objectNode;
         for (JsonNode nestedReverseObjNode : objArray) {
-          this.parseNestedNode(idNode, nestedReverseObjNode, predicatePath, deleteBuilder, whereBuilder, targetId, true,
-              isIdRequired);
+          this.parseNestedNode(idNode, nestedReverseObjNode, predicatePath, deleteTriplesTemplate, wherePatterns, true);
         }
       }
     } else {
@@ -260,8 +288,10 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       // Creating a new node where the ID node is the parent is sufficient
       ObjectNode nestedNode = this.jsonLdService.genObjectNode();
       nestedNode.set(ShaclResource.ID_KEY, idNode);
-      nestedNode.set(predicatePath, objectNode);
-      this.recursiveParseNode(deleteBuilder, whereBuilder, nestedNode, targetId, isIdRequired);
+      // Ensure the predicate path excludes the enclosing <>
+      String predicate = predicatePath.getQueryString();
+      nestedNode.set(predicate.substring(1, predicate.length() - 1), objectNode);
+      this.recursiveParseNode(deleteTriplesTemplate, wherePatterns, nestedNode);
     }
   }
 
@@ -272,15 +302,23 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    * @param whereBuilder   A query builder for the WHERE clause.
    * @param branchBuilders A query builders for any form branches.
    */
-  private String genDeleteTemplate(StringBuilder deleteBuilder, StringBuilder whereBuilder,
-      Queue<StringBuilder> branchBuilders) {
-    while (!branchBuilders.isEmpty()) {
-      // Branch builders will have two builders per branch
-      // First builder is for the DELETE clause
-      deleteBuilder.append(branchBuilders.poll().toString());
-      // Second builder is for the WHERE clause, which should also be optional
-      whereBuilder.append(StringResource.genOptionalClause(branchBuilders.poll().toString()));
+  private String genDeleteTemplate(TriplesTemplate deleteClause) {
+    StringBuilder whereClause = new StringBuilder();
+    while (!this.whereClausePatterns.isEmpty()) {
+      whereClause.append(this.whereClausePatterns.poll().getQueryString())
+          .append("\n");
     }
-    return "DELETE {" + deleteBuilder.toString() + "} WHERE {" + whereBuilder.toString() + "}";
+    while (!this.whereClauseBranchPatterns.isEmpty()) {
+      Queue<GraphPattern> branchPattern = this.whereClauseBranchPatterns.poll();
+      whereClause.append(
+          // Convert queue to an array so that it is accepted by GraphPatterns.optional
+          GraphPatterns.optional(
+                  branchPattern.toArray(new GraphPattern[0]))
+              .getQueryString())
+          .append("\n");
+    }
+    return QueryResource.DC_TERM.getQueryString() +
+        "DELETE " + deleteClause.getQueryString().toString() +
+        " WHERE {" + whereClause.toString() + "}";
   }
 }

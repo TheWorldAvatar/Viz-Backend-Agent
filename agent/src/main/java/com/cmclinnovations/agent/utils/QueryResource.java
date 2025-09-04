@@ -9,6 +9,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 public class QueryResource {
@@ -47,6 +48,8 @@ public class QueryResource {
             "https://www.theworldavatar.com/kg/ontoservice/");
     public static final Prefix XSD_PREFIX = genPrefix(XSD.PREFIX, XSD.NAMESPACE);
     public static final String PREFIX_TEMPLATE = genPrefixTemplate();
+
+    public static final Iri DC_TERM_ID = DC_TERM.iri("identifier");
 
     // Private constructor to prevent instantiation
     private QueryResource() {

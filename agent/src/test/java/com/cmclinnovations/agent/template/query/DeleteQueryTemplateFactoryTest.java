@@ -33,7 +33,7 @@ public class DeleteQueryTemplateFactoryTest {
         ObjectNode sample = TestUtils.getJson(TEST_SIMPLE_FILE);
         Queue<String> results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
         assertEquals(1, results.size());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_FILE), results.poll());
+        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_FILE), results.poll().replace("\n", ""));
     }
 
     @Test
@@ -41,6 +41,6 @@ public class DeleteQueryTemplateFactoryTest {
         ObjectNode sample = TestUtils.getJson(TEST_SIMPLE_REVERSE_FILE);
         Queue<String> results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
         assertEquals(1, results.size());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_REVERSE_FILE), results.poll());
+        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_REVERSE_FILE), results.poll().replace("\n", ""));
     }
 }

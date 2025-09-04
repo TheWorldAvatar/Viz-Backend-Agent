@@ -67,8 +67,9 @@ class QueryTemplateServiceTest {
 
         // Execution
         Queue<String> results = testService.genDeleteQuery(TEST_RESOURCE, DeleteQueryTemplateFactoryTest.SAMPLE_ID);
-        assertEquals(2, results.size());
-        assertEquals(TestUtils.getSparqlQuery(DeleteQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE), results.poll());
+        assertEquals(1, results.size());
+        assertEquals(TestUtils.getSparqlQuery(DeleteQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE),
+                results.poll().replace("\n", ""));
     }
 
     @Test
