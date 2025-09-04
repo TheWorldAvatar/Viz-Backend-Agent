@@ -18,7 +18,6 @@ import com.cmclinnovations.agent.template.query.DeleteQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.SearchQueryTemplateFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
-import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -74,10 +73,8 @@ public class QueryTemplateService {
     LOGGER.debug("Generating the DELETE query...");
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.getJsonLDResource(resourceID).deepCopy();
-    String instanceIri = addJsonSchema.path(ShaclResource.ID_KEY).asText();
     Queue<String> query = this.deleteQueryTemplateFactory
         .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId));
-    query.offer(instanceIri);
     return query;
   }
 
