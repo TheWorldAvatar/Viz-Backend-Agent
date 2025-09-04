@@ -7,6 +7,7 @@ import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
@@ -105,13 +106,13 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
         throw new IllegalArgumentException(
             MessageFormat.format("Unable to find matching variable for parent field: {0}", parentField.name()));
       }
-      StringResource.appendTriple(query, parsedFieldName, StringResource.parseIriForQuery(ShaclResource.DC_TERMS_ID),
-          StringResource.parseLiteral(parentField.id()));
+      StringResource.appendTriple(query, parsedFieldName, Rdf.iri(ShaclResource.DC_TERMS_ID).getQueryString(),
+          Rdf.literalOf(parentField.id()).getQueryString());
     } else if (!filterId.isEmpty()) {
-      object = StringResource.parseLiteral(filterId);
+      object = Rdf.literalOf(filterId).getQueryString();
       query.append("BIND(\"").append(filterId).append("\" AS ?").append(StringResource.ID_KEY).append(")");
     }
 
-    StringResource.appendTriple(query, subject, StringResource.parseIriForQuery(ShaclResource.DC_TERMS_ID), object);
+    StringResource.appendTriple(query, subject, Rdf.iri(ShaclResource.DC_TERMS_ID).getQueryString(), object);
   }
 }

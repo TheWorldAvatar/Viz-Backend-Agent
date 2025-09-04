@@ -7,6 +7,8 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.core.FileService;
 
@@ -184,7 +186,7 @@ public class LifecycleResource {
         .replace(ShaclResource.VARIABLE_MARK + IRI_KEY, eventVar);
     return StringResource.genOptionalClause(
         eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
-            + StringResource.parseIriForQuery(lifecycleEvent.getEvent())
+            + Rdf.iri(lifecycleEvent.getEvent())
             + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event." + parsedWhereClause);
   }
 }

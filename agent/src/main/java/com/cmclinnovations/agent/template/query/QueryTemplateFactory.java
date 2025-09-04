@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+
 import com.cmclinnovations.agent.model.ShaclPropertyBinding;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
@@ -71,7 +73,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    */
   protected Queue<String> genFederatedQuery(String selectVariables, String whereClause, String targetClass) {
     Queue<String> results = new ArrayDeque<>();
-    String iriClass = StringResource.parseIriForQuery(targetClass);
+    String iriClass = Rdf.iri(targetClass).getQueryString();
     // For mixed endpoints with Ontop which does not support property paths
     results.offer(
         "SELECT DISTINCT " + selectVariables + " WHERE {?iri a " + iriClass + ShaclResource.FULL_STOP

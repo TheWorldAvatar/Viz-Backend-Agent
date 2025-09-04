@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,6 @@ import org.springframework.stereotype.Service;
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.utils.LocalisationResource;
-import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -144,7 +144,7 @@ public class FileService {
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, resourceID));
     }
     // For valid target type, return the associated target class
-    return StringResource.parseIriForQuery(targetClass);
+    return Rdf.iri(targetClass).getQueryString();
   }
 
   /**

@@ -3,6 +3,8 @@ package com.cmclinnovations.agent.model;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
@@ -115,13 +117,13 @@ public class ShaclPropertyBinding {
             StringResource.appendTriple(currentLine,
                     ShaclResource.VARIABLE_MARK + queryProperty,
                     inverseLabelPred + StringResource.RDF_TYPE,
-                    StringResource.parseIriForQuery(this.instanceClass));
+                    Rdf.iri(this.instanceClass).getQueryString());
             // Append nested class only if this is a group and there is a value
         } else if (isGroup && !this.nestedClass.isEmpty()) {
             StringResource.appendTriple(currentLine,
                     ShaclResource.VARIABLE_MARK + queryProperty,
                     StringResource.RDF_TYPE + StringResource.REPLACEMENT_PLACEHOLDER,
-                    StringResource.parseIriForQuery(this.nestedClass));
+                    Rdf.iri(this.nestedClass).getQueryString());
         }
 
         // If the value must conform to a specific subject variable,
@@ -175,7 +177,7 @@ public class ShaclPropertyBinding {
             // Do not process any paths without the http protocol as it is likely to be a
             // blank node
             if (predPath.startsWith("http")) {
-                String parsedPredPath = StringResource.parseIriForQuery(predPath);
+                String parsedPredPath = Rdf.iri(predPath).getQueryString();
                 // Check if there are path prefixes in the SHACL restrictions
                 // Each clause should be separated as we may use other path prefixes in future
                 if (binding.containsField(propertyPathVariable + ShaclResource.PATH_PREFIX)) {

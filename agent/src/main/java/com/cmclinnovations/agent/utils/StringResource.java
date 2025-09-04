@@ -1,8 +1,5 @@
 package com.cmclinnovations.agent.utils;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -91,15 +88,18 @@ public class StringResource {
    * @param iri Input.
    */
   public static String getLocalName(String iri) {
-    if (isValidIRI(iri)) {
+    try {
+      // Check if IRI is valid
+      Rdf.iri(iri);
       int index = iri.indexOf("#");
       if (index != -1) {
         return iri.substring(index + 1);
       }
       String[] parts = iri.split("/");
       return parts[parts.length - 1];
+    } catch (IllegalArgumentException e) {
+      return iri;
     }
-    return iri;
   }
 
   /**
@@ -112,54 +112,15 @@ public class StringResource {
   }
 
   /**
-   * Parses the string literal for SPARQL queries ie enclosing it with "".
-   * 
-   * @param literal Target literal input.
-   */
-  public static String parseLiteral(String literal) {
-    Rdf.literalOf(literal);
-    return "\"" + literal + "\"";
-  }
-
-  /**
-   * Parses the IRI for SPARQL queries ie enclosing it with <>.
-   * 
-   * @param iri Target iri input.
-   */
-  public static String parseIriForQuery(String iri) {
-    if (isValidIRI(iri)) {
-      return "<" + iri + ">";
-    }
-    throw new IllegalArgumentException(MessageFormat.format("Invalid IRI for: {0}", iri));
-  }
-
-  /**
-   * Validates if the input is an IRI or not.
-   * 
-   * @param iri Input.
-   */
-  public static boolean isValidIRI(String iri) {
-    try {
-      URI uri = new URI(iri);
-      // Check if the URI has valid scheme, path, etc
-      return uri.getScheme() != null && uri.getHost() != null;
-    } catch (URISyntaxException e) {
-      // If a URISyntaxException is thrown, the string is not a valid IRI
-      return false;
-    }
-  }
-
-  /**
    * Retrieve the prefix of the input IRI.
    * 
    * @param iri Input.
    */
   public static String getPrefix(String iri) {
-    if (isValidIRI(iri)) {
-      int lastSlashIndex = iri.lastIndexOf("/");
-      return iri.substring(0, lastSlashIndex);
-    }
-    throw new IllegalArgumentException("Invalid IRI! Does not conform to RFC2396 specifications.");
+    // Executes to check if iri is valid
+    Rdf.iri(iri);
+    int lastSlashIndex = iri.lastIndexOf("/");
+    return iri.substring(0, lastSlashIndex);
   }
 
   /**

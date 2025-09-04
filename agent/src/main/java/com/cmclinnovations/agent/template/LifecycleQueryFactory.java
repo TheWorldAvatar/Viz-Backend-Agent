@@ -1,5 +1,7 @@
 package com.cmclinnovations.agent.template;
 
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
@@ -129,7 +131,7 @@ public class LifecycleQueryFactory {
         + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
         + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
-        + StringResource.parseIriForQuery(LifecycleResource.EVENT_ORDER_RECEIVED) + "."
+        + Rdf.iri(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString() + "."
         + "BIND(xsd:date(" + eventDatePlaceholderVar + ") AS " + eventDateVar + ")"
         + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + eventVar + ";"
@@ -174,7 +176,9 @@ public class LifecycleQueryFactory {
     if (date != null) {
       dateFilter = "FILTER(xsd:date(?date)=\"" + date + "\"^^xsd:date)";
     }
-    String finalTaskIdFilter = taskId != null ? "dc-terms:identifier " + StringResource.parseLiteral(taskId) + ";" : "";
+    String finalTaskIdFilter = taskId != null
+        ? QueryResource.DC_TERM_ID.getQueryString() + " " + Rdf.literalOf(taskId).getQueryString() + ";"
+        : "";
     return QueryResource.PREFIX_TEMPLATE +
         "SELECT DISTINCT ?iri ?id WHERE{" +
         "?contract dc-terms:identifier \"" + contract + "\";" +
@@ -200,8 +204,8 @@ public class LifecycleQueryFactory {
   public String getReportQuery(String stage) {
     return QueryResource.PREFIX_TEMPLATE
         + "SELECT DISTINCT ?iri WHERE {"
-        + "?iri a " + StringResource.parseIriForQuery(LifecycleResource.LIFECYCLE_REPORT) + ";"
-        + StringResource.parseIriForQuery(LifecycleResource.IS_ABOUT_RELATIONS)
+        + "?iri a " + Rdf.iri(LifecycleResource.LIFECYCLE_REPORT).getQueryString() + ";"
+        + Rdf.iri(LifecycleResource.IS_ABOUT_RELATIONS).getQueryString()
         + "/fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage <" + stage + ">."
         + "}";
   }
@@ -246,11 +250,11 @@ public class LifecycleQueryFactory {
             + "/" + LifecycleResource.LIFECYCLE_EVENT_TYPE_PREDICATE_PATH,
         ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY);
     String statement = "BIND("
-        + "IF(" + eventVar + "=" + StringResource.parseIriForQuery(LifecycleResource.EVENT_CONTRACT_COMPLETION)
+        + "IF(" + eventVar + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_COMPLETION).getQueryString()
         + ",\"Completed\","
-        + "IF(" + eventVar + "=" + StringResource.parseIriForQuery(LifecycleResource.EVENT_CONTRACT_RESCISSION)
+        + "IF(" + eventVar + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_RESCISSION).getQueryString()
         + ",\"Rescinded\","
-        + "IF(" + eventVar + "=" + StringResource.parseIriForQuery(LifecycleResource.EVENT_CONTRACT_TERMINATION)
+        + "IF(" + eventVar + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_TERMINATION).getQueryString()
         + ",\"Terminated\""
         + ",\"Unknown\"))) AS ?" + LifecycleResource.STATUS_KEY
         + ")"
@@ -271,7 +275,7 @@ public class LifecycleQueryFactory {
     StringResource.appendTriple(tempBuilder, ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY,
         LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH, stageVar);
     StringResource.appendTriple(tempBuilder, stageVar, LifecycleResource.LIFECYCLE_EVENT_TYPE_PREDICATE_PATH,
-        StringResource.parseIriForQuery(LifecycleEventType.ARCHIVE_COMPLETION.getStage()));
+        Rdf.iri(LifecycleEventType.ARCHIVE_COMPLETION.getStage()).getQueryString());
     StringResource.appendTriple(tempBuilder, stageVar, LifecycleResource.LIFECYCLE_STAGE_EVENT_PREDICATE_PATH,
         ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY);
     this.appendFilterExists(query, tempBuilder.toString(), exists);
@@ -288,7 +292,7 @@ public class LifecycleQueryFactory {
   private void appendFilterExists(StringBuilder query, boolean exists, String instance) {
     StringBuilder tempBuilder = new StringBuilder();
     StringResource.appendTriple(tempBuilder, "?iri", LifecycleResource.LIFECYCLE_EVENT_PREDICATE_PATH,
-        StringResource.parseIriForQuery(instance));
+        Rdf.iri(instance).getQueryString());
     this.appendFilterExists(query, tempBuilder.toString(), exists);
   }
 
