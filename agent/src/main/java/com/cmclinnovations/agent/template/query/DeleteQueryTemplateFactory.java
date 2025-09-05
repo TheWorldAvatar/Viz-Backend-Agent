@@ -176,7 +176,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
           k -> StringResource.ID_KEY + this.anonymousVariableMappings.size());
       return SparqlBuilder.var(idVar);
     }
-    return SparqlBuilder.var(StringResource.parseQueryVariable(replacementId));
+    return QueryResource.genVariable(replacementId);
   }
 
   /**

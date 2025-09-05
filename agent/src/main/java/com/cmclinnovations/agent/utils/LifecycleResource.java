@@ -173,7 +173,7 @@ public class LifecycleResource {
     if (!matcher.find()) {
       return "";
     }
-    String eventVar = ShaclResource.VARIABLE_MARK + lifecycleEvent.getId() + "_event";
+    String eventVar = QueryResource.genVariable(lifecycleEvent.getId() + "_event").getQueryString();
     String parsedWhereClause = matcher.group(1)
         .trim()
         // Remove the following unneeded statements
@@ -183,7 +183,7 @@ public class LifecycleResource {
             "")
         .replaceFirst("\\?iri \\<http\\:\\/\\/purl\\.org\\/dc\\/terms\\/identifier\\> \\?id.", "")
         // Replace iri with event variable
-        .replace(ShaclResource.VARIABLE_MARK + IRI_KEY, eventVar);
+        .replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
     return StringResource.genOptionalClause(
         eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
             + Rdf.iri(lifecycleEvent.getEvent())

@@ -28,6 +28,7 @@ import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 
@@ -268,7 +269,7 @@ public class LifecycleService {
 
           return (Map<String, Object>) binding.get().entrySet().stream()
               .filter(entry -> !entry.getKey()
-                  .equals(StringResource.parseQueryVariable(LifecycleResource.EVENT_STATUS_KEY)))
+                  .equals(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY).getVarName()))
               .map(entry -> {
                 if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
                   SparqlResponseField eventField = TypeCastUtils.castToObject(entry.getValue(),
@@ -332,10 +333,10 @@ public class LifecycleService {
     SparqlBinding bindings = this.getService.getInstance(query);
     // Extract specific schedule info
     String startDate = bindings
-        .getFieldValue(StringResource.parseQueryVariable(LifecycleResource.SCHEDULE_START_DATE_KEY));
-    String endDate = bindings.getFieldValue(StringResource.parseQueryVariable(LifecycleResource.SCHEDULE_END_DATE_KEY));
+        .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY).getVarName());
+    String endDate = bindings.getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY).getVarName());
     String recurrence = bindings
-        .getFieldValue(StringResource.parseQueryVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY));
+        .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getVarName());
     Queue<String> occurrences = new ArrayDeque<>();
     // Extract date of occurrences based on the schedule information
     // For single time schedules, simply add the start date

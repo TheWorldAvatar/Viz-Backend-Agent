@@ -45,10 +45,12 @@ public class LifecycleQueryFactory {
    */
   public String getReadableScheduleQuery() {
     return this.getScheduleTemplate()
-        + "BIND(IF(?" + LifecycleResource.SCHEDULE_RECURRENCE_KEY + "=\"P1D\",\"Single Service\","
-        + "IF(?" + LifecycleResource.SCHEDULE_RECURRENCE_KEY + "=\"P2D\",\"Alternate Day Service\", "
+        + "BIND(IF(" + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString()
+        + "=\"P1D\",\"Single Service\","
+        + "IF(" + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString()
+        + "=\"P2D\",\"Alternate Day Service\", "
         + "\"Regular Service\")" // Close IF statement
-        + ") AS ?" + StringResource.parseQueryVariable(LifecycleResource.SCHEDULE_TYPE_KEY) + ")";
+        + ") AS " + QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY).getQueryString() + ")";
   }
 
   /**
@@ -108,12 +110,11 @@ public class LifecycleQueryFactory {
    *                  passed.
    */
   public String getServiceTasksQuery(String contract, String startDate, String endDate) {
-    String eventDateVar = ShaclResource.VARIABLE_MARK + LifecycleResource.DATE_KEY;
-    String eventDatePlaceholderVar = ShaclResource.VARIABLE_MARK + "event_date";
-    String eventVar = ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY;
-    String eventIdVar = StringResource.parseQueryVariable(ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_ID_KEY);
-    String eventStatusVar = StringResource
-        .parseQueryVariable(ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_STATUS_KEY);
+    String eventDateVar = QueryResource.genVariable(LifecycleResource.DATE_KEY).getQueryString();
+    String eventDatePlaceholderVar = QueryResource.genVariable("event_date").getQueryString();
+    String eventVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY).getQueryString();
+    String eventIdVar = QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY).getQueryString();
+    String eventStatusVar = QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY).getQueryString();
 
     String filterContractStatement = contract != null ? "?iri dc-terms:identifier \"" + contract + "\"." : "";
     // Filter dates
@@ -243,12 +244,12 @@ public class LifecycleQueryFactory {
    * @param query Builder for the query template.
    */
   private void appendArchivedStateQuery(StringBuilder query) {
-    String eventVar = ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY;
+    String eventVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY).getQueryString();
     StringBuilder tempBuilder = new StringBuilder();
-    StringResource.appendTriple(tempBuilder, ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY,
+    StringResource.appendTriple(tempBuilder, QueryResource.IRI_VAR.getQueryString(),
         LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH + "/" + LifecycleResource.LIFECYCLE_STAGE_EVENT_PREDICATE_PATH
             + "/" + LifecycleResource.LIFECYCLE_EVENT_TYPE_PREDICATE_PATH,
-        ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY);
+        eventVar);
     String statement = "BIND("
         + "IF(" + eventVar + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_COMPLETION).getQueryString()
         + ",\"Completed\","
@@ -270,14 +271,14 @@ public class LifecycleQueryFactory {
    * @param exists Indicate if using FILTER EXISTS or FILTER NOT EXISTS.
    */
   private void appendArchivedFilterExists(StringBuilder query, boolean exists) {
-    String stageVar = ShaclResource.VARIABLE_MARK + LifecycleResource.STAGE_KEY + "_archived";
+    String stageVar = QueryResource.genVariable(LifecycleResource.STAGE_KEY + "_archived").getQueryString();
     StringBuilder tempBuilder = new StringBuilder();
-    StringResource.appendTriple(tempBuilder, ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY,
+    StringResource.appendTriple(tempBuilder, QueryResource.IRI_VAR.getQueryString(),
         LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH, stageVar);
     StringResource.appendTriple(tempBuilder, stageVar, LifecycleResource.LIFECYCLE_EVENT_TYPE_PREDICATE_PATH,
         Rdf.iri(LifecycleEventType.ARCHIVE_COMPLETION.getStage()).getQueryString());
     StringResource.appendTriple(tempBuilder, stageVar, LifecycleResource.LIFECYCLE_STAGE_EVENT_PREDICATE_PATH,
-        ShaclResource.VARIABLE_MARK + LifecycleResource.EVENT_KEY);
+        QueryResource.genVariable(LifecycleResource.EVENT_KEY).getQueryString());
     this.appendFilterExists(query, tempBuilder.toString(), exists);
   }
 
@@ -320,15 +321,16 @@ public class LifecycleQueryFactory {
   private String getScheduleTemplate() {
     return "?iri " + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH
         + "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule> ?schedule."
-        + "?schedule <https://www.omg.org/spec/Commons/DatesAndTimes/hasStartDate>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> ?"
-        + StringResource.parseQueryVariable(LifecycleResource.SCHEDULE_START_DATE_KEY) + ";"
-        + "^<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndDate>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> ?"
-        + StringResource.parseQueryVariable(LifecycleResource.SCHEDULE_END_DATE_KEY) + ";"
-        + "<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimePeriod>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasStart>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue> ?"
-        + StringResource.parseQueryVariable(LifecycleResource.SCHEDULE_START_TIME_KEY) + ";"
-        + "<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimePeriod>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndTime>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue> ?"
-        + StringResource.parseQueryVariable(LifecycleResource.SCHEDULE_END_TIME_KEY) + ";"
-        + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?"
-        + LifecycleResource.SCHEDULE_RECURRENCE_KEY + ShaclResource.FULL_STOP;
+        + "?schedule <https://www.omg.org/spec/Commons/DatesAndTimes/hasStartDate>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> "
+        + QueryResource.genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY).getQueryString() + ";"
+        + "^<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndDate>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> "
+        + QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY).getQueryString() + ";"
+        + "<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimePeriod>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasStart>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue> "
+        + QueryResource.genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY).getQueryString() + ";"
+        + "<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimePeriod>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndTime>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue> "
+        + QueryResource.genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY).getQueryString() + ";"
+        + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> "
+        + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString()
+        + ShaclResource.FULL_STOP;
   }
 }

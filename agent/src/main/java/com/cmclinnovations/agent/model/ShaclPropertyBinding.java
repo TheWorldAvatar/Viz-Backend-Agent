@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
@@ -101,11 +102,11 @@ public class ShaclPropertyBinding {
             return "BIND(?iri AS ?id)";
         }
 
-        String queryProperty = StringResource.parseQueryVariable(this.property);
+        String objectVar = QueryResource.genVariable(this.property).getQueryString();
         StringResource.appendTriple(currentLine,
-                ShaclResource.VARIABLE_MARK + StringResource.parseQueryVariable(this.subject),
+                QueryResource.genVariable(this.subject).getQueryString(),
                 jointPredicate,
-                ShaclResource.VARIABLE_MARK + queryProperty);
+                objectVar);
         // If sh:node targetClass is available and not a group, append the class
         // restriction
         if (!isGroup && !this.instanceClass.isEmpty()) {
@@ -115,13 +116,13 @@ public class ShaclPropertyBinding {
                     ? "^(" + this.labelPredicate + ")/"
                     : "";
             StringResource.appendTriple(currentLine,
-                    ShaclResource.VARIABLE_MARK + queryProperty,
+                    objectVar,
                     inverseLabelPred + StringResource.RDF_TYPE,
                     Rdf.iri(this.instanceClass).getQueryString());
             // Append nested class only if this is a group and there is a value
         } else if (isGroup && !this.nestedClass.isEmpty()) {
             StringResource.appendTriple(currentLine,
-                    ShaclResource.VARIABLE_MARK + queryProperty,
+                    objectVar,
                     StringResource.RDF_TYPE + StringResource.REPLACEMENT_PLACEHOLDER,
                     Rdf.iri(this.nestedClass).getQueryString());
         }
@@ -129,8 +130,8 @@ public class ShaclPropertyBinding {
         // If the value must conform to a specific subject variable,
         // a filter needs to be added directly to the same optional clause
         if (!this.subjectFilter.isEmpty()) {
-            currentLine.append("FILTER(STR(?")
-                    .append(queryProperty)
+            currentLine.append("FILTER(STR(")
+                    .append(objectVar)
                     .append(") = \"")
                     .append(this.subjectFilter)
                     .append("\")");

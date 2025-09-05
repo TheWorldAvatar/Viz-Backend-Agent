@@ -103,15 +103,6 @@ public class StringResource {
   }
 
   /**
-   * Parses a SPARQL query variable to ensure that any spaces are replaced.
-   * 
-   * @param variable Target variable input.
-   */
-  public static String parseQueryVariable(String variable) {
-    return variable.replaceAll("\\s+", "_");
-  }
-
-  /**
    * Retrieve the prefix of the input IRI.
    * 
    * @param iri Input.

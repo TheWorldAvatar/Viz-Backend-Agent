@@ -9,19 +9,20 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.ShaclPropertyBinding;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
-import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory {
   private boolean hasEmptyBranches;
   private List<String> sortedVars;
-  protected Set<String> variables;
+  protected Set<Variable> variables;
   private Map<String, Set<String>> arrayVariables;
   protected Map<String, List<Integer>> varSequence;
   private final AuthenticationService authenticationService;
@@ -182,9 +183,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     }
 
     // Move the group bindings over to the right mappings
-    referencedGroupIdentifiers.forEach(groupIdentifier ->
-
-    {
+    referencedGroupIdentifiers.forEach(groupIdentifier -> {
       groupPropertyMap.put(groupIdentifier, indivPropertyMap.remove(groupIdentifier));
     });
 
@@ -235,7 +234,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         this.arrayVariables.computeIfAbsent(mappingKey, k -> new HashSet<>()).add(propBinding.getName());
       }
       // Store the variable for individual properties only
-      this.variables.add(ShaclResource.VARIABLE_MARK + StringResource.parseQueryVariable(propBinding.getName()));
+      this.variables.add(QueryResource.genVariable(propBinding.getName()));
     });
 
     // Handle group query parsing

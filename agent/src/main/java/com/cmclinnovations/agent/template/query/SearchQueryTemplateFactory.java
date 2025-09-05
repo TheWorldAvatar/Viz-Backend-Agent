@@ -8,7 +8,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
-import com.cmclinnovations.agent.utils.ShaclResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public class SearchQueryTemplateFactory extends QueryTemplateFactory {
@@ -46,15 +46,15 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
     String whereClauseLines = super.genWhereClauseContent(params.bindings());
 
     StringBuilder whereBuilder = new StringBuilder(whereClauseLines);
-    super.variables.forEach(variableWithMark -> {
-      String variable = variableWithMark.replace(ShaclResource.VARIABLE_MARK, "");
+    super.variables.forEach(variable -> {
+      String varName = variable.getVarName();
       // Do not generate or act on any id query lines
       // note that if no criteria or empty string is passed in the API, the filter
       // will not be added
-      if (!variable.equals(StringResource.ID_KEY) && params.criterias().containsKey(variable)
-          && !params.criterias().get(variable).isEmpty()) {
+      if (!varName.equals(StringResource.ID_KEY) && params.criterias().containsKey(varName)
+          && !params.criterias().get(varName).isEmpty()) {
         // If there is no search filters to be added, this variable should not be added
-        String searchFilters = this.genSearchCriteria(variable, params.criterias());
+        String searchFilters = this.genSearchCriteria(varName, params.criterias());
         if (!searchFilters.isEmpty()) {
           filters.append(searchFilters);
         }
@@ -72,7 +72,7 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
    */
   private String genSearchCriteria(String variable, Map<String, String> criterias) {
     String criteriaVal = criterias.get(variable);
-    String formattedVar = StringResource.parseQueryVariable(variable);
+    String formattedVar = QueryResource.genVariable(variable).getQueryString();
     if (criteriaVal.isEmpty()) {
       return criteriaVal;
     }
@@ -83,12 +83,12 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
       String maxCriteriaVal = criterias.get("max " + variable);
       // Append min filter if available
       if (!minCriteriaVal.isEmpty()) {
-        rangeQuery += "FILTER(?" + formattedVar + " >= " + criterias.get("min " + variable);
+        rangeQuery += "FILTER(" + formattedVar + " >= " + criterias.get("min " + variable);
       }
       // Append max filter if available
       if (!maxCriteriaVal.isEmpty()) {
         // Prefix should be a conditional && if the min filter is already present
-        rangeQuery += rangeQuery.isEmpty() ? "FILTER(?" : " && ?";
+        rangeQuery += rangeQuery.isEmpty() ? "FILTER(" : " && ";
         rangeQuery += formattedVar + " <= " + maxCriteriaVal;
       }
       if (!rangeQuery.isEmpty()) {
@@ -97,6 +97,6 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
       // Return empty string otherwise
       return rangeQuery;
     }
-    return "FILTER(STR(?" + formattedVar + ") = \"" + criteriaVal + "\")";
+    return "FILTER(STR(" + formattedVar + ") = \"" + criteriaVal + "\")";
   }
 }

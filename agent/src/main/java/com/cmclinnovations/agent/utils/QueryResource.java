@@ -51,6 +51,9 @@ public class QueryResource {
 
     public static final Iri DC_TERM_ID = DC_TERM.iri("identifier");
 
+    public static final Variable ID_VAR = SparqlBuilder.var("id");
+    public static final Variable IRI_VAR = SparqlBuilder.var("iri");
+
     // Private constructor to prevent instantiation
     private QueryResource() {
         throw new UnsupportedOperationException("This class cannot be instantiated!");
@@ -64,6 +67,15 @@ public class QueryResource {
      */
     public static Prefix genPrefix(String alias, String iri) {
         return SparqlBuilder.prefix(alias, Rdf.iri(iri));
+    }
+
+    /**
+     * Generates a Variable object, where the variable name has no white spaces.
+     * 
+     * @param varName The variable name.
+     */
+    public static Variable genVariable(String varName) {
+        return SparqlBuilder.var(varName.replaceAll("\\s+", "_"));
     }
 
     /**

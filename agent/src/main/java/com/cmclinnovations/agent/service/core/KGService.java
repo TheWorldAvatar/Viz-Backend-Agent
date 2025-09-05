@@ -41,6 +41,7 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.stack.clients.blazegraph.BlazegraphClient;
@@ -436,7 +437,7 @@ public class KGService {
               ? binding.getFieldValue(LifecycleResource.IRI_KEY)
               : binding.getFieldValue(StringResource.ID_KEY);
           // If this is a lifecycle event occurrence, group them by date and id
-          if (binding.containsField(StringResource.parseQueryVariable(LifecycleResource.EVENT_ID_KEY))) {
+          if (binding.containsField(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY).getVarName())) {
             return id + binding.getFieldValue(LifecycleResource.DATE_KEY);
           }
           return id;

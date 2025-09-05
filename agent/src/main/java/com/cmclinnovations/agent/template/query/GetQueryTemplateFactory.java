@@ -7,12 +7,13 @@ import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
-import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
@@ -53,13 +54,12 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
 
     // Retrieve only the property fields if no sequence of variable is present
     if (super.varSequence.isEmpty()) {
-      selectVariableBuilder.append(ShaclResource.VARIABLE_MARK).append(LifecycleResource.IRI_KEY)
-          .append(ShaclResource.WHITE_SPACE).append(ShaclResource.VARIABLE_MARK).append(StringResource.ID_KEY);
+      selectVariableBuilder.append(QueryResource.IRI_VAR.getQueryString())
+          .append(ShaclResource.WHITE_SPACE).append(QueryResource.ID_VAR.getQueryString());
       super.variables.forEach(variable -> selectVariableBuilder.append(ShaclResource.WHITE_SPACE)
-          .append(variable));
+          .append(variable.getQueryString()));
       params.addVars().forEach((field, fieldSequence) -> selectVariableBuilder.append(ShaclResource.WHITE_SPACE)
-          .append(ShaclResource.VARIABLE_MARK)
-          .append(StringResource.parseQueryVariable(field)));
+          .append(QueryResource.genVariable(field).getQueryString()));
     } else {
       super.varSequence.putAll(params.addVars());
       List<String> sortedSequence = new ArrayList<>(super.varSequence.keySet());
@@ -67,9 +67,9 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
           .sort((key1, key2) -> ShaclResource.compareLists(super.varSequence.get(key1), super.varSequence.get(key2)));
       sortedSequence.add(0, StringResource.ID_KEY);
       // Append a ? before the property
-      sortedSequence.forEach(variable -> selectVariableBuilder.append(ShaclResource.VARIABLE_MARK)
-          .append(StringResource.parseQueryVariable(variable))
-          .append(ShaclResource.WHITE_SPACE));
+      sortedSequence
+          .forEach(variable -> selectVariableBuilder.append(QueryResource.genVariable(variable).getQueryString())
+              .append(ShaclResource.WHITE_SPACE));
       super.setSequence(sortedSequence);
     }
 
@@ -89,15 +89,15 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    *                    parents.
    */
   private void appendOptionalIdFilters(StringBuilder query, String filterId, ParentField parentField) {
-    String subject = ShaclResource.VARIABLE_MARK + LifecycleResource.IRI_KEY;
-    String object = ShaclResource.VARIABLE_MARK + StringResource.ID_KEY;
+    String subject = QueryResource.IRI_VAR.getQueryString();
+    String object = QueryResource.ID_VAR.getQueryString();
     // Add filter clause for a parent field instead if available
     if (parentField != null) {
       String parsedFieldName = "";
-      String normalizedParentFieldName = StringResource.parseQueryVariable(parentField.name());
-      for (String variable : super.variables) {
-        if (variable.endsWith(normalizedParentFieldName)) {
-          parsedFieldName = variable;
+      String normalizedParentFieldName = QueryResource.genVariable(parentField.name()).getVarName();
+      for (Variable variable : super.variables) {
+        if (variable.getVarName().endsWith(normalizedParentFieldName)) {
+          parsedFieldName = variable.getQueryString();
           break;
         }
       }
