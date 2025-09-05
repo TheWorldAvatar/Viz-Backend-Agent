@@ -12,6 +12,9 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.ModifyQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
@@ -52,7 +55,14 @@ public class QueryResource {
     public static final Prefix XSD_PREFIX = genPrefix(XSD.PREFIX, XSD.NAMESPACE);
     public static final String PREFIX_TEMPLATE = genPrefixTemplate().getQueryString();
 
+    public static final Iri CMNS_COL_COMPRISES = CMNS_COL.iri("comprises");
+    public static final Iri CMNS_DT_HAS_DATE_VALUE = CMNS_DT.iri("hasDateValue");
+    public static final Iri CMNS_DT_HAS_TIME_PERIOD = CMNS_DT.iri("hasTimePeriod");
     public static final Iri DC_TERM_ID = DC_TERM.iri("identifier");
+    public static final Iri FIBO_FND_ARR_LIF_HAS_LIFECYCLE = FIBO_FND_ARR_LIF.iri("hasLifecycle");
+    public static final Iri FIBO_FND_ARR_LIF_HAS_STAGE = FIBO_FND_ARR_LIF.iri("hasStage");
+    public static final Iri FIBO_FND_DT_FD_HAS_SCHEDULE = FIBO_FND_DT_FD.iri("hasSchedule");
+    public static final Iri FIBO_FND_REL_REL_EXEMPLIFIES = FIBO_FND_REL_REL.iri("exemplifies");
 
     public static final Variable ID_VAR = SparqlBuilder.var("id");
     public static final Variable IRI_VAR = SparqlBuilder.var("iri");
@@ -116,6 +126,19 @@ public class QueryResource {
     public static String getSelectQuery(GraphPattern whereClause, boolean isDistinct, Variable... selectVars) {
         return genSelectQuery(whereClause, isDistinct, null, selectVars)
                 .getQueryString();
+    }
+
+    /**
+     * Generates a filter exists or minus graph pattern over the triple contents.
+     * 
+     * @param tripleContents The target triple pattern to be added.
+     * @param exists         Set FILTER EXISTS if true. Else, uses MINUS.
+     */
+    public static GraphPatternNotTriples genFilterExists(TriplePattern tripleContents, boolean exists) {
+        if (exists) {
+            return GraphPatterns.filterExists(tripleContents);
+        }
+        return GraphPatterns.minus(tripleContents);
     }
 
     /**

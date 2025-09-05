@@ -77,12 +77,15 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     String iriClass = Rdf.iri(targetClass).getQueryString();
     // For mixed endpoints with Ontop which does not support property paths
     results.offer(
-        "SELECT DISTINCT " + selectVariables + " WHERE {?iri a " + iriClass + ShaclResource.FULL_STOP
+        QueryResource.PREFIX_TEMPLATE +
+            "SELECT DISTINCT " + selectVariables + " WHERE {?iri a " + iriClass + ShaclResource.FULL_STOP
             + whereClause.replace(StringResource.REPLACEMENT_PLACEHOLDER, "")
             + "}");
     // For SPARQL endpoints
     results.offer(
-        "SELECT DISTINCT " + selectVariables + " WHERE {?iri a/rdfs:subClassOf* " + iriClass + ShaclResource.FULL_STOP
+        QueryResource.PREFIX_TEMPLATE +
+            "SELECT DISTINCT " + selectVariables + " WHERE {?iri a/rdfs:subClassOf* " + iriClass
+            + ShaclResource.FULL_STOP
             + whereClause.replace(StringResource.REPLACEMENT_PLACEHOLDER, "/rdfs:subClassOf*") + "}");
     return results;
   }

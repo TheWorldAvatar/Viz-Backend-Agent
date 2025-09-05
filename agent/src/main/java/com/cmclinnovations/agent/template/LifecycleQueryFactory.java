@@ -1,12 +1,14 @@
 package com.cmclinnovations.agent.template;
 
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
-import com.cmclinnovations.agent.utils.StringResource;
 
 public class LifecycleQueryFactory {
 
@@ -244,75 +246,56 @@ public class LifecycleQueryFactory {
    * @param query Builder for the query template.
    */
   private void appendArchivedStateQuery(StringBuilder query) {
-    String eventVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY).getQueryString();
-    StringBuilder tempBuilder = new StringBuilder();
-    StringResource.appendTriple(tempBuilder, QueryResource.IRI_VAR.getQueryString(),
-        LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH + "/" + LifecycleResource.LIFECYCLE_STAGE_EVENT_PREDICATE_PATH
-            + "/" + LifecycleResource.LIFECYCLE_EVENT_TYPE_PREDICATE_PATH,
-        eventVar);
+    Variable eventVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY);
+    TriplePattern eventPattern=  QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
+        .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE)
+        .then(QueryResource.CMNS_COL_COMPRISES)
+        .then(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES), eventVar);
     String statement = "BIND("
-        + "IF(" + eventVar + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_COMPLETION).getQueryString()
+        + "IF(" + eventVar.getQueryString() + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_COMPLETION).getQueryString()
         + ",\"Completed\","
-        + "IF(" + eventVar + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_RESCISSION).getQueryString()
+        + "IF(" + eventVar.getQueryString() + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_RESCISSION).getQueryString()
         + ",\"Rescinded\","
-        + "IF(" + eventVar + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_TERMINATION).getQueryString()
+        + "IF(" + eventVar.getQueryString() + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_TERMINATION).getQueryString()
         + ",\"Terminated\""
         + ",\"Unknown\"))) AS ?" + LifecycleResource.STATUS_KEY
         + ")"
         + "FILTER(?" + LifecycleResource.STATUS_KEY + "!=\"Unknown\")";
-    query.append(StringResource.genGroupGraphPattern(tempBuilder.toString()))
+    query.append(eventPattern.getQueryString())
         .append(statement);
   }
 
   /**
-   * Appends FILTER EXISTS or NOT EXISTS statements for an archived contract.
+   * Appends FILTER EXISTS or MINUS statements for an archived contract.
    * 
    * @param query  Builder for the query template.
-   * @param exists Indicate if using FILTER EXISTS or FILTER NOT EXISTS.
+   * @param exists Indicate if using FILTER EXISTS or MINUS.
    */
   private void appendArchivedFilterExists(StringBuilder query, boolean exists) {
-    String stageVar = QueryResource.genVariable(LifecycleResource.STAGE_KEY + "_archived").getQueryString();
-    StringBuilder tempBuilder = new StringBuilder();
-    StringResource.appendTriple(tempBuilder, QueryResource.IRI_VAR.getQueryString(),
-        LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH, stageVar);
-    StringResource.appendTriple(tempBuilder, stageVar, LifecycleResource.LIFECYCLE_EVENT_TYPE_PREDICATE_PATH,
-        Rdf.iri(LifecycleEventType.ARCHIVE_COMPLETION.getStage()).getQueryString());
-    StringResource.appendTriple(tempBuilder, stageVar, LifecycleResource.LIFECYCLE_STAGE_EVENT_PREDICATE_PATH,
-        QueryResource.genVariable(LifecycleResource.EVENT_KEY).getQueryString());
-    this.appendFilterExists(query, tempBuilder.toString(), exists);
+    Variable stageVar = QueryResource.genVariable(LifecycleResource.STAGE_KEY + "_archived");
+    TriplePattern pattern = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
+        .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE), stageVar)
+        .andHas(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, Rdf.iri(LifecycleEventType.ARCHIVE_COMPLETION.getStage()))
+        .andHas(QueryResource.CMNS_COL_COMPRISES, QueryResource.genVariable(LifecycleResource.EVENT_KEY));
+    GraphPatternNotTriples filterClause = QueryResource.genFilterExists(pattern, exists);
+    query.append(filterClause.getQueryString());
   }
 
   /**
-   * Appends FILTER EXISTS or NOT EXISTS statements for the specified object
+   * Appends FILTER EXISTS or MINUS statements for the specified object
    * instance.
    * 
    * @param query    Builder for the query template.
-   * @param exists   Indicate if using FILTER EXISTS or FILTER NOT EXISTS.
+   * @param exists   Indicate if using FILTER EXISTS or MINUS.
    * @param instance Target IRI instance. Typically the object in a triple.
    */
   private void appendFilterExists(StringBuilder query, boolean exists, String instance) {
-    StringBuilder tempBuilder = new StringBuilder();
-    StringResource.appendTriple(tempBuilder, "?iri", LifecycleResource.LIFECYCLE_EVENT_PREDICATE_PATH,
-        Rdf.iri(instance).getQueryString());
-    this.appendFilterExists(query, tempBuilder.toString(), exists);
-  }
-
-  /**
-   * Appends FILTER EXISTS or NOT EXISTS statements for lifecycles.
-   * 
-   * @param query    Builder for the query template.
-   * @param contents Contents for the clause.
-   * @param exists   Indicate if using FILTER EXISTS or FILTER NOT EXISTS.
-   */
-  private void appendFilterExists(StringBuilder query, String contents, boolean exists) {
-    String constraintKeyword = "";
-    // Add NOT parameter if this filter should not exist
-    if (exists) {
-      constraintKeyword = "FILTER EXISTS";
-    } else {
-      constraintKeyword = "MINUS";
-    }
-    query.append(constraintKeyword).append(StringResource.genGroupGraphPattern(contents));
+    TriplePattern pattern = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
+        .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE)
+        .then(QueryResource.CMNS_COL_COMPRISES)
+        .then(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES), Rdf.iri(instance));
+    GraphPatternNotTriples filterClause = QueryResource.genFilterExists(pattern, exists);
+    query.append(filterClause.getQueryString());
   }
 
   /**

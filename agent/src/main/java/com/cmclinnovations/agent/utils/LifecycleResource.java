@@ -186,7 +186,7 @@ public class LifecycleResource {
         .replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
     return StringResource.genOptionalClause(
         eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
-            + Rdf.iri(lifecycleEvent.getEvent())
+            + Rdf.iri(lifecycleEvent.getEvent()).getQueryString()
             + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event." + parsedWhereClause);
   }
 }

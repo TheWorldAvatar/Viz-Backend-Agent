@@ -2,13 +2,19 @@ package com.cmclinnovations.agent.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.stream.Stream;
+
 import org.eclipse.rdf4j.sparqlbuilder.core.Prefix;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class QueryResourceTest {
     private static final String TEST_VAR_NAME = "test";
+    private static final String TEST_CLASS = "Test";
     private static final Variable TEST_VAR = SparqlBuilder.var(TEST_VAR_NAME);
 
     @Test
@@ -59,8 +65,7 @@ public class QueryResourceTest {
 
     @Test
     void testGetSelectQuery() {
-        String testClass = "Test";
-        String selectQuery = QueryResource.getSelectQuery(TEST_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri(testClass)),
+        String selectQuery = QueryResource.getSelectQuery(TEST_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri(TEST_CLASS)),
                 true, TEST_VAR);
         String expected = "\n" + "SELECT DISTINCT ?test\n" +
                 "WHERE { ?test a fibo-fnd-plc-adr:Test . }\n";
@@ -69,12 +74,25 @@ public class QueryResourceTest {
 
     @Test
     void testGetSelectQueryWithLimit() {
-        String testClass = "Test";
-        String selectQuery = QueryResource.getSelectQuery(TEST_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri(testClass)),
+        String selectQuery = QueryResource.getSelectQuery(TEST_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri(TEST_CLASS)),
                 true, 1, TEST_VAR);
         String expected = "\n" + "SELECT DISTINCT ?test\n" +
-                "WHERE { ?test a fibo-fnd-plc-adr:Test . }\n"+
+                "WHERE { ?test a fibo-fnd-plc-adr:Test . }\n" +
                 "LIMIT 1\n";
         assertEquals(QueryResource.PREFIX_TEMPLATE + expected, selectQuery);
+    }
+
+    private static Stream<Arguments> provideParametersForFilterExistsStatements() {
+        return Stream.of(
+                Arguments.of(false, "MINUS { ?test a fibo-fnd-plc-adr:Test . }"),
+                Arguments.of(true, "FILTER EXISTS { ?test a fibo-fnd-plc-adr:Test . }"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideParametersForFilterExistsStatements")
+    void testGenFilterExists(boolean exists, String expected) {
+        String result = QueryResource.genFilterExists(TEST_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri(TEST_CLASS)),
+                exists).getQueryString();
+        assertEquals(expected, result);
     }
 }
