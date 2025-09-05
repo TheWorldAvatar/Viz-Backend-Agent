@@ -58,12 +58,23 @@ public class QueryResourceTest {
     }
 
     @Test
-    void testGenSelectQuery() {
+    void testGetSelectQuery() {
         String testClass = "Test";
-        String selectQuery = QueryResource.genSelectQuery(TEST_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri(testClass)),
+        String selectQuery = QueryResource.getSelectQuery(TEST_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri(testClass)),
                 true, TEST_VAR);
-        String expected = "SELECT DISTINCT ?test\n" +
+        String expected = "\n" + "SELECT DISTINCT ?test\n" +
                 "WHERE { ?test a fibo-fnd-plc-adr:Test . }\n";
+        assertEquals(QueryResource.PREFIX_TEMPLATE + expected, selectQuery);
+    }
+
+    @Test
+    void testGetSelectQueryWithLimit() {
+        String testClass = "Test";
+        String selectQuery = QueryResource.getSelectQuery(TEST_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri(testClass)),
+                true, 1, TEST_VAR);
+        String expected = "\n" + "SELECT DISTINCT ?test\n" +
+                "WHERE { ?test a fibo-fnd-plc-adr:Test . }\n"+
+                "LIMIT 1\n";
         assertEquals(QueryResource.PREFIX_TEMPLATE + expected, selectQuery);
     }
 }

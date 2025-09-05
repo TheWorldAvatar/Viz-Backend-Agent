@@ -156,7 +156,7 @@ public class GeocodingService {
             .andHas(GeoLocationType.STREET.getPred(), STREET_VAR),
         // Block numbers are optional
         GraphPatterns.optional(ADDRESS_VAR.has(GeoLocationType.BLOCK.getPred(), BLOCK_VAR)));
-    return QueryResource.genSelectQuery(whereClause, true, CITY_VAR, COUNTRY_VAR, STREET_VAR, BLOCK_VAR);
+    return QueryResource.getSelectQuery(whereClause, true, CITY_VAR, COUNTRY_VAR, STREET_VAR, BLOCK_VAR);
   }
 
   /**
@@ -200,10 +200,7 @@ public class GeocodingService {
       whereClause.andHas(GeoLocationType.STREET.getPred(), STREET_VAR);
       whereClause.filter(QueryResource.genLowercaseExpression(STREET_VAR, street));
     }
-    // Filter statements must be added to the very end to prevent any bugs
-    return QueryResource.genSelectQuery(whereClause, true, LOCATION_VAR)
-        // Limit the query return to one result to improve performance
-        + "LIMIT 1";
+    return QueryResource.getSelectQuery(whereClause, true, 1, LOCATION_VAR);
   }
 
   /**
@@ -214,7 +211,7 @@ public class GeocodingService {
    */
   private String genCoordinateQuery(String location) {
     Iri locationIri = Rdf.iri(location);
-    return QueryResource.genSelectQuery(locationIri.isA(QueryResource.FIBO_FND_PLC_LOC.iri("PhysicalLocation"))
+    return QueryResource.getSelectQuery(locationIri.isA(QueryResource.FIBO_FND_PLC_LOC.iri("PhysicalLocation"))
         .andHas(p -> p.pred(QueryResource.GEO.iri("hasGeometry"))
             .then(QueryResource.GEO.iri("asWKT")), LOCATION_VAR),
         true, LOCATION_VAR);

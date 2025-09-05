@@ -5,9 +5,11 @@ import org.eclipse.rdf4j.sparqlbuilder.constraint.Expression;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.SparqlFunction;
 import org.eclipse.rdf4j.sparqlbuilder.core.Prefix;
+import org.eclipse.rdf4j.sparqlbuilder.core.PrefixDeclarations;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -47,7 +49,7 @@ public class QueryResource {
     public static final Prefix ONTOSERVICE = genPrefix("ontoservice",
             "https://www.theworldavatar.com/kg/ontoservice/");
     public static final Prefix XSD_PREFIX = genPrefix(XSD.PREFIX, XSD.NAMESPACE);
-    public static final String PREFIX_TEMPLATE = genPrefixTemplate();
+    public static final String PREFIX_TEMPLATE = genPrefixTemplate().getQueryString();
 
     public static final Iri DC_TERM_ID = DC_TERM.iri("identifier");
 
@@ -79,19 +81,31 @@ public class QueryResource {
     }
 
     /**
-     * Generates a SELECT query from the inputs.
+     * Gents a SELECT query from the inputs.
+     * 
+     * @param whereClause The where clause body
+     * @param isDistinct  Indicates if the select query requires distinct variables
+     * @param limit       Indicates if the select query requires LIMIT modifier
+     * @param selectVars  The list of select variables to be queried from the where
+     *                    clause
+     */
+    public static String getSelectQuery(GraphPattern whereClause, boolean isDistinct, Integer limit,
+            Variable... selectVars) {
+        return genSelectQuery(whereClause, isDistinct, limit, selectVars)
+                .getQueryString();
+    }
+
+    /**
+     * Overloaded method to get a SELECT query from the inputs.
      * 
      * @param whereClause The where clause body
      * @param isDistinct  Indicates if the select query requires distinct variables
      * @param selectVars  The list of select variables to be queried from the where
      *                    clause
      */
-    public static String genSelectQuery(GraphPattern whereClause, boolean isDistinct, Variable... selectVars) {
-        return PREFIX_TEMPLATE +
-                Queries.SELECT(selectVars)
-                        .distinct(isDistinct)
-                        .where(whereClause)
-                        .getQueryString();
+    public static String getSelectQuery(GraphPattern whereClause, boolean isDistinct, Variable... selectVars) {
+        return genSelectQuery(whereClause, isDistinct, null, selectVars)
+                .getQueryString();
     }
 
     /**
@@ -110,7 +124,7 @@ public class QueryResource {
     /**
      * Generates a PREFIX template for the queries.
      */
-    private static String genPrefixTemplate() {
+    private static PrefixDeclarations genPrefixTemplate() {
         return SparqlBuilder.prefixes(
                 CMNS_COL,
                 CMNS_DT,
@@ -131,7 +145,27 @@ public class QueryResource {
                 FIBO_FND_PAS_PSCH,
                 GEO,
                 ONTOSERVICE,
-                XSD_PREFIX)
-                .getQueryString();
+                XSD_PREFIX);
+    }
+
+    /**
+     * Generates a SELECT query from the inputs.
+     * 
+     * @param whereClause The where clause body
+     * @param isDistinct  Indicates if the select query requires distinct variables
+     * @param limit       Indicates if the select query requires LIMIT modifier
+     * @param selectVars  The list of select variables to be queried from the where
+     *                    clause
+     */
+    private static SelectQuery genSelectQuery(GraphPattern whereClause, boolean isDistinct, Integer limit,
+            Variable... selectVars) {
+        SelectQuery query = Queries.SELECT(selectVars)
+                .prefix(genPrefixTemplate())
+                .distinct(isDistinct)
+                .where(whereClause);
+        if (limit != null) {
+            query.limit(limit);
+        }
+        return query;
     }
 }
