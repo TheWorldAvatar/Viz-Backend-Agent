@@ -8,6 +8,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.Prefix;
 import org.eclipse.rdf4j.sparqlbuilder.core.PrefixDeclarations;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.ModifyQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
@@ -78,6 +79,15 @@ public class QueryResource {
      */
     public static Variable genVariable(String varName) {
         return SparqlBuilder.var(varName.replaceAll("\\s+", "_"));
+    }
+
+    /**
+     * Generates an empty DELETE query template.
+     */
+    public static ModifyQuery getDeleteQuery() {
+        return Queries.DELETE()
+                .prefix(DC_TERM)
+                .where();
     }
 
     /**

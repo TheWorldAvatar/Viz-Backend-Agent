@@ -1,8 +1,7 @@
 PREFIX dc-terms: <http://purl.org/dc/terms/>
 DELETE { ?id0 dc-terms:identifier "01j82" .
 ?id1 a <https://www.example.org/kg/Person> .
-?id1 <https://www.example.org/kg/hasAddress> ?id0 . } WHERE {
-  ?id0 dc-terms:identifier "01j82" .
+?id1 <https://www.example.org/kg/hasAddress> ?id0 . }
+WHERE { ?id0 dc-terms:identifier "01j82" .
   ?id1 a <https://www.example.org/kg/Person> .
-  ?id1 <https://www.example.org/kg/hasAddress> ?id0 .
-}
+  ?id1 <https://www.example.org/kg/hasAddress> ?id0 . }
