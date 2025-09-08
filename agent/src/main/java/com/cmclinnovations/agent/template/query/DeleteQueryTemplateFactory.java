@@ -98,7 +98,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       String mappingKey = replacementId + replacementNode.path("prefix").asText();
       String idVar = this.anonymousVariableMappings.computeIfAbsent(mappingKey,
           k -> replacementId + this.anonymousVariableMappings.size());
-      return SparqlBuilder.var(idVar);
+      return  QueryResource.genVariable(idVar);
     }
     return QueryResource.genVariable(replacementId);
   }

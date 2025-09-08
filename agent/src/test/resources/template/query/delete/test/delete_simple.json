@@ -29,7 +29,7 @@
       "prefix": "https://www.example.org/kg/address/"
     },
     "https://www.example.org/kg/hasStreet": {
-      "@replace": "street",
+      "@replace": "street address",
       "@type": "literal"
     },
     "https://www.example.org/kg/hasCity": {
