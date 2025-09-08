@@ -25,7 +25,6 @@ import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
-import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -92,7 +91,8 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     String replacementType = replacementNode.path(ShaclResource.TYPE_KEY).asText();
     // Replacement IRI fields with prefixes should be generated as query variables
     // Code will attempt to retrieve existing query variable for the same prefix,
-    // but if it is new, the variable will be incremented according to the mapping size
+    // but if it is new, the variable will be incremented according to the mapping
+    // size
     if (replacementType.equals(LifecycleResource.IRI_KEY) && replacementNode.has("prefix")) {
       // Generates a mapping key based on the replacement name and its prefix
       String mappingKey = replacementId + replacementNode.path("prefix").asText();
@@ -137,6 +137,9 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     // First retrieve the ID value as a subject of the triple if required, else
     // default to target it
     JsonNode idNode = currentNode.path(ShaclResource.ID_KEY);
+    if (idNode.isMissingNode()) {
+      idNode = genBlankNode();
+    }
     RdfSubject idTripleSubject = idNode.isObject() ? this.parseVariable((ObjectNode) idNode)
         : Rdf.iri(((TextNode) idNode).textValue());
 
@@ -215,6 +218,10 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
           ? objectNode
           : objectNode.path(ShaclResource.ID_KEY);
 
+      // IF the object does not contain a @id or @replace key, it is a blank node
+      if (targetTripleObjectNode.isMissingNode()) {
+        targetTripleObjectNode = genBlankNode();
+      }
       RdfObject sparqlObject = targetTripleObjectNode.isObject()
           ? this.parseVariable((ObjectNode) targetTripleObjectNode)
           : Rdf.iri(((TextNode) targetTripleObjectNode).textValue());
@@ -309,6 +316,16 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       nestedNode.set(predicate.substring(1, predicate.length() - 1), objectNode);
       this.recursiveParseNode(deleteTemplate, whereBranchPatterns, nestedNode);
     }
+  }
+
+  /**
+   * Generates a blank node based on the mapping size.
+   */
+  private ObjectNode genBlankNode() {
+    ObjectNode blankNode = this.jsonLdService.genObjectNode();
+    blankNode.put(ShaclResource.REPLACE_KEY, String.valueOf(this.anonymousVariableMappings.size()));
+    blankNode.put(ShaclResource.TYPE_KEY, LifecycleResource.IRI_KEY);
+    return blankNode;
   }
 
   /**

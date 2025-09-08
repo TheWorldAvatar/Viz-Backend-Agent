@@ -1,0 +1,21 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": {
+    "@replace": "id",
+    "@type": "iri",
+    "prefix": "https://www.example.org/kg/person/"
+  },
+  "@type": "https://www.example.org/kg/Person",
+  "https://www.example.org/kg/hasAddress": {
+    "https://www.example.org/kg/hasStreet": {
+      "@replace": "street",
+      "@type": "literal"
+    },
+    "https://www.example.org/kg/hasCity": {
+      "@replace": "city",
+      "@type": "iri"
+    }
+  }
+}

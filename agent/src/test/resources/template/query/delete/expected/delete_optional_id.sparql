@@ -1,0 +1,11 @@
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+DELETE { ?id0 dc-terms:identifier "01j82" .
+?id0 a <https://www.example.org/kg/Person> .
+?id0 <https://www.example.org/kg/hasAddress> ?1 .
+?1 <https://www.example.org/kg/hasStreet> ?street .
+?1 <https://www.example.org/kg/hasCity> ?city . }
+WHERE { ?id0 dc-terms:identifier "01j82" .
+?id0 a <https://www.example.org/kg/Person> .
+?id0 <https://www.example.org/kg/hasAddress> ?1 .
+OPTIONAL { ?1 <https://www.example.org/kg/hasStreet> ?street . }
+?1 <https://www.example.org/kg/hasCity> ?city . }
