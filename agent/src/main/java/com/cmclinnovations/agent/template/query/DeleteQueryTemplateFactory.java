@@ -90,13 +90,14 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     // @replace key is sufficient;
     String replacementId = replacementNode.path(ShaclResource.REPLACE_KEY).asText();
     String replacementType = replacementNode.path(ShaclResource.TYPE_KEY).asText();
-    // Id replacement fields with prefixes should be generated as query variables
+    // Replacement IRI fields with prefixes should be generated as query variables
     // Code will attempt to retrieve existing query variable for the same prefix,
-    // but if it is new, the id will be incremented according to the mapping size
-    if (replacementType.equals(LifecycleResource.IRI_KEY) && replacementId.equals(StringResource.ID_KEY)) {
-      String idPrefix = replacementNode.path("prefix").asText();
-      String idVar = this.anonymousVariableMappings.computeIfAbsent(idPrefix,
-          k -> StringResource.ID_KEY + this.anonymousVariableMappings.size());
+    // but if it is new, the variable will be incremented according to the mapping size
+    if (replacementType.equals(LifecycleResource.IRI_KEY) && replacementNode.has("prefix")) {
+      // Generates a mapping key based on the replacement name and its prefix
+      String mappingKey = replacementId + replacementNode.path("prefix").asText();
+      String idVar = this.anonymousVariableMappings.computeIfAbsent(mappingKey,
+          k -> replacementId + this.anonymousVariableMappings.size());
       return SparqlBuilder.var(idVar);
     }
     return QueryResource.genVariable(replacementId);
