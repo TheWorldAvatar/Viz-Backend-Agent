@@ -11,10 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public class StringResource {
   public static final String ID_KEY = "id";
-
   public static final String CLAZZ_VAR = "clazz";
-  public static final String RDF_TYPE = "rdf:type";
-  public static final String REPLACEMENT_PLACEHOLDER = "[replace]";
 
   // Private constructor to prevent instantiation
   private StringResource() {

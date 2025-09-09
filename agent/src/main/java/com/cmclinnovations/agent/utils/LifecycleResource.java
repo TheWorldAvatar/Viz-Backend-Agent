@@ -42,23 +42,10 @@ public class LifecycleResource {
   public static final String SCHEDULE_TYPE_KEY = "schedule type";
 
   public static final String EXEMPLIFIES_RELATIONS = "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies";
-  public static final String HAS_AMOUNT_RELATIONS = "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasAmount";
-  public static final String HAS_LOWER_BOUND_RELATIONS = "https://www.omg.org/spec/Commons/QuantitiesAndUnits/hasLowerBound";
-  public static final String HAS_UPPER_BOUND_RELATIONS = "https://www.omg.org/spec/Commons/QuantitiesAndUnits/hasUpperBound";
-  public static final String HAS_ARGUMENT_RELATIONS = "https://www.omg.org/spec/Commons/QuantitiesAndUnits/hasArgument";
-  public static final String HAS_MINUEND_RELATIONS = "https://spec.edmcouncil.org/fibo/ontology/FND/Utilities/Analytics/hasMinuend";
-  public static final String HAS_SUBTRAHEND_RELATIONS = "https://spec.edmcouncil.org/fibo/ontology/FND/Utilities/Analytics/hasSubtrahend";
-  public static final String HAS_QTY_VAL_RELATIONS = "https://www.omg.org/spec/Commons/QuantitiesAndUnits/hasQuantityValue";
   public static final String IS_ABOUT_RELATIONS = "https://www.omg.org/spec/Commons/Documents/isAbout";
-  public static final String REPORTS_ON_RELATIONS = "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Reporting/reportsOn";
-  public static final String RECORDS_RELATIONS = "https://www.omg.org/spec/Commons/Documents/records";
-  public static final String SUCCEEDS_RELATIONS = "https://www.omg.org/spec/Commons/DatesAndTimes/succeeds";
 
   public static final String LIFECYCLE_STAGE_PREDICATE_PATH = "<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage>";
-  public static final String LIFECYCLE_STAGE_EVENT_PREDICATE_PATH = "<https://www.omg.org/spec/Commons/Collections/comprises>";
   public static final String LIFECYCLE_EVENT_TYPE_PREDICATE_PATH = "<" + EXEMPLIFIES_RELATIONS + ">";
-  public static final String LIFECYCLE_EVENT_PREDICATE_PATH = LIFECYCLE_STAGE_PREDICATE_PATH + "/"
-      + LIFECYCLE_STAGE_EVENT_PREDICATE_PATH + "/" + LIFECYCLE_EVENT_TYPE_PREDICATE_PATH;
   public static final String CREATION_STAGE = "https://www.theworldavatar.com/kg/ontoservice/CreationStage";
   public static final String SERVICE_EXECUTION_STAGE = "https://www.theworldavatar.com/kg/ontoservice/ServiceExecutionStage";
   public static final String EXPIRATION_STAGE = "https://www.theworldavatar.com/kg/ontoservice/ExpirationStage";
@@ -73,9 +60,7 @@ public class LifecycleResource {
   public static final String EVENT_CONTRACT_TERMINATION = "https://www.theworldavatar.com/kg/ontoservice/ContractTermination";
   public static final String COMPLETION_EVENT_COMPLETED_STATUS = "https://www.theworldavatar.com/kg/ontoservice/CompletedStatus";
   public static final String COMPLETION_EVENT_PENDING_STATUS = "https://www.theworldavatar.com/kg/ontoservice/PendingStatus";
-  public static final String LIFECYCLE_RECORD = "https://www.omg.org/spec/Commons/Documents/Record";
   public static final String LIFECYCLE_REPORT = "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Reporting/Report";
-  public static final String PAYMENT_OBLIGATION = "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation";
 
   // Private constructor to prevent instantiation
   private LifecycleResource() {
