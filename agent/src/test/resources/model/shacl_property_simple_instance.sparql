@@ -1,1 +1,1 @@
-?iri <http://example.org/associated> ?propertytest.?propertytest rdf:type <http://example.org/Class>.
+?iri <http://example.org/associated> ?propertytest .?propertytest a <http://example.org/Class> .

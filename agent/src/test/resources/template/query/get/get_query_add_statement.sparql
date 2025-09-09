@@ -1,6 +1,4 @@
-SELECT DISTINCT ?iri ?id ?field ?addProperty WHERE {
-    ?iri a <http://example.com/Concept>.
-    ?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.
-    ?iri <http://purl.org/dc/terms/identifier> ?id.
-    ?iri <http://example.com/addPath> ?addProperty.
-}
+SELECT DISTINCT ?iri ?id ?field ?addProperty
+WHERE { ?iri a <http://example.com/Concept> .
+    ?iri <http://example.com/propPath1> / <http://example.com/propPath2> ?field .
+    ?iri dc-terms:identifier ?id . ?iri <http://example.com/addPath> ?addProperty.}

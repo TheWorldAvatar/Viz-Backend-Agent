@@ -7,8 +7,12 @@ import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfLiteral.StringLiteral;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfObject;
 
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
@@ -47,72 +51,67 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    */
   public Queue<String> write(QueryTemplateFactoryParameters params) {
     LOGGER.info("Generating a query template for getting data...");
-    StringBuilder selectVariableBuilder = new StringBuilder();
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    String whereClauseLines = super.genWhereClauseContent(params.bindings());
+    List<GraphPattern> whereContents = super.genWhereClauseContent(params.bindings());
 
+    List<Variable> selectVariables = new ArrayList<>();
     // Retrieve only the property fields if no sequence of variable is present
     if (super.varSequence.isEmpty()) {
-      selectVariableBuilder.append(QueryResource.IRI_VAR.getQueryString())
-          .append(ShaclResource.WHITE_SPACE).append(QueryResource.ID_VAR.getQueryString());
-      super.variables.forEach(variable -> selectVariableBuilder.append(ShaclResource.WHITE_SPACE)
-          .append(variable.getQueryString()));
-      params.addVars().forEach((field, fieldSequence) -> selectVariableBuilder.append(ShaclResource.WHITE_SPACE)
-          .append(QueryResource.genVariable(field).getQueryString()));
+      selectVariables.add(QueryResource.IRI_VAR);
+      selectVariables.add(QueryResource.ID_VAR);
+      super.variables.forEach(variable -> selectVariables.add(variable));
+      params.addVars().forEach((field, fieldSequence) -> selectVariables.add(QueryResource.genVariable(field)));
     } else {
       super.varSequence.putAll(params.addVars());
       List<String> sortedSequence = new ArrayList<>(super.varSequence.keySet());
       sortedSequence
           .sort((key1, key2) -> ShaclResource.compareLists(super.varSequence.get(key1), super.varSequence.get(key2)));
       sortedSequence.add(0, StringResource.ID_KEY);
-      // Append a ? before the property
+      // Add variables
       sortedSequence
-          .forEach(variable -> selectVariableBuilder.append(QueryResource.genVariable(variable).getQueryString())
-              .append(ShaclResource.WHITE_SPACE));
+          .forEach(variable -> selectVariables.add(QueryResource.genVariable(variable)));
       super.setSequence(sortedSequence);
     }
 
-    StringBuilder whereBuilder = new StringBuilder(whereClauseLines);
-    this.appendOptionalIdFilters(whereBuilder, params.targetId(), params.parent());
-    whereBuilder.append(params.addQueryStatements());
-    return super.genFederatedQuery(selectVariableBuilder.toString(), whereBuilder.toString(), targetClass);
+    this.appendOptionalIdFilters(whereContents, params.targetId(), params.parent());
+    return super.genFederatedQuery(targetClass, whereContents, params.addQueryStatements(),
+        selectVariables.toArray(new Variable[0]));
   }
 
   /**
    * Appends optional filters related to IDs to the query if required.
    * 
-   * @param query       Builder for the query template.
-   * @param filterId    An optional field to target the query at a specific
-   *                    instance.
-   * @param parentField An optional parent field to target the query with specific
-   *                    parents.
+   * @param whereContents Current list of graph patterns to store additional
+   *                      filters.
+   * @param filterId      An optional field to target the query at a specific
+   *                      instance.
+   * @param parentField   An optional parent field to target the query with
+   *                      specific parents.
    */
-  private void appendOptionalIdFilters(StringBuilder query, String filterId, ParentField parentField) {
-    String subject = QueryResource.IRI_VAR.getQueryString();
-    String object = QueryResource.ID_VAR.getQueryString();
+  private void appendOptionalIdFilters(List<GraphPattern> whereContents, String filterId, ParentField parentField) {
+    RdfObject object = QueryResource.ID_VAR;
     // Add filter clause for a parent field instead if available
     if (parentField != null) {
-      String parsedFieldName = "";
+      Variable parsedField = null;
       String normalizedParentFieldName = QueryResource.genVariable(parentField.name()).getVarName();
       for (Variable variable : super.variables) {
         if (variable.getVarName().endsWith(normalizedParentFieldName)) {
-          parsedFieldName = variable.getQueryString();
+          parsedField = variable;
           break;
         }
       }
-      if (parsedFieldName.isEmpty()) {
+      if (parsedField == null) {
         LOGGER.error("Unable to find matching variable for parent field: {}", parentField.name());
         throw new IllegalArgumentException(
             MessageFormat.format("Unable to find matching variable for parent field: {0}", parentField.name()));
       }
-      StringResource.appendTriple(query, parsedFieldName, Rdf.iri(ShaclResource.DC_TERMS_ID).getQueryString(),
-          Rdf.literalOf(parentField.id()).getQueryString());
+      whereContents.add(parsedField.has(QueryResource.DC_TERM_ID, Rdf.literalOf(parentField.id())));
     } else if (!filterId.isEmpty()) {
-      object = Rdf.literalOf(filterId).getQueryString();
-      query.append("BIND(\"").append(filterId).append("\" AS ?").append(StringResource.ID_KEY).append(")");
+      StringLiteral filter = Rdf.literalOf(filterId);
+      object = filter;
+      whereContents.add(Expressions.bind(Expressions.str(filter), QueryResource.ID_VAR));
     }
-
-    StringResource.appendTriple(query, subject, Rdf.iri(ShaclResource.DC_TERMS_ID).getQueryString(), object);
+    whereContents.add(QueryResource.IRI_VAR.has(QueryResource.DC_TERM_ID, object));
   }
 }

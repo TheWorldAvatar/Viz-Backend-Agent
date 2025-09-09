@@ -65,21 +65,21 @@ public class StringResource {
   }
 
   /**
-   * Wraps the content into an OPTIONAL clause
+   * Replaces the last target character for a string.
    * 
-   * @param content Content of the optional clause
+   * @param str         Target string.
+   * @param target      The character(s) for replacement.
+   * @param replacement The replacement string.
    */
-  public static String genOptionalClause(String content) {
-    return "OPTIONAL{" + content + "}";
-  }
+  public static String replaceLast(String str, String target, String replacement) {
+    int lastIndex = str.lastIndexOf(target);
+    if (lastIndex == -1) {
+      return str;
+    }
 
-  /**
-   * Wraps the content into {}
-   * 
-   * @param content Target content
-   */
-  public static String genGroupGraphPattern(String content) {
-    return "{" + content + "}";
+    StringBuilder sb = new StringBuilder(str);
+    sb.replace(lastIndex, lastIndex + target.length(), replacement);
+    return sb.toString();
   }
 
   /**

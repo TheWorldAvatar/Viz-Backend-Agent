@@ -30,14 +30,10 @@ public class SearchQueryTemplateFactoryTest {
     private AuthenticationService authService;
     private SearchQueryTemplateFactory testFactory;
 
-    public static final String EXPECTED_SIMPLE_FILE = "template/query/search/search_query_simple.sparql";
-    public static final String EXPECTED_SIMPLE_MIXED_FILE = "template/query/search/search_query_simple_mixed.sparql";
-    private static final String EXPECTED_SIMPLE_MINMAX_FILE = "template/query/search/search_query_simple_minmax.sparql";
-    private static final String EXPECTED_SIMPLE_MINMAX_MIXED_FILE = "template/query/search/search_query_simple_minmax_mixed.sparql";
-    private static final String EXPECTED_SIMPLE_MIN_FILE = "template/query/search/search_query_simple_min.sparql";
-    private static final String EXPECTED_SIMPLE_MIN_MIXED_FILE = "template/query/search/search_query_simple_min_mixed.sparql";
-    private static final String EXPECTED_SIMPLE_MAX_FILE = "template/query/search/search_query_simple_max.sparql";
-    private static final String EXPECTED_SIMPLE_MAX_MIXED_FILE = "template/query/search/search_query_simple_max_mixed.sparql";
+    public static final String EXPECTED_SIMPLE_FILE = "template/query/search/search_query_simple";
+    private static final String EXPECTED_SIMPLE_MINMAX_FILE = "template/query/search/search_query_simple_minmax";
+    private static final String EXPECTED_SIMPLE_MIN_FILE = "template/query/search/search_query_simple_min";
+    private static final String EXPECTED_SIMPLE_MAX_FILE = "template/query/search/search_query_simple_max";
     private static final String SAMPLE_PREFIX = "http://example.com/";
     private static final String SAMPLE_CONCEPT = SAMPLE_PREFIX + "Concept";
     private static final String SAMPLE_PRED_PATH = SAMPLE_PREFIX + "propPath1";
@@ -62,11 +58,12 @@ public class SearchQueryTemplateFactoryTest {
         // Assert
         assertEquals(2, results.size());
         assertEquals(
-                "SELECT DISTINCT ?iri WHERE {?iri a <http://example.com/Concept>.?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.}",
-                results.poll());
-        assertEquals(
-                "SELECT DISTINCT ?iri WHERE {?iri a/rdfs:subClassOf* <http://example.com/Concept>.?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.}",
-                results.poll());
+                TestUtils.ONE_LINE_PREFIX_TEMPLATE
+                        + "SELECT DISTINCT ?iriWHERE { ?iri a <http://example.com/Concept> .?iri <http://example.com/propPath1> / <http://example.com/propPath2> ?field . }",
+                results.poll().replace("\n", ""));
+        assertEquals(TestUtils.ONE_LINE_PREFIX_TEMPLATE +
+                "SELECT DISTINCT ?iriWHERE { ?iri <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> / <http://www.w3.org/2000/01/rdf-schema#subClassOf>* <http://example.com/Concept> .?iri <http://example.com/propPath1> / <http://example.com/propPath2> ?field . }",
+                results.poll().replace("\n", ""));
     }
 
     @Test
@@ -75,14 +72,12 @@ public class SearchQueryTemplateFactoryTest {
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
         Queue<String> results = this.testFactory.write(
-                new QueryTemplateFactoryParameters(testBindings, genCriterias(SAMPLE_FIELD, SAMPLE_FILTER)));
+                new QueryTemplateFactoryParameters(testBindings,
+                        genCriterias(SAMPLE_FIELD, SAMPLE_FILTER)));
         // Assert
-        assertEquals(2, results.size());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_FILE), results.poll());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_MIXED_FILE), results.poll());
+        TestUtils.validateGeneratedQueryOutput(SearchQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE, results);
     }
 
-    @Test
     void testWrite_SimpleMinMaxCriteria() throws IOException {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
@@ -91,9 +86,8 @@ public class SearchQueryTemplateFactoryTest {
                 new QueryTemplateFactoryParameters(testBindings,
                         this.genMinMaxCriterias(SAMPLE_FIELD, SAMPLE_MIN_VAL, SAMPLE_MAX_VAL)));
         // Assert
-        assertEquals(2, results.size());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_MINMAX_FILE), results.poll());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_MINMAX_MIXED_FILE), results.poll());
+        TestUtils.validateGeneratedQueryOutput(SearchQueryTemplateFactoryTest.EXPECTED_SIMPLE_MINMAX_FILE,
+                results);
     }
 
     @Test
@@ -105,9 +99,8 @@ public class SearchQueryTemplateFactoryTest {
                 new QueryTemplateFactoryParameters(testBindings,
                         this.genMinMaxCriterias(SAMPLE_FIELD, SAMPLE_MIN_VAL, null)));
         // Assert
-        assertEquals(2, results.size());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_MIN_FILE), results.poll());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_MIN_MIXED_FILE), results.poll());
+        TestUtils.validateGeneratedQueryOutput(SearchQueryTemplateFactoryTest.EXPECTED_SIMPLE_MIN_FILE,
+                results);
     }
 
     @Test
@@ -119,9 +112,8 @@ public class SearchQueryTemplateFactoryTest {
                 new QueryTemplateFactoryParameters(testBindings,
                         this.genMinMaxCriterias(SAMPLE_FIELD, null, SAMPLE_MAX_VAL)));
         // Assert
-        assertEquals(2, results.size());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_MAX_FILE), results.poll());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_MAX_MIXED_FILE), results.poll());
+        TestUtils.validateGeneratedQueryOutput(SearchQueryTemplateFactoryTest.EXPECTED_SIMPLE_MAX_FILE,
+                results);
     }
 
     /**
@@ -131,7 +123,8 @@ public class SearchQueryTemplateFactoryTest {
         Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
         Queue<SparqlBinding> bindings = new ArrayDeque<>();
         SparqlBinding binding = ShaclPropertyBindingTest
-                .genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_FIELD, SAMPLE_CONCEPT, null, null,
+                .genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_FIELD, SAMPLE_CONCEPT,
+                        null, null,
                         SAMPLE_PRED_PATH, null, null, null, null, null,
                         false, false, false, false));
         bindings.offer(binding);

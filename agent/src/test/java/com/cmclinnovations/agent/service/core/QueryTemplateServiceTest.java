@@ -86,7 +86,7 @@ class QueryTemplateServiceTest {
     void testGenGetQuery() throws IOException {
         Queue<Queue<SparqlBinding>> testBindings = GetQueryTemplateFactoryTest.initTestBindings();
         Queue<String> results = testService.genGetQuery(testBindings);
-        GetQueryTemplateFactoryTest.validateTestOutput(results, GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE);
+        TestUtils.validateGeneratedQueryOutput(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE, results);
     }
 
     @Test
@@ -94,7 +94,7 @@ class QueryTemplateServiceTest {
         Queue<Queue<SparqlBinding>> testBindings = GetQueryTemplateFactoryTest.initTestBindings();
         Queue<String> results = testService.genGetQuery(testBindings, GetQueryTemplateFactoryTest.SAMPLE_FILTER, null,
                 "", new HashMap<>());
-        GetQueryTemplateFactoryTest.validateTestOutput(results, GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_ID_FILE);
+        TestUtils.validateGeneratedQueryOutput(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_ID_FILE, results);
     }
 
     @Test
@@ -102,9 +102,6 @@ class QueryTemplateServiceTest {
         Queue<Queue<SparqlBinding>> testBindings = SearchQueryTemplateFactoryTest.initTestBindings();
         Queue<String> results = testService.genSearchQuery(testBindings, SearchQueryTemplateFactoryTest.genCriterias(
                 SearchQueryTemplateFactoryTest.SAMPLE_FIELD, SearchQueryTemplateFactoryTest.SAMPLE_FILTER));
-        assertEquals(2, results.size());
-        assertEquals(TestUtils.getSparqlQuery(SearchQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE), results.poll());
-        assertEquals(TestUtils.getSparqlQuery(SearchQueryTemplateFactoryTest.EXPECTED_SIMPLE_MIXED_FILE),
-                results.poll());
+        TestUtils.validateGeneratedQueryOutput(SearchQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE, results);
     }
 }

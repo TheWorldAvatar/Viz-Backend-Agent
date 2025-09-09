@@ -1,14 +1,17 @@
 package com.cmclinnovations.agent;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Map;
+import java.util.Queue;
 
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.util.ResourceUtils;
 
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -16,6 +19,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class TestUtils {
   public static String SPARQL_FILE_EXTENSION = ".sparql";
+  public static String ONE_LINE_PREFIX_TEMPLATE = QueryResource.PREFIX_TEMPLATE.replace("\n", "");
 
   /**
    * Check if the result response entity contains the expected substring.
@@ -71,8 +75,8 @@ public class TestUtils {
   public static String getMapJson(String filePath) throws IOException {
     File file = ResourceUtils.getFile("classpath:" + filePath);
     ObjectMapper mapper = new ObjectMapper();
-      JsonNode rootNode = mapper.readTree(file);
-      return mapper.writeValueAsString(rootNode);
+    JsonNode rootNode = mapper.readTree(file);
+    return mapper.writeValueAsString(rootNode);
   }
 
   /**
@@ -92,5 +96,25 @@ public class TestUtils {
   public static ObjectNode genEmptyObjectNode() {
     ObjectMapper mapper = new ObjectMapper();
     return mapper.createObjectNode();
+  }
+
+  /**
+   * Validate test outputs.
+   * 
+   * @param expectedResourceFileId The resource file name containing the
+   *                               expected query output.
+   * @param testQueryOutputs       The query output for testing.
+   */
+  public static void validateGeneratedQueryOutput(String expectedResourceFileId, Queue<String> testQueryOutputs)
+      throws IOException {
+    assertEquals(2, testQueryOutputs.size());
+    assertEquals(
+        ONE_LINE_PREFIX_TEMPLATE
+            + TestUtils.getSparqlQuery(expectedResourceFileId + SPARQL_FILE_EXTENSION),
+        testQueryOutputs.poll().replace("\n", ""));
+    assertEquals(
+        ONE_LINE_PREFIX_TEMPLATE
+            + TestUtils.getSparqlQuery(expectedResourceFileId + "_mixed" + SPARQL_FILE_EXTENSION),
+        testQueryOutputs.poll().replace("\n", ""));
   }
 }

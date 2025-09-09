@@ -67,19 +67,19 @@ public class QueryResourceTest {
     void testGetSelectQuery() {
         String selectQuery = QueryResource.getSelectQuery(TEST_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri(TEST_CLASS)),
                 true, TEST_VAR);
-        String expected = "\n" + "SELECT DISTINCT ?test\n" +
+        String expected = "SELECT DISTINCT ?test\n" +
                 "WHERE { ?test a fibo-fnd-plc-adr:Test . }\n";
-        assertEquals(QueryResource.PREFIX_TEMPLATE + expected, selectQuery);
+        assertEquals(expected, selectQuery);
     }
 
     @Test
     void testGetSelectQueryWithLimit() {
         String selectQuery = QueryResource.getSelectQuery(TEST_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri(TEST_CLASS)),
                 true, 1, TEST_VAR);
-        String expected = "\n" + "SELECT DISTINCT ?test\n" +
+        String expected = "SELECT DISTINCT ?test\n" +
                 "WHERE { ?test a fibo-fnd-plc-adr:Test . }\n" +
                 "LIMIT 1\n";
-        assertEquals(QueryResource.PREFIX_TEMPLATE + expected, selectQuery);
+        assertEquals(expected, selectQuery);
     }
 
     private static Stream<Arguments> provideParametersForFilterExistsStatements() {

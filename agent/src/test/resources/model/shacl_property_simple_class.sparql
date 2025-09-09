@@ -1,1 +1,1 @@
-?iri <http://example.org/associated>/rdfs:label ?propertytest.
+?iri <http://example.org/associated> / <http://www.w3.org/2000/01/rdf-schema#label> ?propertytest .

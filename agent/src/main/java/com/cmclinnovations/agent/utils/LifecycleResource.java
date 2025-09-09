@@ -179,14 +179,13 @@ public class LifecycleResource {
         // Remove the following unneeded statements
         // Use of replaceFirst to improve performance as it occurs only once
         .replaceFirst(
-            "\\?iri a\\/rdfs\\:subClassOf\\* \\<https\\:\\/\\/spec\\.edmcouncil\\.org\\/fibo\\/ontology\\/FBC\\/ProductsAndServices\\/FinancialProductsAndServices\\/ContractLifecycleEventOccurrence\\>\\.",
+            "\\?iri \\<http\\:\\/\\/www\\.w3\\.org\\/1999\\/02\\/22\\-rdf\\-syntax\\-ns\\#type\\> \\/ \\<http\\:\\/\\/www\\.w3\\.org\\/2000\\/01\\/rdf\\-schema\\#subClassOf\\>\\* \\<https\\:\\/\\/spec\\.edmcouncil\\.org\\/fibo\\/ontology\\/FBC\\/ProductsAndServices\\/FinancialProductsAndServices\\/ContractLifecycleEventOccurrence\\>\\ .",
             "")
-        .replaceFirst("\\?iri \\<http\\:\\/\\/purl\\.org\\/dc\\/terms\\/identifier\\> \\?id.", "")
+        .replaceFirst("\\?iri dc\\-terms\\:identifier \\?id.", "")
         // Replace iri with event variable
         .replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
-    return StringResource.genOptionalClause(
-        eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
-            + Rdf.iri(lifecycleEvent.getEvent()).getQueryString()
-            + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event." + parsedWhereClause);
+    return "OPTIONAL {" + eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+        + Rdf.iri(lifecycleEvent.getEvent()).getQueryString()
+        + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event." + parsedWhereClause + "}";
   }
 }

@@ -63,6 +63,7 @@ public class QueryResource {
     public static final Iri FIBO_FND_ARR_LIF_HAS_STAGE = FIBO_FND_ARR_LIF.iri("hasStage");
     public static final Iri FIBO_FND_DT_FD_HAS_SCHEDULE = FIBO_FND_DT_FD.iri("hasSchedule");
     public static final Iri FIBO_FND_REL_REL_EXEMPLIFIES = FIBO_FND_REL_REL.iri("exemplifies");
+    public static final Iri REPLACEMENT_PREDICATE = Rdf.iri("http://replacement/org/replace");
 
     public static final Variable ID_VAR = SparqlBuilder.var("id");
     public static final Variable IRI_VAR = SparqlBuilder.var("iri");
@@ -97,6 +98,15 @@ public class QueryResource {
     public static ModifyQuery getDeleteQuery() {
         return Queries.DELETE()
                 .prefix(DC_TERM)
+                .where();
+    }
+
+    /**
+     * Generates an empty SELECT query template.
+     */
+    public static SelectQuery getSelectQuery() {
+        return Queries.SELECT()
+                .prefix(genPrefixTemplate())
                 .where();
     }
 
@@ -193,7 +203,6 @@ public class QueryResource {
     private static SelectQuery genSelectQuery(GraphPattern whereClause, boolean isDistinct, Integer limit,
             Variable... selectVars) {
         SelectQuery query = Queries.SELECT(selectVars)
-                .prefix(genPrefixTemplate())
                 .distinct(isDistinct)
                 .where(whereClause);
         if (limit != null) {
