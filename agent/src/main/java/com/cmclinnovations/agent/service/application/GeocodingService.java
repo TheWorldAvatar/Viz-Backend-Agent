@@ -13,9 +13,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
-import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
-import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.http.ResponseEntity;
@@ -148,15 +147,17 @@ public class GeocodingService {
    * @param postalCode Search parameter for postal code.
    */
   private String genSearchQueryTemplate(String postalCode) {
-    GraphPatternNotTriples whereClause = GraphPatterns.and(
-        ADDRESS_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri("ConventionalStreetAddress"))
-            .andHas(GeoLocationType.POSTAL_CODE.getPred(), Rdf.literalOf(postalCode))
-            .andHas(GeoLocationType.CITY.getPred(), CITY_VAR)
-            .andHas(GeoLocationType.COUNTRY.getPred(), COUNTRY_VAR)
-            .andHas(GeoLocationType.STREET.getPred(), STREET_VAR),
-        // Block numbers are optional
-        GraphPatterns.optional(ADDRESS_VAR.has(GeoLocationType.BLOCK.getPred(), BLOCK_VAR)));
-    return QueryResource.getSelectQuery(whereClause, true, CITY_VAR, COUNTRY_VAR, STREET_VAR, BLOCK_VAR);
+    SelectQuery queryTemplate = QueryResource.getSelectQuery(true, null);
+    queryTemplate.select(CITY_VAR, COUNTRY_VAR, STREET_VAR, BLOCK_VAR)
+        .where(GraphPatterns.and(
+            ADDRESS_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri("ConventionalStreetAddress"))
+                .andHas(GeoLocationType.POSTAL_CODE.getPred(), Rdf.literalOf(postalCode))
+                .andHas(GeoLocationType.CITY.getPred(), CITY_VAR)
+                .andHas(GeoLocationType.COUNTRY.getPred(), COUNTRY_VAR)
+                .andHas(GeoLocationType.STREET.getPred(), STREET_VAR),
+            // Block numbers are optional
+            GraphPatterns.optional(ADDRESS_VAR.has(GeoLocationType.BLOCK.getPred(), BLOCK_VAR))));
+    return queryTemplate.getQueryString();
   }
 
   /**
@@ -172,35 +173,37 @@ public class GeocodingService {
    */
   private String genCoordinateQueryTemplate(String block, String street, String city, String country,
       String postalCode) {
-    TriplePattern whereClause = ADDRESS_VAR
-        .isA(QueryResource.FIBO_FND_PLC_ADR.iri("ConventionalStreetAddress"))
-        .andHas(p -> p.pred(QueryResource.FIBO_FND_ARR_ID.iri("isIndexTo"))
-            .then(QueryResource.GEO.iri("asWKT")), LOCATION_VAR);
+    SelectQuery queryTemplate = QueryResource.getSelectQuery(true, 1);
+    queryTemplate.select(LOCATION_VAR)
+        .where(ADDRESS_VAR
+            .isA(QueryResource.FIBO_FND_PLC_ADR.iri("ConventionalStreetAddress"))
+            .andHas(p -> p.pred(QueryResource.FIBO_FND_ARR_ID.iri("isIndexTo"))
+                .then(QueryResource.GEO.iri("asWKT")), LOCATION_VAR));
     if (postalCode != null) {
-      whereClause.andHas(GeoLocationType.POSTAL_CODE.getPred(), Rdf.literalOf(postalCode));
+      queryTemplate.where(ADDRESS_VAR.has(GeoLocationType.POSTAL_CODE.getPred(), Rdf.literalOf(postalCode)));
     }
     if (city != null) {
       // check city name via lowercase
-      whereClause.andHas(GeoLocationType.CITY.getPred(), CITY_VAR);
-      whereClause.filter(QueryResource.genLowercaseExpression(CITY_VAR, city));
+      queryTemplate.where(ADDRESS_VAR.has(GeoLocationType.CITY.getPred(), CITY_VAR)
+          .filter(QueryResource.genLowercaseExpression(CITY_VAR, city)));
     }
     if (country != null) {
-      whereClause.andHas(GeoLocationType.COUNTRY.getPred(), Rdf.iri(country));
+      queryTemplate.where(ADDRESS_VAR.has(GeoLocationType.COUNTRY.getPred(), Rdf.iri(country)));
     }
 
     if (street != null) {
       // Block will only be included if there is a corresponding street
       if (block != null) {
         // Blocks may contain strings and should be match in lower case
-        whereClause.andHas(GeoLocationType.BLOCK.getPred(), BLOCK_VAR);
-        whereClause.filter(QueryResource.genLowercaseExpression(BLOCK_VAR, block));
+        queryTemplate.where(ADDRESS_VAR.has(GeoLocationType.BLOCK.getPred(), BLOCK_VAR)
+            .filter(QueryResource.genLowercaseExpression(BLOCK_VAR, block)));
 
       }
       // check street name via lowercase
-      whereClause.andHas(GeoLocationType.STREET.getPred(), STREET_VAR);
-      whereClause.filter(QueryResource.genLowercaseExpression(STREET_VAR, street));
+      queryTemplate.where(ADDRESS_VAR.has(GeoLocationType.STREET.getPred(), STREET_VAR)
+          .filter(QueryResource.genLowercaseExpression(STREET_VAR, street)));
     }
-    return QueryResource.getSelectQuery(whereClause, true, 1, LOCATION_VAR);
+    return queryTemplate.getQueryString();
   }
 
   /**
@@ -211,10 +214,11 @@ public class GeocodingService {
    */
   private String genCoordinateQuery(String location) {
     Iri locationIri = Rdf.iri(location);
-    return QueryResource.getSelectQuery(locationIri.isA(QueryResource.FIBO_FND_PLC_LOC.iri("PhysicalLocation"))
-        .andHas(p -> p.pred(QueryResource.GEO.iri("hasGeometry"))
-            .then(QueryResource.GEO.iri("asWKT")), LOCATION_VAR),
-        true, LOCATION_VAR);
+    return QueryResource.getSelectQuery(true, null).select(LOCATION_VAR)
+        .where(locationIri.isA(QueryResource.FIBO_FND_PLC_LOC.iri("PhysicalLocation"))
+            .andHas(p -> p.pred(QueryResource.GEO.iri("hasGeometry"))
+                .then(QueryResource.GEO.iri("asWKT")), LOCATION_VAR))
+        .getQueryString();
   }
 
   /**

@@ -102,40 +102,29 @@ public class QueryResource {
     }
 
     /**
-     * Generates an empty SELECT query template.
+     * Generates an empty SELECT query template with no DISTINCT or LIMIT modifiers
+     * .
      */
     public static SelectQuery getSelectQuery() {
-        return Queries.SELECT()
+        return getSelectQuery(false, null);
+    }
+
+    /**
+     * Generates an empty SELECT query template with DISTNCT and LIMIT modifier.
+     * 
+     * @param isDistinct Indicates if the select query requires
+     *                   the DISTINCT modifier.
+     * @param limit      Indicates if the select query requires LIMIT modifier.
+     */
+    public static SelectQuery getSelectQuery(boolean isDistinct, Integer limit) {
+        SelectQuery query = Queries.SELECT()
+                .distinct(isDistinct)
                 .prefix(genPrefixTemplate())
                 .where();
-    }
-
-    /**
-     * Gents a SELECT query from the inputs.
-     * 
-     * @param whereClause The where clause body
-     * @param isDistinct  Indicates if the select query requires distinct variables
-     * @param limit       Indicates if the select query requires LIMIT modifier
-     * @param selectVars  The list of select variables to be queried from the where
-     *                    clause
-     */
-    public static String getSelectQuery(GraphPattern whereClause, boolean isDistinct, Integer limit,
-            Variable... selectVars) {
-        return genSelectQuery(whereClause, isDistinct, limit, selectVars)
-                .getQueryString();
-    }
-
-    /**
-     * Overloaded method to get a SELECT query from the inputs.
-     * 
-     * @param whereClause The where clause body
-     * @param isDistinct  Indicates if the select query requires distinct variables
-     * @param selectVars  The list of select variables to be queried from the where
-     *                    clause
-     */
-    public static String getSelectQuery(GraphPattern whereClause, boolean isDistinct, Variable... selectVars) {
-        return genSelectQuery(whereClause, isDistinct, null, selectVars)
-                .getQueryString();
+        if (limit != null) {
+            query.limit(limit);
+        }
+        return query;
     }
 
     /**
@@ -189,25 +178,5 @@ public class QueryResource {
                 GEO,
                 ONTOSERVICE,
                 XSD_PREFIX);
-    }
-
-    /**
-     * Generates a SELECT query from the inputs.
-     * 
-     * @param whereClause The where clause body
-     * @param isDistinct  Indicates if the select query requires distinct variables
-     * @param limit       Indicates if the select query requires LIMIT modifier
-     * @param selectVars  The list of select variables to be queried from the where
-     *                    clause
-     */
-    private static SelectQuery genSelectQuery(GraphPattern whereClause, boolean isDistinct, Integer limit,
-            Variable... selectVars) {
-        SelectQuery query = Queries.SELECT(selectVars)
-                .distinct(isDistinct)
-                .where(whereClause);
-        if (limit != null) {
-            query.limit(limit);
-        }
-        return query;
     }
 }
