@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.12.1
+
+### Changes
+
+- Refactor query generation to implement RDF4J SparqlBuilder
+- Improve DELETE query template to utilise variables instead of exact instance matches
+- Improve logging statement for missing fields
+
 ## 1.12.0
 
 ### Features
