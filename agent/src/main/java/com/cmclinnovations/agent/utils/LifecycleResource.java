@@ -166,7 +166,7 @@ public class LifecycleResource {
         .replaceFirst(
             "\\?iri \\<http\\:\\/\\/www\\.w3\\.org\\/1999\\/02\\/22\\-rdf\\-syntax\\-ns\\#type\\> \\/ \\<http\\:\\/\\/www\\.w3\\.org\\/2000\\/01\\/rdf\\-schema\\#subClassOf\\>\\* \\<https\\:\\/\\/spec\\.edmcouncil\\.org\\/fibo\\/ontology\\/FBC\\/ProductsAndServices\\/FinancialProductsAndServices\\/ContractLifecycleEventOccurrence\\>\\ .",
             "")
-        .replaceFirst("\\?iri dc\\-terms\\:identifier \\?id.", "")
+        .replaceFirst("\\?iri dc\\-terms\\:identifier \\?id \\.", "")
         // Replace iri with event variable
         .replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
     return "OPTIONAL {" + eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
