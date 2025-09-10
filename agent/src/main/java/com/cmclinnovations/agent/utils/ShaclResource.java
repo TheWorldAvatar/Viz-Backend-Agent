@@ -68,10 +68,8 @@ public class ShaclResource {
   public static final String DC_TERMS_ID = DC_TERMS_PREFIX + "identifier";
   public static final String RDFS_LABEL_PREDICATE = "rdfs:label";
   public static final String FULL_STOP = ".";
-  public static final String VARIABLE_MARK = "?";
   public static final String REPLACEMENT_ENDPOINT = "[endpoint]";
   public static final String WHITE_SPACE = " ";
-  public static final String UNION_OPERATOR = "} UNION {";
   // Data types
   public static final String XSD_DATE_TIME = XSD_PREFIX + "dateTime";
   public static final String XSD_DECIMAL = XSD_PREFIX + "decimal";
@@ -118,7 +116,7 @@ public class ShaclResource {
         key.append(part);
       }
     }
-    return key.toString();
+    return QueryResource.genVariable(key.toString()).getVarName();
   }
 
   /**

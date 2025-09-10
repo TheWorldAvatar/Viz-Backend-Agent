@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -81,7 +82,7 @@ public class SparqlBinding {
     // Else, sort the map if there is a sequence
     Map<String, Object> sortedBindings = new LinkedHashMap<>();
     this.sequence.forEach(variable -> {
-      String field = StringResource.parseQueryVariable(variable);
+      String field = QueryResource.genVariable(variable).getVarName();
       if (resultBindings.get(field) != null) {
         sortedBindings.put(field, resultBindings.get(field));
       }
@@ -118,12 +119,12 @@ public class SparqlBinding {
       bestMatchFields.forEach((field) -> {
         List<SparqlResponseField> initFields = new ArrayList<>();
         initFields.add(this.getFieldResponse(field));
-        this.bindingList.put(StringResource.parseQueryVariable(field), initFields);
+        this.bindingList.put(QueryResource.genVariable(field).getVarName(), initFields);
       });
     }
     Set<String> bestMatchFields = ShaclResource.findBestMatchingGroup(secBinding.getFields(), arrayVars);
     bestMatchFields.forEach((field) -> {
-      List<SparqlResponseField> fields = this.bindingList.computeIfAbsent(StringResource.parseQueryVariable(field),
+      List<SparqlResponseField> fields = this.bindingList.computeIfAbsent(QueryResource.genVariable(field).getVarName(),
           k -> new ArrayList<>());
       fields.add(secBinding.getFieldResponse(field));
     });
@@ -135,7 +136,7 @@ public class SparqlBinding {
    * @param field Field of interest
    */
   public SparqlResponseField getFieldResponse(String field) {
-    return this.bindings.get(StringResource.parseQueryVariable(field));
+    return this.bindings.get(QueryResource.genVariable(field).getVarName());
   }
 
   /**
@@ -154,7 +155,7 @@ public class SparqlBinding {
    * @param defaultValue Fall back value.
    */
   public String getFieldValue(String field, String defaultValue) {
-    SparqlResponseField fieldBinding = this.bindings.get(StringResource.parseQueryVariable(field));
+    SparqlResponseField fieldBinding = this.bindings.get(QueryResource.genVariable(field).getVarName());
     if (fieldBinding == null) {
       return defaultValue;
     }

@@ -1,41 +1,17 @@
 package com.cmclinnovations.agent.utils;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class StringResource {
   public static final String ID_KEY = "id";
-  public static final String QUERY_TEMPLATE_PREFIX = "PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>"
-      + "PREFIX dc-terms: <http://purl.org/dc/terms/>"
-      + "PREFIX cmns-dt: <https://www.omg.org/spec/Commons/DatesAndTimes/>"
-      + "PREFIX cmns-dsg: <https://www.omg.org/spec/Commons/Designators/>"
-      + "PREFIX cmns-qtu: <https://www.omg.org/spec/Commons/QuantitiesAndUnits/>"
-      + "PREFIX cmns-rlcmp: <https://www.omg.org/spec/Commons/RolesAndCompositions/>"
-      + "PREFIX fibo-fnd-acc-cur: <https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/>"
-      + "PREFIX fibo-fnd-arr-id:<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/IdentifiersAndIndices/>"
-      + "PREFIX fibo-fnd-arr-lif: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/>"
-      + "PREFIX fibo-fnd-arr-rep: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Reporting/>"
-      + "PREFIX fibo-fnd-plc-adr:<https://spec.edmcouncil.org/fibo/ontology/FND/Places/Addresses/>"
-      + "PREFIX fibo-fnd-plc-loc:<https://spec.edmcouncil.org/fibo/ontology/FND/Places/Locations/>"
-      + "PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/>"
-      + "PREFIX fibo-fnd-dt-oc: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/>"
-      + "PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>"
-      + "PREFIX fibo-fnd-pas-pas: <https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/>"
-      + "PREFIX fibo-fnd-pas-psch: <https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/>"
-      + "PREFIX geo: <http://www.opengis.net/ont/geosparql#>"
-      + "PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>"
-      + "PREFIX xsd:<http://www.w3.org/2001/XMLSchema#>";
-
   public static final String CLAZZ_VAR = "clazz";
-  public static final String RDF_TYPE = "rdf:type";
-  public static final String REPLACEMENT_PLACEHOLDER = "[replace]";
 
   // Private constructor to prevent instantiation
   private StringResource() {
@@ -86,21 +62,21 @@ public class StringResource {
   }
 
   /**
-   * Wraps the content into an OPTIONAL clause
+   * Replaces the last target character for a string.
    * 
-   * @param content Content of the optional clause
+   * @param str         Target string.
+   * @param target      The character(s) for replacement.
+   * @param replacement The replacement string.
    */
-  public static String genOptionalClause(String content) {
-    return "OPTIONAL{" + content + "}";
-  }
+  public static String replaceLast(String str, String target, String replacement) {
+    int lastIndex = str.lastIndexOf(target);
+    if (lastIndex == -1) {
+      return str;
+    }
 
-  /**
-   * Wraps the content into {}
-   * 
-   * @param content Target content
-   */
-  public static String genGroupGraphPattern(String content) {
-    return "{" + content + "}";
+    StringBuilder sb = new StringBuilder(str);
+    sb.replace(lastIndex, lastIndex + target.length(), replacement);
+    return sb.toString();
   }
 
   /**
@@ -109,60 +85,17 @@ public class StringResource {
    * @param iri Input.
    */
   public static String getLocalName(String iri) {
-    if (isValidIRI(iri)) {
+    try {
+      // Check if IRI is valid
+      Rdf.iri(iri);
       int index = iri.indexOf("#");
       if (index != -1) {
         return iri.substring(index + 1);
       }
       String[] parts = iri.split("/");
       return parts[parts.length - 1];
-    }
-    return iri;
-  }
-
-  /**
-   * Parses a SPARQL query variable to ensure that any spaces are replaced.
-   * 
-   * @param variable Target variable input.
-   */
-  public static String parseQueryVariable(String variable) {
-    return variable.replaceAll("\\s+", "_");
-  }
-
-  /**
-   * Parses the string literal for SPARQL queries ie enclosing it with "".
-   * 
-   * @param literal Target literal input.
-   */
-  public static String parseLiteral(String literal) {
-    return "\"" + literal + "\"";
-  }
-
-  /**
-   * Parses the IRI for SPARQL queries ie enclosing it with <>.
-   * 
-   * @param iri Target iri input.
-   */
-  public static String parseIriForQuery(String iri) {
-    if (isValidIRI(iri)) {
-      return "<" + iri + ">";
-    }
-    throw new IllegalArgumentException(MessageFormat.format("Invalid IRI for: {0}", iri));
-  }
-
-  /**
-   * Validates if the input is an IRI or not.
-   * 
-   * @param iri Input.
-   */
-  public static boolean isValidIRI(String iri) {
-    try {
-      URI uri = new URI(iri);
-      // Check if the URI has valid scheme, path, etc
-      return uri.getScheme() != null && uri.getHost() != null;
-    } catch (URISyntaxException e) {
-      // If a URISyntaxException is thrown, the string is not a valid IRI
-      return false;
+    } catch (IllegalArgumentException e) {
+      return iri;
     }
   }
 
@@ -172,11 +105,10 @@ public class StringResource {
    * @param iri Input.
    */
   public static String getPrefix(String iri) {
-    if (isValidIRI(iri)) {
-      int lastSlashIndex = iri.lastIndexOf("/");
-      return iri.substring(0, lastSlashIndex);
-    }
-    throw new IllegalArgumentException("Invalid IRI! Does not conform to RFC2396 specifications.");
+    // Executes to check if iri is valid
+    Rdf.iri(iri);
+    int lastSlashIndex = iri.lastIndexOf("/");
+    return iri.substring(0, lastSlashIndex);
   }
 
   /**

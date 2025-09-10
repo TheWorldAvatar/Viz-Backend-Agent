@@ -9,8 +9,18 @@
   },
   "@type": "https://www.example.org/kg/Person",
   "https://www.example.org/kg/hasName": {
-    "@replace": "name",
-    "@type": "literal"
+    "@id": {
+      "@replace": "name",
+      "@type": "iri",
+      "prefix": "https://www.example.or/kg/person/name/"
+    }
+  },
+  "https://www.example.org/kg/hasFirstName": {
+    "@id": {
+      "@replace": "name",
+      "@type": "iri",
+      "prefix": "https://www.example.or/kg/first/name/"
+    }
   },
   "https://www.example.org/kg/hasAddress": {
     "@id": {
@@ -19,7 +29,7 @@
       "prefix": "https://www.example.org/kg/address/"
     },
     "https://www.example.org/kg/hasStreet": {
-      "@replace": "street",
+      "@replace": "street address",
       "@type": "literal"
     },
     "https://www.example.org/kg/hasCity": {

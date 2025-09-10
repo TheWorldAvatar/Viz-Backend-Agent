@@ -20,6 +20,7 @@ import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.stereotype.Component;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
@@ -132,18 +133,20 @@ public class ShaclRuleProcesser {
         if (targetNode.isVariable()) {
             String varName = targetNode.getName();
             String fieldVal = currentData.getFieldValue(varName);
-            if (StringResource.isValidIRI(fieldVal)) {
-                return StringResource.parseIriForQuery(fieldVal);
+            // If field value is not an IRI, return it in exception as its a value
+            try {
+                return Rdf.iri(fieldVal).getQueryString();
+            } catch (IllegalArgumentException e) {
+                return fieldVal;
             }
-            return fieldVal;
         } else if (targetNode.isURI()) {
-            return StringResource.parseIriForQuery(targetNode.getURI());
+            return Rdf.iri(targetNode.getURI()).getQueryString();
         } else if (targetNode.isLiteral()) {
             String literal = "\"" + targetNode.getLiteralLexicalForm() + "\"";
             if (targetNode.getLiteralLanguage() != null) {
                 literal += "@" + targetNode.getLiteralLanguage();
             } else if (targetNode.getLiteralDatatype() != null) {
-                literal += "^^" + StringResource.parseIriForQuery(targetNode.getLiteralDatatypeURI());
+                literal += "^^" + Rdf.iri(targetNode.getLiteralDatatypeURI()).getQueryString();
             }
             return literal;
         } else {

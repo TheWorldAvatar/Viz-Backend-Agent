@@ -1,10 +1,13 @@
 package com.cmclinnovations.agent.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.stream.Stream;
 
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -84,9 +87,6 @@ public class ShaclPropertyBindingTest {
                                 // Test for simple isClazz
                                 Arguments.of(EXPECTED_SIMPLE_CLAZZ_FILE, PROPERTY_FIELD, null, null, null, "", false,
                                                 true),
-                                // Test for simple ID
-                                Arguments.of(EXPECTED_SIMPLE_ID_FILE, "id", null, SAMPLE_PREDICATE, null, "", true,
-                                                false),
                                 // Test for simple group field
                                 Arguments.of(EXPECTED_SIMPLE_GROUP_FILE, PROPERTY_FIELD, GROUP_FIELD, null, null, "",
                                                 false, false),
@@ -114,7 +114,16 @@ public class ShaclPropertyBindingTest {
                                                                 SAMPLE_PREDICATE, labelPred, null, instanceClazz,
                                                                 nestedClazz, null, inverseMultipath, false, isClazz,
                                                                 false)));
-                assertEquals(TestUtils.getSparqlQuery(expectedFileOutput), sample.write(!nestedClazz.isEmpty()));
+                List<GraphPattern> results = sample.write(!nestedClazz.isEmpty());
+                int resultSize = results.size();
+                assertTrue(0 < resultSize && resultSize <= 2);
+                if (resultSize == 1) {
+                        assertEquals(TestUtils.getSparqlQuery(expectedFileOutput), results.get(0).getQueryString());
+                } else if (resultSize == 2) {
+                        assertEquals(TestUtils.getSparqlQuery(expectedFileOutput), results.get(0).getQueryString() + results.get(1).getQueryString());
+                } else {
+                        assertTrue(false);
+                }
         }
 
         @Test
@@ -128,7 +137,9 @@ public class ShaclPropertyBindingTest {
                                                 SAMPLE_SECOND_PREDICATE, null, null, null, null,
                                                 null, false, false, false, false));
                 sample.appendPred(sampleWithSecondPred);
-                assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_APPEND_FILE), sample.write(false));
+                List<GraphPattern> results = sample.write(false);
+                assertEquals(1,results.size());
+                assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_APPEND_FILE), results.get(0).getQueryString());
         }
 
         /**

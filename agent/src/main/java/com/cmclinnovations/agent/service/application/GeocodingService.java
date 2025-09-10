@@ -11,6 +11,12 @@ import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -23,8 +29,7 @@ import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
-import com.cmclinnovations.agent.utils.ShaclResource;
-import com.cmclinnovations.agent.utils.StringResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 
 @Service
 public class GeocodingService {
@@ -33,12 +38,18 @@ public class GeocodingService {
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final String COORDINATE_KEY = "coordinates";
-  private static final String ADDRESS_VAR = "address";
-  private static final String LOCATION_VAR = "location";
-  private static final String BLOCK_VAR = "block";
-  private static final String CITY_VAR = "city";
-  private static final String COUNTRY_VAR = "country";
-  private static final String STREET_VAR = "street";
+  private static final String ADDRESS_VARNAME = "address";
+  private static final Variable ADDRESS_VAR = SparqlBuilder.var(ADDRESS_VARNAME);
+  private static final String LOCATION_VARNAME = "location";
+  private static final Variable LOCATION_VAR = SparqlBuilder.var(LOCATION_VARNAME);
+  private static final String BLOCK_VARNAME = "block";
+  private static final Variable BLOCK_VAR = SparqlBuilder.var(BLOCK_VARNAME);
+  private static final String CITY_VARNAME = "city";
+  private static final Variable CITY_VAR = SparqlBuilder.var(CITY_VARNAME);
+  private static final String COUNTRY_VARNAME = "country";
+  private static final Variable COUNTRY_VAR = SparqlBuilder.var(COUNTRY_VARNAME);
+  private static final String STREET_VARNAME = "street";
+  private static final Variable STREET_VAR = SparqlBuilder.var(STREET_VARNAME);
   private static final Logger LOGGER = LogManager.getLogger(GeocodingService.class);
 
   /**
@@ -78,12 +89,12 @@ public class GeocodingService {
         SparqlBinding addressInstance = results.poll();
         Map<String, Object> address = new HashMap<>();
         // Block is optional which results in a null
-        if (addressInstance.getFieldValue(BLOCK_VAR) != null) {
-          address.put(BLOCK_VAR, addressInstance.getFieldValue(BLOCK_VAR));
+        if (addressInstance.getFieldValue(BLOCK_VARNAME) != null) {
+          address.put(BLOCK_VARNAME, addressInstance.getFieldValue(BLOCK_VARNAME));
         }
-        address.put(STREET_VAR, addressInstance.getFieldValue(STREET_VAR));
-        address.put(CITY_VAR, addressInstance.getFieldValue(CITY_VAR));
-        address.put(COUNTRY_VAR, addressInstance.getFieldValue(COUNTRY_VAR));
+        address.put(STREET_VARNAME, addressInstance.getFieldValue(STREET_VARNAME));
+        address.put(CITY_VARNAME, addressInstance.getFieldValue(CITY_VARNAME));
+        address.put(COUNTRY_VARNAME, addressInstance.getFieldValue(COUNTRY_VARNAME));
         parsedResults.add(address);
       }
       return this.responseEntityBuilder.success(null, parsedResults);
@@ -136,23 +147,17 @@ public class GeocodingService {
    * @param postalCode Search parameter for postal code.
    */
   private String genSearchQueryTemplate(String postalCode) {
-    String selectVars = ShaclResource.VARIABLE_MARK + CITY_VAR +
-        ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + COUNTRY_VAR +
-        ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + STREET_VAR +
-        ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + BLOCK_VAR;
-    String queryFilters = GeoLocationType.POSTAL_CODE.getPred() + ShaclResource.WHITE_SPACE
-        + StringResource.parseLiteral(postalCode) + ";";
-    queryFilters += GeoLocationType.CITY.getPred() + ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK
-        + CITY_VAR + ";";
-    queryFilters += GeoLocationType.COUNTRY.getPred() + ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK
-        + COUNTRY_VAR + ";";
-    queryFilters += GeoLocationType.STREET.getPred() + ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK
-        + STREET_VAR + ShaclResource.FULL_STOP;
-    // Block numbers are optional
-    queryFilters += StringResource.genOptionalClause(ShaclResource.VARIABLE_MARK + ADDRESS_VAR
-        + ShaclResource.WHITE_SPACE + GeoLocationType.BLOCK.getPred() + ShaclResource.WHITE_SPACE
-        + ShaclResource.VARIABLE_MARK + BLOCK_VAR + ShaclResource.FULL_STOP);
-    return this.genQueryTemplate(selectVars, queryFilters);
+    SelectQuery queryTemplate = QueryResource.getSelectQuery(true, null);
+    queryTemplate.select(CITY_VAR, COUNTRY_VAR, STREET_VAR, BLOCK_VAR)
+        .where(GraphPatterns.and(
+            ADDRESS_VAR.isA(QueryResource.FIBO_FND_PLC_ADR.iri("ConventionalStreetAddress"))
+                .andHas(GeoLocationType.POSTAL_CODE.getPred(), Rdf.literalOf(postalCode))
+                .andHas(GeoLocationType.CITY.getPred(), CITY_VAR)
+                .andHas(GeoLocationType.COUNTRY.getPred(), COUNTRY_VAR)
+                .andHas(GeoLocationType.STREET.getPred(), STREET_VAR),
+            // Block numbers are optional
+            GraphPatterns.optional(ADDRESS_VAR.has(GeoLocationType.BLOCK.getPred(), BLOCK_VAR))));
+    return queryTemplate.getQueryString();
   }
 
   /**
@@ -168,67 +173,37 @@ public class GeocodingService {
    */
   private String genCoordinateQueryTemplate(String block, String street, String city, String country,
       String postalCode) {
-    String queryFilters = "fibo-fnd-arr-id:isIndexTo/geo:asWKT " + ShaclResource.VARIABLE_MARK + LOCATION_VAR + ";";
-    String filterStatements = "";
+    SelectQuery queryTemplate = QueryResource.getSelectQuery(true, 1);
+    queryTemplate.select(LOCATION_VAR)
+        .where(ADDRESS_VAR
+            .isA(QueryResource.FIBO_FND_PLC_ADR.iri("ConventionalStreetAddress"))
+            .andHas(p -> p.pred(QueryResource.FIBO_FND_ARR_ID.iri("isIndexTo"))
+                .then(QueryResource.GEO.iri("asWKT")), LOCATION_VAR));
     if (postalCode != null) {
-      queryFilters += GeoLocationType.POSTAL_CODE.getPred();
-      queryFilters += ShaclResource.WHITE_SPACE + StringResource.parseLiteral(postalCode) + ";";
+      queryTemplate.where(ADDRESS_VAR.has(GeoLocationType.POSTAL_CODE.getPred(), Rdf.literalOf(postalCode)));
     }
     if (city != null) {
       // check city name via lowercase
-      queryFilters += GeoLocationType.CITY.getPred();
-      queryFilters += ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + CITY_VAR + ";";
-      filterStatements += this.genLowercaseFilterStatement(CITY_VAR, city);
+      queryTemplate.where(ADDRESS_VAR.has(GeoLocationType.CITY.getPred(), CITY_VAR)
+          .filter(QueryResource.genLowercaseExpression(CITY_VAR, city)));
     }
     if (country != null) {
-      queryFilters += GeoLocationType.COUNTRY.getPred();
-      queryFilters += ShaclResource.WHITE_SPACE + StringResource.parseIriForQuery(country) + ";";
+      queryTemplate.where(ADDRESS_VAR.has(GeoLocationType.COUNTRY.getPred(), Rdf.iri(country)));
     }
 
     if (street != null) {
       // Block will only be included if there is a corresponding street
       if (block != null) {
-        queryFilters += GeoLocationType.BLOCK.getPred();
         // Blocks may contain strings and should be match in lower case
-        queryFilters += ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + BLOCK_VAR + ";";
-        filterStatements += this.genLowercaseFilterStatement(BLOCK_VAR, block);
+        queryTemplate.where(ADDRESS_VAR.has(GeoLocationType.BLOCK.getPred(), BLOCK_VAR)
+            .filter(QueryResource.genLowercaseExpression(BLOCK_VAR, block)));
+
       }
       // check street name via lowercase
-      queryFilters += GeoLocationType.STREET.getPred();
-      queryFilters += ShaclResource.WHITE_SPACE + ShaclResource.VARIABLE_MARK + STREET_VAR + ";";
-      filterStatements += this.genLowercaseFilterStatement(STREET_VAR, street);
+      queryTemplate.where(ADDRESS_VAR.has(GeoLocationType.STREET.getPred(), STREET_VAR)
+          .filter(QueryResource.genLowercaseExpression(STREET_VAR, street)));
     }
-    String selectVar = ShaclResource.VARIABLE_MARK + LOCATION_VAR;
-    // Filter statements must be added to the very end to prevent any bugs
-    return this.genQueryTemplate(selectVar, queryFilters + filterStatements)
-        // Limit the query return to one result to improve performance
-        + "LIMIT 1";
-  }
-
-  /**
-   * Generates a filter statement to match string in lowercase.
-   * 
-   * @param variable     The variable name for filtering.
-   * @param literalValue The literal value that should be matched.
-   */
-  private String genLowercaseFilterStatement(String variable, String literalValue) {
-    return "FILTER(LCASE(" + ShaclResource.VARIABLE_MARK + variable + ")="
-        + StringResource.parseLiteral(literalValue.toLowerCase()) + ")";
-  }
-
-  /**
-   * Generates the query template with the required variables and where clause
-   * lines.
-   * 
-   * @param selectVariables  The variables in the SELECT clause.
-   * @param whereClauseLines The query lines for the WHERE clause.
-   */
-  private String genQueryTemplate(String selectVariables, String whereClauseLines) {
-    return StringResource.QUERY_TEMPLATE_PREFIX +
-        "SELECT DISTINCT " + selectVariables + " WHERE {" +
-        ShaclResource.VARIABLE_MARK + ADDRESS_VAR + " a fibo-fnd-plc-adr:ConventionalStreetAddress;" +
-        whereClauseLines +
-        "}";
+    return queryTemplate.getQueryString();
   }
 
   /**
@@ -238,12 +213,12 @@ public class GeocodingService {
    * @param location The IRI of the location.
    */
   private String genCoordinateQuery(String location) {
-    String locationVar = ShaclResource.VARIABLE_MARK + LOCATION_VAR;
-    return StringResource.QUERY_TEMPLATE_PREFIX +
-        "SELECT DISTINCT " + locationVar + "{" +
-        StringResource.parseIriForQuery(location) + " a fibo-fnd-plc-loc:PhysicalLocation;" +
-        "geo:hasGeometry/geo:asWKT " + locationVar + "." +
-        "}";
+    Iri locationIri = Rdf.iri(location);
+    return QueryResource.getSelectQuery(true, null).select(LOCATION_VAR)
+        .where(locationIri.isA(QueryResource.FIBO_FND_PLC_LOC.iri("PhysicalLocation"))
+            .andHas(p -> p.pred(QueryResource.GEO.iri("hasGeometry"))
+                .then(QueryResource.GEO.iri("asWKT")), LOCATION_VAR))
+        .getQueryString();
   }
 
   /**
@@ -259,7 +234,7 @@ public class GeocodingService {
     } else {
       LOGGER.info("Found the associated geocoordinates!");
       // Returns the first geoPoint as the same location may have multiple results
-      String geoPoint = results.poll().getFieldValue(LOCATION_VAR);
+      String geoPoint = results.poll().getFieldValue(LOCATION_VARNAME);
       Map<String, Object> responseFields = new HashMap<>();
       responseFields.put(COORDINATE_KEY, this.parseCoordinates(geoPoint));
       return this.responseEntityBuilder.success(null, responseFields);

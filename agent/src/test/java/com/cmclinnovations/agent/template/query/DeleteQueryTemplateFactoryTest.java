@@ -20,6 +20,8 @@ public class DeleteQueryTemplateFactoryTest {
     public static final String EXPECTED_SIMPLE_FILE = "template/query/delete/expected/delete_simple.sparql";
     private static final String TEST_SIMPLE_REVERSE_FILE = "template/query/delete/test/delete_simple_reverse.json";
     private static final String EXPECTED_SIMPLE_REVERSE_FILE = "template/query/delete/expected/delete_simple_reverse.sparql";
+    private static final String TEST_SIMPLE_OPTIONAL_ID_FILE = "template/query/delete/test/delete_optional_id.json";
+    private static final String EXPECTED_SIMPLE_OPTIONAL_ID_FILE = "template/query/delete/expected/delete_optional_id.sparql";
     public static final String SAMPLE_ID = "01j82";
 
     @BeforeAll
@@ -33,7 +35,7 @@ public class DeleteQueryTemplateFactoryTest {
         ObjectNode sample = TestUtils.getJson(TEST_SIMPLE_FILE);
         Queue<String> results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
         assertEquals(1, results.size());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_FILE), results.poll());
+        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_FILE), results.poll().replace("\n", ""));
     }
 
     @Test
@@ -41,6 +43,14 @@ public class DeleteQueryTemplateFactoryTest {
         ObjectNode sample = TestUtils.getJson(TEST_SIMPLE_REVERSE_FILE);
         Queue<String> results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
         assertEquals(1, results.size());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_REVERSE_FILE), results.poll());
+        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_REVERSE_FILE), results.poll().replace("\n", ""));
+    }
+
+    @Test
+    void testWrite_OptionalId() throws Exception {
+        ObjectNode sample = TestUtils.getJson(TEST_SIMPLE_OPTIONAL_ID_FILE);
+        Queue<String> results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
+        assertEquals(1, results.size());
+        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_OPTIONAL_ID_FILE), results.poll().replace("\n", ""));
     }
 }

@@ -1,6 +1,5 @@
-SELECT DISTINCT ?iri ?id ?field WHERE {
-    ?iri a/rdfs:subClassOf* <http://example.com/Concept>.
-    ?iri <http://example.com/propPath1>/<http://example.com/propPath2> ?field.
-    BIND("01j82" AS ?id)
-    ?iri <http://purl.org/dc/terms/identifier> "01j82".
-}
+SELECT DISTINCT ?iri ?id ?field 
+WHERE { ?iri <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> / <http://www.w3.org/2000/01/rdf-schema#subClassOf>* <http://example.com/Concept> .
+    ?iri <http://example.com/propPath1> / <http://example.com/propPath2> ?field .
+    BIND( STR( "01j82" ) AS ?id )
+    ?iri dc-terms:identifier "01j82" . }

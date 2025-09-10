@@ -7,6 +7,9 @@ import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -22,6 +25,7 @@ import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 @Service
@@ -146,11 +150,12 @@ public class GetService {
     LOGGER.debug("Retrieving an instance ...");
     String query = this.queryTemplateService.getShaclQuery(false, eventType.getShaclReplacement());
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    String addQueryStatement = "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
-        + eventType.getEvent() + ">";
+    GraphPattern lifecycleEventPattern = GraphPatterns.tp(QueryResource.IRI_VAR,
+        QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+        Rdf.iri(eventType.getEvent()));
     // Query for direct instances
     Queue<SparqlBinding> instances = this.getInstances(nestedVariablesAndPropertyPaths, targetId, null,
-        addQueryStatement, new HashMap<>());
+        lifecycleEventPattern.getQueryString(), new HashMap<>());
     return this.getSingleInstanceResponse(instances);
   }
 

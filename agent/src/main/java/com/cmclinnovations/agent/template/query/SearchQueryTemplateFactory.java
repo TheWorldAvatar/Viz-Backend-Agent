@@ -1,14 +1,21 @@
 package com.cmclinnovations.agent.template.query;
 
+import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.constraint.Expression;
+import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
-import com.cmclinnovations.agent.utils.ShaclResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public class SearchQueryTemplateFactory extends QueryTemplateFactory {
@@ -40,63 +47,79 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
    */
   public Queue<String> write(QueryTemplateFactoryParameters params) {
     LOGGER.info("Generating a query template for getting the data that matches the search criteria...");
-    StringBuilder filters = new StringBuilder();
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    String whereClauseLines = super.genWhereClauseContent(params.bindings());
+    List<GraphPattern> whereContents = super.genWhereClauseContent(params.bindings());
 
-    StringBuilder whereBuilder = new StringBuilder(whereClauseLines);
-    super.variables.forEach(variableWithMark -> {
-      String variable = variableWithMark.replace(ShaclResource.VARIABLE_MARK, "");
+    // Generating the search criteria as separate filter statements
+    Queue<Expression<?>> filters = new ArrayDeque<>();
+    super.variables.forEach(variable -> {
+      String varName = variable.getVarName();
       // Do not generate or act on any id query lines
       // note that if no criteria or empty string is passed in the API, the filter
       // will not be added
-      if (!variable.equals(StringResource.ID_KEY) && params.criterias().containsKey(variable)
-          && !params.criterias().get(variable).isEmpty()) {
+      if (!varName.equals(StringResource.ID_KEY) && params.criterias().containsKey(varName)
+          && !params.criterias().get(varName).isEmpty()) {
         // If there is no search filters to be added, this variable should not be added
-        String searchFilters = this.genSearchCriteria(variable, params.criterias());
-        if (!searchFilters.isEmpty()) {
-          filters.append(searchFilters);
+        Expression<?> searchFilters = this.genSearchCriteria(variable, params.criterias());
+        if (searchFilters != null) {
+          filters.offer(searchFilters);
         }
       }
     });
-    return super.genFederatedQuery("?iri", whereBuilder.append(filters).toString(), targetClass);
+    return super.genFederatedQuery(targetClass, whereContents, "", filters, QueryResource.IRI_VAR);
   }
 
   /**
-   * Generates the search criteria query line of a query ie:
-   * FILTER(STR(?var) = STR(string_criteria))
+   * Generates the search criteria expressions of a query ie:
+   * STR(?var) = STR(string_criteria))
    * 
-   * @param variable The name of the variable.
+   * @param variable The variable object.
    * @param criteria The criteria to be met.
    */
-  private String genSearchCriteria(String variable, Map<String, String> criterias) {
-    String criteriaVal = criterias.get(variable);
-    String formattedVar = StringResource.parseQueryVariable(variable);
+  private Expression<?> genSearchCriteria(Variable variable, Map<String, String> criterias) {
+    String varName = variable.getVarName();
+    String criteriaVal = criterias.get(varName);
     if (criteriaVal.isEmpty()) {
-      return criteriaVal;
+      return null;
     }
     // The front end will return a range value if range parsing is required
     if (criteriaVal.equals("range")) {
-      String rangeQuery = "";
-      String minCriteriaVal = criterias.get("min " + variable);
-      String maxCriteriaVal = criterias.get("max " + variable);
+      String minCriteriaVal = criterias.get("min " + varName);
+      String maxCriteriaVal = criterias.get("max " + varName);
+      Expression<?> rangeExpression = null;
       // Append min filter if available
       if (!minCriteriaVal.isEmpty()) {
-        rangeQuery += "FILTER(?" + formattedVar + " >= " + criterias.get("min " + variable);
+        rangeExpression = Expressions.gte(variable, Rdf.literalOf(this.formatRangeCriteria(minCriteriaVal)));
       }
       // Append max filter if available
       if (!maxCriteriaVal.isEmpty()) {
         // Prefix should be a conditional && if the min filter is already present
-        rangeQuery += rangeQuery.isEmpty() ? "FILTER(?" : " && ?";
-        rangeQuery += formattedVar + " <= " + maxCriteriaVal;
+        Expression<?> maxSearchExpression = Expressions.lte(variable,
+            Rdf.literalOf(this.formatRangeCriteria(maxCriteriaVal)));
+        if (rangeExpression == null) {
+          rangeExpression = maxSearchExpression;
+        } else {
+          rangeExpression = Expressions.and(rangeExpression, maxSearchExpression);
+        }
       }
-      if (!rangeQuery.isEmpty()) {
-        rangeQuery += ")";
-      }
-      // Return empty string otherwise
-      return rangeQuery;
+      // No filter for range is possible if not given
+      return rangeExpression;
     }
-    return "FILTER(STR(?" + formattedVar + ") = \"" + criteriaVal + "\")";
+    return Expressions.equals(Expressions.str(variable), Rdf.literalOf(criteriaVal));
+  }
+
+  /**
+   * Formats the range criteria to a number. Defaults to integer. Else, it writes
+   * a double.
+   * 
+   * @param criteriaVal The value for parsing.
+   */
+  private Number formatRangeCriteria(String criteriaVal) {
+    try {
+      return Integer.parseInt(criteriaVal);
+    } catch (NumberFormatException e) {
+      return Double.parseDouble(criteriaVal);
+    }
   }
 }

@@ -1,7 +1,8 @@
 package com.cmclinnovations.agent.model.type;
 
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+
 import com.cmclinnovations.agent.utils.LifecycleResource;
-import com.cmclinnovations.agent.utils.StringResource;
 
 public enum LifecycleEventType {
   APPROVED("approve", LifecycleResource.CREATION_STAGE, LifecycleResource.EVENT_APPROVAL),
@@ -38,7 +39,7 @@ public enum LifecycleEventType {
 
   public String getShaclReplacement() {
     return "<https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence>;"
-        + "sh:property/sh:hasValue " + StringResource.parseIriForQuery(this.getEvent());
+        + "sh:property/sh:hasValue " + Rdf.iri(this.getEvent()).getQueryString();
   }
 
   /**

@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.model.ParentField;
@@ -18,8 +19,6 @@ import com.cmclinnovations.agent.template.query.DeleteQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.SearchQueryTemplateFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
-import com.cmclinnovations.agent.utils.ShaclResource;
-import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -74,10 +73,8 @@ public class QueryTemplateService {
     LOGGER.debug("Generating the DELETE query...");
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.getJsonLDResource(resourceID).deepCopy();
-    String instanceIri = addJsonSchema.path(ShaclResource.ID_KEY).asText();
     Queue<String> query = this.deleteQueryTemplateFactory
         .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId));
-    query.offer(instanceIri);
     return query;
   }
 
@@ -118,7 +115,7 @@ public class QueryTemplateService {
    */
   public String getConceptQuery(String conceptClass) {
     return this.fileService.getContentsWithReplacement(FileService.INSTANCE_QUERY_RESOURCE,
-        StringResource.parseIriForQuery(conceptClass));
+        Rdf.iri(conceptClass).getQueryString());
   }
 
   /**
