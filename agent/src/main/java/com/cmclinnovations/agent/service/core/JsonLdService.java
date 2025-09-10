@@ -82,7 +82,7 @@ public class JsonLdService {
       // Add additional logging message for the missing key
       if (e.getMessage().equals(
           "Cannot invoke \"Object.toString()\" because the return value of \"java.util.Map.get(Object)\" is null")) {
-        LOGGER.error("Missing {} in request payload!", targetKey);
+        LOGGER.error("Missing {} in request payload!", replacementId);
       }
       throw e;
     }
