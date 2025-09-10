@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.12.2
+
+### Bug fix
+
+- Allow users to specify alternate labels for classes in queries
+
 ## 1.12.1
 
 ### Changes
