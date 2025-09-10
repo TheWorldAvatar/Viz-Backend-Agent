@@ -3,7 +3,7 @@
     "Name": "vis-backend-agent",
     "TaskTemplate": {
       "ContainerSpec": {
-        "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.12.1",
+        "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.12.2-alternate-labels-SNAPSHOT",
         "Env": [
           "KEYCLOAK_ISSUER_URI=http://<DOMAIN>/realms/<REALM>",
           "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005",
