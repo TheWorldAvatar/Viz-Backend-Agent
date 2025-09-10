@@ -99,8 +99,8 @@ public class ShaclPropertyBinding {
         PropertyPathBuilder jointPredicate = this.labelPredicate == null ? this.predicate
                 : this.predicate.then(this.labelPredicate.build());
         List<GraphPattern> contents = new ArrayList<>();
-        // Add a final rdfs:label if it is a class to retrieve the label
-        if (this.isClazz) {
+        // Add a final rdfs:label if it is a class without other labels
+        if (this.isClazz && this.labelPredicate == null) {
             jointPredicate = jointPredicate.then(RDFS.LABEL);
         }
 
@@ -197,7 +197,7 @@ public class ShaclPropertyBinding {
                     pathPrefixBuilder = PropertyPathBuilder.of(currentPredicate).inv();
                 }
             }
-            // Defaults to property path builders if available, else, attach them 
+            // Defaults to property path builders if available, else, attach them
             if (propertyBuilder == null) {
                 propertyBuilder = pathPrefixBuilder == null ? PropertyPathBuilder.of(currentPredicate)
                         : pathPrefixBuilder;
