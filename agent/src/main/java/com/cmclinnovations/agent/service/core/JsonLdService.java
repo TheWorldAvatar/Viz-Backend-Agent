@@ -51,11 +51,11 @@ public class JsonLdService {
       // The loop should only be broken when an exact match is found
       // This is important for shorter names that may be a subset for larger mappings
       // eg id and friday
-      if (key.equals(replacementId)) {
+      if (key.equals(replacementId) || key.equals(replacementId.replaceAll("\\s+", "_"))) {
         targetKey = key;
         break;
       }
-      if (key.contains(replacementId)) {
+      if (key.contains(replacementId) || key.contains(replacementId.replaceAll("\\s+", "_"))) {
         targetKey = key;
       }
     }
