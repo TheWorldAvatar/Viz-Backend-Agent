@@ -97,8 +97,7 @@ public class QueryResource {
      */
     public static ModifyQuery getDeleteQuery() {
         return Queries.DELETE()
-                .prefix(DC_TERM)
-                .where();
+                .prefix(DC_TERM);
     }
 
     /**

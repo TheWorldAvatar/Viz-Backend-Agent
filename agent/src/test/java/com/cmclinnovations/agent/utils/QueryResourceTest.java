@@ -64,6 +64,13 @@ public class QueryResourceTest {
     }
 
     @Test
+    void testGetDeleteQuery() {
+        assertEquals("PREFIX dc-terms: <http://purl.org/dc/terms/>\n" +
+                "DELETE \n" +
+                "WHERE {}", QueryResource.getDeleteQuery().getQueryString());
+    }
+
+    @Test
     void testGetSelectQuery_EmptyTemplate() {
         String selectQuery = QueryResource.getSelectQuery()
                 .select(TEST_VAR)
