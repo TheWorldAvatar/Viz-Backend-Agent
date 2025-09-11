@@ -46,25 +46,19 @@ public class LocalisationTranslator {
     String localisedKey;
     switch (event) {
       case LifecycleResource.EVENT_INCIDENT_REPORT:
-        localisedKey = LocalisationResource.STATUS_REPORT_KEY;
+        localisedKey = "issue";
         break;
       case LifecycleResource.EVENT_CANCELLATION:
-        localisedKey = LocalisationResource.STATUS_CANCEL_KEY;
+        localisedKey = "cancelled";
         break;
       case LifecycleResource.EVENT_DELIVERY:
-        localisedKey = LocalisationResource.STATUS_COMPLETED_KEY;
+        localisedKey = "completed";
         break;
       case LifecycleResource.EVENT_DISPATCH:
-        localisedKey = LocalisationResource.STATUS_DISPATCH_KEY;
+        localisedKey = "assigned";
         break;
       case LifecycleResource.EVENT_ORDER_RECEIVED:
-        localisedKey = LocalisationResource.STATUS_ORDER_KEY;
-        break;
-      case "Amended":
-        localisedKey = LocalisationResource.STATUS_AMENDED_KEY;
-        break;
-      case "Pending":
-        localisedKey = LocalisationResource.STATUS_PENDING_KEY;
+        localisedKey = "new";
         break;
       default:
         throw new IllegalArgumentException("Unknown event: " + event);

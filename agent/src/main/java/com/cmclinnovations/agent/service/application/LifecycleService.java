@@ -189,7 +189,7 @@ public class LifecycleService {
                       LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY),
                       // Add a new response field
                       new SparqlResponseField(eventStatusField.type(),
-                          LocalisationTranslator.getEvent(eventStatusField.value()),
+                          eventStatusField.value().toLowerCase(),
                           eventStatusField.dataType(), eventStatusField.lang()));
                 }
                 return entry;
