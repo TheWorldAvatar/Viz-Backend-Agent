@@ -22,6 +22,8 @@ public class DeleteQueryTemplateFactoryTest {
     private static final String EXPECTED_SIMPLE_REVERSE_FILE = "template/query/delete/expected/delete_simple_reverse.sparql";
     private static final String TEST_SIMPLE_OPTIONAL_ID_FILE = "template/query/delete/test/delete_optional_id.json";
     private static final String EXPECTED_SIMPLE_OPTIONAL_ID_FILE = "template/query/delete/expected/delete_optional_id.sparql";
+    public static final String TEST_ARRAY_FILE = "template/query/delete/test/delete_array.json";
+    public static final String EXPECTED_ARRAY_FILE = "template/query/delete/expected/delete_array.sparql";
     public static final String SAMPLE_ID = "01j82";
 
     @BeforeAll
@@ -52,5 +54,14 @@ public class DeleteQueryTemplateFactoryTest {
         Queue<String> results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
         assertEquals(1, results.size());
         assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_OPTIONAL_ID_FILE), results.poll().replace("\n", ""));
+
+    }
+
+    @Test
+    void testWrite_Array() throws Exception {
+        ObjectNode sample = TestUtils.getJson(TEST_ARRAY_FILE);
+        Queue<String> results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
+        assertEquals(1, results.size());
+        assertEquals(TestUtils.getSparqlQuery(EXPECTED_ARRAY_FILE), results.poll().replace("\n", ""));
     }
 }

@@ -98,7 +98,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       String mappingKey = replacementId + replacementNode.path("prefix").asText();
       String idVar = this.anonymousVariableMappings.computeIfAbsent(mappingKey,
           k -> replacementId + this.anonymousVariableMappings.size());
-      return  QueryResource.genVariable(idVar);
+      return QueryResource.genVariable(idVar);
     }
     return QueryResource.genVariable(replacementId);
   }
@@ -243,8 +243,10 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
           && objectNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)
           && objectNode.has(ShaclResource.CONTENTS_KEY)) {
         // This should generate a DELETE query with a variable whenever IDs are detected
-        this.recursiveParseNode(deleteTemplate, whereBranchPatterns,
-            this.jsonLdService.getObjectNode(objectNode.path(ShaclResource.CONTENTS_KEY)));
+        ObjectNode arrayContents = this.getArrayReplacementContents(
+            this.jsonLdService.getObjectNode(objectNode.path(ShaclResource.CONTENTS_KEY)),
+            objectNode.path(ShaclResource.REPLACE_KEY).asText());
+        this.recursiveParseNode(deleteTemplate, whereBranchPatterns, arrayContents);
       }
       // No further processing required for objects intended for replacement, @value,
       if (!objectNode.has(ShaclResource.REPLACE_KEY) && !objectNode.has(ShaclResource.VAL_KEY) &&
@@ -316,6 +318,19 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       nestedNode.set(predicate.substring(1, predicate.length() - 1), objectNode);
       this.recursiveParseNode(deleteTemplate, whereBranchPatterns, nestedNode);
     }
+  }
+
+  /**
+   * Get and update the array replacement contents so that the array field is
+   * properly targeted in the query.
+   */
+  private ObjectNode getArrayReplacementContents(ObjectNode contents, String arrayField) {
+    ObjectNode newIdNode = this.jsonLdService.genObjectNode();
+    newIdNode.put(ShaclResource.REPLACE_KEY, arrayField);
+    newIdNode.put(ShaclResource.TYPE_KEY, "literal");
+    // Replace or add @id with a new ID node based on the array field
+    contents.set(ShaclResource.ID_KEY, newIdNode);
+    return contents;
   }
 
   /**

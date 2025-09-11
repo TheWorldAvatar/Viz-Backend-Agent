@@ -1,0 +1,34 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": {
+    "@replace": "id",
+    "@type": "iri",
+    "prefix": "https://www.example.org/kg/person/"
+  },
+  "@type": "https://www.example.org/kg/Person",
+  "https://www.example.org/kg/hasName": {
+    "@id": {
+      "@replace": "name",
+      "@type": "iri",
+      "prefix": "https://www.example.org/kg/person/name/"
+    }
+  },
+  "https://www.example.org/kg/hasContact": {
+    "@replace": "contact",
+    "@type": "array",
+    "@contents": {
+      "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://www.example.org/kg/contact/number/"
+      },
+      "@type": "http://www.w3.org/2006/vcard/ns#Cell",
+      "http://www.w3.org/2006/vcard/ns#hasValue": {
+        "@replace": "number",
+        "@type": "literal"
+      }
+    }
+  }
+}
