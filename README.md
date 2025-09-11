@@ -521,6 +521,10 @@ A successful request will return:
 }
 ```
 
+> Reset draft contract status
+
+When users edit a draft contract, this will move the status to amended. Users can reset this to the original status by sending a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/draft/{id}` endpoint where `{id}`is the requested identifier of the contract.
+
 > Get all draft contracts
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft?type={type}` endpoint to retrieve all draft contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.

@@ -24,6 +24,7 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
+import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
@@ -38,6 +39,7 @@ public class LifecycleService {
   private final DateTimeService dateTimeService;
   private final DeleteService deleteService;
   private final GetService getService;
+  private final UpdateService updateService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private final LifecycleQueryFactory lifecycleQueryFactory;
@@ -55,11 +57,12 @@ public class LifecycleService {
    * 
    */
   public LifecycleService(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
-      GetService getService, ResponseEntityBuilder responseEntityBuilder) {
+      GetService getService, UpdateService updateService, ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
     this.deleteService = deleteService;
     this.getService = getService;
+    this.updateService = updateService;
     this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
 
@@ -545,5 +548,15 @@ public class LifecycleService {
       }
     }
     return this.getService.getForm(replacementQueryLine, true, currentEntity);
+  }
+
+  /**
+   * Updates the contract status to Pending from its current status.
+   * 
+   * @param id The contract identifier.
+   */
+  public ResponseEntity<StandardApiResponse> updateContractStatus(String id) {
+    String updateQuery = this.lifecycleQueryFactory.genContractEventStatusUpdateQuery(id);
+    return this.updateService.update(updateQuery);
   }
 }

@@ -127,6 +127,14 @@ public class QueryResource {
     }
 
     /**
+     * Generates an empty INSERT DELETE WHERE query template.
+     */
+    public static ModifyQuery getUpdateQuery() {
+        return Queries.INSERT()
+                .prefix(genPrefixTemplate());
+    }
+
+    /**
      * Generates a filter exists or minus graph pattern over the triple contents.
      * 
      * @param tripleContents The target triple pattern to be added.

@@ -2,6 +2,8 @@ package com.cmclinnovations.agent.template;
 
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.ModifyQuery;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -212,6 +214,30 @@ public class LifecycleQueryFactory {
         + Rdf.iri(LifecycleResource.IS_ABOUT_RELATIONS).getQueryString()
         + "/fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage <" + stage + ">."
         + "}";
+  }
+
+  /**
+   * Generates a UPDATE query to update the contract event status.
+   * 
+   * @param id Target contract identifier.
+   */
+  public String genContractEventStatusUpdateQuery(String id) {
+    Variable instance = QueryResource.genVariable(LifecycleResource.INSTANCE_KEY);
+    TriplePattern eventStatusPattern = instance.has(
+        QueryResource.CMNS_DSG_DESCRIBES,
+        QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY));
+    ModifyQuery updateQuery = QueryResource.getUpdateQuery()
+        .insert(instance.has(
+            QueryResource.CMNS_DSG_DESCRIBES,
+            Rdf.iri(LifecycleResource.EVENT_PENDING_STATUS)))
+        .delete(eventStatusPattern)
+        .where(QueryResource.IRI_VAR.has(QueryResource.DC_TERM_ID, Rdf.literalOf(id))
+            .andHas(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
+                .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE)
+                .then(QueryResource.CMNS_COL_COMPRISES),
+                instance),
+            eventStatusPattern);
+    return updateQuery.getQueryString();
   }
 
   /**

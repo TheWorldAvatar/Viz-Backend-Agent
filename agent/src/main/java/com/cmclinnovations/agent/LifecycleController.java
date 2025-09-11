@@ -304,6 +304,15 @@ public class LifecycleController {
   }
 
   /**
+   * Reset the draft contract's status to pending.
+   */
+  @PutMapping("/draft/{id}")
+  public ResponseEntity<StandardApiResponse> resetDraftContractStatus(@PathVariable String id) {
+    LOGGER.info("Received request to reset status of draft contract...");
+    return this.lifecycleService.updateContractStatus(id);
+  }
+
+  /**
    * Update the draft contract's lifecycle details in the knowledge graph.
    */
   @PutMapping("/draft")

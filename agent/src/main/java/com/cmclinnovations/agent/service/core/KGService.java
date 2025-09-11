@@ -465,7 +465,7 @@ public class KGService {
    * 
    * @return the status code.
    */
-  private int executeUpdate(String query) {
+  public int executeUpdate(String query) {
     this.loggingService.logQuery(query, LOGGER);
     RemoteStoreClient kgClient = BlazegraphClient.getInstance().getRemoteStoreClient(this.namespace);
     // Execute the request

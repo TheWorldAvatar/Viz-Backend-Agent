@@ -229,7 +229,7 @@ public class VisBackendAgent {
       if (addResponse.getStatusCode() == HttpStatus.OK) {
         LOGGER.info("{} has been successfully updated for {}", type, id);
         return this.responseEntityBuilder.success(addResponse.getBody().data().id(),
-            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_UPDATE_KEY, type));
+            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_UPDATE_KEY));
       } else {
         return addResponse;
       }
