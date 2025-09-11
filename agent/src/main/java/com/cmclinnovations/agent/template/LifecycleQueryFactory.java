@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.template;
 
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
@@ -224,6 +225,13 @@ public class LifecycleQueryFactory {
     query.append(this.getReadableScheduleQuery());
     switch (lifecycleEvent) {
       case LifecycleEventType.APPROVED:
+        TriplePattern pattern = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
+            .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE)
+            .then(QueryResource.CMNS_COL_COMPRISES)
+            .then(QueryResource.CMNS_DSG_DESCRIBES)
+            .then(RDFS.LABEL),
+            QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY));
+        query.append(pattern.getQueryString());
         this.appendFilterExists(query, false, LifecycleResource.EVENT_APPROVAL);
         break;
       case LifecycleEventType.SERVICE_EXECUTION:
@@ -247,16 +255,19 @@ public class LifecycleQueryFactory {
    */
   private void appendArchivedStateQuery(StringBuilder query) {
     Variable eventVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY);
-    TriplePattern eventPattern=  QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
+    TriplePattern eventPattern = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
         .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE)
         .then(QueryResource.CMNS_COL_COMPRISES)
         .then(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES), eventVar);
     String statement = "BIND("
-        + "IF(" + eventVar.getQueryString() + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_COMPLETION).getQueryString()
+        + "IF(" + eventVar.getQueryString() + "="
+        + Rdf.iri(LifecycleResource.EVENT_CONTRACT_COMPLETION).getQueryString()
         + ",\"Completed\","
-        + "IF(" + eventVar.getQueryString() + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_RESCISSION).getQueryString()
+        + "IF(" + eventVar.getQueryString() + "="
+        + Rdf.iri(LifecycleResource.EVENT_CONTRACT_RESCISSION).getQueryString()
         + ",\"Rescinded\","
-        + "IF(" + eventVar.getQueryString() + "=" + Rdf.iri(LifecycleResource.EVENT_CONTRACT_TERMINATION).getQueryString()
+        + "IF(" + eventVar.getQueryString() + "="
+        + Rdf.iri(LifecycleResource.EVENT_CONTRACT_TERMINATION).getQueryString()
         + ",\"Terminated\""
         + ",\"Unknown\"))) AS ?" + LifecycleResource.STATUS_KEY
         + ")"

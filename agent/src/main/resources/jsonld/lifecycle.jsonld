@@ -100,6 +100,12 @@
         },
         "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies": {
           "@id": "https://www.theworldavatar.com/kg/ontoservice/ContractCreation"
+        },
+        "https://www.omg.org/spec/Commons/Designators/describes": {
+          "@id": {
+            "@replace": "event status",
+            "@type": "iri"
+          }
         }
       }
     },

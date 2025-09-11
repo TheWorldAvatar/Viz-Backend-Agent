@@ -66,6 +66,7 @@ public class LifecycleController {
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     // Add current date into parameters
     params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDate());
+    params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_PENDING_STATUS);
     LOGGER.info("Received request to generate a new lifecycle for contract <{}>...", contractId);
     ResponseEntity<StandardApiResponse> response = this.addService.instantiate(LifecycleResource.LIFECYCLE_RESOURCE,
         params);
@@ -173,7 +174,7 @@ public class LifecycleController {
         break;
       case "saved":
         LOGGER.info("Received request to save a service order with completion details...");
-        params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.COMPLETION_EVENT_PENDING_STATUS);
+        params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_PENDING_STATUS);
         eventType = LifecycleEventType.SERVICE_EXECUTION;
         break;
       default:
@@ -314,6 +315,7 @@ public class LifecycleController {
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
       // Add current date into parameters
       params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDate());
+      params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
       ResponseEntity<StandardApiResponse> addResponse = this.addService.instantiate(
           LifecycleResource.LIFECYCLE_RESOURCE, targetId, params);
       if (addResponse.getStatusCode() == HttpStatus.OK) {

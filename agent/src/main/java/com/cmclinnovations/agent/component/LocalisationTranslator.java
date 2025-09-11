@@ -60,6 +60,12 @@ public class LocalisationTranslator {
       case LifecycleResource.EVENT_ORDER_RECEIVED:
         localisedKey = LocalisationResource.STATUS_ORDER_KEY;
         break;
+      case "Amended":
+        localisedKey = LocalisationResource.STATUS_AMENDED_KEY;
+        break;
+      case "Pending":
+        localisedKey = LocalisationResource.STATUS_PENDING_KEY;
+        break;
       default:
         throw new IllegalArgumentException("Unknown event: " + event);
     }

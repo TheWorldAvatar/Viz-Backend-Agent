@@ -168,12 +168,36 @@ public class LifecycleService {
       LifecycleEventType eventType) {
     LOGGER.debug("Retrieving all contracts...");
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
+    Map<String, List<Integer>> contractVariables = new HashMap<>(this.lifecycleVarSequence);
+    if (eventType.equals(LifecycleEventType.APPROVED)) {
+      contractVariables.put(LifecycleResource.EVENT_STATUS_KEY, List.of(1, 1));
+    }
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, null, "", additionalQueryStatement,
-        requireLabel, this.lifecycleVarSequence);
-    return this.responseEntityBuilder.success(null,
-        instances.stream()
-            .map(SparqlBinding::get)
-            .toList());
+        requireLabel, contractVariables);
+    return this.responseEntityBuilder.success(null, instances.stream()
+        .map(instance -> {
+          return (Map<String, Object>) instance.get().entrySet().stream()
+              .map(entry -> {
+                if (eventType.equals(LifecycleEventType.APPROVED)
+                    && entry.getKey().equals(LifecycleResource.EVENT_STATUS_KEY.replaceAll("\\s+", "_"))) {
+                  SparqlResponseField eventStatusField = TypeCastUtils.castToObject(entry.getValue(),
+                      SparqlResponseField.class);
+                  return new AbstractMap.SimpleEntry<>(
+                      LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY),
+                      // Add a new response field
+                      new SparqlResponseField(eventStatusField.type(),
+                          LocalisationTranslator.getEvent(eventStatusField.value()),
+                          eventStatusField.dataType(), eventStatusField.lang()));
+                }
+                return entry;
+              })
+              .collect(Collectors.toMap(
+                  Map.Entry::getKey,
+                  (entry -> TypeCastUtils.castToObject(entry.getValue(), Object.class)),
+                  (oldVal, newVal) -> oldVal,
+                  LinkedHashMap::new));
+        })
+        .toList());
   }
 
   /**
@@ -259,7 +283,7 @@ public class LifecycleService {
           } else {
             // When event is delivery and has pending status, it is still open for changes
             return (eventType.equals(LifecycleResource.EVENT_DELIVERY)
-                && LifecycleResource.COMPLETION_EVENT_PENDING_STATUS.equals(eventStatus)) ||
+                && LifecycleResource.EVENT_PENDING_STATUS.equals(eventStatus)) ||
                 eventType.equals(LifecycleResource.EVENT_DISPATCH) ||
                 eventType.equals(LifecycleResource.EVENT_ORDER_RECEIVED);
           }
@@ -279,7 +303,7 @@ public class LifecycleService {
                   // outstanding
                   String eventType = eventField.value();
                   if (eventType.equals(LifecycleResource.EVENT_DELIVERY)
-                      && LifecycleResource.COMPLETION_EVENT_PENDING_STATUS.equals(eventStatus)) {
+                      && LifecycleResource.EVENT_PENDING_STATUS.equals(eventStatus)) {
                     eventType = LifecycleResource.EVENT_DISPATCH;
                   }
                   return new AbstractMap.SimpleEntry<>(
@@ -334,7 +358,8 @@ public class LifecycleService {
     // Extract specific schedule info
     String startDate = bindings
         .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY).getVarName());
-    String endDate = bindings.getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY).getVarName());
+    String endDate = bindings
+        .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY).getVarName());
     String recurrence = bindings
         .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getVarName());
     Queue<String> occurrences = new ArrayDeque<>();
