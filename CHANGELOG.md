@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.12.3
+
+### Bug fix
+
+- Fix the bug for missing dispatch details when duplicating tasks
+
 ## 1.12.2
 
 ### Bug fix
