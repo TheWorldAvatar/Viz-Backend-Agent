@@ -31,7 +31,7 @@ public class ResponseEntityBuilder {
    * @param message An optional message for its corresponding key in the data
    *                payload.
    */
-  public ResponseEntity<StandardApiResponse> success(String id, String message) {
+  public ResponseEntity<StandardApiResponse<?>> success(String id, String message) {
     return success(id, message, null, null);
   }
 
@@ -42,7 +42,7 @@ public class ResponseEntityBuilder {
    *                payload.
    * @param item    An item to be added into the response payload's collection.
    */
-  public ResponseEntity<StandardApiResponse> success(String message, Map<String, Object> item) {
+  public ResponseEntity<StandardApiResponse<?>> success(String message, Map<String, Object> item) {
     List<Map<String, Object>> items = new ArrayList<>();
     items.add(item);
     return success(null, message, null, items);
@@ -55,7 +55,7 @@ public class ResponseEntityBuilder {
    *                payload.
    * @param items   A collection of instances/data.
    */
-  public ResponseEntity<StandardApiResponse> success(String message, List<Map<String, Object>> items) {
+  public ResponseEntity<StandardApiResponse<?>> success(String message, List<Map<String, Object>> items) {
     return success(null, message, null, items);
   }
 
@@ -69,11 +69,11 @@ public class ResponseEntityBuilder {
    *                DELETE request.
    * @param items   An optional collection of instances/data.
    */
-  public ResponseEntity<StandardApiResponse> success(String id, String message, Boolean deleted,
+  public ResponseEntity<StandardApiResponse<?>> success(String id, String message, Boolean deleted,
       List<Map<String, Object>> items) {
     DataPayload<Map<String, Object>> dataPayload = new DataPayload<>(id, message, deleted, items);
     return new ResponseEntity<>(
-        new StandardApiResponse(this.appVersion, dataPayload, null),
+        new StandardApiResponse<>(this.appVersion, dataPayload, null),
         HttpStatus.OK);
   }
 
@@ -82,10 +82,10 @@ public class ResponseEntityBuilder {
    *
    * @param items An optional collection of strings.
    */
-  public ResponseEntity<StandardApiResponse> success(List<String> items) {
+  public ResponseEntity<StandardApiResponse<?>> success(List<String> items) {
     DataPayload<String> dataPayload = new DataPayload<>(null, null, null, items);
     return new ResponseEntity<>(
-        new StandardApiResponse(this.appVersion, dataPayload, null),
+        new StandardApiResponse<>(this.appVersion, dataPayload, null),
         HttpStatus.OK);
   }
 
@@ -95,9 +95,9 @@ public class ResponseEntityBuilder {
    * @param message    The error message to include in the response.
    * @param httpStatus The HTTP status.
    */
-  public ResponseEntity<StandardApiResponse> error(String message, HttpStatus httpStatus) {
+  public ResponseEntity<StandardApiResponse<?>> error(String message, HttpStatus httpStatus) {
     return new ResponseEntity<>(
-        new StandardApiResponse(this.appVersion, null, new ErrorPayload(httpStatus.value(), message)),
+        new StandardApiResponse<>(this.appVersion, null, new ErrorPayload(httpStatus.value(), message)),
         httpStatus);
   }
 }

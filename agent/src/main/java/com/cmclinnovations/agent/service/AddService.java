@@ -72,7 +72,7 @@ public class AddService {
    * @param resourceID The target resource identifier for the instance.
    * @param param      Request parameters.
    */
-  public ResponseEntity<StandardApiResponse> instantiate(String resourceID, Map<String, Object> param) {
+  public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, Map<String, Object> param) {
     String id = param.getOrDefault(StringResource.ID_KEY, UUID.randomUUID()).toString();
     return instantiate(resourceID, id, param);
   }
@@ -85,7 +85,7 @@ public class AddService {
    * @param targetId   The target instance IRI.
    * @param param      Request parameters.
    */
-  public ResponseEntity<StandardApiResponse> instantiate(String resourceID, String targetId,
+  public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, String targetId,
       Map<String, Object> param) {
     LOGGER.info("Instantiating an instance of {} ...", resourceID);
     // Update ID value to target ID
@@ -107,7 +107,7 @@ public class AddService {
    * @param messageResource The resource id of the message to be displayed when
    *                        successful.
    */
-  public ResponseEntity<StandardApiResponse> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID,
+  public ResponseEntity<StandardApiResponse<?>> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID,
       String messageResource) {
     LOGGER.info("Adding instance to endpoint...");
     String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();

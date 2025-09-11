@@ -8,5 +8,5 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * Fields with null values will be excluded from the JSON output.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record StandardApiResponse(String apiVersion, DataPayload data, ErrorPayload error) {
+public record StandardApiResponse<T>(String apiVersion, DataPayload<T> data, ErrorPayload error) {
 }

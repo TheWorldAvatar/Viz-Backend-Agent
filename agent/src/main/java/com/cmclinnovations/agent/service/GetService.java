@@ -131,7 +131,7 @@ public class GetService {
    * @param requireLabel Indicates if labels should be returned for all the
    *                     fields that are IRIs.
    */
-  public ResponseEntity<StandardApiResponse> getInstance(String targetId, String resourceID, boolean requireLabel) {
+  public ResponseEntity<StandardApiResponse<?>> getInstance(String targetId, String resourceID, boolean requireLabel) {
     LOGGER.debug("Retrieving an instance of {} ...", resourceID);
     String query = this.queryTemplateService.getShaclQuery(resourceID, requireLabel);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
@@ -146,7 +146,7 @@ public class GetService {
    * @param targetId  The target instance IRI.
    * @param eventType The target event type.
    */
-  public ResponseEntity<StandardApiResponse> getInstance(String targetId, LifecycleEventType eventType) {
+  public ResponseEntity<StandardApiResponse<?>> getInstance(String targetId, LifecycleEventType eventType) {
     LOGGER.debug("Retrieving an instance ...");
     String query = this.queryTemplateService.getShaclQuery(false, eventType.getShaclReplacement());
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
@@ -210,7 +210,7 @@ public class GetService {
    * 
    * @param inputs The inputs for the method.
    */
-  private ResponseEntity<StandardApiResponse> getSingleInstanceResponse(Queue<SparqlBinding> inputs) {
+  private ResponseEntity<StandardApiResponse<?>> getSingleInstanceResponse(Queue<SparqlBinding> inputs) {
     if (inputs.size() == 1) {
       return this.responseEntityBuilder.success(null, inputs.poll().get());
     } else if (inputs.isEmpty()) {
@@ -231,7 +231,7 @@ public class GetService {
    *                      rather than a resource.
    * @param currentEntity Current default entity if available.
    */
-  public ResponseEntity<StandardApiResponse> getForm(String resourceID, boolean isReplacement,
+  public ResponseEntity<StandardApiResponse<?>> getForm(String resourceID, boolean isReplacement,
       Map<String, Object> currentEntity) {
     LOGGER.debug("Retrieving the form template for {} ...", resourceID);
     String query = this.queryTemplateService.getFormQuery(resourceID, isReplacement);
@@ -258,7 +258,7 @@ public class GetService {
    * 
    * @param conceptClass The target class details to retrieved.
    */
-  public ResponseEntity<StandardApiResponse> getConceptMetadata(String conceptClass) {
+  public ResponseEntity<StandardApiResponse<?>> getConceptMetadata(String conceptClass) {
     LOGGER.debug("Retrieving the instances for {} ...", conceptClass);
     String query = this.queryTemplateService.getConceptQuery(conceptClass);
     // Note that all concept metadata will never be stored in Ontop and will require
@@ -280,7 +280,7 @@ public class GetService {
    * @param resourceID The target resource identifier for the instance class.
    * @param criterias  All the available search criteria inputs.
    */
-  public ResponseEntity<StandardApiResponse> getMatchingInstances(String resourceID, Map<String, String> criterias) {
+  public ResponseEntity<StandardApiResponse<?>> getMatchingInstances(String resourceID, Map<String, String> criterias) {
     LOGGER.debug("Retrieving the form template for {} ...", resourceID);
     String query = this.queryTemplateService.getShaclQuery(resourceID, false);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);

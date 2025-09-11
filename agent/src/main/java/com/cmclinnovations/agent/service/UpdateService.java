@@ -35,7 +35,7 @@ public class UpdateService {
    * 
    * @param query Query for execution.
    */
-  public ResponseEntity<StandardApiResponse> update(String query) {
+  public ResponseEntity<StandardApiResponse<?>> update(String query) {
     int statusCode = this.kgService.executeUpdate(query);
     if (statusCode == 200) {
       LOGGER.info("Instance has been successfully updated!");
