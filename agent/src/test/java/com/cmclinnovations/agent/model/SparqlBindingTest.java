@@ -11,10 +11,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.cmclinnovations.agent.utils.ShaclResource;
+import com.cmclinnovations.agent.utils.TypeCastUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -96,7 +99,7 @@ public class SparqlBindingTest {
         FIELD_DEFAULT_DATA_TYPE, FIELD_THREE_LANGUAGE);
 
     // Validate array field has been added
-    List<SparqlResponseField> fieldOneResults = (List<SparqlResponseField>) bindings.get(FIELD_ONE);
+    List<@Nonnull SparqlResponseField> fieldOneResults = TypeCastUtils.castToListObject(bindings.get(FIELD_ONE),SparqlResponseField.class);
     assertEquals(2, fieldOneResults.size());
     validateResponseField(fieldOneResults.get(0), FIELD_TYPE_LITERAL, FIELD_VALUE_ONE,
         FIELD_DEFAULT_DATA_TYPE, FIELD_DEFAULT_LANGUAGE);
