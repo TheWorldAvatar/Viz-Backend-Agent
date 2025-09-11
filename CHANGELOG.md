@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.12.4
+
+### Bug fix
+
+- Array replacement objects are correctly parsed for deletion
+
 ## 1.12.3
 
 ### Bug fix
