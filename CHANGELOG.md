@@ -1,5 +1,14 @@
 # Change Log
 
+## 1.13.0
+
+### Changes
+
+- Added statuses for draft contract to differentiate pending and amended draft contracts
+- Added a route to reset amended statuses back to pending
+- Modified dispatch assignment behaviours so that dates will follow the previous dates instead of being updated to today
+- General code maintenance
+
 ## 1.12.4
 
 ### Bug fix
