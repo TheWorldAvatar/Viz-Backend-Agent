@@ -498,9 +498,11 @@ public class LifecycleService {
     LOGGER.info(response.getBody().data());
     // Ensure that the event identifier mapped directly to the jsonLd file name
     try {
-      // Update the date of the task
-      params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
-      params.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
+      // Update the date of the task only if it is not dispatched 
+      if (eventType != LifecycleEventType.SERVICE_ORDER_DISPATCHED){
+        params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
+        params.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
+      }
       response = this.addService.instantiate(eventType.getId(), params);
     } catch (IllegalArgumentException exception) {
       LOGGER.error(LocalisationTranslator.getMessage(successMsgId), params.get(LifecycleResource.ORDER_KEY),
