@@ -7,7 +7,6 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.cmclinnovations.agent.utils.LifecycleResource;
-import com.cmclinnovations.agent.utils.LocalisationResource;
 
 @Component
 public class LocalisationTranslator {

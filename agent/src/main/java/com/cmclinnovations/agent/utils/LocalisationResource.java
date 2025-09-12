@@ -5,7 +5,6 @@ public class LocalisationResource {
   private static final String MESSAGE_PREFIX = "message.";
   private static final String SUCCESS_PREFIX = "success.";
   private static final String SUCCESS_CONTRACT_PREFIX = SUCCESS_PREFIX + "contract.";
-  private static final String STATUS_PREFIX = "status.";
   private static final String VAR_PREFIX = "variable.";
 
   public static final String STATUS_KEY = "status";
