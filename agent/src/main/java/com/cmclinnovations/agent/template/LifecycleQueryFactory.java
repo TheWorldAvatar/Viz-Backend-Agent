@@ -7,8 +7,10 @@ import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 
@@ -255,7 +257,7 @@ public class LifecycleQueryFactory {
             .then(QueryResource.CMNS_COL_COMPRISES)
             .then(QueryResource.CMNS_DSG_DESCRIBES)
             .then(RDFS.LABEL),
-            QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY));
+            QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)));
         query.append(pattern.getQueryString());
         this.appendFilterExists(query, false, LifecycleResource.EVENT_APPROVAL);
         break;

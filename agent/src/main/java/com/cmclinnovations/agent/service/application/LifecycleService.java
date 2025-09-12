@@ -173,33 +173,13 @@ public class LifecycleService {
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
     Map<String, List<Integer>> contractVariables = new HashMap<>(this.lifecycleVarSequence);
     if (eventType.equals(LifecycleEventType.APPROVED)) {
-      contractVariables.put(LifecycleResource.EVENT_STATUS_KEY, List.of(1, 1));
+      contractVariables.put(
+          LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY), List.of(1, 1));
     }
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, null, "", additionalQueryStatement,
         requireLabel, contractVariables);
     return this.responseEntityBuilder.success(null, instances.stream()
-        .map(instance -> {
-          return (Map<String, Object>) instance.get().entrySet().stream()
-              .map(entry -> {
-                if (eventType.equals(LifecycleEventType.APPROVED)
-                    && entry.getKey().equals(LifecycleResource.EVENT_STATUS_KEY.replaceAll("\\s+", "_"))) {
-                  SparqlResponseField eventStatusField = TypeCastUtils.castToObject(entry.getValue(),
-                      SparqlResponseField.class);
-                  return new AbstractMap.SimpleEntry<>(
-                      LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY),
-                      // Add a new response field
-                      new SparqlResponseField(eventStatusField.type(),
-                          eventStatusField.value().toLowerCase(),
-                          eventStatusField.dataType(), eventStatusField.lang()));
-                }
-                return entry;
-              })
-              .collect(Collectors.toMap(
-                  Map.Entry::getKey,
-                  (entry -> TypeCastUtils.castToObject(entry.getValue(), Object.class)),
-                  (oldVal, newVal) -> oldVal,
-                  LinkedHashMap::new));
-        })
+        .map(SparqlBinding::get)
         .toList());
   }
 
