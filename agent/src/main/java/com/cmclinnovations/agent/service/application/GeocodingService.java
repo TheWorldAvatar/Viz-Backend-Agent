@@ -70,7 +70,7 @@ public class GeocodingService {
    * 
    * @param postalCode Postal code identifier.
    */
-  public ResponseEntity<StandardApiResponse> getAddress(String postalCode) {
+  public ResponseEntity<StandardApiResponse<?>> getAddress(String postalCode) {
     LOGGER.debug("Retrieving geocoding endpoint...");
     // The geocoding endpoint must be added as the value of the "geocode" field
     String geocodingEndpoint = this.fileService.getTargetFileName("geocode");
@@ -106,7 +106,7 @@ public class GeocodingService {
    * 
    * @param location The IRI of the location.
    */
-  public ResponseEntity<StandardApiResponse> getCoordinates(String location) {
+  public ResponseEntity<StandardApiResponse<?>> getCoordinates(String location) {
     LOGGER.debug("Querying for coordinates...");
     String query = this.genCoordinateQuery(location);
     List<String> endpoints = this.kgService.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
@@ -128,7 +128,7 @@ public class GeocodingService {
    *                   https://www.omg.org/spec/LCC/Countries/ISO3166-1-CountryCodes.
    * @param postalCode Postal code identifier.
    */
-  public ResponseEntity<StandardApiResponse> getCoordinates(String block, String street, String city, String country,
+  public ResponseEntity<StandardApiResponse<?>> getCoordinates(String block, String street, String city, String country,
       String postalCode) {
     LOGGER.debug("Retrieving geocoding endpoint...");
     // The geocoding endpoint must be added as the value of the "geocode" field
@@ -226,7 +226,7 @@ public class GeocodingService {
    * 
    * @param results The query results.
    */
-  private ResponseEntity<StandardApiResponse> parseCoordinates(Queue<SparqlBinding> results) {
+  private ResponseEntity<StandardApiResponse<?>> parseCoordinates(Queue<SparqlBinding> results) {
     if (results.isEmpty()) {
       LOGGER.info("No coordinates found...");
       return this.responseEntityBuilder

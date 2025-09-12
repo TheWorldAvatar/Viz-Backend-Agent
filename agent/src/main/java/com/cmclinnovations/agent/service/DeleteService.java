@@ -35,7 +35,7 @@ public class DeleteService {
    * @param resourceID The target resource identifier for the instance.
    * @param targetId   The target instance IRI.
    */
-  public ResponseEntity<StandardApiResponse> delete(String resourceID, String targetId) {
+  public ResponseEntity<StandardApiResponse<?>> delete(String resourceID, String targetId) {
     LOGGER.debug("Deleting {} instance of {} ...", resourceID, targetId);
     Queue<String> outputs = this.queryTemplateService.genDeleteQuery(resourceID, targetId);
     return this.kgService.delete(outputs.poll(), targetId);

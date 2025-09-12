@@ -11,7 +11,6 @@ import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.ModifyQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
-import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
@@ -56,6 +55,7 @@ public class QueryResource {
     public static final String PREFIX_TEMPLATE = genPrefixTemplate().getQueryString();
 
     public static final Iri CMNS_COL_COMPRISES = CMNS_COL.iri("comprises");
+    public static final Iri CMNS_DSG_DESCRIBES = CMNS_DSG.iri("describes");
     public static final Iri CMNS_DT_HAS_DATE_VALUE = CMNS_DT.iri("hasDateValue");
     public static final Iri CMNS_DT_HAS_TIME_PERIOD = CMNS_DT.iri("hasTimePeriod");
     public static final Iri DC_TERM_ID = DC_TERM.iri("identifier");
@@ -97,8 +97,7 @@ public class QueryResource {
      */
     public static ModifyQuery getDeleteQuery() {
         return Queries.DELETE()
-                .prefix(DC_TERM)
-                .where();
+                .prefix(DC_TERM);
     }
 
     /**
@@ -125,6 +124,14 @@ public class QueryResource {
             query.limit(limit);
         }
         return query;
+    }
+
+    /**
+     * Generates an empty INSERT DELETE WHERE query template.
+     */
+    public static ModifyQuery getUpdateQuery() {
+        return Queries.INSERT()
+                .prefix(genPrefixTemplate());
     }
 
     /**

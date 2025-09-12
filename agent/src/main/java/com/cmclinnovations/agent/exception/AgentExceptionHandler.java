@@ -26,13 +26,13 @@ public class AgentExceptionHandler {
   }
 
   @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<StandardApiResponse> badRequestHandling(Exception exception, WebRequest request) {
+  public ResponseEntity<StandardApiResponse<?>> badRequestHandling(Exception exception, WebRequest request) {
     LOGGER.error(exception.getMessage());
     return this.responseEntityBuilder.error(exception.getMessage(), HttpStatus.BAD_REQUEST);
   }
 
   @ExceptionHandler(InvalidRouteException.class)
-  public ResponseEntity<StandardApiResponse> invalidRouteHandling(Exception exception, WebRequest request) {
+  public ResponseEntity<StandardApiResponse<?>> invalidRouteHandling(Exception exception, WebRequest request) {
     LOGGER.error(exception.getMessage());
     return this.responseEntityBuilder.error(
         LocalisationTranslator.getMessage(LocalisationResource.ERROR_CONTACT_KEY, exception.getMessage()),
@@ -40,13 +40,13 @@ public class AgentExceptionHandler {
   }
 
   @ExceptionHandler(FileSystemNotFoundException.class)
-  public ResponseEntity<StandardApiResponse> missingResourceHandling(Exception exception, WebRequest request) {
+  public ResponseEntity<StandardApiResponse<?>> missingResourceHandling(Exception exception, WebRequest request) {
     LOGGER.error(exception.getMessage());
     return this.responseEntityBuilder.error(exception.getMessage(), HttpStatus.NOT_FOUND);
   }
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<StandardApiResponse> globalExceptionHandling(Exception exception, WebRequest request) {
+  public ResponseEntity<StandardApiResponse<?>> globalExceptionHandling(Exception exception, WebRequest request) {
     LOGGER.error("Error encountered:", exception);
     return this.responseEntityBuilder.error(
         LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_SERVER_KEY),

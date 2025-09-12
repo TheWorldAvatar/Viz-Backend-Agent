@@ -118,7 +118,7 @@ public class KGService {
    * @param query    The DELETE query for execution.
    * @param targetId The target instance IRI.
    */
-  public ResponseEntity<StandardApiResponse> delete(String query, String targetId) {
+  public ResponseEntity<StandardApiResponse<?>> delete(String query, String targetId) {
     LOGGER.debug("Deleting instances...");
     int statusCode = this.executeUpdate(query);
     if (statusCode == 200) {
@@ -465,7 +465,7 @@ public class KGService {
    * 
    * @return the status code.
    */
-  private int executeUpdate(String query) {
+  public int executeUpdate(String query) {
     this.loggingService.logQuery(query, LOGGER);
     RemoteStoreClient kgClient = BlazegraphClient.getInstance().getRemoteStoreClient(this.namespace);
     // Execute the request

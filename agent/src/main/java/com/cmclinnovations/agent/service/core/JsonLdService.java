@@ -46,16 +46,17 @@ public class JsonLdService {
     String replacementType = replacementNode.path(ShaclResource.TYPE_KEY).asText();
     // Iterate through the replacements and find the relevant key for replacement
     String replacementId = replacementNode.path(ShaclResource.REPLACE_KEY).asText();
+    String altReplacementId = replacementId.replaceAll("\\s+", "_");
     String targetKey = "";
     for (String key : replacements.keySet()) {
       // The loop should only be broken when an exact match is found
       // This is important for shorter names that may be a subset for larger mappings
       // eg id and friday
-      if (key.equals(replacementId) || key.equals(replacementId.replaceAll("\\s+", "_"))) {
+      if (key.equals(replacementId) || key.equals(altReplacementId)) {
         targetKey = key;
         break;
       }
-      if (key.contains(replacementId) || key.contains(replacementId.replaceAll("\\s+", "_"))) {
+      if (key.contains(replacementId) || key.contains(altReplacementId)) {
         targetKey = key;
       }
     }
