@@ -23,7 +23,6 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
-import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -94,9 +93,9 @@ public class GetService {
     if (results.size() > 1) {
       // When there is more than one results, verify if they can be grouped
       // as results might contain an array of different values for the same instance
-      String firstId = results.peek().getFieldValue(LifecycleResource.IRI_KEY);
+      String firstId = results.peek().getFieldValue(QueryResource.IRI_KEY);
       boolean isGroup = results.stream().allMatch(binding -> {
-        String currentId = binding.getFieldValue(LifecycleResource.IRI_KEY);
+        String currentId = binding.getFieldValue(QueryResource.IRI_KEY);
         return currentId != null && currentId.equals(firstId);
       });
       if (!isGroup) {
@@ -293,7 +292,7 @@ public class GetService {
     LOGGER.info(SUCCESSFUL_REQUEST_MSG);
     return this.responseEntityBuilder.success(
         results.stream()
-            .map(binding -> binding.getFieldValue(LifecycleResource.IRI_KEY))
+            .map(binding -> binding.getFieldValue(QueryResource.IRI_KEY))
             .toList());
   }
 }

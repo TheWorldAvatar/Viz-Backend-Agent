@@ -179,7 +179,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         String permittedRoles = binding.getFieldValue(ShaclResource.ROLE_PROPERTY);
 
         // Any nested id properties in sh:node should be ignored
-        if (binding.getFieldValue(ShaclResource.NODE_GROUP_VAR) != null && property.equals(StringResource.ID_KEY)) {
+        if (binding.getFieldValue(ShaclResource.NODE_GROUP_VAR) != null && property.equals(QueryResource.ID_KEY)) {
           continue;
         }
 

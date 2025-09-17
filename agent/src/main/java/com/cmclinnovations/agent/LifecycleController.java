@@ -26,7 +26,7 @@ import com.cmclinnovations.agent.service.application.LifecycleService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
-import com.cmclinnovations.agent.utils.StringResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.fasterxml.jackson.databind.JsonNode;
 
 @RestController
@@ -225,7 +225,7 @@ public class LifecycleController {
    */
   @PostMapping("/service/continue")
   public ResponseEntity<StandardApiResponse<?>> continueTask(@RequestBody Map<String, Object> params) {
-    String taskId = params.get(StringResource.ID_KEY).toString();
+    String taskId = params.get(QueryResource.ID_KEY).toString();
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     return this.lifecycleService.continueTaskOnNextWorkingDay(taskId, contractId);
   }
@@ -283,7 +283,7 @@ public class LifecycleController {
   @PutMapping("/draft")
   public ResponseEntity<StandardApiResponse<?>> updateDraftContract(@RequestBody Map<String, Object> params) {
     LOGGER.info("Received request to update draft contract...");
-    String targetId = params.get(StringResource.ID_KEY).toString();
+    String targetId = params.get(QueryResource.ID_KEY).toString();
     // Add current date into parameters
     params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDate());
     params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
@@ -303,7 +303,7 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> updateContractSchedule(@RequestBody Map<String, Object> params) {
     LOGGER.info("Received request to update a draft schedule...");
     this.lifecycleService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
-    String targetId = params.get(StringResource.ID_KEY).toString();
+    String targetId = params.get(QueryResource.ID_KEY).toString();
     return this.updateService.update(targetId, LifecycleResource.SCHEDULE_RESOURCE,
         LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY, params);
   }

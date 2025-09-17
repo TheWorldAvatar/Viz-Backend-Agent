@@ -18,7 +18,6 @@ public class LifecycleResource {
   public static final String OCCURRENCE_INSTANT_RESOURCE = "occurrence instant";
   public static final String OCCURRENCE_LINK_RESOURCE = "occurrence link";
 
-  public static final String IRI_KEY = "iri";
   public static final String INSTANCE_KEY = "id_instance";
   public static final String CONTRACT_KEY = "contract";
   public static final String ORDER_KEY = "order";
@@ -77,9 +76,9 @@ public class LifecycleResource {
    */
   public static void genIdAndInstanceParameters(String prefix, LifecycleEventType eventType,
       Map<String, Object> params) {
-    String identifier = params.containsKey(StringResource.ID_KEY) ? params.get(StringResource.ID_KEY).toString()
+    String identifier = params.containsKey(QueryResource.ID_KEY) ? params.get(QueryResource.ID_KEY).toString()
         : UUID.randomUUID().toString();
-    params.putIfAbsent(StringResource.ID_KEY, identifier);
+    params.putIfAbsent(QueryResource.ID_KEY, identifier);
     params.put(LifecycleResource.INSTANCE_KEY,
         prefix + "/" + eventType.getId() + "/" + identifier);
   }
@@ -138,7 +137,7 @@ public class LifecycleResource {
     Map<String, List<Integer>> varSequence = new HashMap<>();
     for (int i = 0; i < variables.length; i++) {
       String varName = variables[i].trim();
-      if (varName.isEmpty() || varName.equals(StringResource.ID_KEY)) {
+      if (varName.isEmpty() || varName.equals(QueryResource.ID_KEY)) {
         continue; // Skip empty variables and ID key
       }
       varSequence.put(varName, List.of(groupIndex, i));

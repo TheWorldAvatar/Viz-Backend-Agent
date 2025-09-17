@@ -17,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.service.core.JsonLdService;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -192,8 +193,8 @@ public class FormTemplateFactory {
     }
     List<Map<String, Object>> outputDefaultProperties = this.genOutputs(defaultProperties);
     Map<String, Object> idShapeMappings = new HashMap<>(this.idPropertyShape);
-    if (defaultVals.containsKey(StringResource.ID_KEY)) {
-      idShapeMappings.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultVals.get(StringResource.ID_KEY));
+    if (defaultVals.containsKey(QueryResource.ID_KEY)) {
+      idShapeMappings.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultVals.get(QueryResource.ID_KEY));
     }
     outputDefaultProperties.add(0, idShapeMappings);
     this.form.put(ShaclResource.PROPERTY_PROPERTY, outputDefaultProperties);

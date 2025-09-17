@@ -67,7 +67,7 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       List<String> sortedSequence = new ArrayList<>(super.varSequence.keySet());
       sortedSequence
           .sort((key1, key2) -> ShaclResource.compareLists(super.varSequence.get(key1), super.varSequence.get(key2)));
-      sortedSequence.add(0, StringResource.ID_KEY);
+      sortedSequence.add(0, QueryResource.ID_KEY);
       // Add variables
       sortedSequence
           .forEach(variable -> selectVariables.add(QueryResource.genVariable(variable)));

@@ -43,7 +43,6 @@ import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
-import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.stack.clients.blazegraph.BlazegraphClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -433,9 +432,9 @@ public class KGService {
     Map<String, List<SparqlBinding>> groupedBindings = Stream.concat(firstQueue.stream(), secQueue.stream())
         .distinct()
         .collect(Collectors.groupingBy(binding -> {
-          String id = binding.containsField(LifecycleResource.IRI_KEY)
-              ? binding.getFieldValue(LifecycleResource.IRI_KEY)
-              : binding.getFieldValue(StringResource.ID_KEY);
+          String id = binding.containsField(QueryResource.IRI_KEY)
+              ? binding.getFieldValue(QueryResource.IRI_KEY)
+              : binding.getFieldValue(QueryResource.ID_KEY);
           // If this is a lifecycle event occurrence, group them by date and id
           if (binding.containsField(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY).getVarName())) {
             return id + binding.getFieldValue(LifecycleResource.DATE_KEY);

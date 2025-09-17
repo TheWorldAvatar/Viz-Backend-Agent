@@ -58,7 +58,7 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
       // Do not generate or act on any id query lines
       // note that if no criteria or empty string is passed in the API, the filter
       // will not be added
-      if (!varName.equals(StringResource.ID_KEY) && params.criterias().containsKey(varName)
+      if (!varName.equals(QueryResource.ID_KEY) && params.criterias().containsKey(varName)
           && !params.criterias().get(varName).isEmpty()) {
         // If there is no search filters to be added, this variable should not be added
         Expression<?> searchFilters = this.genSearchCriteria(variable, params.criterias());

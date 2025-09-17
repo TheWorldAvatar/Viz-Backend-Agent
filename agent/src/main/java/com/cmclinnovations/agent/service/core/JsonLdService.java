@@ -9,7 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
-import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -64,7 +64,7 @@ public class JsonLdService {
       // Return the replacement value with the target key for literal
       if (replacementType.equals("literal")) {
         return replacements.get(targetKey).toString();
-      } else if (replacementType.equals(LifecycleResource.IRI_KEY)) {
+      } else if (replacementType.equals(QueryResource.IRI_KEY)) {
         JsonNode prefixNode = replacementNode.path("prefix");
         // Return the replacement value with the target key for any iris without a
         // prefix

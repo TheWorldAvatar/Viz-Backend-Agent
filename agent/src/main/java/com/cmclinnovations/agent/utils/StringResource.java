@@ -10,7 +10,6 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class StringResource {
-  public static final String ID_KEY = "id";
   public static final String CLAZZ_VAR = "clazz";
 
   // Private constructor to prevent instantiation
