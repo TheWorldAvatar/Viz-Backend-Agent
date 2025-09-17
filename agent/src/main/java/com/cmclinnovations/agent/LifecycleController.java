@@ -437,10 +437,20 @@ public class LifecycleController {
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     };
     LOGGER.info("Received request to get form template {}...", orderTypeParams.logOrderType);
-    if (id.equals("form")) {
+    String occurrenceId = id;
+    // Search for previous occurrence to retrieve
+    if (!id.equals("form")) {
+      try {
+        occurrenceId = this.lifecycleService.getPreviousOccurrence(id, orderTypeParams.eventType);
+      } catch (NullPointerException e) {
+        // Fail silently to give blank form template given the missing previous
+        occurrenceId = "form";
+      }
+    }
+    if (occurrenceId.equals("form")) {
       return this.getService.getForm(orderTypeParams.eventType.getShaclReplacement(), true);
     }
-    return this.getService.getForm(id, orderTypeParams.eventType.getShaclReplacement(), true,
+    return this.getService.getForm(occurrenceId, orderTypeParams.eventType.getShaclReplacement(), true,
         orderTypeParams.eventType);
   }
 

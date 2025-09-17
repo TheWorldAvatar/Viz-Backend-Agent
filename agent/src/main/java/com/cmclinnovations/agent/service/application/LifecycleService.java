@@ -406,9 +406,7 @@ public class LifecycleService {
         LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
     if (orderInstantiatedResponse.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Retrieving the current dispatch details...");
-      String query = this.lifecycleQueryFactory.getContractEventQuery(contractId, null, taskId,
-          LifecycleEventType.SERVICE_ORDER_DISPATCHED);
-      String prevDispatchId = this.getService.getInstance(query).getFieldValue(QueryResource.ID_KEY);
+      String prevDispatchId = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_ORDER_DISPATCHED);
       ResponseEntity<StandardApiResponse<?>> response = this.getService.getInstance(prevDispatchId,
           LifecycleEventType.SERVICE_ORDER_DISPATCHED);
       if (response.getStatusCode() == HttpStatus.OK) {
@@ -517,6 +515,19 @@ public class LifecycleService {
   }
 
   /**
+   * Retrieves the previous occurrence instance based on its event type and latest
+   * event id.
+   * 
+   * @param latestEventId The identifier of the latest event in the succeeds
+   *                      chain.
+   * @param eventType     Target event type to query for.
+   */
+  public String getPreviousOccurrence(String latestEventId, LifecycleEventType eventType) {
+    String query = this.lifecycleQueryFactory.getContractEventQuery(latestEventId, eventType);
+    return this.getService.getInstance(query).getFieldValue(QueryResource.ID_KEY);
+  }
+
+  /**
    * Retrieves the previous occurrence instance based on its event type.
    * 
    * @param field     Retrieves either the IRI or id field from the query.
@@ -528,7 +539,6 @@ public class LifecycleService {
     String eventQuery = this.lifecycleQueryFactory.getContractEventQuery(
         params.get(LifecycleResource.CONTRACT_KEY).toString(),
         params.get(LifecycleResource.DATE_KEY).toString(),
-        null,
         eventType);
     return this.getService.getInstance(eventQuery).getFieldValue(field);
   }

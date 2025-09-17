@@ -58,6 +58,7 @@ public class QueryResource {
     public static final Iri CMNS_DSG_DESCRIBES = CMNS_DSG.iri("describes");
     public static final Iri CMNS_DT_HAS_DATE_VALUE = CMNS_DT.iri("hasDateValue");
     public static final Iri CMNS_DT_HAS_TIME_PERIOD = CMNS_DT.iri("hasTimePeriod");
+    public static final Iri CMNS_DT_SUCCEEDS = CMNS_DT.iri("succeeds");
     public static final Iri DC_TERM_ID = DC_TERM.iri("identifier");
     public static final Iri FIBO_FND_ARR_LIF_HAS_LIFECYCLE = FIBO_FND_ARR_LIF.iri("hasLifecycle");
     public static final Iri FIBO_FND_ARR_LIF_HAS_STAGE = FIBO_FND_ARR_LIF.iri("hasStage");
