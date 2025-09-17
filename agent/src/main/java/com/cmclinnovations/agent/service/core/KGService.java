@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.Lang;
@@ -300,9 +301,14 @@ public class KGService {
       // the WHERE clause
       String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery);
       Queue<SparqlBinding> results = this.query(queryForExecution, SparqlEndpointType.MIXED);
+      List<Triple> tripleList = this.shaclRuleProcesser.genConstructTriples(currentQuery);
+      // Generate the delete where query templates
+      String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList);
       // Using the results of the SELECT query as replacements to the CONSTRUCT
       // clause, generate the INSERT DATA query
-      String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(currentQuery, results);
+      String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(tripleList, results);
+      // Execute updates after the queries are generated to prevent incomplete query
+      this.executeUpdate(deleteWhereQuery);
       this.executeUpdate(insertDataQuery);
     }
   }

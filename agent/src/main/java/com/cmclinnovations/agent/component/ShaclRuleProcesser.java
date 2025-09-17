@@ -24,6 +24,8 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.stereotype.Component;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.SparqlResponseField;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 @Component
@@ -94,20 +96,27 @@ public class ShaclRuleProcesser {
     }
 
     /**
+     * Generates a list of triples for the CONSTRUCT template.
+     *
+     * @param targetQuery The input SPARQL query string.
+     */
+    public List<Triple> genConstructTriples(String targetQuery) {
+        LOGGER.debug("Generating the triple content in the CONSTRUCT template...");
+        Query query = QueryFactory.create(targetQuery);
+        return query.getConstructTemplate().getTriples();
+    }
+
+    /**
      * Generates a SPARQL INSERT DATA statement based on the CONSTRUCT template and
      * data to replace their associated variables in the query.
      *
-     * @param targetQuery The input SPARQL query string.
-     * @param data        Query results containing data to be replaced in the
-     *                    CONSTRUCT query.
+     * @param tripleList The list of triples in the CONSTRUCT template.
+     * @param data       Query results containing data to be replaced in the
+     *                   CONSTRUCT query.
      */
-    public String genInsertDataQuery(String targetQuery, Queue<SparqlBinding> data) {
+    public String genInsertDataQuery(List<Triple> tripleList, Queue<SparqlBinding> data) {
         LOGGER.debug("Generating the INSERT DATA content....");
-        Query query = QueryFactory.create(targetQuery);
-        List<Triple> tripleList = query.getConstructTemplate().getTriples();
-
-        StringBuilder insertBuilder = new StringBuilder();
-        insertBuilder.append("INSERT DATA {");
+        StringBuilder insertBuilder = new StringBuilder("INSERT DATA {");
         while (!data.isEmpty()) {
             SparqlBinding currentData = data.poll();
             tripleList.forEach(triple -> {
@@ -123,6 +132,32 @@ public class ShaclRuleProcesser {
     }
 
     /**
+     * Generates a SPARQL DELETE WHERE statement based on the CONSTRUCT template and
+     * data to replace their associated variables in the query.
+     *
+     * @param tripleList The list of triples in the CONSTRUCT template.
+     */
+    public String genDeleteWhereQuery(List<Triple> tripleList) {
+        LOGGER.debug("Generating the INSERT DATA content....");
+        StringBuilder deleteContentBuilder = new StringBuilder();
+
+        tripleList.forEach(triple -> {
+            Node subject = triple.getSubject();
+            Node pred = triple.getPredicate();
+            Node object = triple.getObject();
+            String subjectForm = parseNode(subject, null);
+            String predicateForm = parseNode(pred, null);
+            String objectForm = parseNode(object, null);
+            StringResource.appendTriple(deleteContentBuilder, subjectForm, predicateForm, objectForm);
+        });
+        String deleteContents = deleteContentBuilder.toString();
+        return new StringBuilder("DELETE{")
+                .append(deleteContents).append("} WHERE{")
+                .append(deleteContents).append("}")
+                .toString();
+    }
+
+    /**
      * Parses the Target Node into the required string to be inserted into the
      * SPARQL query.
      *
@@ -132,13 +167,20 @@ public class ShaclRuleProcesser {
     private String parseNode(Node targetNode, SparqlBinding currentData) {
         if (targetNode.isVariable()) {
             String varName = targetNode.getName();
-            String fieldVal = currentData.getFieldValue(varName);
-            // If field value is not an IRI, return it in exception as its a value
-            try {
-                return Rdf.iri(fieldVal).getQueryString();
-            } catch (IllegalArgumentException e) {
-                return fieldVal;
+            if (currentData == null) {
+                return QueryResource.genVariable(varName).getQueryString();
             }
+            SparqlResponseField field = currentData.getFieldResponse(varName);
+            if (field.type().equals("uri")) {
+                return Rdf.iri(field.value()).getQueryString();
+            }
+            String literal = "\"" + field.value() + "\"";
+            if (!field.lang().isEmpty()) {
+                literal += "@" + field.lang();
+            } else if (!field.dataType().isEmpty()) {
+                literal += "^^" + Rdf.iri(field.dataType()).getQueryString();
+            }
+            return literal;
         } else if (targetNode.isURI()) {
             return Rdf.iri(targetNode.getURI()).getQueryString();
         } else if (targetNode.isLiteral()) {
