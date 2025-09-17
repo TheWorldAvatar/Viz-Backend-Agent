@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.stereotype.Service;
 
@@ -164,7 +165,7 @@ public class QueryTemplateService {
    *                           query, along with their order sequence
    */
   public Queue<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
-      ParentField parentField, String addQueryStatements, Map<String, List<Integer>> addVars) {
+      ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Generating the SELECT query to get instances...");
     return this.getQueryTemplateFactory
         .write(
@@ -186,7 +187,7 @@ public class QueryTemplateService {
   /**
    * Retrieve the sequence of the fields.
    */
-  public List<String> getFieldSequence() {
+  public List<Variable> getFieldSequence() {
     return this.getQueryTemplateFactory.getSequence();
   }
 

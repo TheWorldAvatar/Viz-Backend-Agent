@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public record QueryTemplateFactoryParameters(
@@ -13,7 +15,7 @@ public record QueryTemplateFactoryParameters(
     ParentField parent,
     Map<String, String> criterias,
     String addQueryStatements,
-    Map<String, List<Integer>> addVars) {
+    Map<Variable, List<Integer>> addVars) {
 
   public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId) {
     this(null, rootNode, targetId, null, null, null, null);
@@ -24,7 +26,7 @@ public record QueryTemplateFactoryParameters(
   }
 
   public QueryTemplateFactoryParameters(Queue<Queue<SparqlBinding>> bindings, String targetId, ParentField parent,
-      String addQueryStatements, Map<String, List<Integer>> addVars) {
+      String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     this(bindings, null, targetId, parent, null, addQueryStatements, addVars);
   }
 }

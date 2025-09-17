@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
@@ -31,7 +33,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class SparqlBinding {
   private Map<String, SparqlResponseField> bindings;
   private Map<String, List<SparqlResponseField>> bindingList;
-  private List<String> sequence;
+  private List<Variable> sequence;
 
   /**
    * Constructs a new model.
@@ -82,7 +84,7 @@ public class SparqlBinding {
     // Else, sort the map if there is a sequence
     Map<String, Object> sortedBindings = new LinkedHashMap<>();
     this.sequence.forEach(variable -> {
-      String field = QueryResource.genVariable(variable).getVarName();
+      String field = variable.getVarName();
       if (resultBindings.get(field) != null) {
         sortedBindings.put(field, resultBindings.get(field));
       }
@@ -102,7 +104,7 @@ public class SparqlBinding {
    * 
    * @param sequence List of order that fields should be in.
    */
-  public void addSequence(List<String> sequence) {
+  public void addSequence(List<Variable> sequence) {
     this.sequence = sequence;
   }
 

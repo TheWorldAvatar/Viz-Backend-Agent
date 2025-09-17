@@ -29,10 +29,10 @@ import com.cmclinnovations.agent.utils.StringResource;
 
 public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory {
   private boolean hasEmptyBranches;
-  private List<String> sortedVars;
+  private List<Variable> sortedVars;
   protected Set<Variable> variables;
   private Map<String, Set<String>> arrayVariables;
-  protected Map<String, List<Integer>> varSequence;
+  protected Map<Variable, List<Integer>> varSequence;
   private final AuthenticationService authenticationService;
 
   protected QueryTemplateFactory(AuthenticationService authenticationService) {
@@ -49,14 +49,14 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
   /**
    * Retrieve the sequence of the variables.
    */
-  public List<String> getSequence() {
+  public List<Variable> getSequence() {
     return this.sortedVars;
   }
 
   /**
    * Set the sequence of the variables.
    */
-  protected void setSequence(List<String> sequence) {
+  protected void setSequence(List<Variable> sequence) {
     this.sortedVars = sequence;
   }
 
@@ -226,10 +226,10 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
             int order = Integer.parseInt(binding.getFieldValue(ShaclResource.ORDER_PROPERTY));
             List<Integer> orders = new ArrayList<>();
             if (shGroup != null) {
-              orders = this.varSequence.get(shGroup);
+              orders = this.varSequence.get(QueryResource.genVariable(shGroup));
             }
             orders.add(order);
-            this.varSequence.put(property, orders);
+            this.varSequence.put(QueryResource.genVariable(property), orders);
           }
         }
         // Store the new/updated in the mappings
@@ -284,7 +284,8 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
           this.arrayVariables.computeIfAbsent(propBinding.getName(), k -> new HashSet<>()).add(propBinding.getName());
         }
       } else {
-        this.varSequence.remove(group);
+        this.variables.remove(QueryResource.genVariable(group));
+        this.varSequence.remove(QueryResource.genVariable(group));
         // If there is an associated group, store the content to the associated group in
         // the temp mappings; Note that a group may have multiple fields, so each
         // content should be appended to the previous batch

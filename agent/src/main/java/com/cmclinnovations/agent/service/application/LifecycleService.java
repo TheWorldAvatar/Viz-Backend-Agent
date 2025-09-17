@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -41,8 +42,8 @@ public class LifecycleService {
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private final LifecycleQueryFactory lifecycleQueryFactory;
-  private final Map<String, List<Integer>> lifecycleVarSequence = new HashMap<>();
-  private final Map<String, List<Integer>> taskVarSequence = new HashMap<>();
+  private final Map<Variable, List<Integer>> lifecycleVarSequence = new HashMap<>();
+  private final Map<Variable, List<Integer>> taskVarSequence = new HashMap<>();
 
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
@@ -63,16 +64,16 @@ public class LifecycleService {
     this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
 
-    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_DATE_KEY, List.of(2, 0));
-    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_END_DATE_KEY, List.of(2, 1));
-    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_START_TIME_KEY, List.of(2, 2));
-    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_END_TIME_KEY, List.of(2, 3));
-    this.lifecycleVarSequence.put(LifecycleResource.SCHEDULE_TYPE_KEY, List.of(2, 4));
+    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY), List.of(2, 0));
+    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY), List.of(2, 1));
+    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY), List.of(2, 2));
+    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY), List.of(2, 3));
+    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY), List.of(2, 4));
 
-    this.taskVarSequence.put(LifecycleResource.DATE_KEY, List.of(-3, 1));
-    this.taskVarSequence.put(LifecycleResource.EVENT_KEY, List.of(-3, 2));
-    this.taskVarSequence.put(LifecycleResource.EVENT_ID_KEY, List.of(1000, 999));
-    this.taskVarSequence.put(LifecycleResource.EVENT_STATUS_KEY, List.of(1000, 1000));
+    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.DATE_KEY), List.of(-3, 1));
+    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_KEY), List.of(-3, 2));
+    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY), List.of(1000, 999));
+    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY), List.of(1000, 1000));
   }
 
   /**
@@ -164,10 +165,11 @@ public class LifecycleService {
       LifecycleEventType eventType) {
     LOGGER.debug("Retrieving all contracts...");
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
-    Map<String, List<Integer>> contractVariables = new HashMap<>(this.lifecycleVarSequence);
+    Map<Variable, List<Integer>> contractVariables = new HashMap<>(this.lifecycleVarSequence);
     if (eventType.equals(LifecycleEventType.APPROVED)) {
       contractVariables.put(
-          LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY), List.of(1, 1));
+          QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)),
+          List.of(1, 1));
     }
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, null, "", additionalQueryStatement,
         requireLabel, contractVariables);
@@ -234,7 +236,7 @@ public class LifecycleService {
    */
   private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String additionalQuery,
       Boolean isClosed) {
-    Map<String, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
+    Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = "";
     addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
     addQuery += this.parseEventOccurrenceQuery(-1, LifecycleEventType.SERVICE_EXECUTION, varSequences);
@@ -309,11 +311,11 @@ public class LifecycleService {
    * @param varSequences   List of variable sequences to be added.
    */
   private String parseEventOccurrenceQuery(int groupIndex, LifecycleEventType lifecycleEvent,
-      Map<String, List<Integer>> varSequences) {
+      Map<Variable, List<Integer>> varSequences) {
     String replacementQueryLine = lifecycleEvent.getShaclReplacement();
     Queue<String> occurrenceQuery = this.getService.getQuery(replacementQueryLine, "", true);
     // First query is non-necessary and can be used to extract the variables
-    Map<String, List<Integer>> dispatchVars = LifecycleResource.extractOccurrenceVariables(occurrenceQuery.poll(),
+    Map<Variable, List<Integer>> dispatchVars = LifecycleResource.extractOccurrenceVariables(occurrenceQuery.poll(),
         groupIndex);
     varSequences.putAll(dispatchVars);
     return LifecycleResource.extractOccurrenceQuery(occurrenceQuery.poll(), lifecycleEvent);

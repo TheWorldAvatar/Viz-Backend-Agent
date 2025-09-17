@@ -7,6 +7,7 @@ import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -70,7 +71,7 @@ public class GetService {
    *                     fields that are IRIs.
    */
   public Queue<SparqlBinding> getInstances(String resourceID, ParentField parentField, String targetId,
-      String addQueryStatements, boolean requireLabel, Map<String, List<Integer>> addVars) {
+      String addQueryStatements, boolean requireLabel, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     if (requireLabel) {
       // Parent related parameters should be disabled
@@ -170,11 +171,11 @@ public class GetService {
    *                           query, along with their order sequence
    */
   private Queue<SparqlBinding> getInstances(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
-      ParentField parentField, String addQueryStatements, Map<String, List<Integer>> addVars) {
+      ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     Queue<String> getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetId,
         parentField, addQueryStatements, addVars);
     LOGGER.debug("Querying the knowledge graph for the instances...");
-    List<String> varSequence = this.queryTemplateService.getFieldSequence();
+    List<Variable> varSequence = this.queryTemplateService.getFieldSequence();
     // Query for direct instances
     Queue<SparqlBinding> instances = this.kgService.query(getQuery.poll(), SparqlEndpointType.MIXED);
     // Query for secondary instances ie instances that are subclasses of parent
