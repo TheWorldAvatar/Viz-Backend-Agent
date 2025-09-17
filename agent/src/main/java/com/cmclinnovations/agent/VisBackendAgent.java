@@ -25,6 +25,7 @@ import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
+import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.application.GeocodingService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 
@@ -34,16 +35,18 @@ public class VisBackendAgent {
   private final DeleteService deleteService;
   private final GetService getService;
   private final GeocodingService geocodingService;
+  private final UpdateService updateService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final Logger LOGGER = LogManager.getLogger(VisBackendAgent.class);
 
   public VisBackendAgent(AddService addService, DeleteService deleteService, GetService getService,
-      GeocodingService geocodingService, ResponseEntityBuilder responseEntityBuilder) {
+      GeocodingService geocodingService, UpdateService updateService, ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.deleteService = deleteService;
     this.getService = getService;
     this.geocodingService = geocodingService;
+    this.updateService = updateService;
     this.responseEntityBuilder = responseEntityBuilder;
   }
 
@@ -147,7 +150,8 @@ public class VisBackendAgent {
    * with human readable properties.
    */
   @GetMapping("/{type}/label/{id}")
-  public ResponseEntity<StandardApiResponse<?>> getInstanceWithLabels(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<StandardApiResponse<?>> getInstanceWithLabels(@PathVariable String type,
+      @PathVariable String id) {
     LOGGER.info("Received request to get a specific instance of {} with human readable data...", type);
     return this.getService.getInstance(id, type, true);
   }
@@ -177,7 +181,8 @@ public class VisBackendAgent {
    * the knowledge graph.
    */
   @GetMapping("/form/{type}/{id}")
-  public ResponseEntity<StandardApiResponse<?>> retrieveFormTemplate(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<StandardApiResponse<?>> retrieveFormTemplate(@PathVariable String type,
+      @PathVariable String id) {
     LOGGER.info("Received request to get specific form template for {} ...", type);
     Map<String, Object> currentEntity = new HashMap<>();
     ResponseEntity<StandardApiResponse<?>> currentEntityResponse = this.getService.getInstance(id, type, false);
@@ -223,18 +228,6 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> updateEntity(@PathVariable String type, @PathVariable String id,
       @RequestBody Map<String, Object> updatedEntity) {
     LOGGER.info("Received request to update {}...", type);
-    ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(type, id);
-    if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
-      ResponseEntity<StandardApiResponse<?>> addResponse = this.addService.instantiate(type, id, updatedEntity);
-      if (addResponse.getStatusCode() == HttpStatus.OK) {
-        LOGGER.info("{} has been successfully updated for {}", type, id);
-        return this.responseEntityBuilder.success(addResponse.getBody().data().id(),
-            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_UPDATE_KEY));
-      } else {
-        return addResponse;
-      }
-    } else {
-      return deleteResponse;
-    }
+    return this.updateService.update(id, type, LocalisationResource.SUCCESS_UPDATE_KEY, updatedEntity);
   }
 }

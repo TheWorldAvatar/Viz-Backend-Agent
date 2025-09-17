@@ -22,7 +22,6 @@ import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
-import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
@@ -37,7 +36,6 @@ import com.cmclinnovations.agent.utils.TypeCastUtils;
 public class LifecycleService {
   private final AddService addService;
   private final DateTimeService dateTimeService;
-  private final DeleteService deleteService;
   private final GetService getService;
   private final UpdateService updateService;
   private final ResponseEntityBuilder responseEntityBuilder;
@@ -56,11 +54,10 @@ public class LifecycleService {
    * Constructs a new service with the following dependencies.
    * 
    */
-  public LifecycleService(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
-      GetService getService, UpdateService updateService, ResponseEntityBuilder responseEntityBuilder) {
+  public LifecycleService(AddService addService, DateTimeService dateTimeService, GetService getService,
+      UpdateService updateService, ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
-    this.deleteService = deleteService;
     this.getService = getService;
     this.updateService = updateService;
     this.responseEntityBuilder = responseEntityBuilder;
@@ -506,18 +503,7 @@ public class LifecycleService {
     params.put(LifecycleResource.ORDER_KEY,
         this.getPreviousOccurrence(LifecycleResource.IRI_KEY, succeedsEventType, params));
 
-    // Attempt to delete any existing occurrence before any updates
-    ResponseEntity<StandardApiResponse<?>> response = this.deleteService.delete(eventType.getId(), occurrenceId);
-    // Log responses
-    LOGGER.info(response.getBody().data());
-    // Ensure that the event identifier mapped directly to the jsonLd file name
-    try {
-      response = this.addService.instantiate(eventType.getId(), params);
-    } catch (IllegalArgumentException exception) {
-      LOGGER.error(LocalisationTranslator.getMessage(successMsgId), params.get(LifecycleResource.ORDER_KEY),
-          exception.getMessage());
-    }
-    return response;
+    return this.updateService.update(occurrenceId, eventType.getId(), successMsgId, params);
   }
 
   /**

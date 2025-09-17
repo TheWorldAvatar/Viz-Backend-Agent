@@ -20,7 +20,7 @@ import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
-import com.cmclinnovations.agent.service.DeleteService;
+import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.application.LifecycleReportService;
 import com.cmclinnovations.agent.service.application.LifecycleService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
@@ -33,20 +33,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 @RequestMapping("/contracts")
 public class LifecycleController {
   private final AddService addService;
+  private final UpdateService updateService;
   private final DateTimeService dateTimeService;
-  private final DeleteService deleteService;
   private final LifecycleService lifecycleService;
   private final LifecycleReportService lifecycleReportService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final Logger LOGGER = LogManager.getLogger(LifecycleController.class);
 
-  public LifecycleController(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
+  public LifecycleController(AddService addService, UpdateService updateService, DateTimeService dateTimeService,
       LifecycleService lifecycleService, LifecycleReportService lifecycleReportService,
       ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
+    this.updateService = updateService;
     this.dateTimeService = dateTimeService;
-    this.deleteService = deleteService;
     this.lifecycleService = lifecycleService;
     this.lifecycleReportService = lifecycleReportService;
     this.responseEntityBuilder = responseEntityBuilder;
@@ -284,31 +284,16 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> updateDraftContract(@RequestBody Map<String, Object> params) {
     LOGGER.info("Received request to update draft contract...");
     String targetId = params.get(StringResource.ID_KEY).toString();
-    ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(
-        LifecycleResource.LIFECYCLE_RESOURCE,
-        targetId);
-    if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
-      // Add current date into parameters
-      params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDate());
-      params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
-      ResponseEntity<StandardApiResponse<?>> addResponse = this.addService.instantiate(
-          LifecycleResource.LIFECYCLE_RESOURCE, targetId, params);
-      if (addResponse.getStatusCode() == HttpStatus.OK) {
-        LOGGER.info("The lifecycle of the contract has been successfully updated!");
-        // Execute request for schedule as well
-        ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.updateContractSchedule(params);
-        if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
-          LOGGER.info("Draft contract has been successfully updated!");
-          return this.responseEntityBuilder.success(scheduleResponse.getBody().data().id(),
-              LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY));
-        }
-        return scheduleResponse;
-      } else {
-        return addResponse;
-      }
-    } else {
-      return deleteResponse;
+    // Add current date into parameters
+    params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDate());
+    params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
+    ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.updateContractSchedule(params);
+    if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
+      return this.updateService.update(
+          targetId, LifecycleResource.LIFECYCLE_RESOURCE, LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY,
+          params);
     }
+    return scheduleResponse;
   }
 
   /**
@@ -319,23 +304,8 @@ public class LifecycleController {
     LOGGER.info("Received request to update a draft schedule...");
     this.lifecycleService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
     String targetId = params.get(StringResource.ID_KEY).toString();
-    ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(
-        LifecycleResource.SCHEDULE_RESOURCE,
-        targetId);
-    if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
-      ResponseEntity<StandardApiResponse<?>> addResponse = this.addService.instantiate(
-          LifecycleResource.SCHEDULE_RESOURCE,
-          targetId, params);
-      if (addResponse.getStatusCode() == HttpStatus.CREATED) {
-        LOGGER.info("Draft schedule has been successfully updated!");
-        return this.responseEntityBuilder.success(addResponse.getBody().data().id(),
-            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY));
-      } else {
-        return addResponse;
-      }
-    } else {
-      return deleteResponse;
-    }
+    return this.updateService.update(targetId, LifecycleResource.SCHEDULE_RESOURCE,
+        LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY, params);
   }
 
   /**
