@@ -124,12 +124,8 @@ public class LifecycleService {
     // Update the order enum with the specific event instance if it exist
     params.computeIfPresent(LifecycleResource.ORDER_KEY, (key, value) -> {
       String orderEnum = value.toString();
-      String eventQuery = this.lifecycleQueryFactory.getContractEventQuery(
-          params.get(LifecycleResource.CONTRACT_KEY).toString(),
-          params.get(LifecycleResource.DATE_KEY).toString(),
-          null,
-          LifecycleResource.getEventClassFromOrderEnum(orderEnum));
-      return this.getService.getInstance(eventQuery).getFieldValue(LifecycleResource.IRI_KEY);
+      return this.getPreviousOccurrence(LifecycleResource.IRI_KEY,
+          LifecycleResource.getEventClassFromOrderEnum(orderEnum), params);
     });
   }
 
@@ -475,34 +471,47 @@ public class LifecycleService {
       LifecycleEventType eventType) {
     String remarksMsg;
     String successMsgId;
+    LifecycleEventType succeedsEventType;
     switch (eventType) {
       case LifecycleEventType.SERVICE_EXECUTION:
         remarksMsg = ORDER_COMPLETE_MESSAGE;
         successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_COMPLETE_KEY;
+        succeedsEventType = LifecycleEventType.SERVICE_ORDER_DISPATCHED;
+        params.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
         break;
       case LifecycleEventType.SERVICE_ORDER_DISPATCHED:
         remarksMsg = ORDER_DISPATCH_MESSAGE;
         successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_ASSIGN_KEY;
+        succeedsEventType = LifecycleEventType.SERVICE_ORDER_RECEIVED;
         break;
       default:
         throw new IllegalStateException(
             LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     }
+
+    String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
+    String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
+    String stage = this.getService.getInstance(query).getFieldValue(LifecycleResource.IRI_KEY);
+    params.put(LifecycleResource.STAGE_KEY, stage);
     params.put(LifecycleResource.REMARKS_KEY, remarksMsg);
-    this.addOccurrenceParams(params, eventType);
+    String occurrenceId = params.get(StringResource.ID_KEY).toString();
+    try {
+      // Get previous occurrence ID for the same event type if they exist
+      occurrenceId = this.getPreviousOccurrence(StringResource.ID_KEY, eventType, params);
+      params.put(StringResource.ID_KEY, occurrenceId);
+    } catch (NullPointerException e) {
+      // Fail silently as there is no previous occurrence and we should create a new
+      // occurrence accordingly
+    }
+    params.put(LifecycleResource.ORDER_KEY,
+        this.getPreviousOccurrence(LifecycleResource.IRI_KEY, succeedsEventType, params));
 
     // Attempt to delete any existing occurrence before any updates
-    ResponseEntity<StandardApiResponse<?>> response = this.deleteService.delete(
-        eventType.getId(), params.get(StringResource.ID_KEY).toString());
+    ResponseEntity<StandardApiResponse<?>> response = this.deleteService.delete(eventType.getId(), occurrenceId);
     // Log responses
     LOGGER.info(response.getBody().data());
     // Ensure that the event identifier mapped directly to the jsonLd file name
     try {
-      // Update the date of the task only if it is not dispatched 
-      if (eventType != LifecycleEventType.SERVICE_ORDER_DISPATCHED){
-        params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
-        params.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
-      }
       response = this.addService.instantiate(eventType.getId(), params);
     } catch (IllegalArgumentException exception) {
       LOGGER.error(LocalisationTranslator.getMessage(successMsgId), params.get(LifecycleResource.ORDER_KEY),
@@ -540,5 +549,22 @@ public class LifecycleService {
   public ResponseEntity<StandardApiResponse<?>> updateContractStatus(String id) {
     String updateQuery = this.lifecycleQueryFactory.genContractEventStatusUpdateQuery(id);
     return this.updateService.update(updateQuery);
+  }
+
+  /**
+   * Retrieves the previous occurrence instance based on its event type.
+   * 
+   * @param field     Retrieves either the IRI or id field from the query.
+   * @param eventType Target event type to query for.
+   * @param params    Mappings containing the contract and date value for the
+   *                  query.
+   */
+  private String getPreviousOccurrence(String field, LifecycleEventType eventType, Map<String, Object> params) {
+    String eventQuery = this.lifecycleQueryFactory.getContractEventQuery(
+        params.get(LifecycleResource.CONTRACT_KEY).toString(),
+        params.get(LifecycleResource.DATE_KEY).toString(),
+        null,
+        eventType);
+    return this.getService.getInstance(eventQuery).getFieldValue(field);
   }
 }
