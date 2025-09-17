@@ -6,7 +6,6 @@ import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -173,7 +172,7 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> getFormTemplate(@PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get the form template for {}...", type);
     // Access to this empty form is prefiltered on the UI and need not be enforced
-    return this.getService.getForm(type, false, new HashMap<>());
+    return this.getService.getForm(type, false);
   }
 
   /**
@@ -184,12 +183,7 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> retrieveFormTemplate(@PathVariable String type,
       @PathVariable String id) {
     LOGGER.info("Received request to get specific form template for {} ...", type);
-    Map<String, Object> currentEntity = new HashMap<>();
-    ResponseEntity<StandardApiResponse<?>> currentEntityResponse = this.getService.getInstance(id, type, false);
-    if (currentEntityResponse.getStatusCode() == HttpStatus.OK) {
-      currentEntity = (Map<String, Object>) currentEntityResponse.getBody().data().items().get(0);
-    }
-    return this.getService.getForm(type, false, currentEntity);
+    return this.getService.getForm(id, type, false, null);
   }
 
   /**

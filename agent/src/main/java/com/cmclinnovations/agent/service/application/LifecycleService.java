@@ -507,27 +507,6 @@ public class LifecycleService {
   }
 
   /**
-   * Retrieves the form template for the specified event type.
-   * 
-   * @param eventType The target event type.
-   * @param targetId  The target instance IRI.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getForm(LifecycleEventType eventType, String targetId) {
-    // Ensure that there is a specific event type target
-    String replacementQueryLine = eventType.getShaclReplacement();
-    Map<String, Object> currentEntity = new HashMap<>();
-    if (targetId != null) {
-      LOGGER.debug("Detected specific entity ID! Retrieving target event occurrence of {}...", eventType);
-      ResponseEntity<StandardApiResponse<?>> currentEntityResponse = this.getService.getInstance(targetId, eventType);
-
-      if (currentEntityResponse.getStatusCode() == HttpStatus.OK) {
-        currentEntity = (Map<String, Object>) currentEntityResponse.getBody().data().items().get(0);
-      }
-    }
-    return this.getService.getForm(replacementQueryLine, true, currentEntity);
-  }
-
-  /**
    * Updates the contract status to Pending from its current status.
    * 
    * @param id The contract identifier.

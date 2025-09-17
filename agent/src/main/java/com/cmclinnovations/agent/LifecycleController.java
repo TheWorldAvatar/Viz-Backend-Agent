@@ -20,6 +20,7 @@ import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
+import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.application.LifecycleReportService;
 import com.cmclinnovations.agent.service.application.LifecycleService;
@@ -33,6 +34,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 @RequestMapping("/contracts")
 public class LifecycleController {
   private final AddService addService;
+  private final GetService getService;
   private final UpdateService updateService;
   private final DateTimeService dateTimeService;
   private final LifecycleService lifecycleService;
@@ -41,10 +43,11 @@ public class LifecycleController {
 
   private static final Logger LOGGER = LogManager.getLogger(LifecycleController.class);
 
-  public LifecycleController(AddService addService, UpdateService updateService, DateTimeService dateTimeService,
-      LifecycleService lifecycleService, LifecycleReportService lifecycleReportService,
+  public LifecycleController(AddService addService, GetService getService, UpdateService updateService,
+      DateTimeService dateTimeService, LifecycleService lifecycleService, LifecycleReportService lifecycleReportService,
       ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
+    this.getService = getService;
     this.updateService = updateService;
     this.dateTimeService = dateTimeService;
     this.lifecycleService = lifecycleService;
@@ -406,82 +409,39 @@ public class LifecycleController {
   }
 
   /**
-   * Retrieves the form template for the dispatch order from the knowledge graph.
+   * Retrieves the form template for the specific occurrence type from the
+   * knowledge graph. Valid types include:
+   * 1) service stage - dispatch: Assign dispatch details to the service order
+   * 2) service stage - complete: Completes a specific service order
+   * 3) service stage - report: Reports an issue with the service order
+   * 4) service stage - cancel: Cancels the upcoming service order
+   * 5) archive stage - rescind: Rescind the entire contract
+   * 6) archive stage - terminate: Terminates the entire contract
+   * 
+   * The id represents the specific instance if required, else default to form.
    */
-  @GetMapping("/service/dispatch/form")
-  public ResponseEntity<StandardApiResponse<?>> getDispatchForm() {
-    LOGGER.info("Received request to get form template for order dispatch...");
+  @GetMapping("/{stage}/{type}/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getOccurrenceForm(@PathVariable String stage,
+      @PathVariable String type, @PathVariable String id) {
     // Access to this form is prefiltered on the UI and need not be enforced here
-    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_ORDER_DISPATCHED, null);
-  }
-
-  /**
-   * Retrieve dispatch details for the specified event
-   */
-  @GetMapping("/service/dispatch/{id}")
-  public ResponseEntity<StandardApiResponse<?>> getDispatchDetails(@PathVariable String id) {
-    LOGGER.info("Received request to get form template with order dispatch details...");
-    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_ORDER_DISPATCHED, id);
-  }
-
-  /**
-   * Retrieves the form template to complete an order from the knowledge graph.
-   */
-  @GetMapping("/service/complete/form")
-  public ResponseEntity<StandardApiResponse<?>> getOrderCompleteForm() {
-    LOGGER.info("Received request to get form template for order completion...");
-    // Access to this form is prefiltered on the UI and need not be enforced here
-    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_EXECUTION, null);
-  }
-
-  /**
-   * Retrieve the order complete details for the specified event
-   */
-  @GetMapping("/service/complete/{id}")
-  public ResponseEntity<StandardApiResponse<?>> getOrderCompleteDetails(@PathVariable String id) {
-    LOGGER.info("Received request to get form template with order completion details...");
-    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_EXECUTION, id);
-  }
-
-  /**
-   * Retrieves the form template to report the order from the knowledge graph.
-   */
-  @GetMapping("/service/report/form")
-  public ResponseEntity<StandardApiResponse<?>> getOrderReportForm() {
-    LOGGER.info("Received request to get form template to report the order...");
-    // Access to this form is prefiltered on the UI and need not be enforced here
-    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_INCIDENT_REPORT, null);
-  }
-
-  /**
-   * Retrieves the form template to cancel the order from the knowledge graph.
-   */
-  @GetMapping("/service/cancel/form")
-  public ResponseEntity<StandardApiResponse<?>> getOrderCancellationForm() {
-    LOGGER.info("Received request to get form template to cancel the order...");
-    // Access to this form is prefiltered on the UI and need not be enforced here
-    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_CANCELLATION, null);
-  }
-
-  /**
-   * Retrieves the form template to rescind the contract from the knowledge graph.
-   */
-  @GetMapping("/archive/rescind/form")
-  public ResponseEntity<StandardApiResponse<?>> getContractRescissionForm() {
-    LOGGER.info("Received request to get form template to rescind the contract...");
-    // Access to this form is prefiltered on the UI and need not be enforced here
-    return this.lifecycleService.getForm(LifecycleEventType.ARCHIVE_RESCINDMENT, null);
-  }
-
-  /**
-   * Retrieves the form template to terminate the contract from the knowledge
-   * graph.
-   */
-  @GetMapping("/archive/terminate/form")
-  public ResponseEntity<StandardApiResponse<?>> getContractTerminationForm() {
-    LOGGER.info("Received request to get form template to terminate the contract...");
-    // Access to this form is prefiltered on the UI and need not be enforced here
-    return this.lifecycleService.getForm(LifecycleEventType.ARCHIVE_TERMINATION, null);
+    final record OrderType(String logOrderType, LifecycleEventType eventType) {
+    }
+    OrderType orderTypeParams = switch (stage.toLowerCase() + type.toLowerCase()) {
+      case "servicecomplete" -> new OrderType("for order completion details", LifecycleEventType.SERVICE_EXECUTION);
+      case "servicedispatch" -> new OrderType("for order dispatch", LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+      case "servicereport" -> new OrderType("to report the order", LifecycleEventType.SERVICE_INCIDENT_REPORT);
+      case "servicecancel" -> new OrderType("to cancel the order", LifecycleEventType.SERVICE_CANCELLATION);
+      case "archiverescind" -> new OrderType("to rescind the contract", LifecycleEventType.ARCHIVE_RESCINDMENT);
+      case "archiveterminate" -> new OrderType("to terminate the contract", LifecycleEventType.ARCHIVE_TERMINATION);
+      default -> throw new IllegalArgumentException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
+    };
+    LOGGER.info("Received request to get form template {}...", orderTypeParams.logOrderType);
+    if (id.equals("form")) {
+      return this.getService.getForm(orderTypeParams.eventType.getShaclReplacement(), true);
+    }
+    return this.getService.getForm(id, orderTypeParams.eventType.getShaclReplacement(), true,
+        orderTypeParams.eventType);
   }
 
   /**

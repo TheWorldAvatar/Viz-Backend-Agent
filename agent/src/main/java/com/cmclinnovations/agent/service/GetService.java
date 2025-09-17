@@ -223,35 +223,6 @@ public class GetService {
   }
 
   /**
-   * Retrieve the form template for the target entity and its information.
-   * 
-   * @param resourceID    The target resource identifier for the instance class.
-   * @param isReplacement Indicates if the resource ID is a replacement value
-   *                      rather than a resource.
-   * @param currentEntity Current default entity if available.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getForm(String resourceID, boolean isReplacement,
-      Map<String, Object> currentEntity) {
-    LOGGER.debug("Retrieving the form template for {} ...", resourceID);
-    String query = this.queryTemplateService.getFormQuery(resourceID, isReplacement);
-    // SHACL restrictions for generating the form template always stored on a
-    // blazegraph namespace
-    List<String> endpoints = this.kgService.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
-    for (String endpoint : endpoints) {
-      LOGGER.debug("Querying at the endpoint {}...", endpoint);
-      // Execute the query on the current endpoint and get the result
-      ArrayNode formTemplateInputs = this.kgService.queryJsonLd(query, endpoint);
-      if (!formTemplateInputs.isEmpty()) {
-        Map<String, Object> results = this.queryTemplateService.genFormTemplate(formTemplateInputs, currentEntity);
-        LOGGER.info(SUCCESSFUL_REQUEST_MSG);
-        return this.responseEntityBuilder.success(null, results);
-      }
-    }
-    LOGGER.error(KGService.INVALID_SHACL_ERROR_MSG);
-    throw new IllegalStateException(KGService.INVALID_SHACL_ERROR_MSG);
-  }
-
-  /**
    * Retrieve the metadata (IRI, label, and description) of the concept associated
    * with the target resource. This will return their current or sub-classes.
    * 
@@ -294,5 +265,74 @@ public class GetService {
         results.stream()
             .map(binding -> binding.getFieldValue(QueryResource.IRI_KEY))
             .toList());
+  }
+
+  /**
+   * Retrieve the form template for the target entity instance.
+   * 
+   * @param targetId      The target instance identifier OR replacement value.
+   * @param resourceID    The target resource identifier for the instance class.
+   * @param isReplacement Indicates if the resource ID is a replacement value
+   *                      rather than a resource.
+   * @param eventType     Optional event type for lifecycle related queries.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getForm(String targetId, String resourceID,
+      boolean isReplacement, LifecycleEventType eventType) {
+    LOGGER.debug("Retrieving the form template for {} ...", resourceID);
+    Map<String, Object> currentEntity = new HashMap<>();
+    ResponseEntity<StandardApiResponse<?>> currentEntityResponse;
+    if (eventType == null) {
+      LOGGER.debug("Retrieving target instance of {}...", resourceID);
+      currentEntityResponse = this.getInstance(targetId, resourceID, false);
+    } else {
+      LOGGER.debug("Retrieving target event occurrence of {}...", eventType);
+      currentEntityResponse = this.getInstance(targetId, eventType);
+    }
+    if (currentEntityResponse.getStatusCode() == HttpStatus.OK) {
+      currentEntity = (Map<String, Object>) currentEntityResponse.getBody().data().items().get(0);
+    }
+    return this.getForm(resourceID, isReplacement, currentEntity);
+  }
+
+  /**
+   * Retrieve a blank form template for the resource.
+   * 
+   * @param resourceID    The target resource identifier for the instance class OR
+   *                      replacement value.
+   * @param isReplacement Indicates if the resource ID is a replacement value
+   *                      rather than a resource.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getForm(String resourceID, boolean isReplacement) {
+    return this.getForm(resourceID, isReplacement, new HashMap<>());
+  }
+
+  /**
+   * Retrieve the form template for the target entity and its information.
+   * 
+   * @param resourceID    The target resource identifier for the instance class OR
+   *                      replacement value.
+   * @param isReplacement Indicates if the resource ID is a replacement value
+   *                      rather than a resource.
+   * @param currentEntity Current default entity if available.
+   */
+  private ResponseEntity<StandardApiResponse<?>> getForm(String resourceID, boolean isReplacement,
+      Map<String, Object> currentEntity) {
+    LOGGER.debug("Retrieving the form template for {} ...", resourceID);
+    String query = this.queryTemplateService.getFormQuery(resourceID, isReplacement);
+    // SHACL restrictions for generating the form template always stored on a
+    // blazegraph namespace
+    List<String> endpoints = this.kgService.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
+    for (String endpoint : endpoints) {
+      LOGGER.debug("Querying at the endpoint {}...", endpoint);
+      // Execute the query on the current endpoint and get the result
+      ArrayNode formTemplateInputs = this.kgService.queryJsonLd(query, endpoint);
+      if (!formTemplateInputs.isEmpty()) {
+        Map<String, Object> results = this.queryTemplateService.genFormTemplate(formTemplateInputs, currentEntity);
+        LOGGER.info(SUCCESSFUL_REQUEST_MSG);
+        return this.responseEntityBuilder.success(null, results);
+      }
+    }
+    LOGGER.error(KGService.INVALID_SHACL_ERROR_MSG);
+    throw new IllegalStateException(KGService.INVALID_SHACL_ERROR_MSG);
   }
 }
