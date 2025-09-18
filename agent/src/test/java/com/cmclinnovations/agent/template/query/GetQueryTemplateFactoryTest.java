@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +28,7 @@ import com.cmclinnovations.agent.model.ShaclPropertyBindingTest;
 import com.cmclinnovations.agent.model.ShaclPropertyBindingTest.SparqlBindingTestParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
+import com.cmclinnovations.agent.utils.QueryResource;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -61,12 +63,12 @@ public class GetQueryTemplateFactoryTest {
   private static final String SAMPLE_ADDITIONAL_FIELD = "addProperty";
   private static final String SAMPLE_ADDITIONAL_STATEMENT = "?iri <http://example.com/addPath> ?"
       + SAMPLE_ADDITIONAL_FIELD + ".";
-  private static final Map<String, List<Integer>> SAMPLE_ADD_VARS = new HashMap<>();
+  private static final Map<Variable, List<Integer>> SAMPLE_ADD_VARS = new HashMap<>();
 
   @BeforeEach
   void setup() {
     this.testFactory = new GetQueryTemplateFactory(authService);
-    SAMPLE_ADD_VARS.put(SAMPLE_ADDITIONAL_FIELD, List.of(0, 0));
+    SAMPLE_ADD_VARS.put(QueryResource.genVariable(SAMPLE_ADDITIONAL_FIELD), List.of(0, 0));
   }
 
   @Test
@@ -274,9 +276,12 @@ public class GetQueryTemplateFactoryTest {
     this.testFactory.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
     // Assert
-    List<String> sequence = this.testFactory.getSequence();
-    assertEquals(5, sequence.size());
-    assertEquals(List.of("id", SAMPLE_FIELD, SAMPLE_GROUP_FIELD, SAMPLE_PARENT_FIELD, SAMPLE_OPTIONAL_FIELD), sequence);
+    List<Variable> sequence = this.testFactory.getSequence();
+    assertEquals(4, sequence.size());
+    assertEquals(List.of("id", SAMPLE_FIELD,
+        QueryResource.genVariable(SAMPLE_GROUP_FIELD).getVarName(),
+        QueryResource.genVariable(SAMPLE_OPTIONAL_FIELD).getVarName()),
+        sequence.stream().map(variable -> variable.getVarName()).toList());
   }
 
   /**

@@ -20,33 +20,36 @@ import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
-import com.cmclinnovations.agent.service.DeleteService;
+import com.cmclinnovations.agent.service.GetService;
+import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.application.LifecycleReportService;
 import com.cmclinnovations.agent.service.application.LifecycleService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
-import com.cmclinnovations.agent.utils.StringResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.fasterxml.jackson.databind.JsonNode;
 
 @RestController
 @RequestMapping("/contracts")
 public class LifecycleController {
   private final AddService addService;
+  private final GetService getService;
+  private final UpdateService updateService;
   private final DateTimeService dateTimeService;
-  private final DeleteService deleteService;
   private final LifecycleService lifecycleService;
   private final LifecycleReportService lifecycleReportService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final Logger LOGGER = LogManager.getLogger(LifecycleController.class);
 
-  public LifecycleController(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
-      LifecycleService lifecycleService, LifecycleReportService lifecycleReportService,
+  public LifecycleController(AddService addService, GetService getService, UpdateService updateService,
+      DateTimeService dateTimeService, LifecycleService lifecycleService, LifecycleReportService lifecycleReportService,
       ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
+    this.getService = getService;
+    this.updateService = updateService;
     this.dateTimeService = dateTimeService;
-    this.deleteService = deleteService;
     this.lifecycleService = lifecycleService;
     this.lifecycleReportService = lifecycleReportService;
     this.responseEntityBuilder = responseEntityBuilder;
@@ -58,11 +61,7 @@ public class LifecycleController {
    */
   @PostMapping("/draft")
   public ResponseEntity<StandardApiResponse<?>> genContractLifecycle(@RequestBody Map<String, Object> params) {
-    if (this.isInvalidParams(params, LifecycleResource.CONTRACT_KEY)) {
-      throw new IllegalArgumentException(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY,
-              LifecycleResource.CONTRACT_KEY));
-    }
+    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     // Add current date into parameters
     params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDate());
@@ -91,11 +90,7 @@ public class LifecycleController {
    */
   @PostMapping("/schedule")
   public ResponseEntity<StandardApiResponse<?>> genContractSchedule(@RequestBody Map<String, Object> params) {
-    if (this.isInvalidParams(params, LifecycleResource.CONTRACT_KEY)) {
-      throw new IllegalArgumentException(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY,
-              LifecycleResource.CONTRACT_KEY));
-    }
+    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     LOGGER.info("Received request to generate the schedule details for contract...");
     this.lifecycleService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
     ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(LifecycleResource.SCHEDULE_RESOURCE,
@@ -115,11 +110,7 @@ public class LifecycleController {
    */
   @PostMapping("/service/commence")
   public ResponseEntity<StandardApiResponse<?>> commenceContract(@RequestBody Map<String, Object> params) {
-    if (this.isInvalidParams(params, LifecycleResource.CONTRACT_KEY)) {
-      throw new IllegalArgumentException(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY,
-              LifecycleResource.CONTRACT_KEY));
-    }
+    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     LOGGER.info("Received request to commence the services for a contract...");
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     boolean hasError = this.lifecycleService.genOrderReceivedOccurrences(contractId);
@@ -156,11 +147,7 @@ public class LifecycleController {
   @PutMapping("/service/{type}")
   public ResponseEntity<StandardApiResponse<?>> assignDispatchDetails(@PathVariable String type,
       @RequestBody Map<String, Object> params) {
-    if (this.isInvalidParams(params, LifecycleResource.CONTRACT_KEY)) {
-      throw new IllegalArgumentException(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY,
-              LifecycleResource.CONTRACT_KEY));
-    }
+    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     LifecycleEventType eventType = null;
     switch (type.toLowerCase()) {
       case "complete":
@@ -192,20 +179,13 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> performServiceAction(@PathVariable String type,
       @RequestBody Map<String, Object> params) {
     // Common check for all routes
-    if (this.isInvalidParams(params, LifecycleResource.CONTRACT_KEY)) {
-      throw new IllegalArgumentException(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY,
-              LifecycleResource.CONTRACT_KEY));
-    }
+    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
+
     String successMsgId = "";
     switch (type.toLowerCase()) {
       case "cancel":
         LOGGER.info("Received request to cancel the upcoming service...");
-        if (this.isInvalidParams(params, LifecycleResource.DATE_KEY)) {
-          throw new IllegalArgumentException(
-              LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY,
-                  LifecycleResource.DATE_KEY));
-        }
+        this.checkMissingParams(params, LifecycleResource.DATE_KEY);
 
         // Service date selected for cancellation cannot be a past date
         if (this.dateTimeService.isFutureDate(this.dateTimeService.getCurrentDate(),
@@ -218,11 +198,7 @@ public class LifecycleController {
         break;
       case "report":
         LOGGER.info("Received request to report an unfulfilled service...");
-        if (this.isInvalidParams(params, LifecycleResource.DATE_KEY)) {
-          throw new IllegalArgumentException(
-              LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY,
-                  LifecycleResource.CONTRACT_KEY));
-        }
+        this.checkMissingParams(params, LifecycleResource.DATE_KEY);
         // Service date selected for reporting an issue cannot be a future date
         if (this.dateTimeService.isFutureDate(params.get(LifecycleResource.DATE_KEY).toString())) {
           throw new IllegalArgumentException(
@@ -252,7 +228,7 @@ public class LifecycleController {
    */
   @PostMapping("/service/continue")
   public ResponseEntity<StandardApiResponse<?>> continueTask(@RequestBody Map<String, Object> params) {
-    String taskId = params.get(StringResource.ID_KEY).toString();
+    String taskId = params.get(QueryResource.ID_KEY).toString();
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     return this.lifecycleService.continueTaskOnNextWorkingDay(taskId, contractId);
   }
@@ -262,11 +238,7 @@ public class LifecycleController {
    */
   @PostMapping("/archive/rescind")
   public ResponseEntity<StandardApiResponse<?>> rescindContract(@RequestBody Map<String, Object> params) {
-    if (this.isInvalidParams(params, LifecycleResource.CONTRACT_KEY)) {
-      throw new IllegalArgumentException(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY,
-              LifecycleResource.CONTRACT_KEY));
-    }
+    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     LOGGER.info("Received request to rescind the contract...");
     this.lifecycleService.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_RESCINDMENT);
     ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
@@ -285,11 +257,7 @@ public class LifecycleController {
    */
   @PostMapping("/archive/terminate")
   public ResponseEntity<StandardApiResponse<?>> terminateContract(@RequestBody Map<String, Object> params) {
-    if (this.isInvalidParams(params, LifecycleResource.CONTRACT_KEY)) {
-      throw new IllegalArgumentException(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY,
-              LifecycleResource.CONTRACT_KEY));
-    }
+    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     LOGGER.info("Received request to terminate the contract...");
     this.lifecycleService.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_TERMINATION);
     ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
@@ -318,31 +286,17 @@ public class LifecycleController {
   @PutMapping("/draft")
   public ResponseEntity<StandardApiResponse<?>> updateDraftContract(@RequestBody Map<String, Object> params) {
     LOGGER.info("Received request to update draft contract...");
-    String targetId = params.get(StringResource.ID_KEY).toString();
-    ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(LifecycleResource.LIFECYCLE_RESOURCE,
-        targetId);
-    if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
-      // Add current date into parameters
-      params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDate());
-      params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
-      ResponseEntity<StandardApiResponse<?>> addResponse = this.addService.instantiate(
-          LifecycleResource.LIFECYCLE_RESOURCE, targetId, params);
-      if (addResponse.getStatusCode() == HttpStatus.OK) {
-        LOGGER.info("The lifecycle of the contract has been successfully updated!");
-        // Execute request for schedule as well
-        ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.updateContractSchedule(params);
-        if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
-          LOGGER.info("Draft contract has been successfully updated!");
-          return this.responseEntityBuilder.success(scheduleResponse.getBody().data().id(),
-              LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY));
-        }
-        return scheduleResponse;
-      } else {
-        return addResponse;
-      }
-    } else {
-      return deleteResponse;
+    String targetId = params.get(QueryResource.ID_KEY).toString();
+    // Add current date into parameters
+    params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDate());
+    params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
+    ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.updateContractSchedule(params);
+    if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
+      return this.updateService.update(
+          targetId, LifecycleResource.LIFECYCLE_RESOURCE, LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY,
+          params);
     }
+    return scheduleResponse;
   }
 
   /**
@@ -352,22 +306,9 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> updateContractSchedule(@RequestBody Map<String, Object> params) {
     LOGGER.info("Received request to update a draft schedule...");
     this.lifecycleService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
-    String targetId = params.get(StringResource.ID_KEY).toString();
-    ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(LifecycleResource.SCHEDULE_RESOURCE,
-        targetId);
-    if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
-      ResponseEntity<StandardApiResponse<?>> addResponse = this.addService.instantiate(LifecycleResource.SCHEDULE_RESOURCE,
-          targetId, params);
-      if (addResponse.getStatusCode() == HttpStatus.CREATED) {
-        LOGGER.info("Draft schedule has been successfully updated!");
-        return this.responseEntityBuilder.success(addResponse.getBody().data().id(),
-            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY));
-      } else {
-        return addResponse;
-      }
-    } else {
-      return deleteResponse;
-    }
+    String targetId = params.get(QueryResource.ID_KEY).toString();
+    return this.updateService.update(targetId, LifecycleResource.SCHEDULE_RESOURCE,
+        LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY, params);
   }
 
   /**
@@ -468,94 +409,64 @@ public class LifecycleController {
   }
 
   /**
-   * Retrieves the form template for the dispatch order from the knowledge graph.
+   * Retrieves the form template for the specific occurrence type from the
+   * knowledge graph. Valid types include:
+   * 1) service stage - dispatch: Assign dispatch details to the service order
+   * 2) service stage - complete: Completes a specific service order
+   * 3) service stage - report: Reports an issue with the service order
+   * 4) service stage - cancel: Cancels the upcoming service order
+   * 5) archive stage - rescind: Rescind the entire contract
+   * 6) archive stage - terminate: Terminates the entire contract
+   * 
+   * The id represents the specific instance if required, else default to form.
    */
-  @GetMapping("/service/dispatch/form")
-  public ResponseEntity<StandardApiResponse<?>> getDispatchForm() {
-    LOGGER.info("Received request to get form template for order dispatch...");
+  @GetMapping("/{stage}/{type}/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getOccurrenceForm(@PathVariable String stage,
+      @PathVariable String type, @PathVariable String id) {
     // Access to this form is prefiltered on the UI and need not be enforced here
-    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_ORDER_DISPATCHED, null);
+    final record OrderType(String logOrderType, LifecycleEventType eventType) {
+    }
+    OrderType orderTypeParams = switch (stage.toLowerCase() + ";" + type.toLowerCase()) {
+      case "service;complete" -> new OrderType("for order completion details", LifecycleEventType.SERVICE_EXECUTION);
+      case "service;dispatch" -> new OrderType("for order dispatch", LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+      case "service;report" -> new OrderType("to report the order", LifecycleEventType.SERVICE_INCIDENT_REPORT);
+      case "service;cancel" -> new OrderType("to cancel the order", LifecycleEventType.SERVICE_CANCELLATION);
+      case "archive;rescind" -> new OrderType("to rescind the contract", LifecycleEventType.ARCHIVE_RESCINDMENT);
+      case "archive;terminate" -> new OrderType("to terminate the contract", LifecycleEventType.ARCHIVE_TERMINATION);
+      default -> throw new IllegalArgumentException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
+    };
+    LOGGER.info("Received request to get form template {}...", orderTypeParams.logOrderType);
+    String occurrenceId;
+    // If the id is form, attached itself to give blank form template
+    if (id.equals("form")) {
+      occurrenceId = id;
+      // Search for previous occurrence to retrieve
+    } else {
+      try {
+        occurrenceId = this.lifecycleService.getPreviousOccurrence(id, orderTypeParams.eventType);
+      } catch (NullPointerException e) {
+        // Fail silently to give blank form template given the missing previous
+        occurrenceId = "form";
+      }
+    }
+    // Provide blank form template
+    if (occurrenceId.equals("form")) {
+      return this.getService.getForm(orderTypeParams.eventType.getShaclReplacement(), true);
+    }
+    // If there is a previous occurrence, give a prepopulated form template
+    return this.getService.getForm(occurrenceId, orderTypeParams.eventType.getShaclReplacement(), true,
+        orderTypeParams.eventType);
   }
 
   /**
-   * Retrieve dispatch details for the specified event
+   * Checks for missing field in the request parameters. Throws an error if so.
    */
-  @GetMapping("/service/dispatch/{id}")
-  public ResponseEntity<StandardApiResponse<?>> getDispatchDetails(@PathVariable String id) {
-    LOGGER.info("Received request to get form template with order dispatch details...");
-    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_ORDER_DISPATCHED, id);
-  }
-
-  /**
-   * Retrieves the form template to complete an order from the knowledge graph.
-   */
-  @GetMapping("/service/complete/form")
-  public ResponseEntity<StandardApiResponse<?>> getOrderCompleteForm() {
-    LOGGER.info("Received request to get form template for order completion...");
-    // Access to this form is prefiltered on the UI and need not be enforced here
-    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_EXECUTION, null);
-  }
-
-  /**
-   * Retrieve the order complete details for the specified event
-   */
-  @GetMapping("/service/complete/{id}")
-  public ResponseEntity<StandardApiResponse<?>> getOrderCompleteDetails(@PathVariable String id) {
-    LOGGER.info("Received request to get form template with order completion details...");
-    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_EXECUTION, id);
-  }
-
-  /**
-   * Retrieves the form template to report the order from the knowledge graph.
-   */
-  @GetMapping("/service/report/form")
-  public ResponseEntity<StandardApiResponse<?>> getOrderReportForm() {
-    LOGGER.info("Received request to get form template to report the order...");
-    // Access to this form is prefiltered on the UI and need not be enforced here
-    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_INCIDENT_REPORT, null);
-  }
-
-  /**
-   * Retrieves the form template to cancel the order from the knowledge graph.
-   */
-  @GetMapping("/service/cancel/form")
-  public ResponseEntity<StandardApiResponse<?>> getOrderCancellationForm() {
-    LOGGER.info("Received request to get form template to cancel the order...");
-    // Access to this form is prefiltered on the UI and need not be enforced here
-    return this.lifecycleService.getForm(LifecycleEventType.SERVICE_CANCELLATION, null);
-  }
-
-  /**
-   * Retrieves the form template to rescind the contract from the knowledge graph.
-   */
-  @GetMapping("/archive/rescind/form")
-  public ResponseEntity<StandardApiResponse<?>> getContractRescissionForm() {
-    LOGGER.info("Received request to get form template to rescind the contract...");
-    // Access to this form is prefiltered on the UI and need not be enforced here
-    return this.lifecycleService.getForm(LifecycleEventType.ARCHIVE_RESCINDMENT, null);
-  }
-
-  /**
-   * Retrieves the form template to terminate the contract from the knowledge
-   * graph.
-   */
-  @GetMapping("/archive/terminate/form")
-  public ResponseEntity<StandardApiResponse<?>> getContractTerminationForm() {
-    LOGGER.info("Received request to get form template to terminate the contract...");
-    // Access to this form is prefiltered on the UI and need not be enforced here
-    return this.lifecycleService.getForm(LifecycleEventType.ARCHIVE_TERMINATION, null);
-  }
-
-  /**
-   * Validate if the request parameters are invalid or not. Returns true if
-   * invalid.
-   */
-  private boolean isInvalidParams(Map<String, Object> params, String field) {
-    // Checks for contract
+  private void checkMissingParams(Map<String, Object> params, String field) {
     if (!params.containsKey(field)) {
       LOGGER.error("Missing `{}` field in request parameters!", field);
-      return true;
+      throw new IllegalArgumentException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY, field));
     }
-    return false;
   }
 }

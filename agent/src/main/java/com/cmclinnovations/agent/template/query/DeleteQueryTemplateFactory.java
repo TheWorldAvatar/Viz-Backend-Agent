@@ -22,7 +22,6 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfSubject;
 
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.service.core.JsonLdService;
-import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -93,7 +92,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     // Code will attempt to retrieve existing query variable for the same prefix,
     // but if it is new, the variable will be incremented according to the mapping
     // size
-    if (replacementType.equals(LifecycleResource.IRI_KEY) && replacementNode.has("prefix")) {
+    if (replacementType.equals(QueryResource.IRI_KEY) && replacementNode.has("prefix")) {
       // Generates a mapping key based on the replacement name and its prefix
       String mappingKey = replacementId + replacementNode.path("prefix").asText();
       String idVar = this.anonymousVariableMappings.computeIfAbsent(mappingKey,
@@ -339,7 +338,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
   private ObjectNode genBlankNode() {
     ObjectNode blankNode = this.jsonLdService.genObjectNode();
     blankNode.put(ShaclResource.REPLACE_KEY, String.valueOf(this.anonymousVariableMappings.size()));
-    blankNode.put(ShaclResource.TYPE_KEY, LifecycleResource.IRI_KEY);
+    blankNode.put(ShaclResource.TYPE_KEY, QueryResource.IRI_KEY);
     return blankNode;
   }
 

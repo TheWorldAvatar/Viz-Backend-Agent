@@ -58,6 +58,7 @@ public class QueryResource {
     public static final Iri CMNS_DSG_DESCRIBES = CMNS_DSG.iri("describes");
     public static final Iri CMNS_DT_HAS_DATE_VALUE = CMNS_DT.iri("hasDateValue");
     public static final Iri CMNS_DT_HAS_TIME_PERIOD = CMNS_DT.iri("hasTimePeriod");
+    public static final Iri CMNS_DT_SUCCEEDS = CMNS_DT.iri("succeeds");
     public static final Iri DC_TERM_ID = DC_TERM.iri("identifier");
     public static final Iri FIBO_FND_ARR_LIF_HAS_LIFECYCLE = FIBO_FND_ARR_LIF.iri("hasLifecycle");
     public static final Iri FIBO_FND_ARR_LIF_HAS_STAGE = FIBO_FND_ARR_LIF.iri("hasStage");
@@ -65,8 +66,10 @@ public class QueryResource {
     public static final Iri FIBO_FND_REL_REL_EXEMPLIFIES = FIBO_FND_REL_REL.iri("exemplifies");
     public static final Iri REPLACEMENT_PREDICATE = Rdf.iri("http://replacement/org/replace");
 
-    public static final Variable ID_VAR = SparqlBuilder.var("id");
-    public static final Variable IRI_VAR = SparqlBuilder.var("iri");
+    public static final String IRI_KEY = "iri";
+    public static final Variable IRI_VAR = SparqlBuilder.var(IRI_KEY);
+    public static final String ID_KEY = "id";
+    public static final Variable ID_VAR = SparqlBuilder.var(ID_KEY);
 
     // Private constructor to prevent instantiation
     private QueryResource() {

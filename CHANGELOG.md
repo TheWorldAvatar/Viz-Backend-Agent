@@ -1,5 +1,20 @@
 # Change Log
 
+## 1.13.1
+
+### Changes
+
+- Hides any group fields
+- Add function to clean up previous derivations before adding new derivations
+- General code maintenance
+
+### Bug fixes
+
+- Fixed amending of completed assignments and completion details
+- Fixed saving of completion details
+- Fixed retrieval of previous details, especially within sh:node groups
+- Fixed derivation of literals
+
 ## 1.13.0
 
 ### Changes

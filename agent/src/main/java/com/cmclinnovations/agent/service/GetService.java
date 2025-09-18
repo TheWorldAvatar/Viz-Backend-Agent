@@ -7,6 +7,7 @@ import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -23,7 +24,6 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
-import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -71,7 +71,7 @@ public class GetService {
    *                     fields that are IRIs.
    */
   public Queue<SparqlBinding> getInstances(String resourceID, ParentField parentField, String targetId,
-      String addQueryStatements, boolean requireLabel, Map<String, List<Integer>> addVars) {
+      String addQueryStatements, boolean requireLabel, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     if (requireLabel) {
       // Parent related parameters should be disabled
@@ -94,9 +94,9 @@ public class GetService {
     if (results.size() > 1) {
       // When there is more than one results, verify if they can be grouped
       // as results might contain an array of different values for the same instance
-      String firstId = results.peek().getFieldValue(LifecycleResource.IRI_KEY);
+      String firstId = results.peek().getFieldValue(QueryResource.IRI_KEY);
       boolean isGroup = results.stream().allMatch(binding -> {
-        String currentId = binding.getFieldValue(LifecycleResource.IRI_KEY);
+        String currentId = binding.getFieldValue(QueryResource.IRI_KEY);
         return currentId != null && currentId.equals(firstId);
       });
       if (!isGroup) {
@@ -171,11 +171,11 @@ public class GetService {
    *                           query, along with their order sequence
    */
   private Queue<SparqlBinding> getInstances(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
-      ParentField parentField, String addQueryStatements, Map<String, List<Integer>> addVars) {
+      ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     Queue<String> getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetId,
         parentField, addQueryStatements, addVars);
     LOGGER.debug("Querying the knowledge graph for the instances...");
-    List<String> varSequence = this.queryTemplateService.getFieldSequence();
+    List<Variable> varSequence = this.queryTemplateService.getFieldSequence();
     // Query for direct instances
     Queue<SparqlBinding> instances = this.kgService.query(getQuery.poll(), SparqlEndpointType.MIXED);
     // Query for secondary instances ie instances that are subclasses of parent
@@ -224,35 +224,6 @@ public class GetService {
   }
 
   /**
-   * Retrieve the form template for the target entity and its information.
-   * 
-   * @param resourceID    The target resource identifier for the instance class.
-   * @param isReplacement Indicates if the resource ID is a replacement value
-   *                      rather than a resource.
-   * @param currentEntity Current default entity if available.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getForm(String resourceID, boolean isReplacement,
-      Map<String, Object> currentEntity) {
-    LOGGER.debug("Retrieving the form template for {} ...", resourceID);
-    String query = this.queryTemplateService.getFormQuery(resourceID, isReplacement);
-    // SHACL restrictions for generating the form template always stored on a
-    // blazegraph namespace
-    List<String> endpoints = this.kgService.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
-    for (String endpoint : endpoints) {
-      LOGGER.debug("Querying at the endpoint {}...", endpoint);
-      // Execute the query on the current endpoint and get the result
-      ArrayNode formTemplateInputs = this.kgService.queryJsonLd(query, endpoint);
-      if (!formTemplateInputs.isEmpty()) {
-        Map<String, Object> results = this.queryTemplateService.genFormTemplate(formTemplateInputs, currentEntity);
-        LOGGER.info(SUCCESSFUL_REQUEST_MSG);
-        return this.responseEntityBuilder.success(null, results);
-      }
-    }
-    LOGGER.error(KGService.INVALID_SHACL_ERROR_MSG);
-    throw new IllegalStateException(KGService.INVALID_SHACL_ERROR_MSG);
-  }
-
-  /**
    * Retrieve the metadata (IRI, label, and description) of the concept associated
    * with the target resource. This will return their current or sub-classes.
    * 
@@ -293,7 +264,76 @@ public class GetService {
     LOGGER.info(SUCCESSFUL_REQUEST_MSG);
     return this.responseEntityBuilder.success(
         results.stream()
-            .map(binding -> binding.getFieldValue(LifecycleResource.IRI_KEY))
+            .map(binding -> binding.getFieldValue(QueryResource.IRI_KEY))
             .toList());
+  }
+
+  /**
+   * Retrieve the form template for the target entity instance.
+   * 
+   * @param targetId      The target instance identifier OR replacement value.
+   * @param resourceID    The target resource identifier for the instance class.
+   * @param isReplacement Indicates if the resource ID is a replacement value
+   *                      rather than a resource.
+   * @param eventType     Optional event type for lifecycle related queries.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getForm(String targetId, String resourceID,
+      boolean isReplacement, LifecycleEventType eventType) {
+    LOGGER.debug("Retrieving the form template for {} ...", resourceID);
+    Map<String, Object> currentEntity = new HashMap<>();
+    ResponseEntity<StandardApiResponse<?>> currentEntityResponse;
+    if (eventType == null) {
+      LOGGER.debug("Retrieving target instance of {}...", resourceID);
+      currentEntityResponse = this.getInstance(targetId, resourceID, false);
+    } else {
+      LOGGER.debug("Retrieving target event occurrence of {}...", eventType);
+      currentEntityResponse = this.getInstance(targetId, eventType);
+    }
+    if (currentEntityResponse.getStatusCode() == HttpStatus.OK) {
+      currentEntity = (Map<String, Object>) currentEntityResponse.getBody().data().items().get(0);
+    }
+    return this.getForm(resourceID, isReplacement, currentEntity);
+  }
+
+  /**
+   * Retrieve a blank form template for the resource.
+   * 
+   * @param resourceID    The target resource identifier for the instance class OR
+   *                      replacement value.
+   * @param isReplacement Indicates if the resource ID is a replacement value
+   *                      rather than a resource.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getForm(String resourceID, boolean isReplacement) {
+    return this.getForm(resourceID, isReplacement, new HashMap<>());
+  }
+
+  /**
+   * Retrieve the form template for the target entity and its information.
+   * 
+   * @param resourceID    The target resource identifier for the instance class OR
+   *                      replacement value.
+   * @param isReplacement Indicates if the resource ID is a replacement value
+   *                      rather than a resource.
+   * @param currentEntity Current default entity if available.
+   */
+  private ResponseEntity<StandardApiResponse<?>> getForm(String resourceID, boolean isReplacement,
+      Map<String, Object> currentEntity) {
+    LOGGER.debug("Retrieving the form template for {} ...", resourceID);
+    String query = this.queryTemplateService.getFormQuery(resourceID, isReplacement);
+    // SHACL restrictions for generating the form template always stored on a
+    // blazegraph namespace
+    List<String> endpoints = this.kgService.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
+    for (String endpoint : endpoints) {
+      LOGGER.debug("Querying at the endpoint {}...", endpoint);
+      // Execute the query on the current endpoint and get the result
+      ArrayNode formTemplateInputs = this.kgService.queryJsonLd(query, endpoint);
+      if (!formTemplateInputs.isEmpty()) {
+        Map<String, Object> results = this.queryTemplateService.genFormTemplate(formTemplateInputs, currentEntity);
+        LOGGER.info(SUCCESSFUL_REQUEST_MSG);
+        return this.responseEntityBuilder.success(null, results);
+      }
+    }
+    LOGGER.error(KGService.INVALID_SHACL_ERROR_MSG);
+    throw new IllegalStateException(KGService.INVALID_SHACL_ERROR_MSG);
   }
 }

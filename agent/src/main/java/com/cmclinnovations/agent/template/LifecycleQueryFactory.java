@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.template;
 
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.ModifyQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
@@ -171,21 +172,17 @@ public class LifecycleQueryFactory {
 
   /**
    * Retrieves the SPARQL query to retrieve the event instance associated with the
-   * target event type for a specific contract.
+   * target event type for a specific contract and date.
    * 
    * @param contract  The input contract instance.
-   * @param date      Optional date for filtering.
-   * @param taskId    Optional identifier of the final task for filtering.
+   * @param date      Date for filtering.
    * @param eventType The target event type to retrieve.
    */
-  public String getContractEventQuery(String contract, String date, String taskId, LifecycleEventType eventType) {
+  public String getContractEventQuery(String contract, String date, LifecycleEventType eventType) {
     String dateFilter = "";
     if (date != null) {
       dateFilter = "FILTER(xsd:date(?date)=\"" + date + "\"^^xsd:date)";
     }
-    String finalTaskIdFilter = taskId != null
-        ? QueryResource.DC_TERM_ID.getQueryString() + " " + Rdf.literalOf(taskId).getQueryString() + ";"
-        : "";
     return QueryResource.PREFIX_TEMPLATE +
         "SELECT DISTINCT ?iri ?id WHERE{" +
         "?contract dc-terms:identifier \"" + contract + "\";" +
@@ -195,12 +192,30 @@ public class LifecycleQueryFactory {
         "?event fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;" +
         "^cmns-dt:succeeds* ?final_event;" +
         "^cmns-dt:succeeds* ?iri." +
-        "?final_event " + finalTaskIdFilter + "fibo-fnd-dt-oc:hasEventDate ?date." +
+        "?final_event fibo-fnd-dt-oc:hasEventDate ?date." +
         "?iri dc-terms:identifier ?id;" +
         "fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
         dateFilter +
         "MINUS{?final_event ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}" +
         "}";
+  }
+
+  /**
+   * Retrieves the SPARQL query to retrieve the specific event occurrence instance
+   * associated with the target event type based on the latest event id.
+   * 
+   * @param latestEventId The identifier of the latest event in the succeeds
+   *                      chain.
+   * @param eventType     The target event type to retrieve.
+   */
+  public String getContractEventQuery(String latestEventId, LifecycleEventType eventType) {
+    Variable eventVar = SparqlBuilder.var(LifecycleResource.EVENT_KEY);
+    return QueryResource.getSelectQuery(true, null).select(QueryResource.IRI_VAR, QueryResource.ID_VAR)
+        .where(eventVar.has(QueryResource.DC_TERM_ID, Rdf.literalOf(latestEventId))
+            .andHas(p -> p.pred(QueryResource.CMNS_DT_SUCCEEDS).zeroOrMore(), QueryResource.IRI_VAR))
+        .where(QueryResource.IRI_VAR.has(QueryResource.DC_TERM_ID, QueryResource.ID_VAR)
+            .andHas(p -> p.pred(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES), Rdf.iri(eventType.getEvent())))
+        .getQueryString();
   }
 
   /**

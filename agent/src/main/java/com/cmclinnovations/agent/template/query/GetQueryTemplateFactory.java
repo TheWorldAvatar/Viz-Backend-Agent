@@ -61,16 +61,16 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       selectVariables.add(QueryResource.IRI_VAR);
       selectVariables.add(QueryResource.ID_VAR);
       super.variables.forEach(variable -> selectVariables.add(variable));
-      params.addVars().forEach((field, fieldSequence) -> selectVariables.add(QueryResource.genVariable(field)));
+      params.addVars().forEach((field, fieldSequence) -> selectVariables.add(field));
     } else {
       super.varSequence.putAll(params.addVars());
-      List<String> sortedSequence = new ArrayList<>(super.varSequence.keySet());
+      List<Variable> sortedSequence = new ArrayList<>(super.varSequence.keySet());
       sortedSequence
           .sort((key1, key2) -> ShaclResource.compareLists(super.varSequence.get(key1), super.varSequence.get(key2)));
-      sortedSequence.add(0, StringResource.ID_KEY);
+      sortedSequence.add(0, QueryResource.ID_VAR);
       // Add variables
       sortedSequence
-          .forEach(variable -> selectVariables.add(QueryResource.genVariable(variable)));
+          .forEach(variable -> selectVariables.add(variable));
       super.setSequence(sortedSequence);
     }
 

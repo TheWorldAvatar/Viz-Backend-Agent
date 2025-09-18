@@ -31,10 +31,9 @@ import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
-import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
-import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -73,7 +72,7 @@ public class AddService {
    * @param param      Request parameters.
    */
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, Map<String, Object> param) {
-    String id = param.getOrDefault(StringResource.ID_KEY, UUID.randomUUID()).toString();
+    String id = param.getOrDefault(QueryResource.ID_KEY, UUID.randomUUID()).toString();
     return instantiate(resourceID, id, param);
   }
 
@@ -89,7 +88,7 @@ public class AddService {
       Map<String, Object> param) {
     LOGGER.info("Instantiating an instance of {} ...", resourceID);
     // Update ID value to target ID
-    param.put(StringResource.ID_KEY, targetId);
+    param.put(QueryResource.ID_KEY, targetId);
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
     // Attempt to replace all placeholders in the JSON schema
@@ -196,7 +195,7 @@ public class AddService {
           }
           // IRIs that are not assigned to @id or @type should belong within a nested @id
           // object
-        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(LifecycleResource.IRI_KEY)
+        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(QueryResource.IRI_KEY)
             && !(parentField.equals(ShaclResource.ID_KEY) || parentField.equals(ShaclResource.TYPE_KEY))) {
           String replacement = this.jsonLdService.getReplacementValue(currentNode, replacements);
           if (replacement.isEmpty()) { // Remove empty replacements
@@ -361,7 +360,7 @@ public class AddService {
       // Copy the template to prevent any modification
       ObjectNode currentArrayItem = arrayTemplate.deepCopy();
       arrayField.putAll(replacements);// place existing replacements into the array mappings
-      arrayField.put(StringResource.ID_KEY, UUID.randomUUID()); // generate a new ID key for each item in the array
+      arrayField.put(QueryResource.ID_KEY, UUID.randomUUID()); // generate a new ID key for each item in the array
       this.recursiveReplacePlaceholders(currentArrayItem, null, null, arrayField);
       resultArray.add(currentArrayItem);
     });

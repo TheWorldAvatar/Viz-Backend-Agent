@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
@@ -18,7 +19,6 @@ public class LifecycleResource {
   public static final String OCCURRENCE_INSTANT_RESOURCE = "occurrence instant";
   public static final String OCCURRENCE_LINK_RESOURCE = "occurrence link";
 
-  public static final String IRI_KEY = "iri";
   public static final String INSTANCE_KEY = "id_instance";
   public static final String CONTRACT_KEY = "contract";
   public static final String ORDER_KEY = "order";
@@ -77,9 +77,9 @@ public class LifecycleResource {
    */
   public static void genIdAndInstanceParameters(String prefix, LifecycleEventType eventType,
       Map<String, Object> params) {
-    String identifier = params.containsKey(StringResource.ID_KEY) ? params.get(StringResource.ID_KEY).toString()
+    String identifier = params.containsKey(QueryResource.ID_KEY) ? params.get(QueryResource.ID_KEY).toString()
         : UUID.randomUUID().toString();
-    params.putIfAbsent(StringResource.ID_KEY, identifier);
+    params.putIfAbsent(QueryResource.ID_KEY, identifier);
     params.put(LifecycleResource.INSTANCE_KEY,
         prefix + "/" + eventType.getId() + "/" + identifier);
   }
@@ -126,7 +126,7 @@ public class LifecycleResource {
    * @param query      Target query for extraction.
    * @param groupIndex The group index for the variables.
    */
-  public static Map<String, List<Integer>> extractOccurrenceVariables(String query, int groupIndex) {
+  public static Map<Variable, List<Integer>> extractOccurrenceVariables(String query, int groupIndex) {
     Pattern pattern = Pattern.compile("SELECT\\s+DISTINCT\\s+(.*?)\\s+WHERE", Pattern.DOTALL);
     Matcher matcher = pattern.matcher(query);
 
@@ -135,13 +135,13 @@ public class LifecycleResource {
     }
     String selectClause = matcher.group(1).trim();
     String[] variables = selectClause.split("\\s?\\?");
-    Map<String, List<Integer>> varSequence = new HashMap<>();
+    Map<Variable, List<Integer>> varSequence = new HashMap<>();
     for (int i = 0; i < variables.length; i++) {
       String varName = variables[i].trim();
-      if (varName.isEmpty() || varName.equals(StringResource.ID_KEY)) {
+      if (varName.isEmpty() || varName.equals(QueryResource.ID_KEY)) {
         continue; // Skip empty variables and ID key
       }
-      varSequence.put(varName, List.of(groupIndex, i));
+      varSequence.put(QueryResource.genVariable(varName), List.of(groupIndex, i));
     }
     return varSequence;
   }

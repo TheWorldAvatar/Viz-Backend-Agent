@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.Lang;
@@ -43,7 +44,6 @@ import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
-import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.stack.clients.blazegraph.BlazegraphClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -301,9 +301,14 @@ public class KGService {
       // the WHERE clause
       String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery);
       Queue<SparqlBinding> results = this.query(queryForExecution, SparqlEndpointType.MIXED);
+      List<Triple> tripleList = this.shaclRuleProcesser.genConstructTriples(currentQuery);
+      // Generate the delete where query templates
+      String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList);
       // Using the results of the SELECT query as replacements to the CONSTRUCT
       // clause, generate the INSERT DATA query
-      String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(currentQuery, results);
+      String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(tripleList, results);
+      // Execute updates after the queries are generated to prevent incomplete query
+      this.executeUpdate(deleteWhereQuery);
       this.executeUpdate(insertDataQuery);
     }
   }
@@ -403,8 +408,8 @@ public class KGService {
       // Extend to get the next level of shape if any
       replacementShapePath = replacementShapePath.isEmpty() ? " ?nestedshape." +
           "OPTIONAL{?nestedshape twa:role ?nestedrole.}" +
-          "?nestedshape sh:name ?" + ShaclResource.NODE_GROUP_VAR + ";sh:node/sh:targetClass ?"
-          + ShaclResource.NESTED_CLASS_VAR + ";" + SUB_SHAPE_PATH
+          "OPTIONAL{?nestedshape sh:node/sh:targetClass ?" + ShaclResource.NESTED_CLASS_VAR +
+          ".}?nestedshape sh:name ?" + ShaclResource.NODE_GROUP_VAR + ";" + SUB_SHAPE_PATH
           : "/" + SUB_SHAPE_PATH + replacementShapePath;
     }
     if (results.isEmpty()) {
@@ -433,9 +438,9 @@ public class KGService {
     Map<String, List<SparqlBinding>> groupedBindings = Stream.concat(firstQueue.stream(), secQueue.stream())
         .distinct()
         .collect(Collectors.groupingBy(binding -> {
-          String id = binding.containsField(LifecycleResource.IRI_KEY)
-              ? binding.getFieldValue(LifecycleResource.IRI_KEY)
-              : binding.getFieldValue(StringResource.ID_KEY);
+          String id = binding.containsField(QueryResource.IRI_KEY)
+              ? binding.getFieldValue(QueryResource.IRI_KEY)
+              : binding.getFieldValue(QueryResource.ID_KEY);
           // If this is a lifecycle event occurrence, group them by date and id
           if (binding.containsField(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY).getVarName())) {
             return id + binding.getFieldValue(LifecycleResource.DATE_KEY);
