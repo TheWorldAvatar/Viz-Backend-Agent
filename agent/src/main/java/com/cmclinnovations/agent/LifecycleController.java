@@ -426,13 +426,13 @@ public class LifecycleController {
     // Access to this form is prefiltered on the UI and need not be enforced here
     final record OrderType(String logOrderType, LifecycleEventType eventType) {
     }
-    OrderType orderTypeParams = switch (stage.toLowerCase() + type.toLowerCase()) {
-      case "servicecomplete" -> new OrderType("for order completion details", LifecycleEventType.SERVICE_EXECUTION);
-      case "servicedispatch" -> new OrderType("for order dispatch", LifecycleEventType.SERVICE_ORDER_DISPATCHED);
-      case "servicereport" -> new OrderType("to report the order", LifecycleEventType.SERVICE_INCIDENT_REPORT);
-      case "servicecancel" -> new OrderType("to cancel the order", LifecycleEventType.SERVICE_CANCELLATION);
-      case "archiverescind" -> new OrderType("to rescind the contract", LifecycleEventType.ARCHIVE_RESCINDMENT);
-      case "archiveterminate" -> new OrderType("to terminate the contract", LifecycleEventType.ARCHIVE_TERMINATION);
+    OrderType orderTypeParams = switch (stage.toLowerCase() + ";" + type.toLowerCase()) {
+      case "service;complete" -> new OrderType("for order completion details", LifecycleEventType.SERVICE_EXECUTION);
+      case "service;dispatch" -> new OrderType("for order dispatch", LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+      case "service;report" -> new OrderType("to report the order", LifecycleEventType.SERVICE_INCIDENT_REPORT);
+      case "service;cancel" -> new OrderType("to cancel the order", LifecycleEventType.SERVICE_CANCELLATION);
+      case "archive;rescind" -> new OrderType("to rescind the contract", LifecycleEventType.ARCHIVE_RESCINDMENT);
+      case "archive;terminate" -> new OrderType("to terminate the contract", LifecycleEventType.ARCHIVE_TERMINATION);
       default -> throw new IllegalArgumentException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     };
