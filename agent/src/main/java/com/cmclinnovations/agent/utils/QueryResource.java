@@ -64,7 +64,6 @@ public class QueryResource {
     public static final Iri FIBO_FND_ARR_LIF_HAS_STAGE = FIBO_FND_ARR_LIF.iri("hasStage");
     public static final Iri FIBO_FND_DT_FD_HAS_SCHEDULE = FIBO_FND_DT_FD.iri("hasSchedule");
     public static final Iri FIBO_FND_REL_REL_EXEMPLIFIES = FIBO_FND_REL_REL.iri("exemplifies");
-    public static final Iri REPLACEMENT_PREDICATE = Rdf.iri("http://replacement/org/replace");
 
     public static final String IRI_KEY = "iri";
     public static final Variable IRI_VAR = SparqlBuilder.var(IRI_KEY);

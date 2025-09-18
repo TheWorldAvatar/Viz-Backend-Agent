@@ -1,4 +1,0 @@
-SELECT DISTINCT ?iri 
-WHERE { ?iri <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> / <http://www.w3.org/2000/01/rdf-schema#subClassOf>* <http://example.com/Concept> .
-    ?iri <http://example.com/propPath1> / <http://example.com/propPath2> ?field .
-    FILTER ( STR( ?field ) = "01j82" ) }

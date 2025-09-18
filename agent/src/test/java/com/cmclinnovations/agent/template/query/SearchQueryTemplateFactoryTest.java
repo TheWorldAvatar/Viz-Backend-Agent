@@ -53,17 +53,13 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = this.testFactory.write(
+        String results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings, new HashMap<>()));
         // Assert
-        assertEquals(2, results.size());
         assertEquals(
                 TestUtils.ONE_LINE_PREFIX_TEMPLATE
                         + "SELECT DISTINCT ?iriWHERE { ?iri a <http://example.com/Concept> .?iri <http://example.com/propPath1> / <http://example.com/propPath2> ?field . }",
-                results.poll().replace("\n", ""));
-        assertEquals(TestUtils.ONE_LINE_PREFIX_TEMPLATE +
-                "SELECT DISTINCT ?iriWHERE { ?iri <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> / <http://www.w3.org/2000/01/rdf-schema#subClassOf>* <http://example.com/Concept> .?iri <http://example.com/propPath1> / <http://example.com/propPath2> ?field . }",
-                results.poll().replace("\n", ""));
+                results.replace("\n", ""));
     }
 
     @Test
@@ -71,7 +67,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = this.testFactory.write(
+        String results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings,
                         genCriterias(SAMPLE_FIELD, SAMPLE_FILTER)));
         // Assert
@@ -82,7 +78,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = this.testFactory.write(
+        String results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings,
                         this.genMinMaxCriterias(SAMPLE_FIELD, SAMPLE_MIN_VAL, SAMPLE_MAX_VAL)));
         // Assert
@@ -95,7 +91,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = this.testFactory.write(
+        String results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings,
                         this.genMinMaxCriterias(SAMPLE_FIELD, SAMPLE_MIN_VAL, null)));
         // Assert
@@ -108,7 +104,7 @@ public class SearchQueryTemplateFactoryTest {
         // Set up
         Queue<Queue<SparqlBinding>> testBindings = initTestBindings();
         // Execute
-        Queue<String> results = this.testFactory.write(
+        String results = this.testFactory.write(
                 new QueryTemplateFactoryParameters(testBindings,
                         this.genMinMaxCriterias(SAMPLE_FIELD, null, SAMPLE_MAX_VAL)));
         // Assert

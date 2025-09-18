@@ -420,23 +420,19 @@ public class KGService {
   }
 
   /**
-   * Combine two queues containing SparlBinding objects. The method also removes
-   * duplicates in the combined queue.
+   * Combine the array values in SparlBinding objects.
    * 
    * @param firstQueue The first target queue.
-   * @param secQueue   The second target queue.
    * @param arrayVars  Mappings between each array group and their individual
    *                   fields.
    */
-  public Queue<SparqlBinding> combineBindingQueue(Queue<SparqlBinding> firstQueue, Queue<SparqlBinding> secQueue,
-      Map<String, Set<String>> arrayVars) {
-    if (firstQueue.isEmpty() && secQueue.isEmpty()) {
-      return new ArrayDeque<>();
+  public Queue<SparqlBinding> combineBindingQueue(Queue<SparqlBinding> firstQueue, Map<String, Set<String>> arrayVars) {
+    if (firstQueue.isEmpty()) {
+      return firstQueue;
     }
     Queue<SparqlBinding> result = new ArrayDeque<>();
     // Group them by the IRI key
-    Map<String, List<SparqlBinding>> groupedBindings = Stream.concat(firstQueue.stream(), secQueue.stream())
-        .distinct()
+    Map<String, List<SparqlBinding>> groupedBindings = firstQueue.stream()
         .collect(Collectors.groupingBy(binding -> {
           String id = binding.containsField(QueryResource.IRI_KEY)
               ? binding.getFieldValue(QueryResource.IRI_KEY)

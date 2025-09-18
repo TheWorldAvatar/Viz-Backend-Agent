@@ -45,7 +45,7 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
    *                  be in the template.
    * @param criterias All the required search criteria.
    */
-  public Queue<String> write(QueryTemplateFactoryParameters params) {
+  public String write(QueryTemplateFactoryParameters params) {
     LOGGER.info("Generating a query template for getting the data that matches the search criteria...");
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);

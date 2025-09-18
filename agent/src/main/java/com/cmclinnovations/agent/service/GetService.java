@@ -172,16 +172,13 @@ public class GetService {
    */
   private Queue<SparqlBinding> getInstances(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
       ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
-    Queue<String> getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetId,
+    String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetId,
         parentField, addQueryStatements, addVars);
     LOGGER.debug("Querying the knowledge graph for the instances...");
     List<Variable> varSequence = this.queryTemplateService.getFieldSequence();
     // Query for direct instances
-    Queue<SparqlBinding> instances = this.kgService.query(getQuery.poll(), SparqlEndpointType.MIXED);
-    // Query for secondary instances ie instances that are subclasses of parent
-    Queue<SparqlBinding> secondaryInstances = this.kgService.query(getQuery.poll(), SparqlEndpointType.BLAZEGRAPH);
-    instances = this.kgService.combineBindingQueue(instances, secondaryInstances,
-        this.queryTemplateService.getArrayVariables());
+    Queue<SparqlBinding> instances = this.kgService.query(getQuery, SparqlEndpointType.MIXED);
+    instances = this.kgService.combineBindingQueue(instances, this.queryTemplateService.getArrayVariables());
     // If there is a variable sequence available, add the sequence to each binding,
     if (!varSequence.isEmpty()) {
       instances.forEach(instance -> instance.addSequence(varSequence));
@@ -197,7 +194,7 @@ public class GetService {
    *                         instance.
    * @param requireLabel     Indicates if labels should be returned
    */
-  public Queue<String> getQuery(String shaclReplacement, String targetId, boolean requireLabel) {
+  public String getQuery(String shaclReplacement, String targetId, boolean requireLabel) {
     String query = this.queryTemplateService.getShaclQuery(requireLabel, shaclReplacement);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
     return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, targetId,
@@ -255,12 +252,9 @@ public class GetService {
     LOGGER.debug("Retrieving the form template for {} ...", resourceID);
     String query = this.queryTemplateService.getShaclQuery(resourceID, false);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    Queue<String> searchQuery = this.queryTemplateService.genSearchQuery(nestedVariablesAndPropertyPaths, criterias);
+    String searchQuery = this.queryTemplateService.genSearchQuery(nestedVariablesAndPropertyPaths, criterias);
     // Query for direct instances
-    Queue<SparqlBinding> results = this.kgService.query(searchQuery.poll(), SparqlEndpointType.MIXED);
-    // Query for secondary instances ie instances that are subclasses of parent
-    Queue<SparqlBinding> secondaryInstances = this.kgService.query(searchQuery.poll(), SparqlEndpointType.BLAZEGRAPH);
-    results.addAll(secondaryInstances);
+    Queue<SparqlBinding> results = this.kgService.query(searchQuery, SparqlEndpointType.MIXED);
     LOGGER.info(SUCCESSFUL_REQUEST_MSG);
     return this.responseEntityBuilder.success(
         results.stream()

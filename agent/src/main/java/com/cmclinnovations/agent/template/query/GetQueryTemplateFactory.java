@@ -3,7 +3,6 @@ package com.cmclinnovations.agent.template.query;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,7 +48,7 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    *               addVars - Optional additional variables to be included in the
    *               query, along with their order sequence
    */
-  public Queue<String> write(QueryTemplateFactoryParameters params) {
+  public String write(QueryTemplateFactoryParameters params) {
     LOGGER.info("Generating a query template for getting data...");
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);

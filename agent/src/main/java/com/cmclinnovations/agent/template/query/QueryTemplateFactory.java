@@ -9,8 +9,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expression;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
@@ -82,7 +80,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    *                           added if available.
    * @param variables          List of variables for the SELECT clause.
    */
-  protected Queue<String> genFederatedQuery(String targetClass, List<GraphPattern> whereContents,
+  protected String genFederatedQuery(String targetClass, List<GraphPattern> whereContents,
       String additionalPatterns, Variable... variables) {
     return genFederatedQuery(targetClass, whereContents, additionalPatterns, new ArrayDeque<>(), variables);
   }
@@ -99,47 +97,31 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    * @param filters            Optional filter expressions if any.
    * @param variables          List of variables for the SELECT clause.
    */
-  protected Queue<String> genFederatedQuery(String targetClass, List<GraphPattern> whereContents,
+  protected String genFederatedQuery(String targetClass, List<GraphPattern> whereContents,
       String additionalPatterns, Queue<Expression<?>> filters, Variable... variables) {
-    Queue<String> results = new ArrayDeque<>();
     Iri targetClassIri = Rdf.iri(targetClass);
-    // Generate first triple patterns
     GraphPattern mixedEndpointPattern = QueryResource.IRI_VAR.isA(targetClassIri);
-    GraphPattern sparqlEndpointPattern = QueryResource.IRI_VAR.has(p -> p.pred(RDF.TYPE)
-        .then(RDFS.SUBCLASSOF).zeroOrMore(), targetClassIri);
+
     // Add filters directly to these if available
     while (!filters.isEmpty()) {
       Expression<?> filterExpression = filters.poll();
       mixedEndpointPattern = mixedEndpointPattern.filter(filterExpression);
-      sparqlEndpointPattern = sparqlEndpointPattern.filter(filterExpression);
     }
 
     GraphPattern[] wherePatterns = whereContents.toArray(new GraphPattern[0]);
-    // For mixed endpoints with Ontop which does not support property paths
-    SelectQuery selectTemplateMixedEndpoints = QueryResource.getSelectQuery();
-    selectTemplateMixedEndpoints.select(variables)
+
+    SelectQuery selectTemplateMixedEndpoints = QueryResource.getSelectQuery()
+        .select(variables)
         .distinct()
         .where(mixedEndpointPattern)
         .where(wherePatterns);
-    // For SPARQL endpoints
-    SelectQuery selectTemplateSparqlEndpoints = QueryResource.getSelectQuery();
-    selectTemplateSparqlEndpoints.select(variables)
-        .distinct()
-        .where(sparqlEndpointPattern)
-        .where(wherePatterns);
-    String selectQueryMixedEndpoints = selectTemplateMixedEndpoints.getQueryString()
-        .replace(" / " + QueryResource.REPLACEMENT_PREDICATE.getQueryString(), "");
-    String selectQuerySparqlEndpoints = selectTemplateSparqlEndpoints.getQueryString()
-        .replace(QueryResource.REPLACEMENT_PREDICATE.getQueryString(), "rdfs:subClassOf*");
+
+    String selectQueryMixedEndpoints = selectTemplateMixedEndpoints.getQueryString();
     if (!additionalPatterns.isEmpty()) {
       selectQueryMixedEndpoints = StringResource.replaceLast(selectQueryMixedEndpoints, "}\n",
           additionalPatterns + "}\n");
-      selectQuerySparqlEndpoints = StringResource.replaceLast(selectQuerySparqlEndpoints, "}\n",
-          additionalPatterns + "}\n");
     }
-    results.offer(selectQueryMixedEndpoints);
-    results.offer(selectQuerySparqlEndpoints);
-    return results;
+    return selectQueryMixedEndpoints;
   }
 
   /**

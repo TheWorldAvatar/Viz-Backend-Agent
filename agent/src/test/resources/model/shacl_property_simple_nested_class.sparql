@@ -1,1 +1,1 @@
-?iri <http://example.org/associated> ?propertytest .?propertytest <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> / <http://replacement/org/replace> <http://example.org/Class> .
+?iri <http://example.org/associated> ?propertytest .?propertytest a <http://example.org/Class> .
