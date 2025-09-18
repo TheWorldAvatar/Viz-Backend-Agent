@@ -437,9 +437,12 @@ public class LifecycleController {
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     };
     LOGGER.info("Received request to get form template {}...", orderTypeParams.logOrderType);
-    String occurrenceId = id;
-    // Search for previous occurrence to retrieve
-    if (!id.equals("form")) {
+    String occurrenceId;
+    // If the id is form, attached itself to give blank form template
+    if (id.equals("form")) {
+      occurrenceId = id;
+      // Search for previous occurrence to retrieve
+    } else {
       try {
         occurrenceId = this.lifecycleService.getPreviousOccurrence(id, orderTypeParams.eventType);
       } catch (NullPointerException e) {
@@ -447,9 +450,11 @@ public class LifecycleController {
         occurrenceId = "form";
       }
     }
+    // Provide blank form template
     if (occurrenceId.equals("form")) {
       return this.getService.getForm(orderTypeParams.eventType.getShaclReplacement(), true);
     }
+    // If there is a previous occurrence, give a prepopulated form template
     return this.getService.getForm(occurrenceId, orderTypeParams.eventType.getShaclReplacement(), true,
         orderTypeParams.eventType);
   }
