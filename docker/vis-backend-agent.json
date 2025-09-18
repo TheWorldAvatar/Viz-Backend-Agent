@@ -3,7 +3,7 @@
     "Name": "vis-backend-agent",
     "TaskTemplate": {
       "ContainerSpec": {
-        "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.13.1-unable-to-amend-completed-assignments-SNAPSHOT",
+        "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.13.1",
         "Env": [
           "KEYCLOAK_ISSUER_URI=http://<DOMAIN>/realms/<REALM>",
           "NAMESPACE=kb",
