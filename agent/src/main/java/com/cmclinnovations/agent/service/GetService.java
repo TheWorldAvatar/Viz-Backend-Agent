@@ -1,9 +1,13 @@
 package com.cmclinnovations.agent.service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,6 +23,7 @@ import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
@@ -232,14 +237,49 @@ public class GetService {
     // Note that all concept metadata will never be stored in Ontop and will require
     // the special property paths
     Queue<SparqlBinding> results = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
+    List<Map<String, Object>> resultItems;
     if (results.isEmpty()) {
       LOGGER.info(
           "Request has been completed successfully with no results!");
+      resultItems = new ArrayList<>();
     } else {
       LOGGER.info(SUCCESSFUL_REQUEST_MSG);
+      SparqlBinding rootClassBinding = results.stream()
+          .filter(
+              binding -> binding.getFieldValue("type").equals(conceptClass) && binding.getFieldValue("parent") != null)
+          .findFirst()
+          .orElse(null);
+      if (rootClassBinding != null) {
+        Set<String> rootParentClasses = Arrays.stream(rootClassBinding.getFieldValue("parent").split("\\s"))
+            .collect(Collectors.toSet());
+        rootParentClasses.add(conceptClass);
+        resultItems = results.stream()
+            .map(binding -> {
+              Map<String, Object> bindMappings = binding.get();
+              SparqlResponseField parentField = (SparqlResponseField) bindMappings.get("parent");
+              String parentValue = parentField.value();
+              if (parentValue != null) {
+                String[] currentParentClasses = parentValue.split("\\s+");
+                List<SparqlResponseField> remainingClasses = Arrays.stream(currentParentClasses)
+                    .filter(s -> !rootParentClasses.contains(s))
+                    .map(
+                        s -> new SparqlResponseField(parentField.type(), s, parentField.dataType(), parentField.lang()))
+                    .toList();
+                if (remainingClasses.isEmpty()) {
+                  bindMappings.remove("parent");
+                } else {
+                  // Typically, there are only one parent class
+                  bindMappings.put("parent", remainingClasses.get(0));
+                }
+              }
+              return bindMappings;
+            }).toList();
+
+      } else {
+        resultItems = results.stream().map(SparqlBinding::get).toList();
+      }
     }
-    return this.responseEntityBuilder.success(null,
-        results.stream().map(SparqlBinding::get).toList());
+    return this.responseEntityBuilder.success(null, resultItems);
   }
 
   /**

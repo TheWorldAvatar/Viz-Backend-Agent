@@ -1,11 +1,4 @@
 PREFIX lcc-cr: <https://www.omg.org/spec/LCC/Countries/CountryRepresentation/>
-PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-
-PREFIX lcc-cr: <https://www.omg.org/spec/LCC/Countries/CountryRepresentation/>
 
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
@@ -17,8 +10,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-
-SELECT DISTINCT ?type ?label ?description ?parent
+SELECT DISTINCT ?type ?label ?description (group_concat(?parentclass) as ?parent)
 WHERE {
   BIND([target] AS ?root_class)
   {
@@ -38,7 +30,7 @@ WHERE {
           skos:definition ?description .
   }
   OPTIONAL{
-    ?type rdfs:subClassOf ?parent .
-    FILTER(isIri(?parent) && ?type != ?parent && ?parent != [target] && ?parent != rdfs:Resource)
+    ?type rdfs:subClassOf ?parentclass .
+    FILTER(isIri(?parentclass) && ?type != ?parentclass && ?parentclass != rdfs:Resource)
   }
-}
+} GROUP BY ?type ?label ?description
