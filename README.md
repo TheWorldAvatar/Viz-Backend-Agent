@@ -52,6 +52,11 @@ You'll need to provide your credentials in a single-word text files located like
 repo_username.txt should contain your Github username. repo_password.txt should contain your Github [personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token),
 which must have a 'scope' that [allows you to publish and install packages](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry#authenticating-to-github-packages).
 
+##### SPARQL Endpoints
+
+> [!IMPORTANT]  
+> Inference MUST be enabled in all SPARQL endpoints for them to function as expected.
+
 ##### Environment variables
 
 The agent requires the following environment variables. These variables must be set in their respective docker configuration files for the agent to function as intended.
