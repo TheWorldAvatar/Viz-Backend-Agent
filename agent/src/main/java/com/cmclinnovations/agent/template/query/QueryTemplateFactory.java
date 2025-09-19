@@ -1,6 +1,5 @@
 package com.cmclinnovations.agent.template.query;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,13 +8,11 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-import org.eclipse.rdf4j.sparqlbuilder.constraint.Expression;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
-import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.ShaclPropertyBinding;
@@ -70,71 +67,43 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
   }
 
   /**
-   * Overloaded method. Generates two federated queries for both mixed and sparql
-   * endpoints. The first query is for mixed endpoints; the second query is for
-   * SPARQL endpoints.
+   * Appends additional patterns to the query template, and return its stringified
+   * version.
    * 
-   * @param targetClass        Target class.
-   * @param whereContents      The graph patterns for the WHERE clause.
-   * @param additionalPatterns Additional graph patterns as string to be directly
-   *                           added if available.
-   * @param variables          List of variables for the SELECT clause.
+   * @param selectTemplate     Select query template for all users.
+   * @param additionalPatterns Additional graph patterns as string.
    */
-  protected String genFederatedQuery(String targetClass, List<GraphPattern> whereContents,
-      String additionalPatterns, Variable... variables) {
-    return genFederatedQuery(targetClass, whereContents, additionalPatterns, new ArrayDeque<>(), variables);
-  }
-
-  /**
-   * Generates two federated queries for both mixed and sparql endpoints. The
-   * first query is for mixed endpoints; the second query is for SPARQL
-   * endpoints.
-   * 
-   * @param targetClass        Target class.
-   * @param whereContents      The graph patterns for the WHERE clause.
-   * @param additionalPatterns Additional graph patterns as string to be directly
-   *                           added if available.
-   * @param filters            Optional filter expressions if any.
-   * @param variables          List of variables for the SELECT clause.
-   */
-  protected String genFederatedQuery(String targetClass, List<GraphPattern> whereContents,
-      String additionalPatterns, Queue<Expression<?>> filters, Variable... variables) {
-    Iri targetClassIri = Rdf.iri(targetClass);
-    GraphPattern mixedEndpointPattern = QueryResource.IRI_VAR.isA(targetClassIri);
-
-    // Add filters directly to these if available
-    while (!filters.isEmpty()) {
-      Expression<?> filterExpression = filters.poll();
-      mixedEndpointPattern = mixedEndpointPattern.filter(filterExpression);
-    }
-
-    GraphPattern[] wherePatterns = whereContents.toArray(new GraphPattern[0]);
-
-    SelectQuery selectTemplateMixedEndpoints = QueryResource.getSelectQuery()
-        .select(variables)
-        .distinct()
-        .where(mixedEndpointPattern)
-        .where(wherePatterns);
-
-    String selectQueryMixedEndpoints = selectTemplateMixedEndpoints.getQueryString();
-    if (!additionalPatterns.isEmpty()) {
-      selectQueryMixedEndpoints = StringResource.replaceLast(selectQueryMixedEndpoints, "}\n",
-          additionalPatterns + "}\n");
-    }
-    return selectQueryMixedEndpoints;
+  protected String appendAdditionalPatterns(SelectQuery selectTemplate, String additionalPatterns) {
+    String selectQuery = selectTemplate.getQueryString();
+    selectQuery = StringResource.replaceLast(selectQuery, "}\n",
+        additionalPatterns + "}\n");
+    return selectQuery;
   }
 
   /**
    * Generates the contents for the SPARQL WHERE clause based on the SHACL
    * restrictions.
    * 
+   * @param targetClass            Target class.
    * @param shaclNodeShapeBindings The node shapes queried from SHACL
    *                               restrictions.
    */
-  protected List<GraphPattern> genWhereClauseContent(Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
+  protected SelectQuery genWhereClauseContent(String targetClass, Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
     this.reset();
     Map<String, Map<String, ShaclPropertyBinding>> propertyBindingMap = this.parseNodeShapes(shaclNodeShapeBindings);
-    return this.write(propertyBindingMap);
+    SelectQuery selectTemplate = genSelectTemplate(targetClass);
+    return this.write(selectTemplate, propertyBindingMap);
+  }
+
+  /**
+   * Generates a new select template based on the class.
+   * 
+   * @param targetClass Target class.
+   */
+  private SelectQuery genSelectTemplate(String targetClass) {
+    return QueryResource.getSelectQuery()
+        .distinct()
+        .where(QueryResource.IRI_VAR.isA(Rdf.iri(targetClass)));
   }
 
   /**
@@ -231,16 +200,17 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
   }
 
   /**
-   * Writes the sorted shape mappings and generates the graph patterns for the
-   * WHERE clause.
+   * Appends the graph patterns parsed from the sorted shape mappings to the
+   * SELECT template.
    * 
-   * @param propertyShapeMap The mappings for SHACL property shape that has been
-   *                         sorted.
+   * @param selectTemplate   SELECT query template to build the query
+   * @param propertyShapeMap The sorted mappings for the SHACL property shapes.
    */
-  private List<GraphPattern> write(Map<String, Map<String, ShaclPropertyBinding>> propertyShapeMap) {
+  private SelectQuery write(SelectQuery selectTemplate,
+      Map<String, Map<String, ShaclPropertyBinding>> propertyShapeMap) {
     Map<String, List<GraphPattern>> accumulatedStatementsByGroup = new HashMap<>();
     Map<String, List<GraphPattern>> branchStatementMap = new HashMap<>();
-    List<GraphPattern> results = new ArrayList<>();
+
     // Iterate over each property to add either directly or to the associated group
     // or branch
     propertyShapeMap.get(ShaclResource.PROPERTY_PROPERTY).values().forEach(propBinding -> {
@@ -256,7 +226,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       // For groupless properties, append them directly if there is no branch
       if (group.isEmpty()) {
         if (propBinding.getBranch().isEmpty()) {
-          results.addAll(content);
+          selectTemplate.where(content.toArray(new GraphPattern[0]));
         } else {
           // Store them in a separate branch mappings if a branch is involved
           branchStatementMap.computeIfAbsent(propBinding.getBranch(), k -> new ArrayList<>()).addAll(content);
@@ -307,7 +277,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       }
       // For simple groups, directly attach to the query block or branch
       if (propBinding.getBranch().isEmpty()) {
-        results.add(GraphPatterns.and(content.toArray(new GraphPattern[0])));
+        selectTemplate.where(GraphPatterns.and(content.toArray(new GraphPattern[0])));
       } else {
         // Store them in a separate branch mappings if a branch is involved
         branchStatementMap.computeIfAbsent(propBinding.getBranch(), k -> new ArrayList<>()).addAll(content);
@@ -319,7 +289,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     // Handle array parsing
     arrayStatementsMap.forEach((key, contents) -> {
       if (key.equals(ShaclResource.PROPERTY_PROPERTY)) {
-        results.add(contents);
+        selectTemplate.where(contents);
       } else {
         branchStatementMap.computeIfAbsent(key, k -> new ArrayList<>()).add(contents);
       }
@@ -334,11 +304,11 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
 
       // Wrap the branches in an optional clause IF there is an empty branch
       if (this.hasEmptyBranches) {
-        results.add(GraphPatterns.optional(graphPatterns));
+        selectTemplate.where(GraphPatterns.optional(graphPatterns));
       } else {
-        results.add(graphPatterns);
+        selectTemplate.where(graphPatterns);
       }
     }
-    return results;
+    return selectTemplate;
   }
 }

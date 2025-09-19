@@ -1,7 +1,6 @@
 package com.cmclinnovations.agent.template.query;
 
 import java.util.ArrayDeque;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -10,7 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expression;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
-import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
@@ -49,8 +48,7 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
     LOGGER.info("Generating a query template for getting the data that matches the search criteria...");
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    List<GraphPattern> whereContents = super.genWhereClauseContent(params.bindings());
-
+    SelectQuery selectTemplate = super.genWhereClauseContent(targetClass, params.bindings());
     // Generating the search criteria as separate filter statements
     Queue<Expression<?>> filters = new ArrayDeque<>();
     super.variables.forEach(variable -> {
@@ -67,7 +65,18 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
         }
       }
     });
-    return super.genFederatedQuery(targetClass, whereContents, "", filters, QueryResource.IRI_VAR);
+
+    StringBuilder filterString = new StringBuilder();
+    // Add filters directly to these if available
+    while (!filters.isEmpty()) {
+      Expression<?> filterExpression = filters.poll();
+      filterString.append("FILTER ( ")
+          .append(filterExpression.getQueryString())
+          .append(" )\n");
+    }
+    selectTemplate.select(QueryResource.IRI_VAR);
+    return super.appendAdditionalPatterns(selectTemplate, filterString.toString());
+
   }
 
   /**
