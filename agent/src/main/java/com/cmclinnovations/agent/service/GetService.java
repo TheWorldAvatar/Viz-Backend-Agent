@@ -234,8 +234,6 @@ public class GetService {
   public ResponseEntity<StandardApiResponse<?>> getConceptMetadata(String conceptClass) {
     LOGGER.debug("Retrieving the instances for {} ...", conceptClass);
     String query = this.queryTemplateService.getConceptQuery(conceptClass);
-    // Note that all concept metadata will never be stored in Ontop and will require
-    // the special property paths
     Queue<SparqlBinding> results = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
     List<Map<String, Object>> resultItems;
     if (results.isEmpty()) {
