@@ -70,13 +70,12 @@ public class QueryTemplateService {
    * @param resourceID The target resource identifier for the instance.
    * @param targetId   The target instance IRI.
    */
-  public Queue<String> genDeleteQuery(String resourceID, String targetId) {
+  public String genDeleteQuery(String resourceID, String targetId) {
     LOGGER.debug("Generating the DELETE query...");
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.getJsonLDResource(resourceID).deepCopy();
-    Queue<String> query = this.deleteQueryTemplateFactory
+    return this.deleteQueryTemplateFactory
         .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId));
-    return query;
   }
 
   /**
@@ -150,7 +149,7 @@ public class QueryTemplateService {
    * 
    * @param queryVarsAndPaths The query construction requirements.
    */
-  public Queue<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
+  public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
     return this.genGetQuery(queryVarsAndPaths, "", null, "", new HashMap<>());
   }
 
@@ -164,7 +163,7 @@ public class QueryTemplateService {
    * @param addVars            Optional additional variables to be included in the
    *                           query, along with their order sequence
    */
-  public Queue<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
+  public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
       ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Generating the SELECT query to get instances...");
     return this.getQueryTemplateFactory
@@ -178,7 +177,7 @@ public class QueryTemplateService {
    * @param queryVarsAndPaths The query construction requirements.
    * @param criterias         All the available search criteria inputs.
    */
-  public Queue<String> genSearchQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, Map<String, String> criterias) {
+  public String genSearchQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, Map<String, String> criterias) {
     LOGGER.debug("Generating the SELECT query to search for specific instances...");
     return this.searchQueryTemplateFactory
         .write(new QueryTemplateFactoryParameters(queryVarsAndPaths, criterias));

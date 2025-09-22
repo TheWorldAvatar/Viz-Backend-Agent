@@ -6,7 +6,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Queue;
 
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.util.ResourceUtils;
@@ -105,16 +104,11 @@ public class TestUtils {
    *                               expected query output.
    * @param testQueryOutputs       The query output for testing.
    */
-  public static void validateGeneratedQueryOutput(String expectedResourceFileId, Queue<String> testQueryOutputs)
+  public static void validateGeneratedQueryOutput(String expectedResourceFileId, String testQueryOutputs)
       throws IOException {
-    assertEquals(2, testQueryOutputs.size());
     assertEquals(
         ONE_LINE_PREFIX_TEMPLATE
             + TestUtils.getSparqlQuery(expectedResourceFileId + SPARQL_FILE_EXTENSION),
-        testQueryOutputs.poll().replace("\n", ""));
-    assertEquals(
-        ONE_LINE_PREFIX_TEMPLATE
-            + TestUtils.getSparqlQuery(expectedResourceFileId + "_mixed" + SPARQL_FILE_EXTENSION),
-        testQueryOutputs.poll().replace("\n", ""));
+        testQueryOutputs.replace("\n", ""));
   }
 }

@@ -313,12 +313,12 @@ public class LifecycleService {
   private String parseEventOccurrenceQuery(int groupIndex, LifecycleEventType lifecycleEvent,
       Map<Variable, List<Integer>> varSequences) {
     String replacementQueryLine = lifecycleEvent.getShaclReplacement();
-    Queue<String> occurrenceQuery = this.getService.getQuery(replacementQueryLine, "", true);
+    String occurrenceQuery = this.getService.getQuery(replacementQueryLine, "", true);
     // First query is non-necessary and can be used to extract the variables
-    Map<Variable, List<Integer>> dispatchVars = LifecycleResource.extractOccurrenceVariables(occurrenceQuery.poll(),
+    Map<Variable, List<Integer>> dispatchVars = LifecycleResource.extractOccurrenceVariables(occurrenceQuery,
         groupIndex);
     varSequences.putAll(dispatchVars);
-    return LifecycleResource.extractOccurrenceQuery(occurrenceQuery.poll(), lifecycleEvent);
+    return LifecycleResource.extractOccurrenceQuery(occurrenceQuery, lifecycleEvent);
   }
 
   /**

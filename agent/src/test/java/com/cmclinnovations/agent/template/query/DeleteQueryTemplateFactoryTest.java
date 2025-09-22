@@ -2,8 +2,6 @@ package com.cmclinnovations.agent.template.query;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.Queue;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -35,33 +33,28 @@ public class DeleteQueryTemplateFactoryTest {
     @Test
     void testWrite_Simple() throws Exception {
         ObjectNode sample = TestUtils.getJson(TEST_SIMPLE_FILE);
-        Queue<String> results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
-        assertEquals(1, results.size());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_FILE), results.poll().replace("\n", ""));
+        String results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
+        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_FILE), results.replace("\n", ""));
     }
 
     @Test
     void testWrite_SimpleReverse() throws Exception {
         ObjectNode sample = TestUtils.getJson(TEST_SIMPLE_REVERSE_FILE);
-        Queue<String> results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
-        assertEquals(1, results.size());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_REVERSE_FILE), results.poll().replace("\n", ""));
+        String results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
+        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_REVERSE_FILE), results.replace("\n", ""));
     }
 
     @Test
     void testWrite_OptionalId() throws Exception {
         ObjectNode sample = TestUtils.getJson(TEST_SIMPLE_OPTIONAL_ID_FILE);
-        Queue<String> results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
-        assertEquals(1, results.size());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_OPTIONAL_ID_FILE), results.poll().replace("\n", ""));
-
+        String results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
+        assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_OPTIONAL_ID_FILE), results.replace("\n", ""));
     }
 
     @Test
     void testWrite_Array() throws Exception {
         ObjectNode sample = TestUtils.getJson(TEST_ARRAY_FILE);
-        Queue<String> results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
-        assertEquals(1, results.size());
-        assertEquals(TestUtils.getSparqlQuery(EXPECTED_ARRAY_FILE), results.poll().replace("\n", ""));
+        String results = TEMPLATE_FACTORY.write(new QueryTemplateFactoryParameters(sample, SAMPLE_ID));
+        assertEquals(TestUtils.getSparqlQuery(EXPECTED_ARRAY_FILE), results.replace("\n", ""));
     }
 }

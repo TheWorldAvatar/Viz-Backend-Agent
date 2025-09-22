@@ -1,7 +1,5 @@
 package com.cmclinnovations.agent.service;
 
-import java.util.Queue;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +35,7 @@ public class DeleteService {
    */
   public ResponseEntity<StandardApiResponse<?>> delete(String resourceID, String targetId) {
     LOGGER.debug("Deleting {} instance of {} ...", resourceID, targetId);
-    Queue<String> outputs = this.queryTemplateService.genDeleteQuery(resourceID, targetId);
-    return this.kgService.delete(outputs.poll(), targetId);
+    String outputs = this.queryTemplateService.genDeleteQuery(resourceID, targetId);
+    return this.kgService.delete(outputs, targetId);
   }
 }

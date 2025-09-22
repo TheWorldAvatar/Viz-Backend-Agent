@@ -51,15 +51,13 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    *               rootNode - The root node of contents to parse into a template
    *               targetId - The target instance IRI.
    */
-  public Queue<String> write(QueryTemplateFactoryParameters params) {
+  public String write(QueryTemplateFactoryParameters params) {
     this.reset();
     ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetId());
     this.recursiveParseNode(deleteTemplate, null, params.rootNode());
     this.addBranches(deleteTemplate);
 
-    Queue<String> result = new ArrayDeque<>();
-    result.offer(deleteTemplate.getQueryString());
-    return result;
+    return deleteTemplate.getQueryString();
   }
 
   protected void reset() {

@@ -1,9 +1,13 @@
 package com.cmclinnovations.agent.service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,6 +23,7 @@ import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
@@ -172,16 +177,13 @@ public class GetService {
    */
   private Queue<SparqlBinding> getInstances(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
       ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
-    Queue<String> getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetId,
+    String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetId,
         parentField, addQueryStatements, addVars);
     LOGGER.debug("Querying the knowledge graph for the instances...");
     List<Variable> varSequence = this.queryTemplateService.getFieldSequence();
     // Query for direct instances
-    Queue<SparqlBinding> instances = this.kgService.query(getQuery.poll(), SparqlEndpointType.MIXED);
-    // Query for secondary instances ie instances that are subclasses of parent
-    Queue<SparqlBinding> secondaryInstances = this.kgService.query(getQuery.poll(), SparqlEndpointType.BLAZEGRAPH);
-    instances = this.kgService.combineBindingQueue(instances, secondaryInstances,
-        this.queryTemplateService.getArrayVariables());
+    Queue<SparqlBinding> instances = this.kgService.query(getQuery, SparqlEndpointType.MIXED);
+    instances = this.kgService.combineBindingQueue(instances, this.queryTemplateService.getArrayVariables());
     // If there is a variable sequence available, add the sequence to each binding,
     if (!varSequence.isEmpty()) {
       instances.forEach(instance -> instance.addSequence(varSequence));
@@ -197,7 +199,7 @@ public class GetService {
    *                         instance.
    * @param requireLabel     Indicates if labels should be returned
    */
-  public Queue<String> getQuery(String shaclReplacement, String targetId, boolean requireLabel) {
+  public String getQuery(String shaclReplacement, String targetId, boolean requireLabel) {
     String query = this.queryTemplateService.getShaclQuery(requireLabel, shaclReplacement);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
     return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, targetId,
@@ -232,17 +234,50 @@ public class GetService {
   public ResponseEntity<StandardApiResponse<?>> getConceptMetadata(String conceptClass) {
     LOGGER.debug("Retrieving the instances for {} ...", conceptClass);
     String query = this.queryTemplateService.getConceptQuery(conceptClass);
-    // Note that all concept metadata will never be stored in Ontop and will require
-    // the special property paths
     Queue<SparqlBinding> results = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
+    List<Map<String, Object>> resultItems;
     if (results.isEmpty()) {
       LOGGER.info(
           "Request has been completed successfully with no results!");
+      resultItems = new ArrayList<>();
     } else {
       LOGGER.info(SUCCESSFUL_REQUEST_MSG);
+      SparqlBinding rootClassBinding = results.stream()
+          .filter(
+              binding -> binding.getFieldValue("type").equals(conceptClass) && binding.getFieldValue("parent") != null)
+          .findFirst()
+          .orElse(null);
+      if (rootClassBinding != null) {
+        Set<String> rootParentClasses = Arrays.stream(rootClassBinding.getFieldValue("parent").split("\\s"))
+            .collect(Collectors.toSet());
+        rootParentClasses.add(conceptClass);
+        resultItems = results.stream()
+            .map(binding -> {
+              Map<String, Object> bindMappings = binding.get();
+              SparqlResponseField parentField = (SparqlResponseField) bindMappings.get("parent");
+              String parentValue = parentField.value();
+              if (parentValue != null) {
+                String[] currentParentClasses = parentValue.split("\\s+");
+                List<SparqlResponseField> remainingClasses = Arrays.stream(currentParentClasses)
+                    .filter(s -> !rootParentClasses.contains(s))
+                    .map(
+                        s -> new SparqlResponseField(parentField.type(), s, parentField.dataType(), parentField.lang()))
+                    .toList();
+                if (remainingClasses.isEmpty()) {
+                  bindMappings.remove("parent");
+                } else {
+                  // Typically, there are only one parent class
+                  bindMappings.put("parent", remainingClasses.get(0));
+                }
+              }
+              return bindMappings;
+            }).toList();
+
+      } else {
+        resultItems = results.stream().map(SparqlBinding::get).toList();
+      }
     }
-    return this.responseEntityBuilder.success(null,
-        results.stream().map(SparqlBinding::get).toList());
+    return this.responseEntityBuilder.success(null, resultItems);
   }
 
   /**
@@ -255,12 +290,9 @@ public class GetService {
     LOGGER.debug("Retrieving the form template for {} ...", resourceID);
     String query = this.queryTemplateService.getShaclQuery(resourceID, false);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    Queue<String> searchQuery = this.queryTemplateService.genSearchQuery(nestedVariablesAndPropertyPaths, criterias);
+    String searchQuery = this.queryTemplateService.genSearchQuery(nestedVariablesAndPropertyPaths, criterias);
     // Query for direct instances
-    Queue<SparqlBinding> results = this.kgService.query(searchQuery.poll(), SparqlEndpointType.MIXED);
-    // Query for secondary instances ie instances that are subclasses of parent
-    Queue<SparqlBinding> secondaryInstances = this.kgService.query(searchQuery.poll(), SparqlEndpointType.BLAZEGRAPH);
-    results.addAll(secondaryInstances);
+    Queue<SparqlBinding> results = this.kgService.query(searchQuery, SparqlEndpointType.MIXED);
     LOGGER.info(SUCCESSFUL_REQUEST_MSG);
     return this.responseEntityBuilder.success(
         results.stream()

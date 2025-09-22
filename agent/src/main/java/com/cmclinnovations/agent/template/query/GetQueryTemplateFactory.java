@@ -3,13 +3,12 @@ package com.cmclinnovations.agent.template.query;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
-import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfLiteral.StringLiteral;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfObject;
@@ -49,19 +48,18 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    *               addVars - Optional additional variables to be included in the
    *               query, along with their order sequence
    */
-  public Queue<String> write(QueryTemplateFactoryParameters params) {
+  public String write(QueryTemplateFactoryParameters params) {
     LOGGER.info("Generating a query template for getting data...");
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    List<GraphPattern> whereContents = super.genWhereClauseContent(params.bindings());
+    SelectQuery selectTemplate = super.genWhereClauseContent(targetClass, params.bindings());
 
-    List<Variable> selectVariables = new ArrayList<>();
     // Retrieve only the property fields if no sequence of variable is present
     if (super.varSequence.isEmpty()) {
-      selectVariables.add(QueryResource.IRI_VAR);
-      selectVariables.add(QueryResource.ID_VAR);
-      super.variables.forEach(variable -> selectVariables.add(variable));
-      params.addVars().forEach((field, fieldSequence) -> selectVariables.add(field));
+      selectTemplate.select(QueryResource.IRI_VAR)
+          .select(QueryResource.ID_VAR);
+      super.variables.forEach(variable -> selectTemplate.select(variable));
+      params.addVars().forEach((field, fieldSequence) -> selectTemplate.select(field));
     } else {
       super.varSequence.putAll(params.addVars());
       List<Variable> sortedSequence = new ArrayList<>(super.varSequence.keySet());
@@ -70,26 +68,24 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       sortedSequence.add(0, QueryResource.ID_VAR);
       // Add variables
       sortedSequence
-          .forEach(variable -> selectVariables.add(variable));
+          .forEach(variable -> selectTemplate.select(variable));
       super.setSequence(sortedSequence);
     }
 
-    this.appendOptionalIdFilters(whereContents, params.targetId(), params.parent());
-    return super.genFederatedQuery(targetClass, whereContents, params.addQueryStatements(),
-        selectVariables.toArray(new Variable[0]));
+    this.appendOptionalIdFilters(selectTemplate, params.targetId(), params.parent());
+    return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements());
   }
 
   /**
    * Appends optional filters related to IDs to the query if required.
    * 
-   * @param whereContents Current list of graph patterns to store additional
-   *                      filters.
-   * @param filterId      An optional field to target the query at a specific
-   *                      instance.
-   * @param parentField   An optional parent field to target the query with
-   *                      specific parents.
+   * @param selectTemplate Target select query template.
+   * @param filterId       An optional field to target the query at a specific
+   *                       instance.
+   * @param parentField    An optional parent field to target the query with
+   *                       specific parents.
    */
-  private void appendOptionalIdFilters(List<GraphPattern> whereContents, String filterId, ParentField parentField) {
+  private void appendOptionalIdFilters(SelectQuery selectTemplate, String filterId, ParentField parentField) {
     RdfObject object = QueryResource.ID_VAR;
     // Add filter clause for a parent field instead if available
     if (parentField != null) {
@@ -106,12 +102,12 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
         throw new IllegalArgumentException(
             MessageFormat.format("Unable to find matching variable for parent field: {0}", parentField.name()));
       }
-      whereContents.add(parsedField.has(QueryResource.DC_TERM_ID, Rdf.literalOf(parentField.id())));
+      selectTemplate.where(parsedField.has(QueryResource.DC_TERM_ID, Rdf.literalOf(parentField.id())));
     } else if (!filterId.isEmpty()) {
       StringLiteral filter = Rdf.literalOf(filterId);
       object = filter;
-      whereContents.add(Expressions.bind(Expressions.str(filter), QueryResource.ID_VAR));
+      selectTemplate.where(Expressions.bind(Expressions.str(filter), QueryResource.ID_VAR));
     }
-    whereContents.add(QueryResource.IRI_VAR.has(QueryResource.DC_TERM_ID, object));
+    selectTemplate.where(QueryResource.IRI_VAR.has(QueryResource.DC_TERM_ID, object));
   }
 }

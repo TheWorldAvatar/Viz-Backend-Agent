@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.14.0
+
+### Changes
+
+- Changes to requirements: SPARQL endpoints **MUST** have inference enabled
+- Refactor agent to work with inference engine to find subclasses rather than relying on `rdfs:subClassOf*`
+- If inference is not enabled, some desired results may not be returned
+
 ## 1.13.1
 
 ### Changes
@@ -12,7 +20,7 @@
 
 - Fixed amending of completed assignments and completion details
 - Fixed saving of completion details
-- Fixed retrieval of previous details, especially within sh:node groups
+- Fixed retrieval of previous details, especially within `sh:node` groups
 - Fixed derivation of literals
 
 ## 1.13.0

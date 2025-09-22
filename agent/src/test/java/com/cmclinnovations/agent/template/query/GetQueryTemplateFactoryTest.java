@@ -76,7 +76,7 @@ public class GetQueryTemplateFactoryTest {
     // Set up
     Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
-    Queue<String> results = this.testFactory.write(
+    String results = this.testFactory.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_FILE, results);
@@ -87,7 +87,7 @@ public class GetQueryTemplateFactoryTest {
     // Set up
     Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
-    Queue<String> results = this.testFactory
+    String results = this.testFactory
         .write(new QueryTemplateFactoryParameters(nestedBindings, SAMPLE_FILTER, null, "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_ID_FILE, results);
@@ -126,7 +126,7 @@ public class GetQueryTemplateFactoryTest {
     bindings.offer(binding);
     nestedBindings.offer(bindings);
     // Execute
-    Queue<String> results = this.testFactory.write(
+    String results = this.testFactory.write(
         new QueryTemplateFactoryParameters(nestedBindings, SAMPLE_FILTER,
             new ParentField(SAMPLE_FILTER, SAMPLE_PARENT_FIELD), "", new HashMap<>()));
     // Assert
@@ -145,7 +145,7 @@ public class GetQueryTemplateFactoryTest {
     bindings.offer(binding);
     nestedBindings.offer(bindings);
     // Execute
-    Queue<String> results = this.testFactory.write(
+    String results = this.testFactory.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_OPTIONAL_FILE, results);
@@ -174,7 +174,7 @@ public class GetQueryTemplateFactoryTest {
     bindings.offer(binding);
     nestedBindings.offer(bindings);
     // Execute
-    Queue<String> results = this.testFactory.write(
+    String results = this.testFactory.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_ARRAY_FILE, results);
@@ -214,7 +214,7 @@ public class GetQueryTemplateFactoryTest {
     bindings.offer(binding);
     nestedBindings.offer(bindings);
     // Execute
-    Queue<String> results = this.testFactory.write(
+    String results = this.testFactory.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_COMPLEX_ARRAY_FILE, results);
@@ -229,7 +229,7 @@ public class GetQueryTemplateFactoryTest {
   void testWrite_AdditionalQueryWithoutAdditionalVar() throws IOException {
     Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
-    Queue<String> results = this.testFactory.write(
+    String results = this.testFactory.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, SAMPLE_ADDITIONAL_STATEMENT, new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_ADDITIONAL_STATEMENT_FILE, results);
@@ -239,7 +239,7 @@ public class GetQueryTemplateFactoryTest {
   void testWrite_AdditionalQueryWithAdditionalVar() throws IOException {
     Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
-    Queue<String> results = this.testFactory.write(
+    String results = this.testFactory.write(
         new QueryTemplateFactoryParameters(nestedBindings, "", null, SAMPLE_ADDITIONAL_STATEMENT, SAMPLE_ADD_VARS));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_COMPLEX_ADDITIONAL_FILE, results);

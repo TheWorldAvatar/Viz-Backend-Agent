@@ -1,4 +1,3 @@
 SELECT DISTINCT ?iri
 WHERE { ?iri a <http://example.com/Concept> .
-    ?iri <http://example.com/propPath1> / <http://example.com/propPath2> ?field .
-    FILTER ( ( ?field >= 0 && ?field <= 10 ) ) }
+    ?iri <http://example.com/propPath1> / <http://example.com/propPath2> ?field . FILTER ( ( ?field >= 0 && ?field <= 10 ) )}

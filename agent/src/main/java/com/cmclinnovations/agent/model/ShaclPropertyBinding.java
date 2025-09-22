@@ -130,8 +130,7 @@ public class ShaclPropertyBinding {
         } else if (isGroup && this.nestedClass != null) {
             // For SPARQL endpoints which support property paths
             contents.add(
-                    this.property.has(p -> p.pred(RDF.TYPE)
-                            .then(QueryResource.REPLACEMENT_PREDICATE), this.nestedClass));
+                    this.property.isA(this.nestedClass));
         }
         return contents;
     }
