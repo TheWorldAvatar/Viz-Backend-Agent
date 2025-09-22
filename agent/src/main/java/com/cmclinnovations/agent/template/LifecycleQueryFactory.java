@@ -48,19 +48,6 @@ public class LifecycleQueryFactory {
   }
 
   /**
-   * Retrieves the SPARQL query template for human readable schedule details.
-   */
-  public String getReadableScheduleQuery() {
-    return this.getScheduleTemplate()
-        + "BIND(IF(" + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString()
-        + "=\"P1D\",\"Single Service\","
-        + "IF(" + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString()
-        + "=\"P2D\",\"Alternate Day Service\", "
-        + "\"Regular Service\")" // Close IF statement
-        + ") AS " + QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY).getQueryString() + ")";
-  }
-
-  /**
    * Retrieves the SPARQL query to get the schedule of the contract.
    * 
    * @param contractId the target contract id.
@@ -264,7 +251,7 @@ public class LifecycleQueryFactory {
    */
   public String genLifecycleFilterStatements(LifecycleEventType lifecycleEvent) {
     StringBuilder query = new StringBuilder();
-    query.append(this.getReadableScheduleQuery());
+    query.append(this.getScheduleTemplate());
     switch (lifecycleEvent) {
       case LifecycleEventType.APPROVED:
         TriplePattern pattern = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)

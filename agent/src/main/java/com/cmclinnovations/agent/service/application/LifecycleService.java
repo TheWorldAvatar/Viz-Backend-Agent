@@ -69,6 +69,7 @@ public class LifecycleService {
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY), List.of(2, 2));
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY), List.of(2, 3));
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY), List.of(2, 4));
+    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY), List.of(2, 5));
 
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.DATE_KEY), List.of(-3, 1));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_KEY), List.of(-3, 2));
@@ -174,7 +175,27 @@ public class LifecycleService {
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, null, "", additionalQueryStatement,
         requireLabel, contractVariables);
     return this.responseEntityBuilder.success(null, instances.stream()
-        .map(SparqlBinding::get)
+        .map(binding -> {
+          return (Map<String, Object>) binding.get().entrySet().stream()
+              .map(entry -> {
+                // Replace recurrence with schedule type
+                if (entry.getKey().equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
+                  SparqlResponseField recurrence = TypeCastUtils.castToObject(entry.getValue(),
+                      SparqlResponseField.class);
+                  return new AbstractMap.SimpleEntry<>(
+                      LocalisationTranslator.getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY),
+                      new SparqlResponseField(recurrence.type(),
+                          LifecycleResource.getScheduleTypeFromRecurrence(recurrence.value()),
+                          recurrence.dataType(), recurrence.lang()));
+                }
+                return entry;
+              })
+              .collect(Collectors.toMap(
+                  Map.Entry::getKey,
+                  (entry -> TypeCastUtils.castToObject(entry.getValue(), Object.class)),
+                  (oldVal, newVal) -> oldVal,
+                  LinkedHashMap::new));
+        })
         .toList());
   }
 

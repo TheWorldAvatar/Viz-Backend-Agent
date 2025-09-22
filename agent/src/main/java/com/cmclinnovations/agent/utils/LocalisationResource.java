@@ -5,6 +5,7 @@ public class LocalisationResource {
   private static final String MESSAGE_PREFIX = "message.";
   private static final String SUCCESS_PREFIX = "success.";
   private static final String SUCCESS_CONTRACT_PREFIX = SUCCESS_PREFIX + "contract.";
+  private static final String LABEL_PREFIX = "label.";
   private static final String VAR_PREFIX = "variable.";
 
   public static final String STATUS_KEY = "status";
@@ -41,6 +42,10 @@ public class LocalisationResource {
   public static final String ERROR_INVALID_MULTIPLE_INSTANCE_KEY = ERROR_PREFIX + "invalid.multiple.instance";
   public static final String ERROR_INVALID_ROUTE_KEY = ERROR_PREFIX + "invalid.route";
   public static final String ERROR_INVALID_SERVER_KEY = ERROR_PREFIX + "invalid.server";
+  public static final String LABEL_SINGLE_SERVICE_KEY = LABEL_PREFIX + "single.service";
+  public static final String LABEL_ALTERNATE_DAY_SERVICE_KEY = LABEL_PREFIX + "alt.day.service";
+  public static final String LABEL_REGULAR_SERVICE_KEY = LABEL_PREFIX + "regular.service";
+  public static final String VAR_SCHEDULE_TYPE_KEY = VAR_PREFIX + "schedule.type";
   public static final String VAR_STATUS_KEY = VAR_PREFIX + STATUS_KEY;
 
   // Private constructor to prevent instantiation
