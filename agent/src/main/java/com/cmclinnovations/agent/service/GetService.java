@@ -31,6 +31,7 @@ import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.TypeCastUtils;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 @Service
@@ -254,7 +255,8 @@ public class GetService {
         resultItems = results.stream()
             .map(binding -> {
               Map<String, Object> bindMappings = binding.get();
-              SparqlResponseField parentField = (SparqlResponseField) bindMappings.get("parent");
+              SparqlResponseField parentField = TypeCastUtils.castToObject(bindMappings.get("parent"),
+                      SparqlResponseField.class);
               String parentValue = parentField.value();
               if (parentValue != null) {
                 String[] currentParentClasses = parentValue.split("\\s+");

@@ -417,7 +417,8 @@ public class LifecycleService {
             .collect(Collectors.toMap(
                 Map.Entry::getKey,
                 entry -> entry.getValue() instanceof SparqlResponseField
-                    ? ((SparqlResponseField) entry.getValue()).value()
+                    ? TypeCastUtils.castToObject(entry.getValue(),
+                        SparqlResponseField.class).value()
                     : ""));
         params.putAll(currentEntity);
         params.put(LifecycleResource.REMARKS_KEY, ORDER_DISPATCH_MESSAGE);
