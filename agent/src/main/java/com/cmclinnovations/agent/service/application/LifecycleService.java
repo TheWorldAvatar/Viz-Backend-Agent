@@ -76,6 +76,7 @@ public class LifecycleService {
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_KEY), List.of(-3, 2));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY), List.of(1000, 999));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY), List.of(1000, 1000));
+    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY), List.of(1000, 1001));
   }
 
   /**
@@ -295,6 +296,15 @@ public class LifecycleService {
               .filter(entry -> !entry.getKey()
                   .equals(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY).getVarName()))
               .map(entry -> {
+                if (entry.getKey().equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
+                  SparqlResponseField recurrence = TypeCastUtils.castToObject(entry.getValue(),
+                      SparqlResponseField.class);
+                  return new AbstractMap.SimpleEntry<>(
+                      LocalisationTranslator.getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY),
+                      new SparqlResponseField(recurrence.type(),
+                          LifecycleResource.getScheduleTypeFromRecurrence(recurrence.value()),
+                          recurrence.dataType(), recurrence.lang()));
+                }
                 if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
                   SparqlResponseField eventField = TypeCastUtils.castToObject(entry.getValue(),
                       SparqlResponseField.class);

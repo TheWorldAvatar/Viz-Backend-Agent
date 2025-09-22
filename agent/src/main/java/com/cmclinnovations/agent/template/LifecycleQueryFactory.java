@@ -134,6 +134,11 @@ public class LifecycleQueryFactory {
         + eventDatePlaceholderVar
         + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
         + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar + "}"
+        + "OPTIONAL{?iri " + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
+        "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?recurrences.}"
+        + "BIND(IF(BOUND(?recurrences),?recurrences,\"\") AS "
+        + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString()
+        + ")"
         + filterDateStatement
         + filterContractStatement
         // Event must be the last in the chain ie no other events will succeed it
