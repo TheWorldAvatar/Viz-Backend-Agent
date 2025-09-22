@@ -44,6 +44,7 @@ public class LocalisationResource {
   public static final String ERROR_INVALID_SERVER_KEY = ERROR_PREFIX + "invalid.server";
   public static final String LABEL_SINGLE_SERVICE_KEY = LABEL_PREFIX + "single.service";
   public static final String LABEL_ALTERNATE_DAY_SERVICE_KEY = LABEL_PREFIX + "alt.day.service";
+  public static final String LABEL_PERPETUAL_SERVICE_KEY = LABEL_PREFIX + "perpetual.service";
   public static final String LABEL_REGULAR_SERVICE_KEY = LABEL_PREFIX + "regular.service";
   public static final String VAR_SCHEDULE_TYPE_KEY = VAR_PREFIX + "schedule.type";
   public static final String VAR_STATUS_KEY = VAR_PREFIX + STATUS_KEY;
