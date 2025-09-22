@@ -69,7 +69,8 @@ public class LifecycleService {
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY), List.of(2, 2));
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY), List.of(2, 3));
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY), List.of(2, 4));
-    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY), List.of(2, 5));
+    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY),
+        List.of(2, 5));
 
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.DATE_KEY), List.of(-3, 1));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_KEY), List.of(-3, 2));
@@ -363,8 +364,8 @@ public class LifecycleService {
         .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getVarName());
     Queue<String> occurrences = new ArrayDeque<>();
     // Extract date of occurrences based on the schedule information
-    // For single time schedules, simply add the start date
-    if (recurrence.equals("P1D")) {
+    // For perpetual and single time schedules, simply add the start date
+    if (recurrence == null || recurrence.equals("P1D")) {
       occurrences.offer(startDate);
     } else if (recurrence.equals("P2D")) {
       // Alternate day recurrence should have dual interval
