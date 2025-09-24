@@ -44,7 +44,7 @@ CONSTRUCT {
     BIND(IF(BOUND(?nodename),?node,?null) AS ?nodegroup)
   }
   OPTIONAL{
-    ?node sh:property ?property .
+    ?node (sh:and/rdf:rest*/rdf:first)?/sh:property ?property .
     ?property sh:name ?propname ;
       sh:description ?propdesc ;
       (sh:node/sh:and?/sh:property)* ?subproperty .
