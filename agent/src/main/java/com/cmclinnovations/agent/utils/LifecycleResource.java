@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.core.FileService;
 
@@ -39,6 +40,7 @@ public class LifecycleResource {
   public static final String SCHEDULE_START_TIME_KEY = "start time";
   public static final String SCHEDULE_END_TIME_KEY = "end time";
   public static final String SCHEDULE_RECURRENCE_KEY = "recurrence";
+  public static final String SCHEDULE_RECURRENCE_PLACEHOLDER_KEY = "recurrences";
   public static final String SCHEDULE_TYPE_KEY = "schedule type";
 
   public static final String EXEMPLIFIES_RELATIONS = "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies";
@@ -98,6 +100,20 @@ public class LifecycleResource {
       default:
         throw new IllegalArgumentException("Invalid order enum number!");
     }
+  }
+
+  /**
+   * Retrieve the schedule type based on the recurrence interval.
+   * 
+   * @param recurrence The recurrence value.
+   */
+  public static String getScheduleTypeFromRecurrence(String recurrence) {
+    return switch (recurrence) {
+      case "" -> LocalisationTranslator.getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY);
+      case "P1D" -> LocalisationTranslator.getMessage(LocalisationResource.LABEL_SINGLE_SERVICE_KEY);
+      case "P2D" -> LocalisationTranslator.getMessage(LocalisationResource.LABEL_ALTERNATE_DAY_SERVICE_KEY);
+      default -> LocalisationTranslator.getMessage(LocalisationResource.LABEL_REGULAR_SERVICE_KEY);
+    };
   }
 
   /**

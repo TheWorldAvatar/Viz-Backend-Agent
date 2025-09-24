@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.15.0
+
+### Changes
+
+- Extended to include perpetual service type
+- General code maintenance
+
 ## 1.14.0
 
 ### Changes

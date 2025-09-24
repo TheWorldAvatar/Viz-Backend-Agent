@@ -69,11 +69,14 @@ public class LifecycleService {
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY), List.of(2, 2));
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY), List.of(2, 3));
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY), List.of(2, 4));
+    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY),
+        List.of(2, 5));
 
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.DATE_KEY), List.of(-3, 1));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_KEY), List.of(-3, 2));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY), List.of(1000, 999));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY), List.of(1000, 1000));
+    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY), List.of(1000, 1001));
   }
 
   /**
@@ -174,7 +177,27 @@ public class LifecycleService {
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, null, "", additionalQueryStatement,
         requireLabel, contractVariables);
     return this.responseEntityBuilder.success(null, instances.stream()
-        .map(SparqlBinding::get)
+        .map(binding -> {
+          return (Map<String, Object>) binding.get().entrySet().stream()
+              .map(entry -> {
+                // Replace recurrence with schedule type
+                if (entry.getKey().equals(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY)) {
+                  SparqlResponseField recurrence = TypeCastUtils.castToObject(entry.getValue(),
+                      SparqlResponseField.class);
+                  return new AbstractMap.SimpleEntry<>(
+                      LocalisationTranslator.getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY),
+                      new SparqlResponseField(recurrence.type(),
+                          LifecycleResource.getScheduleTypeFromRecurrence(recurrence.value()),
+                          recurrence.dataType(), recurrence.lang()));
+                }
+                return entry;
+              })
+              .collect(Collectors.toMap(
+                  Map.Entry::getKey,
+                  (entry -> TypeCastUtils.castToObject(entry.getValue(), Object.class)),
+                  (oldVal, newVal) -> oldVal,
+                  LinkedHashMap::new));
+        })
         .toList());
   }
 
@@ -273,6 +296,15 @@ public class LifecycleService {
               .filter(entry -> !entry.getKey()
                   .equals(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY).getVarName()))
               .map(entry -> {
+                if (entry.getKey().equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
+                  SparqlResponseField recurrence = TypeCastUtils.castToObject(entry.getValue(),
+                      SparqlResponseField.class);
+                  return new AbstractMap.SimpleEntry<>(
+                      LocalisationTranslator.getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY),
+                      new SparqlResponseField(recurrence.type(),
+                          LifecycleResource.getScheduleTypeFromRecurrence(recurrence.value()),
+                          recurrence.dataType(), recurrence.lang()));
+                }
                 if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
                   SparqlResponseField eventField = TypeCastUtils.castToObject(entry.getValue(),
                       SparqlResponseField.class);
@@ -342,8 +374,8 @@ public class LifecycleService {
         .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getVarName());
     Queue<String> occurrences = new ArrayDeque<>();
     // Extract date of occurrences based on the schedule information
-    // For single time schedules, simply add the start date
-    if (recurrence.equals("P1D")) {
+    // For perpetual and single time schedules, simply add the start date
+    if (recurrence == null || recurrence.equals("P1D")) {
       occurrences.offer(startDate);
     } else if (recurrence.equals("P2D")) {
       // Alternate day recurrence should have dual interval
@@ -417,7 +449,8 @@ public class LifecycleService {
             .collect(Collectors.toMap(
                 Map.Entry::getKey,
                 entry -> entry.getValue() instanceof SparqlResponseField
-                    ? ((SparqlResponseField) entry.getValue()).value()
+                    ? TypeCastUtils.castToObject(entry.getValue(),
+                        SparqlResponseField.class).value()
                     : ""));
         params.putAll(currentEntity);
         params.put(LifecycleResource.REMARKS_KEY, ORDER_DISPATCH_MESSAGE);

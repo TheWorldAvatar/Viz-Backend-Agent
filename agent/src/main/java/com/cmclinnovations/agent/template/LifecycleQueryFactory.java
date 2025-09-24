@@ -48,19 +48,6 @@ public class LifecycleQueryFactory {
   }
 
   /**
-   * Retrieves the SPARQL query template for human readable schedule details.
-   */
-  public String getReadableScheduleQuery() {
-    return this.getScheduleTemplate()
-        + "BIND(IF(" + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString()
-        + "=\"P1D\",\"Single Service\","
-        + "IF(" + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString()
-        + "=\"P2D\",\"Alternate Day Service\", "
-        + "\"Regular Service\")" // Close IF statement
-        + ") AS " + QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY).getQueryString() + ")";
-  }
-
-  /**
    * Retrieves the SPARQL query to get the schedule of the contract.
    * 
    * @param contractId the target contract id.
@@ -147,6 +134,11 @@ public class LifecycleQueryFactory {
         + eventDatePlaceholderVar
         + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
         + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar + "}"
+        + "OPTIONAL{?iri " + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
+        "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?recurrences.}"
+        + "BIND(IF(BOUND(?recurrences),?recurrences,\"\") AS "
+        + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString()
+        + ")"
         + filterDateStatement
         + filterContractStatement
         // Event must be the last in the chain ie no other events will succeed it
@@ -264,7 +256,15 @@ public class LifecycleQueryFactory {
    */
   public String genLifecycleFilterStatements(LifecycleEventType lifecycleEvent) {
     StringBuilder query = new StringBuilder();
-    query.append(this.getReadableScheduleQuery());
+    String recurrenceVar = QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString();
+    query.append(this.getScheduleTemplate())
+        .append("BIND(IF(BOUND(")
+        .append(recurrenceVar)
+        .append("),")
+        .append(recurrenceVar)
+        .append(",\"\") AS ")
+        .append(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).getQueryString())
+        .append(")");
     switch (lifecycleEvent) {
       case LifecycleEventType.APPROVED:
         TriplePattern pattern = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
@@ -359,14 +359,13 @@ public class LifecycleQueryFactory {
         + "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule> ?schedule."
         + "?schedule <https://www.omg.org/spec/Commons/DatesAndTimes/hasStartDate>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> "
         + QueryResource.genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY).getQueryString() + ";"
-        + "^<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndDate>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> "
-        + QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY).getQueryString() + ";"
         + "<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimePeriod>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasStart>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue> "
         + QueryResource.genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY).getQueryString() + ";"
         + "<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimePeriod>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndTime>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue> "
-        + QueryResource.genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY).getQueryString() + ";"
-        + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> "
-        + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString()
-        + ShaclResource.FULL_STOP;
+        + QueryResource.genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY).getQueryString() + ShaclResource.FULL_STOP
+        + "OPTIONAL{?schedule ^<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndDate>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> "
+        + QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY).getQueryString() + ".}"
+        + "OPTIONAL{?schedule <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?"
+        + LifecycleResource.SCHEDULE_RECURRENCE_KEY + ".}";
   }
 }
