@@ -303,6 +303,11 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         branchPatterns.offer(GraphPatterns.and(branchContent.toArray(new GraphPattern[0])));
       });
       // Branch patterns will always have at least one value as map is not empty
+      // WARNING: there is a bug in the library where if there is only one OPTIONAL
+      // statement in the union clause, it will produce the wrong result. See
+      // https://github.com/eclipse-rdf4j/rdf4j/issues/5455. An example is in the
+      // `testWrite_Simple_Branch` test method, where removing the third binding will
+      // show the inaccurate SPARQL query.
       GraphPatternNotTriples graphPatterns = GraphPatterns.union(branchPatterns.poll());
       while (!branchPatterns.isEmpty()) {
         graphPatterns.union(branchPatterns.poll());
