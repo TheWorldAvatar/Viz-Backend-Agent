@@ -12,7 +12,7 @@ WHERE{
     ?node sh:name ?branch .
   }
   OPTIONAL {
-    ?node (sh:and/rdf:rest*/rdf:first)?/sh:property[shape] ?property .
+    ?node (sh:and/rdf:rest*/rdf:first)?/sh:property?[shape] ?property .
     ?property sh:name ?name ;
               sh:path ?predicatepath .
     OPTIONAL{?property sh:node/sh:targetClass ?nested_class}
