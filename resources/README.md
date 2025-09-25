@@ -128,6 +128,9 @@ Users can generate branching forms using the `sh:or` logical constraint. This ge
 > [!TIP]
 > In scenarios where one of the branches do not have additional unique properties, users can generate this branch with an empty SHACL node shape without any property constraints. But only one variant of this is allowed at any time.
 
+> [!IMPORTANT]
+> `sh:or` is only permittable at the top level, and not within groups or `sh:node`.
+
 A sample SHACL format in (TTL) for `sh:or` is described below:
 
 ```
