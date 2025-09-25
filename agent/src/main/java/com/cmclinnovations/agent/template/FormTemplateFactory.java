@@ -183,11 +183,12 @@ public class FormTemplateFactory {
       if (currentProperty.has(ShaclResource.TWA_FORM_PREFIX + ShaclResource.BELONGS_TO_PROPERTY)) {
         JsonNode belongsToObjectNode = currentProperty
             .path(ShaclResource.TWA_FORM_PREFIX + ShaclResource.BELONGS_TO_PROPERTY);
-        ArrayNode typedTargetNode = this.jsonLdService.genArrayNode();
+        ArrayNode typedTargetNode;
         if (belongsToObjectNode.isArray()) {
           typedTargetNode = (ArrayNode) belongsToObjectNode;
         } else {
-          typedTargetNode.add((ObjectNode) belongsToObjectNode);
+          typedTargetNode = this.jsonLdService.genArrayNode();
+          typedTargetNode.add(belongsToObjectNode);
         }
         for (JsonNode nodePropertyNode : typedTargetNode) {
           String nodeId = nodePropertyNode.path(ShaclResource.ID_KEY).asText();
