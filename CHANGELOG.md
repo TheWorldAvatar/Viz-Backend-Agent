@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.15.1
+
+### Bug fixes
+
+- Fix form branching to be compliant with `sh:and` constraints and group them
+
 ## 1.15.0
 
 ### Changes

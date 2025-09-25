@@ -181,11 +181,21 @@ public class FormTemplateFactory {
       // If the property belongs to a node shape, extract the properties into another
       // set of mapping
       if (currentProperty.has(ShaclResource.TWA_FORM_PREFIX + ShaclResource.BELONGS_TO_PROPERTY)) {
-        String nodeId = currentProperty.path(ShaclResource.TWA_FORM_PREFIX + ShaclResource.BELONGS_TO_PROPERTY)
-            .get(0).path(ShaclResource.ID_KEY).asText();
-        Map<String, Map<String, Object>> nodeProperties = altProperties.getOrDefault(nodeId, new HashMap<>());
-        this.parseProperty(currentProperty, defaultVals, nodeProperties);
-        altProperties.put(nodeId, nodeProperties);
+        JsonNode belongsToObjectNode = currentProperty
+            .path(ShaclResource.TWA_FORM_PREFIX + ShaclResource.BELONGS_TO_PROPERTY);
+        ArrayNode typedTargetNode;
+        if (belongsToObjectNode.isArray()) {
+          typedTargetNode = (ArrayNode) belongsToObjectNode;
+        } else {
+          typedTargetNode = this.jsonLdService.genArrayNode();
+          typedTargetNode.add(belongsToObjectNode);
+        }
+        for (JsonNode nodePropertyNode : typedTargetNode) {
+          String nodeId = nodePropertyNode.path(ShaclResource.ID_KEY).asText();
+          Map<String, Map<String, Object>> nodeProperties = altProperties.getOrDefault(nodeId, new HashMap<>());
+          this.parseProperty(currentProperty, defaultVals, nodeProperties);
+          altProperties.put(nodeId, nodeProperties);
+        }
       } else {
         // Else simply generate the property
         this.parseProperty(currentProperty, defaultVals, defaultProperties);

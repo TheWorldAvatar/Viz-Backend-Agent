@@ -35,7 +35,7 @@ public class DeleteService {
    */
   public ResponseEntity<StandardApiResponse<?>> delete(String resourceID, String targetId) {
     LOGGER.debug("Deleting {} instance of {} ...", resourceID, targetId);
-    String outputs = this.queryTemplateService.genDeleteQuery(resourceID, targetId);
-    return this.kgService.delete(outputs, targetId);
+    String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId);
+    return this.kgService.delete(query, targetId);
   }
 }

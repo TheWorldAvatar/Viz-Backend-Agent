@@ -42,6 +42,7 @@ public class GetQueryTemplateFactoryTest {
   private static final String EXPECTED_SIMPLE_PARENT_FILE = "template/query/get/get_query_simple_parent";
   private static final String EXPECTED_SIMPLE_OPTIONAL_FILE = "template/query/get/get_query_simple_optional";
   private static final String EXPECTED_SIMPLE_ARRAY_FILE = "template/query/get/get_query_simple_array";
+  private static final String EXPECTED_SIMPLE_BRANCH_FILE = "template/query/get/get_query_simple_branch";
   private static final String EXPECTED_COMPLEX_ARRAY_FILE = "template/query/get/get_query_complex_array";
   private static final String EXPECTED_SIMPLE_ADDITIONAL_STATEMENT_FILE = "template/query/get/get_query_add_statement_only";
   private static final String EXPECTED_COMPLEX_ADDITIONAL_FILE = "template/query/get/get_query_add_statement";
@@ -52,6 +53,8 @@ public class GetQueryTemplateFactoryTest {
   private static final String SAMPLE_PARENT_PATH = SAMPLE_PREFIX + "parentPath1";
   private static final String SAMPLE_OPTIONAL_PATH = SAMPLE_PREFIX + "optionalPath1";
   private static final String SAMPLE_FIELD = "field";
+  private static final String SAMPLE_BRANCH = "branch";
+  private static final String SAMPLE_SECOND_BRANCH = "second branch";
   private static final String SAMPLE_ARRAY_FIELD = "array field";
   private static final String SAMPLE_GROUP_FIELD = "node field";
   private static final String SAMPLE_PARENT_FIELD = "parent field";
@@ -152,13 +155,42 @@ public class GetQueryTemplateFactoryTest {
   }
 
   @Test
+  void testWrite_Simple_Branch() throws IOException {
+    // Set up
+    Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
+    Queue<SparqlBinding> bindings = new ArrayDeque<>();
+    SparqlBinding binding = ShaclPropertyBindingTest
+        .genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_FIELD,
+            SAMPLE_CONCEPT, null, SAMPLE_BRANCH, SAMPLE_PRED_PATH, null, null, null, null, null,
+            false, false, false, false));
+    bindings.offer(binding);
+    binding = ShaclPropertyBindingTest
+        .genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_OPTIONAL_FIELD,
+            SAMPLE_CONCEPT, null, SAMPLE_SECOND_BRANCH, SAMPLE_PRED_PATH, null, null, null, null, null,
+            false, false, false, true));
+    bindings.offer(binding);
+    binding = ShaclPropertyBindingTest
+        .genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_FIELD,
+            SAMPLE_CONCEPT, null, SAMPLE_SECOND_BRANCH, SAMPLE_PRED_PATH, null, null, null, null, null,
+            false, false, false, false));
+    bindings.offer(binding);
+    nestedBindings.offer(bindings);
+    // Execute
+    String results = this.testFactory.write(
+        new QueryTemplateFactoryParameters(nestedBindings, "", null, "", new HashMap<>()));
+    // Assert
+    TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_BRANCH_FILE, results);
+  }
+
+  @Test
   void testWrite_Simple_Array() throws IOException {
     // Set up
     Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
     Queue<SparqlBinding> bindings = new ArrayDeque<>();
-    SparqlBinding binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_GROUP,
-        SAMPLE_CONCEPT, null, null, SAMPLE_PRED_PATH, null, null, null, null, null,
-        false, true, false, false));
+    SparqlBinding binding = ShaclPropertyBindingTest
+        .genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_GROUP,
+            SAMPLE_CONCEPT, null, null, SAMPLE_PRED_PATH, null, null, null, null, null,
+            false, true, false, false));
     bindings.offer(binding);
     nestedBindings.offer(bindings);
 
@@ -192,9 +224,10 @@ public class GetQueryTemplateFactoryTest {
     // Set up
     Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
     Queue<SparqlBinding> bindings = new ArrayDeque<>();
-    SparqlBinding binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_GROUP,
-        SAMPLE_CONCEPT, null, null, SAMPLE_PRED_PATH, null, null, null, null, null,
-        false, true, false, false));
+    SparqlBinding binding = ShaclPropertyBindingTest
+        .genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_GROUP,
+            SAMPLE_CONCEPT, null, null, SAMPLE_PRED_PATH, null, null, null, null, null,
+            false, true, false, false));
     bindings.offer(binding);
     binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_ARRAY_GROUP,
         SAMPLE_CONCEPT, null, null, SAMPLE_PRED_PATH, null, null, null, null, null,
@@ -230,7 +263,8 @@ public class GetQueryTemplateFactoryTest {
     Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
     String results = this.testFactory.write(
-        new QueryTemplateFactoryParameters(nestedBindings, "", null, SAMPLE_ADDITIONAL_STATEMENT, new HashMap<>()));
+        new QueryTemplateFactoryParameters(nestedBindings, "", null, SAMPLE_ADDITIONAL_STATEMENT,
+            new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_ADDITIONAL_STATEMENT_FILE, results);
   }
@@ -240,7 +274,8 @@ public class GetQueryTemplateFactoryTest {
     Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
     String results = this.testFactory.write(
-        new QueryTemplateFactoryParameters(nestedBindings, "", null, SAMPLE_ADDITIONAL_STATEMENT, SAMPLE_ADD_VARS));
+        new QueryTemplateFactoryParameters(nestedBindings, "", null, SAMPLE_ADDITIONAL_STATEMENT,
+            SAMPLE_ADD_VARS));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_COMPLEX_ADDITIONAL_FILE, results);
   }
@@ -290,9 +325,10 @@ public class GetQueryTemplateFactoryTest {
   public static Queue<Queue<SparqlBinding>> initTestBindings() {
     Queue<Queue<SparqlBinding>> nestedBindings = new ArrayDeque<>();
     Queue<SparqlBinding> bindings = new ArrayDeque<>();
-    SparqlBinding binding = ShaclPropertyBindingTest.genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_FIELD,
-        SAMPLE_CONCEPT, null, null, SAMPLE_PRED_PATH, null, null, null, null, null,
-        false, false, false, false));
+    SparqlBinding binding = ShaclPropertyBindingTest
+        .genMockSparqlBinding(new SparqlBindingTestParameters(SAMPLE_FIELD,
+            SAMPLE_CONCEPT, null, null, SAMPLE_PRED_PATH, null, null, null, null, null,
+            false, false, false, false));
     bindings.offer(binding);
     nestedBindings.offer(bindings);
     // Attach second set
