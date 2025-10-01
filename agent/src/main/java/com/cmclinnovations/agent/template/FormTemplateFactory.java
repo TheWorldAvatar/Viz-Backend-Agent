@@ -211,8 +211,16 @@ public class FormTemplateFactory {
 
     // Branches
     List<Map<String, Object>> nodeShape = new ArrayList<>();
+    boolean hasOrderProperty = this.nodes.values().stream()
+        .anyMatch(node -> node.has(ShaclResource.SHACL_ORDER_PROPERTY));
     this.nodes.forEach((key, node) -> {
       Map<String, Object> output = new HashMap<>();
+      if (node.has(ShaclResource.SHACL_ORDER_PROPERTY)) {
+        output.put(ShaclResource.SHACL_ORDER_PROPERTY,
+            node.path(ShaclResource.SHACL_ORDER_PROPERTY).get(0).get(ShaclResource.VAL_KEY).asInt());
+      } else if (hasOrderProperty) {
+        output.put(ShaclResource.SHACL_ORDER_PROPERTY, -1);
+      }
       output.put(ShaclResource.LABEL_PROPERTY,
           node.path(ShaclResource.RDFS_PREFIX + ShaclResource.LABEL_PROPERTY).get(0));
       output.put(ShaclResource.COMMENT_PROPERTY,
@@ -221,6 +229,9 @@ public class FormTemplateFactory {
           this.genOutputs(altProperties.getOrDefault(key, new HashMap<>())));
       nodeShape.add(output);
     });
+    if (hasOrderProperty) {
+      nodeShape.sort(Comparator.comparingInt(map -> (int) map.get(ShaclResource.SHACL_ORDER_PROPERTY)));
+    }
     this.form.put(ShaclResource.NODE_PROPERTY, nodeShape);
   }
 

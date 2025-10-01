@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.15.2
+
+### Changes
+
+- Added ordering for form branching
+
 ## 1.15.1
 
 ### Bug fixes

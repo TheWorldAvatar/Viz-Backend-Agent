@@ -28,12 +28,13 @@ CONSTRUCT {
     rdfs:label ?group ;
     rdfs:comment ?groupdesc ;
     twa:role ?grouprole ;
-	sh:order ?grouporder;
+	  sh:order ?grouporder;
     sh:minCount ?mingroupcount ;
     sh:maxCount ?maxgroupcount .
   ?nodegroup rdf:type sh:NodeShape ;
     rdfs:label ?nodename ;
-    rdfs:comment ?nodedesc .
+    rdfs:comment ?nodedesc ;
+    sh:order ?nodeorder.
 } WHERE {
   ?shape rdf:type sh:NodeShape ;
     sh:targetClass [target] ;
@@ -42,6 +43,9 @@ CONSTRUCT {
     ?node sh:name ?nodename ;
     	sh:description ?nodedesc.
     BIND(IF(BOUND(?nodename),?node,?null) AS ?nodegroup)
+    OPTIONAL {
+      ?node sh:order ?nodeorder
+    }
   }
   OPTIONAL{
     ?node (sh:and/rdf:rest*/rdf:first)?/sh:property? ?property .
