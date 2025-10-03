@@ -109,6 +109,7 @@ public class LifecycleQueryFactory {
     String eventVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY).getQueryString();
     String eventIdVar = QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY).getQueryString();
     String eventStatusVar = QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY).getQueryString();
+    String lastModifiedVar = QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY).getQueryString();
 
     String filterContractStatement = contract != null ? "?iri dc-terms:identifier \"" + contract + "\"." : "";
     // Filter dates
@@ -125,13 +126,15 @@ public class LifecycleQueryFactory {
         + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
         + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
-        + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+        + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
+        + eventDatePlaceholderVar
+        + ";<https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + Rdf.iri(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString() + "."
         + "BIND(xsd:date(" + eventDatePlaceholderVar + ") AS " + eventDateVar + ")"
         + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + eventVar + ";"
         + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
-        + eventDatePlaceholderVar
+        + lastModifiedVar
         + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
         + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar + "}"
         + "OPTIONAL{?iri " + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
