@@ -415,7 +415,7 @@ public class LifecycleService {
     // Contract ID is mandatory to help generate the other related parameters
     params.put(LifecycleResource.CONTRACT_KEY, contractId);
     params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
-    params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getNextWorkingDate());
+    params.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getNextWorkingDate());
     this.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
     // Generate a new unique ID for the occurrence by retrieving the prefix from the
     // stage instance

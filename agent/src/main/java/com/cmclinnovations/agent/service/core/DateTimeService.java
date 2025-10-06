@@ -68,7 +68,7 @@ public class DateTimeService {
   }
 
   /**
-   * Get next working date (excluding weekend) in YYYY-MM-DD format.
+   * Get next working date (excluding weekend) in YYYY-MM-DD time format.
    */
   public String getNextWorkingDate() {
     LocalDate today = LocalDate.now();
@@ -77,7 +77,7 @@ public class DateTimeService {
       case DayOfWeek.SATURDAY -> 2;
       default -> 1;
     };
-    return today.plusDays(daysToAdd).format(this.formatter);
+    return today.plusDays(daysToAdd).atStartOfDay().format(this.timeFormatter);
   }
 
   /**
