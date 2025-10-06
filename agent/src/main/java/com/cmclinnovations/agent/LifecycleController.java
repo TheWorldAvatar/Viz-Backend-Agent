@@ -64,7 +64,7 @@ public class LifecycleController {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     // Add current date into parameters
-    params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDate());
+    params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
     params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_PENDING_STATUS);
     LOGGER.info("Received request to generate a new lifecycle for contract <{}>...", contractId);
     ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(LifecycleResource.LIFECYCLE_RESOURCE,
@@ -288,7 +288,7 @@ public class LifecycleController {
     LOGGER.info("Received request to update draft contract...");
     String targetId = params.get(QueryResource.ID_KEY).toString();
     // Add current date into parameters
-    params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDate());
+    params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
     params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
     ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.updateContractSchedule(params);
     if (scheduleResponse.getStatusCode() == HttpStatus.OK) {

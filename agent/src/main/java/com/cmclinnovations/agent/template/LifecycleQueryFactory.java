@@ -268,13 +268,18 @@ public class LifecycleQueryFactory {
         .append(")");
     switch (lifecycleEvent) {
       case LifecycleEventType.APPROVED:
-        TriplePattern pattern = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
+        Variable creationVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY);
+        String creationStatement = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
             .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE)
-            .then(QueryResource.CMNS_COL_COMPRISES)
-            .then(QueryResource.CMNS_DSG_DESCRIBES)
-            .then(RDFS.LABEL),
-            QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)));
-        query.append(pattern.getQueryString());
+            .then(QueryResource.CMNS_COL_COMPRISES), creationVar).getQueryString();
+        String creationEventStatement = creationVar
+            .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, QueryResource.ONTOSERVICE.iri("ContractCreation"))
+            .andHas(QueryResource.FIBO_FND_DT_OC_HAS_EVENT_DATE,
+                QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY))
+            .andHas(p -> p.pred(QueryResource.CMNS_DSG_DESCRIBES).then(RDFS.LABEL),
+                QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)))
+            .getQueryString();
+        query.append(creationStatement).append(creationEventStatement);
         this.appendFilterExists(query, false, LifecycleResource.EVENT_APPROVAL);
         break;
       case LifecycleEventType.SERVICE_EXECUTION:
