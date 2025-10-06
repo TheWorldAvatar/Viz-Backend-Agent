@@ -13,9 +13,9 @@
     "@type": "literal"
   },
   "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate": {
-    "@replace": "date",
+    "@replace": "dateTime",
     "@type": "literal",
-    "datatype": "http://www.w3.org/2001/XMLSchema#date"
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
   },
   "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies": {
     "@id": "https://www.theworldavatar.com/kg/ontoservice/ServiceDispatchEvent"
