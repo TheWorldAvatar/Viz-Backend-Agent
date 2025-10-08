@@ -30,16 +30,15 @@ public class ConcurrencyService {
    * @return The result returned by the writer function.
    */
   public <T> T executeInWriteLock(String resource, Supplier<T> writer) {
-    StampedLock lock = getLock(resource);
+    StampedLock lock = this.getLock(resource);
     long stamp = lock.writeLock();
-    String threadName = Thread.currentThread().getName();
     try {
-      LOGGER.info("WRITE lock for {} acquired by {}", resource, threadName);
+      LOGGER.info("WRITE lock for {} acquired...", resource);
       return writer.get();
 
     } finally {
       lock.unlockWrite(stamp);
-      LOGGER.info("WRITE lock for {} released by {}", resource, threadName);
+      LOGGER.info("WRITE lock for {} released...", resource);
     }
   }
 
@@ -51,7 +50,7 @@ public class ConcurrencyService {
    * @return The result returned by the reader function, possibly after a retry.
    */
   public <T> T executeInOptimisticReadLock(String resource, Supplier<T> reader) {
-    StampedLock lock = getLock(resource);
+    StampedLock lock = this.getLock(resource);
     long stamp = lock.tryOptimisticRead();
     T result = reader.get();
     // Validate if optimistic read is successful ie has a writer modified the data
