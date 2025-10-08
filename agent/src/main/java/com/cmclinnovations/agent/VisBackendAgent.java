@@ -3,7 +3,6 @@ package com.cmclinnovations.agent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
-import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,7 +28,6 @@ import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.application.GeocodingService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
-import com.cmclinnovations.agent.utils.QueryResource;
 
 @RestController
 public class VisBackendAgent {
@@ -227,7 +225,6 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> addInstance(@PathVariable String type,
       @RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to add one {}...", type);
-    String id = instance.getOrDefault(QueryResource.ID_KEY, UUID.randomUUID()).toString();
     return this.concurrencyService.executeInWriteLock(type, () -> {
       return this.addService.instantiate(type, instance);
     });
