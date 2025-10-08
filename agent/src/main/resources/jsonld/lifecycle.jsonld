@@ -67,7 +67,7 @@
           },
           "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/Date",
           "https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue": {
-            "@replace": "current date",
+            "@replace": "date",
             "@type": "literal",
             "datatype": "http://www.w3.org/2001/XMLSchema#date"
           }
