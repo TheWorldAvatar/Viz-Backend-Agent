@@ -411,12 +411,21 @@ public class LifecycleService {
    */
   public ResponseEntity<StandardApiResponse<?>> continueTaskOnNextWorkingDay(String taskId, String contractId) {
     LOGGER.info("Generating the task for the next working day...");
+    String nextWorkingDateTime = this.dateTimeService.getNextWorkingDate();
+    String nextEventQuery = this.lifecycleQueryFactory.getContractEventQuery(contractId,
+        this.dateTimeService.getDateFromDateTime(nextWorkingDateTime),
+        LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    Queue<SparqlBinding> nextEvents = this.getService.getInstances(nextEventQuery);
+    if (!nextEvents.isEmpty()) {
+      return this.responseEntityBuilder.success(contractId,
+          LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_TASK_KEY));
+    }
     // First instantiate the order received occurrence
     Map<String, Object> params = new HashMap<>();
     // Contract ID is mandatory to help generate the other related parameters
     params.put(LifecycleResource.CONTRACT_KEY, contractId);
     params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
-    params.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getNextWorkingDate());
+    params.put(LifecycleResource.DATE_TIME_KEY, nextWorkingDateTime);
     this.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
     // Generate a new unique ID for the occurrence by retrieving the prefix from the
     // stage instance
