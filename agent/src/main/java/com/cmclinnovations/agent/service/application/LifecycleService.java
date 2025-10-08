@@ -417,8 +417,9 @@ public class LifecycleService {
         LifecycleEventType.SERVICE_ORDER_RECEIVED);
     Queue<SparqlBinding> nextEvents = this.getService.getInstances(nextEventQuery);
     if (!nextEvents.isEmpty()) {
-      return this.responseEntityBuilder.success(contractId,
-          LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_TASK_KEY));
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_TASK_KEY),
+          HttpStatus.CONFLICT);
     }
     // First instantiate the order received occurrence
     Map<String, Object> params = new HashMap<>();

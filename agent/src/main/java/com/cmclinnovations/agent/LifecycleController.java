@@ -309,8 +309,9 @@ public class LifecycleController {
       String contractStatus = this.lifecycleService.getContractStatus(id).getBody().data().message();
       // If approved, do not allow modifications
       if (!contractStatus.equals("Pending")) {
-        return this.responseEntityBuilder.success(id,
-            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY));
+        return this.responseEntityBuilder.error(
+            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY),
+            HttpStatus.CONFLICT);
       }
       return this.lifecycleService.updateContractStatus(id);
     });
@@ -328,8 +329,9 @@ public class LifecycleController {
       String contractStatus = this.lifecycleService.getContractStatus(targetId).getBody().data().message();
       // If approved, do not allow modifications
       if (!contractStatus.equals("Pending")) {
-        return this.responseEntityBuilder.success(targetId,
-            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY));
+        return this.responseEntityBuilder.error(
+            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY),
+            HttpStatus.CONFLICT);
       }
       // Add current date into parameters
       params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
