@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ConcurrencyService {
-  private final ConcurrentMap<String, StampedLock> lockMap = new ConcurrentHashMap<>();
+  private static final ConcurrentMap<String, StampedLock> LOCK_MAP = new ConcurrentHashMap<>();
   private static final Logger LOGGER = LogManager.getLogger(ConcurrencyService.class);
 
   /**
@@ -76,6 +76,6 @@ public class ConcurrencyService {
    * @return The StampedLock instance for that specific resource.
    */
   private StampedLock getLock(String resource) {
-    return lockMap.computeIfAbsent(resource, k -> new StampedLock());
+    return LOCK_MAP.computeIfAbsent(resource, k -> new StampedLock());
   }
 }
