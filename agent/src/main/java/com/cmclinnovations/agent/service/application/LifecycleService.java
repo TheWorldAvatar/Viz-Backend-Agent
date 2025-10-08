@@ -64,6 +64,7 @@ public class LifecycleService {
     this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
 
+    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY), List.of(-3, 2));
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY), List.of(2, 0));
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY), List.of(2, 1));
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY), List.of(2, 2));
@@ -73,7 +74,8 @@ public class LifecycleService {
         List.of(2, 5));
 
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.DATE_KEY), List.of(-3, 1));
-    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_KEY), List.of(-3, 2));
+    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY), List.of(-3, 2));
+    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_KEY), List.of(-3, 3));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY), List.of(1000, 999));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY), List.of(1000, 1000));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY), List.of(1000, 1001));
@@ -95,23 +97,11 @@ public class LifecycleService {
 
   /**
    * Populate the remaining occurrence parameters into the request parameters.
-   * Defaults to the current date as date is not supplied.
    * 
    * @param params    The target parameters to update.
    * @param eventType The target event type to retrieve.
    */
   public void addOccurrenceParams(Map<String, Object> params, LifecycleEventType eventType) {
-    addOccurrenceParams(params, eventType, this.dateTimeService.getCurrentDate());
-  }
-
-  /**
-   * Populate the remaining occurrence parameters into the request parameters.
-   * 
-   * @param params    The target parameters to update.
-   * @param eventType The target event type to retrieve.
-   * @param date      Date in YYYY-MM-DD format.
-   */
-  public void addOccurrenceParams(Map<String, Object> params, LifecycleEventType eventType, String date) {
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     LOGGER.debug("Adding occurrence parameters for {}...", contractId);
     String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
@@ -119,8 +109,6 @@ public class LifecycleService {
     LifecycleResource.genIdAndInstanceParameters(StringResource.getPrefix(stage), eventType, params);
     params.put(LifecycleResource.STAGE_KEY, stage);
     params.put(LifecycleResource.EVENT_KEY, eventType.getEvent());
-    // Only update the date field if there is no pre-existing field
-    params.putIfAbsent(LifecycleResource.DATE_KEY, date);
     params.putIfAbsent(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
     // Update the order enum with the specific event instance if it exist
     params.computeIfPresent(LifecycleResource.ORDER_KEY, (key, value) -> {
@@ -376,7 +364,7 @@ public class LifecycleService {
     // Extract date of occurrences based on the schedule information
     // For perpetual and single time schedules, simply add the start date
     if (recurrence == null || recurrence.equals("P1D")) {
-      occurrences.offer(startDate);
+      occurrences.offer(this.dateTimeService.getDateTimeFromDate(startDate));
     } else if (recurrence.equals("P2D")) {
       // Alternate day recurrence should have dual interval
       occurrences = this.dateTimeService.getOccurrenceDates(startDate, endDate, 2);
@@ -401,7 +389,7 @@ public class LifecycleService {
       // set new id each time
       params.remove(QueryResource.ID_KEY);
       LifecycleResource.genIdAndInstanceParameters(orderPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
-      params.put(LifecycleResource.DATE_KEY, occurrenceDate);
+      params.put(LifecycleResource.DATE_TIME_KEY, occurrenceDate);
       ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
           LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
       // Error logs for any specified occurrence
@@ -428,7 +416,7 @@ public class LifecycleService {
     // Contract ID is mandatory to help generate the other related parameters
     params.put(LifecycleResource.CONTRACT_KEY, contractId);
     params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
-    params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getNextWorkingDate());
+    params.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getNextWorkingDate());
     this.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
     // Generate a new unique ID for the occurrence by retrieving the prefix from the
     // stage instance
@@ -502,12 +490,12 @@ public class LifecycleService {
     String remarksMsg;
     String successMsgId;
     LifecycleEventType succeedsEventType;
+    params.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
     switch (eventType) {
       case LifecycleEventType.SERVICE_EXECUTION:
         remarksMsg = ORDER_COMPLETE_MESSAGE;
         successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_COMPLETE_KEY;
         succeedsEventType = LifecycleEventType.SERVICE_ORDER_DISPATCHED;
-        params.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
         break;
       case LifecycleEventType.SERVICE_ORDER_DISPATCHED:
         remarksMsg = ORDER_DISPATCH_MESSAGE;
