@@ -21,12 +21,14 @@ import com.cmclinnovations.agent.model.SparqlBinding;
 @Service
 public class DateTimeService {
   private final DateTimeFormatter formatter;
+  private final DateTimeFormatter timeFormatter;
 
   /**
    * Constructs a new service with the following dependencies.
    */
   public DateTimeService() {
     this.formatter = DateTimeFormatter.ISO_LOCAL_DATE;
+    this.timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
   }
 
   /**
@@ -66,16 +68,16 @@ public class DateTimeService {
   }
 
   /**
-   * Get next working date (excluding weekend) in YYYY-MM-DD format.
+   * Get next working date (excluding weekend) in YYYY-MM-DD time format.
    */
   public String getNextWorkingDate() {
     LocalDate today = LocalDate.now();
     long daysToAdd = switch (today.getDayOfWeek()) {
-      case DayOfWeek.FRIDAY ->  3;
-      case DayOfWeek.SATURDAY ->  2;
+      case DayOfWeek.FRIDAY -> 3;
+      case DayOfWeek.SATURDAY -> 2;
       default -> 1;
     };
-    return today.plusDays(daysToAdd).format(this.formatter);
+    return today.plusDays(daysToAdd).atStartOfDay().format(this.timeFormatter);
   }
 
   /**
@@ -86,6 +88,15 @@ public class DateTimeService {
    */
   public LocalDate parseDate(String date) {
     return LocalDate.parse(date, this.formatter);
+  }
+
+  /**
+   * Retrieve the date as a date time string at start of day.
+   * 
+   * @param timestamp The timestamp input in UNIX seconds.
+   */
+  public String getDateTimeFromDate(String date) {
+    return this.parseDate(date).atStartOfDay().format(this.timeFormatter);
   }
 
   /**
@@ -135,7 +146,7 @@ public class DateTimeService {
     LocalDate endDate = this.parseDate(endDateInput);
     // Loop to calculate all occurrence dates
     while (!currentDate.isAfter(endDate)) {
-      String currentDateString = currentDate.format(this.formatter);
+      String currentDateString = currentDate.atStartOfDay().format(this.timeFormatter);
       occurrenceDates.offer(currentDateString);
       currentDate = currentDate.plusDays(interval); // Increment by the interval
     }
@@ -169,7 +180,7 @@ public class DateTimeService {
 
         // Ensure the calculated date is within the range [startDate, endDate]
         if (!occurrenceDate.isBefore(startDate) && !occurrenceDate.isAfter(endDate)) {
-          String occurrenceDateString = occurrenceDate.format(this.formatter);
+          String occurrenceDateString = occurrenceDate.atStartOfDay().format(this.timeFormatter);
           occurrenceDates.offer(occurrenceDateString);
         }
       }

@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.15.3
+
+### Changes
+
+- Added date provenance for draft and active contracts using date time values
+- Date to execute task is now retrieved only from the order created occurrence date
+
 ## 1.15.2
 
 ### Changes

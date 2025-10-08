@@ -109,6 +109,7 @@ public class LifecycleQueryFactory {
     String eventVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY).getQueryString();
     String eventIdVar = QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY).getQueryString();
     String eventStatusVar = QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY).getQueryString();
+    String lastModifiedVar = QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY).getQueryString();
 
     String filterContractStatement = contract != null ? "?iri dc-terms:identifier \"" + contract + "\"." : "";
     // Filter dates
@@ -125,13 +126,15 @@ public class LifecycleQueryFactory {
         + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
         + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
-        + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+        + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
+        + eventDatePlaceholderVar
+        + ";<https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + Rdf.iri(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString() + "."
         + "BIND(xsd:date(" + eventDatePlaceholderVar + ") AS " + eventDateVar + ")"
         + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + eventVar + ";"
         + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
-        + eventDatePlaceholderVar
+        + lastModifiedVar
         + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
         + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar + "}"
         + "OPTIONAL{?iri " + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
@@ -182,13 +185,11 @@ public class LifecycleQueryFactory {
         "?stage cmns-col:comprises ?event;" +
         "cmns-col:comprises ?iri." +
         "?event fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;" +
-        "^cmns-dt:succeeds* ?final_event;" +
+        "fibo-fnd-dt-oc:hasEventDate ?date;" +
         "^cmns-dt:succeeds* ?iri." +
-        "?final_event fibo-fnd-dt-oc:hasEventDate ?date." +
         "?iri dc-terms:identifier ?id;" +
         "fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
         dateFilter +
-        "MINUS{?final_event ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}" +
         "}";
   }
 
@@ -267,13 +268,18 @@ public class LifecycleQueryFactory {
         .append(")");
     switch (lifecycleEvent) {
       case LifecycleEventType.APPROVED:
-        TriplePattern pattern = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
+        Variable creationVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY);
+        String creationStatement = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
             .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE)
-            .then(QueryResource.CMNS_COL_COMPRISES)
-            .then(QueryResource.CMNS_DSG_DESCRIBES)
-            .then(RDFS.LABEL),
-            QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)));
-        query.append(pattern.getQueryString());
+            .then(QueryResource.CMNS_COL_COMPRISES), creationVar).getQueryString();
+        String creationEventStatement = creationVar
+            .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, QueryResource.ONTOSERVICE.iri("ContractCreation"))
+            .andHas(QueryResource.FIBO_FND_DT_OC_HAS_EVENT_DATE,
+                QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY))
+            .andHas(p -> p.pred(QueryResource.CMNS_DSG_DESCRIBES).then(RDFS.LABEL),
+                QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)))
+            .getQueryString();
+        query.append(creationStatement).append(creationEventStatement);
         this.appendFilterExists(query, false, LifecycleResource.EVENT_APPROVAL);
         break;
       case LifecycleEventType.SERVICE_EXECUTION:
