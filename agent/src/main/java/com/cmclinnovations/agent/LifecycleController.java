@@ -305,6 +305,13 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> resetDraftContractStatus(@PathVariable String id) {
     LOGGER.info("Received request to reset status of draft contract...");
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
+      // Verify if the contract has already been approved
+      String contractStatus = this.lifecycleService.getContractStatus(id).getBody().data().message();
+      // If approved, do not allow modifications
+      if (!contractStatus.equals("Pending")) {
+        return this.responseEntityBuilder.success(id,
+            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY));
+      }
       return this.lifecycleService.updateContractStatus(id);
     });
   }
@@ -317,6 +324,13 @@ public class LifecycleController {
     LOGGER.info("Received request to update draft contract...");
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
       String targetId = params.get(QueryResource.ID_KEY).toString();
+      // Verify if the contract has already been approved
+      String contractStatus = this.lifecycleService.getContractStatus(targetId).getBody().data().message();
+      // If approved, do not allow modifications
+      if (!contractStatus.equals("Pending")) {
+        return this.responseEntityBuilder.success(targetId,
+            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY));
+      }
       // Add current date into parameters
       params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
       params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
