@@ -123,6 +123,13 @@ public class LifecycleController {
     LOGGER.info("Received request to commence the services for a contract...");
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
+      // Verify if the contract has already been approved
+      String contractStatus = this.lifecycleService.getContractStatus(contractId).getBody().data().message();
+      // If approved, do not allow duplicate approval
+      if (!contractStatus.equals("Pending")) {
+        return this.responseEntityBuilder.success(contractId,
+            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_APPROVAL_KEY));
+      }
       boolean hasError = this.lifecycleService.genOrderReceivedOccurrences(contractId);
       if (hasError) {
         throw new IllegalStateException(
