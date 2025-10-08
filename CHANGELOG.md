@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.16.0
+
+### Changes
+
+- Added lock mechanism for most routes
+- Added checks to prevent duplicate approval, modifications of approved contracts, and scheduling a duplicate task entry on next working date
+
 ## 1.15.3
 
 ### Changes

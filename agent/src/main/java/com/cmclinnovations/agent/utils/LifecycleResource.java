@@ -17,6 +17,7 @@ import com.cmclinnovations.agent.service.core.FileService;
 public class LifecycleResource {
   public static final String LIFECYCLE_RESOURCE = "lifecycle";
   public static final String SCHEDULE_RESOURCE = "schedule";
+  public static final String TASK_RESOURCE = "task";
   public static final String OCCURRENCE_INSTANT_RESOURCE = "occurrence instant";
   public static final String OCCURRENCE_LINK_RESOURCE = "occurrence link";
 

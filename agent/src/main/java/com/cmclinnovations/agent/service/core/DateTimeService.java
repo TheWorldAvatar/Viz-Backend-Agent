@@ -91,9 +91,18 @@ public class DateTimeService {
   }
 
   /**
+   * Retrieve the date component of the date time string.
+   * 
+   * @param dateTime The input in date time format.
+   */
+  public String getDateFromDateTime(String dateTime) {
+    return LocalDate.parse(dateTime, this.timeFormatter).format(this.formatter);
+  }
+
+  /**
    * Retrieve the date as a date time string at start of day.
    * 
-   * @param timestamp The timestamp input in UNIX seconds.
+   * @param date The input in YYYY-MM-DD format.
    */
   public String getDateTimeFromDate(String date) {
     return this.parseDate(date).atStartOfDay().format(this.timeFormatter);
