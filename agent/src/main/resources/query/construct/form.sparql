@@ -10,6 +10,7 @@ CONSTRUCT {
     sh:in ?range ;
     sh:class ?dataclass ;
     sh:defaultValue ?defaultValue ;
+    twa:singleLine ?isSingleLine ;
     twa:belongsTo ?nodegroup ;
     twa:dependentOn ?dependentShape ;
     twa:role ?role ;
@@ -57,6 +58,8 @@ CONSTRUCT {
     BIND(IF(BOUND(?nodename),BNODE(CONCAT(?nodename,?propname,?name)),?subproperty) AS ?iri)
     {
       ?subproperty sh:datatype ?type .
+      OPTIONAL { ?subproperty twa:singleLine ?isSingleLine . }
+      }
     }
     UNION
     {
