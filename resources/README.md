@@ -116,7 +116,9 @@ The following SHACL value constraints will be extracted and present in the form 
 8. sh:maxLength
 9. sh:pattern
 10. `sh:defaultValue`: Accepts either an IRI `<iri>`or string literal `"string"`
-11. <https://theworldavatar.io/kg/form/step>
+11. <https://theworldavatar.io/kg/form/step>: Defines the increment between valid numbers for a numeric input field
+  - When combined with the `sh:pattern` attribute, it enforces specific format requirements. For example, with the pattern `\.(00|15|30|45|60)$` and a `0.05` step, the field will increment to the nearest value matching the pattern within that step. Ensure the step value does not exceed the pattern's granularity; `0.15` steps would fail to meet the `\.(00|15|30|45|60)$` pattern, while `0.01` steps are inefficient.
+12. <https://theworldavatar.io/kg/form/singleLine>: A (`true`/`false`) boolean indicating if a text area input is required. MUST be used with a `sh:datatype xsd:string`.
 
 > [!IMPORTANT]  
 > There is no need to include an `id` property shape in the SHACL config, as the agent has its own mechanism to retrieve the identifier that is typically generated using the relationship `http://purl.org/dc/terms/identifier` IF the instance was added by the agent. If the instance was uploaded via other means, please ensure that the relevant instances contains the relationship so that the agent can return the right results when querying for specific instances.
