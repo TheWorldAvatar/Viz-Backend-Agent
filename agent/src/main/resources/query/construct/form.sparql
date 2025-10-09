@@ -59,7 +59,6 @@ CONSTRUCT {
     {
       ?subproperty sh:datatype ?type .
       OPTIONAL { ?subproperty twa:singleLine ?isSingleLine . }
-      }
     }
     UNION
     {
