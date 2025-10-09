@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.16.1
+
+### Bug fixes
+
+- Fix to update date modified for draft contract changes
+
 ## 1.16.0
 
 ### Changes
