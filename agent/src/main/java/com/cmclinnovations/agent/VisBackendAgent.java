@@ -98,7 +98,7 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", false, new HashMap<>());
+      Queue<SparqlBinding> instances = this.getService.getInstances(type, "", false, null, "", new HashMap<>());
       return this.responseEntityBuilder.success(null,
           instances.stream()
               .map(SparqlBinding::get)
@@ -116,7 +116,7 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances with labels for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", true, new HashMap<>());
+      Queue<SparqlBinding> instances = this.getService.getInstances(type, "", true, null, "", new HashMap<>());
       return this.responseEntityBuilder.success(null,
           instances.stream()
               .map(SparqlBinding::get)
@@ -136,7 +136,7 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances of target {} associated with the parent type {}...", type,
         parent);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, new ParentField(id, parent), "", "", false,
+      Queue<SparqlBinding> instances = this.getService.getInstances(type, "", false, new ParentField(id, parent), "",
           new HashMap<>());
       return this.responseEntityBuilder.success(null,
           instances.stream()

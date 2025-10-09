@@ -79,25 +79,22 @@ public class QueryTemplateService {
   }
 
   /**
-   * Retrieves the SHACL path query for a target IRI in `application-form.yml`.
+   * Retrieves the target IRI in `application-form.yml`.
    * 
-   * @param resourceID   The target resource identifier.
-   * @param requireLabel Indicates if labels should be returned for all the
-   *                     fields that are IRIs.
+   * @param resourceID The target resource identifier.
    */
-  public String getShaclQuery(String resourceID, boolean requireLabel) {
-    String iri = this.fileService.getTargetIri(resourceID);
-    return this.getShaclQuery(requireLabel, iri);
+  public String getIri(String resourceID) {
+    return this.fileService.getTargetIri(resourceID).getQueryString();
   }
 
   /**
    * Retrieves the required SHACL path query.
    * 
+   * @param replacement  The replacement string for [target].
    * @param requireLabel Indicates if labels should be returned for all the
    *                     fields that are IRIs.
-   * @param replacement  The replacement string for [target].
    */
-  public String getShaclQuery(boolean requireLabel, String replacement) {
+  public String getShaclQuery(String replacement, boolean requireLabel) {
     LOGGER.debug("Retrieving the required SHACL query...");
     String queryPath = FileService.SHACL_PATH_QUERY_RESOURCE;
     if (requireLabel) {

@@ -58,34 +58,48 @@ public class GetService {
   }
 
   /**
+   * Retrieve the get queries that will be executed.
+   * 
+   * @param shaclReplacement The replacement value of the SHACL query target
+   * @param targetId         An optional field to target the query at a specific
+   *                         instance.
+   * @param requireLabel     Indicates if labels should be returned
+   */
+  public String getQuery(String shaclReplacement, String targetId, boolean requireLabel) {
+    String query = this.queryTemplateService.getShaclQuery(shaclReplacement, requireLabel);
+    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
+    return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, targetId,
+        null, "", new HashMap<>());
+  }
+
+  /**
+   * Retrieve the matching instances of the search criterias.
+   * 
+   * @param resourceID The target resource identifier for the instance class.
+   * @param criterias  All the available search criteria inputs.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getMatchingInstances(String resourceID, Map<String, String> criterias) {
+    LOGGER.debug("Retrieving the form template for {} ...", resourceID);
+    String iri = this.queryTemplateService.getIri(resourceID);
+    String query = this.queryTemplateService.getShaclQuery(iri, false);
+    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
+    String searchQuery = this.queryTemplateService.genSearchQuery(nestedVariablesAndPropertyPaths, criterias);
+    // Query for direct instances
+    Queue<SparqlBinding> results = this.kgService.query(searchQuery, SparqlEndpointType.MIXED);
+    LOGGER.info(SUCCESSFUL_REQUEST_MSG);
+    return this.responseEntityBuilder.success(
+        results.stream()
+            .map(binding -> binding.getFieldValue(QueryResource.IRI_KEY))
+            .toList());
+  }
+
+  /**
    * Retrieve all the target instances and their information from the query input.
    * 
    * @param query Query for execution.
    */
   public Queue<SparqlBinding> getInstances(String query) {
     return this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
-  }
-
-  /**
-   * Retrieve all the target instances and their information. This method can also
-   * retrieve instances associated with a specific parent instance if declared.
-   * 
-   * @param resourceID   The target resource identifier for the instance
-   *                     class.
-   * @param parentField  Optional parent field containing its id and name.
-   * @param requireLabel Indicates if labels should be returned for all the
-   *                     fields that are IRIs.
-   */
-  public Queue<SparqlBinding> getInstances(String resourceID, ParentField parentField, String targetId,
-      String addQueryStatements, boolean requireLabel, Map<Variable, List<Integer>> addVars) {
-    LOGGER.debug("Retrieving all instances of {} ...", resourceID);
-    if (requireLabel) {
-      // Parent related parameters should be disabled
-      parentField = null;
-    }
-    String query = this.queryTemplateService.getShaclQuery(resourceID, requireLabel);
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    return this.getInstances(nestedVariablesAndPropertyPaths, targetId, parentField, addQueryStatements, addVars);
   }
 
   /**
@@ -96,7 +110,7 @@ public class GetService {
    */
   public SparqlBinding getInstance(String query) {
     LOGGER.debug("Retrieving an instance...");
-    Queue<SparqlBinding> results = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
+    Queue<SparqlBinding> results = this.getInstances(query);
     if (results.size() > 1) {
       // When there is more than one results, verify if they can be grouped
       // as results might contain an array of different values for the same instance
@@ -129,104 +143,6 @@ public class GetService {
   }
 
   /**
-   * Retrieve only the specific instance and its information. This overloaded
-   * method will retrieve the replacement value required from the resource ID.
-   * 
-   * @param targetId     The target instance IRI.
-   * @param resourceID   The target resource identifier for the instance class.
-   * @param requireLabel Indicates if labels should be returned for all the
-   *                     fields that are IRIs.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getInstance(String targetId, String resourceID, boolean requireLabel) {
-    LOGGER.debug("Retrieving an instance of {} ...", resourceID);
-    String query = this.queryTemplateService.getShaclQuery(resourceID, requireLabel);
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    Queue<SparqlBinding> instances = this.getInstances(nestedVariablesAndPropertyPaths, targetId, null, "",
-        new HashMap<>());
-    return this.getSingleInstanceResponse(instances);
-  }
-
-  /**
-   * Retrieve only the specific instance for an associated lifecycle event.
-   * 
-   * @param targetId  The target instance IRI.
-   * @param eventType The target event type.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getInstance(String targetId, LifecycleEventType eventType) {
-    LOGGER.debug("Retrieving an instance ...");
-    String query = this.queryTemplateService.getShaclQuery(false, eventType.getShaclReplacement());
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    GraphPattern lifecycleEventPattern = GraphPatterns.tp(QueryResource.IRI_VAR,
-        QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-        Rdf.iri(eventType.getEvent()));
-    // Query for direct instances
-    Queue<SparqlBinding> instances = this.getInstances(nestedVariablesAndPropertyPaths, targetId, null,
-        lifecycleEventPattern.getQueryString(), new HashMap<>());
-    return this.getSingleInstanceResponse(instances);
-  }
-
-  /**
-   * Retrieve only the specific instance and its information. This overloaded
-   * method will retrieve the replacement value required from the resource ID.
-   * 
-   * @param queryVarsAndPaths  The query construction requirements.
-   * @param targetId           An optional field to target the query at a specific
-   *                           instance.
-   * @param addQueryStatements Additional query statements to be added
-   * @param addVars            Optional additional variables to be included in the
-   *                           query, along with their order sequence
-   */
-  private Queue<SparqlBinding> getInstances(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
-      ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
-    String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetId,
-        parentField, addQueryStatements, addVars);
-    LOGGER.debug("Querying the knowledge graph for the instances...");
-    List<Variable> varSequence = this.queryTemplateService.getFieldSequence();
-    // Query for direct instances
-    Queue<SparqlBinding> instances = this.kgService.query(getQuery, SparqlEndpointType.MIXED);
-    instances = this.kgService.combineBindingQueue(instances, this.queryTemplateService.getArrayVariables());
-    // If there is a variable sequence available, add the sequence to each binding,
-    if (!varSequence.isEmpty()) {
-      instances.forEach(instance -> instance.addSequence(varSequence));
-    }
-    return instances;
-  }
-
-  /**
-   * Retrieve the get queries that will be executed.
-   * 
-   * @param shaclReplacement The replacement value of the SHACL query target
-   * @param targetId         An optional field to target the query at a specific
-   *                         instance.
-   * @param requireLabel     Indicates if labels should be returned
-   */
-  public String getQuery(String shaclReplacement, String targetId, boolean requireLabel) {
-    String query = this.queryTemplateService.getShaclQuery(requireLabel, shaclReplacement);
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, targetId,
-        null, "", new HashMap<>());
-  }
-
-  /**
-   * Retrieve the best-fit response based on the results. This method caters to
-   * retrieving a single instance.
-   * 
-   * @param inputs The inputs for the method.
-   */
-  private ResponseEntity<StandardApiResponse<?>> getSingleInstanceResponse(Queue<SparqlBinding> inputs) {
-    if (inputs.size() == 1) {
-      return this.responseEntityBuilder.success(null, inputs.poll().get());
-    } else if (inputs.isEmpty()) {
-      return this.responseEntityBuilder.error(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
-    } else {
-      return this.responseEntityBuilder.error(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_MULTIPLE_INSTANCE_KEY),
-          HttpStatus.CONFLICT);
-    }
-  }
-
-  /**
    * Retrieve the metadata (IRI, label, and description) of the concept associated
    * with the target resource. This will return their current or sub-classes.
    * 
@@ -235,7 +151,7 @@ public class GetService {
   public ResponseEntity<StandardApiResponse<?>> getConceptMetadata(String conceptClass) {
     LOGGER.debug("Retrieving the instances for {} ...", conceptClass);
     String query = this.queryTemplateService.getConceptQuery(conceptClass);
-    Queue<SparqlBinding> results = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
+    Queue<SparqlBinding> results = this.getInstances(query);
     List<Map<String, Object>> resultItems;
     if (results.isEmpty()) {
       LOGGER.info(
@@ -256,7 +172,7 @@ public class GetService {
             .map(binding -> {
               Map<String, Object> bindMappings = binding.get();
               SparqlResponseField parentField = TypeCastUtils.castToObject(bindMappings.get("parent"),
-                      SparqlResponseField.class);
+                  SparqlResponseField.class);
               String parentValue = parentField.value();
               if (parentValue != null) {
                 String[] currentParentClasses = parentValue.split("\\s+");
@@ -283,23 +199,112 @@ public class GetService {
   }
 
   /**
-   * Retrieve the matching instances of the search criterias.
+   * Retrieve all the target instances and their information. This method can also
+   * retrieve instances associated with a specific parent instance if declared.
    * 
-   * @param resourceID The target resource identifier for the instance class.
-   * @param criterias  All the available search criteria inputs.
+   * @param resourceID         The target resource identifier for the instance
+   *                           class.
+   * @param targetId           An optional field to target the query at a
+   *                           specific instance.
+   * @param requireLabel       Indicates if labels should be returned for all
+   *                           the fields that are IRIs.
+   * @param parentField        Optional parent field.
+   * @param addQueryStatements Additional query statements to be added
+   * @param addVars            Optional additional variables to be included in
+   *                           the query, along with their order sequence
    */
-  public ResponseEntity<StandardApiResponse<?>> getMatchingInstances(String resourceID, Map<String, String> criterias) {
-    LOGGER.debug("Retrieving the form template for {} ...", resourceID);
-    String query = this.queryTemplateService.getShaclQuery(resourceID, false);
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    String searchQuery = this.queryTemplateService.genSearchQuery(nestedVariablesAndPropertyPaths, criterias);
+  public Queue<SparqlBinding> getInstances(String resourceID, String targetId, boolean requireLabel,
+      ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+    LOGGER.debug("Retrieving all instances of {} ...", resourceID);
+    String iri = this.queryTemplateService.getIri(resourceID);
+    return this.execGetInstances(iri, targetId, requireLabel, parentField, addQueryStatements, addVars);
+  }
+
+  /**
+   * Retrieve only the specific instance and its information. This overloaded
+   * method will retrieve the replacement value required from the resource ID.
+   * 
+   * @param targetId     The target instance IRI.
+   * @param resourceID   The target resource identifier for the instance class.
+   * @param requireLabel Indicates if labels should be returned for all the
+   *                     fields that are IRIs.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getInstance(String targetId, String resourceID, boolean requireLabel) {
+    LOGGER.debug("Retrieving an instance of {} ...", resourceID);
+    Queue<SparqlBinding> instances = this.getInstances(resourceID, targetId, requireLabel, null, "", new HashMap<>());
+    return this.getSingleInstanceResponse(instances);
+  }
+
+  /**
+   * Retrieve only the specific instance for an associated lifecycle event.
+   * 
+   * @param targetId  The target instance IRI.
+   * @param eventType The target event type.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getInstance(String targetId, LifecycleEventType eventType) {
+    LOGGER.debug("Retrieving an instance ...");
+    GraphPattern lifecycleEventPattern = GraphPatterns.tp(QueryResource.IRI_VAR,
+        QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+        Rdf.iri(eventType.getEvent()));
+    Queue<SparqlBinding> instances = this.execGetInstances(eventType.getShaclReplacement(), targetId, false,
+        null, lifecycleEventPattern.getQueryString(), new HashMap<>());
+    return this.getSingleInstanceResponse(instances);
+  }
+
+  /**
+   * Retrieve only the specific instance and its information. This overloaded
+   * method will retrieve the replacement value required from the resource ID.
+   * 
+   * @param nodeShapeReplacement The statement to target the node shape.
+   * @param targetId             An optional field to target the query at a
+   *                             specific instance.
+   * @param requireLabel         Indicates if labels should be returned for all
+   *                             the fields that are IRIs.
+   * @param parentField          Optional parent field.
+   * @param addQueryStatements   Additional query statements to be added
+   * @param addVars              Optional additional variables to be included in
+   *                             the query, along with their order sequence
+   */
+  private Queue<SparqlBinding> execGetInstances(String nodeShapeReplacement, String targetId, boolean requireLabel,
+      ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+    if (requireLabel) {
+      // Parent related parameters should be disabled
+      parentField = null;
+    }
+    String query = this.queryTemplateService.getShaclQuery(nodeShapeReplacement, requireLabel);
+    Queue<Queue<SparqlBinding>> queryVarsAndPaths = this.kgService.queryNestedPredicates(query);
+
+    String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetId,
+        parentField, addQueryStatements, addVars);
+    LOGGER.debug("Querying the knowledge graph for the instances...");
+    List<Variable> varSequence = this.queryTemplateService.getFieldSequence();
     // Query for direct instances
-    Queue<SparqlBinding> results = this.kgService.query(searchQuery, SparqlEndpointType.MIXED);
-    LOGGER.info(SUCCESSFUL_REQUEST_MSG);
-    return this.responseEntityBuilder.success(
-        results.stream()
-            .map(binding -> binding.getFieldValue(QueryResource.IRI_KEY))
-            .toList());
+    Queue<SparqlBinding> instances = this.kgService.query(getQuery, SparqlEndpointType.MIXED);
+    instances = this.kgService.combineBindingQueue(instances, this.queryTemplateService.getArrayVariables());
+    // If there is a variable sequence available, add the sequence to each binding,
+    if (!varSequence.isEmpty()) {
+      instances.forEach(instance -> instance.addSequence(varSequence));
+    }
+    return instances;
+  }
+
+  /**
+   * Retrieve the best-fit response based on the results. This method caters to
+   * retrieving a single instance.
+   * 
+   * @param inputs The inputs for the method.
+   */
+  private ResponseEntity<StandardApiResponse<?>> getSingleInstanceResponse(Queue<SparqlBinding> inputs) {
+    if (inputs.size() == 1) {
+      return this.responseEntityBuilder.success(null, inputs.poll().get());
+    } else if (inputs.isEmpty()) {
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
+    } else {
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_MULTIPLE_INSTANCE_KEY),
+          HttpStatus.CONFLICT);
+    }
   }
 
   /**
