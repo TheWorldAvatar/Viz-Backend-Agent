@@ -2,8 +2,8 @@ package com.cmclinnovations.agent.model;
 
 public record PaginationState(int pageIndex, int limit, Integer offset) {
     public PaginationState {
-        // Current page number must subtract 1, as the first page should have no offset
-        offset = (pageIndex - 1) * limit;
+        // Page index starts from 0
+        offset = pageIndex * limit;
     }
 
     public PaginationState(int pageIndex, int limit) {
