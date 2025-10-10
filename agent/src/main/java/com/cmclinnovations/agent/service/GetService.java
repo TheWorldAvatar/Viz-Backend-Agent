@@ -199,6 +199,18 @@ public class GetService {
   }
 
   /**
+   * Retrieves the number of instances belonging to the resource.
+   * 
+   * @param resourceID Target resource identifier for the instance class.
+   */
+  public int getCount(String resourceID) {
+    LOGGER.debug("Retrieving all instances of {} ...", resourceID);
+    String iri = this.queryTemplateService.getIri(resourceID);
+    Queue<String> ids = this.getAllIds(iri, null);
+    return ids.size();
+  }
+
+  /**
    * Retrieve all the target instances and their information. This method can also
    * retrieve instances associated with a specific parent instance if declared.
    * 
@@ -257,6 +269,21 @@ public class GetService {
   }
 
   /**
+   * Retrieve all IDs associated with the target replacement.
+   * 
+   * @param nodeShapeReplacement The statement to target the node shape.
+   * @param pagination           Optional state containing the current page and
+   *                             limit.
+   */
+  private Queue<String> getAllIds(String nodeShapeReplacement, PaginationState pagination) {
+    LOGGER.info("Retrieving all ids...");
+    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(nodeShapeReplacement, pagination);
+    return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
+        .map(binding -> binding.getFieldValue(QueryResource.ID_KEY))
+        .collect(Collectors.toCollection(ArrayDeque::new));
+  }
+
+  /**
    * Retrieve only the specific instance and its information. This overloaded
    * method will retrieve the replacement value required from the resource ID.
    * 
@@ -289,21 +316,6 @@ public class GetService {
       instances.forEach(instance -> instance.addSequence(varSequence));
     }
     return instances;
-  }
-
-  /**
-   * Retrieve all IDs associated with the target replacement.
-   * 
-   * @param nodeShapeReplacement The statement to target the node shape.
-   * @param pagination           Optional state containing the current page and
-   *                             limit.
-   */
-  private Queue<String> getAllIds(String nodeShapeReplacement, PaginationState pagination) {
-    LOGGER.info("Retrieving all ids...");
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(nodeShapeReplacement, pagination);
-    return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
-        .map(binding -> binding.getFieldValue(QueryResource.ID_KEY))
-        .collect(Collectors.toCollection(ArrayDeque::new));
   }
 
   /**

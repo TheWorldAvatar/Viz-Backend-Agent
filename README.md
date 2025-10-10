@@ -389,11 +389,22 @@ A successful request will return:
 
 There are several routes for retrieving instances associated with a specific `type` to populate the records in the registry. The agent will automatically generate the query and parameters based on the SHACL restrictions developed. The agent will return **EITHER** a `JSON` array containing entities as their corresponding `JSON` object **OR** one Entity `JSON` object depending on which `GET` route is executed.
 
-1. Get all instances
-2. Get a specific instance
-3. Get all instances with human readable fields
-4. Get all instances associated with a specific parent instance
-5. Get all instances matching the search criteria
+1. Get the count of all instances
+2. Get all instances
+3. Get a specific instance
+4. Get all instances with human readable fields
+5. Get all instances associated with a specific parent instance
+6. Get all instances matching the search criteria
+
+##### Get the count of all instances
+
+Users can send a `GET` request to
+
+```
+<baseURL>/vis-backend-agent/{type}/count
+```
+
+where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`.
 
 ##### Get all instances
 

@@ -108,6 +108,19 @@ public class VisBackendAgent {
   }
 
   /**
+   * Retrieves the count of all instances belonging to the specified type in the
+   * knowledge graph.
+   */
+  @GetMapping("/{type}/count")
+  public ResponseEntity<StandardApiResponse<?>> getInstancesCount(
+      @PathVariable(name = "type") String type) {
+    LOGGER.info("Received request to get all instances for {}...", type);
+    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
+      return this.responseEntityBuilder.success(null, String.valueOf(this.getService.getCount(type)));
+    });
+  }
+
+  /**
    * Retrieves all instances belonging to the specified type in the knowledge
    * graph, and include human readable labels for all properties.
    */
