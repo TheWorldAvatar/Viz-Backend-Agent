@@ -3,6 +3,7 @@ package com.cmclinnovations.agent.template.query;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,21 +73,22 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       super.setSequence(sortedSequence);
     }
 
-    this.appendOptionalIdFilters(selectTemplate, params.targetId(), params.parent());
-    return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements());
+    String valuesClause = this.appendOptionalIdFilters(selectTemplate, params.targetIds(), params.parent());
+    return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause);
   }
 
   /**
    * Appends optional filters related to IDs to the query if required.
    * 
    * @param selectTemplate Target select query template.
-   * @param filterId       An optional field to target the query at a specific
-   *                       instance.
+   * @param filterIds      Optional param for target instances.
    * @param parentField    An optional parent field to target the query with
    *                       specific parents.
+   * @return A string representing the VALUES clause if multiple IDs are given
    */
-  private void appendOptionalIdFilters(SelectQuery selectTemplate, String filterId, ParentField parentField) {
+  private String appendOptionalIdFilters(SelectQuery selectTemplate, Queue<String> filterIds, ParentField parentField) {
     RdfObject object = QueryResource.ID_VAR;
+    StringBuilder valuesClause = new StringBuilder();
     // Add filter clause for a parent field instead if available
     if (parentField != null) {
       Variable parsedField = null;
@@ -103,11 +105,19 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
             MessageFormat.format("Unable to find matching variable for parent field: {0}", parentField.name()));
       }
       selectTemplate.where(parsedField.has(QueryResource.DC_TERM_ID, Rdf.literalOf(parentField.id())));
-    } else if (!filterId.isEmpty()) {
-      StringLiteral filter = Rdf.literalOf(filterId);
+    } else if (filterIds.size() == 1) {
+      StringLiteral filter = Rdf.literalOf(filterIds.poll());
       object = filter;
       selectTemplate.where(Expressions.bind(Expressions.str(filter), QueryResource.ID_VAR));
+    } else if (filterIds.size() > 1) {
+      valuesClause.append("VALUES ?id {");
+      while (!filterIds.isEmpty()) {
+        String currentId = Rdf.literalOf(filterIds.poll()).getQueryString();
+        valuesClause.append(" ").append(currentId);
+      }
+      valuesClause.append("}");
     }
     selectTemplate.where(QueryResource.IRI_VAR.has(QueryResource.DC_TERM_ID, object));
+    return valuesClause.toString();
   }
 }

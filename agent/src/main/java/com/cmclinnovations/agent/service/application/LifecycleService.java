@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.model.PaginationState;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
@@ -151,9 +152,10 @@ public class LifecycleService {
    * 
    * @param resourceID The target resource identifier for the instance class.
    * @param eventType  The target event type to retrieve.
+   * @param pagination Pagination state to filter results.
    */
   public ResponseEntity<StandardApiResponse<?>> getContracts(String resourceID, boolean requireLabel,
-      LifecycleEventType eventType) {
+      LifecycleEventType eventType, PaginationState pagination) {
     LOGGER.debug("Retrieving all contracts...");
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
     Map<Variable, List<Integer>> contractVariables = new HashMap<>(this.lifecycleVarSequence);
@@ -162,8 +164,8 @@ public class LifecycleService {
           QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)),
           List.of(1, 1));
     }
-    Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, "", requireLabel, null,
-        additionalQueryStatement, contractVariables);
+    Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, null,
+        additionalQueryStatement, contractVariables, pagination);
     return this.responseEntityBuilder.success(null, instances.stream()
         .map(binding -> {
           return (Map<String, Object>) binding.get().entrySet().stream()
@@ -195,10 +197,13 @@ public class LifecycleService {
    * 
    * @param contract   The contract identifier.
    * @param entityType Target resource ID.
+   * @param pagination Pagination state to filter results.
    */
-  public ResponseEntity<StandardApiResponse<?>> getOccurrences(String contract, String entityType) {
+  public ResponseEntity<StandardApiResponse<?>> getOccurrences(String contract, String entityType,
+      PaginationState pagination) {
     String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(contract, null, null);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, null);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, null,
+        pagination);
     LOGGER.info("Successfuly retrieved all associated services!");
     return this.responseEntityBuilder.success(null, occurrences);
   }
@@ -211,9 +216,10 @@ public class LifecycleService {
    * @param endTimestamp   End timestamp in UNIX format.
    * @param entityType     Target resource ID.
    * @param isClosed       Indicates whether to retrieve closed tasks.
+   * @param pagination     Pagination state to filter results.
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String startTimestamp, String endTimestamp,
-      String entityType, boolean isClosed) {
+      String entityType, boolean isClosed, PaginationState pagination) {
     String targetStartDate = "";
     String targetEndDate = "";
     if (startTimestamp == null && endTimestamp == null) {
@@ -233,7 +239,8 @@ public class LifecycleService {
       }
     }
     String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetStartDate, targetEndDate);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, isClosed);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, isClosed,
+        pagination);
     LOGGER.info("Successfuly retrieved tasks!");
     return this.responseEntityBuilder.success(null, occurrences);
   }
@@ -244,16 +251,17 @@ public class LifecycleService {
    * @param entityType      Target resource ID.
    * @param additionalQuery Additional query to append to the main query.
    * @param isClosed        Indicates whether to retrieve closed tasks.
+   * @param pagination      Pagination state to filter results.
    */
   private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String additionalQuery,
-      Boolean isClosed) {
+      Boolean isClosed, PaginationState pagination) {
     Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = "";
     addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
     addQuery += this.parseEventOccurrenceQuery(-1, LifecycleEventType.SERVICE_EXECUTION, varSequences);
     addQuery += additionalQuery;
-    Queue<SparqlBinding> results = this.getService.getInstances(entityType, "", true, null, addQuery,
-        varSequences);
+    Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, null, addQuery, varSequences,
+        pagination);
     return results.stream()
         .filter(binding -> {
           // If filter is not required, break early
@@ -333,8 +341,7 @@ public class LifecycleService {
   private String parseEventOccurrenceQuery(int groupIndex, LifecycleEventType lifecycleEvent,
       Map<Variable, List<Integer>> varSequences) {
     String replacementQueryLine = lifecycleEvent.getShaclReplacement();
-    String occurrenceQuery = this.getService.getQuery(replacementQueryLine, "", true);
-    // First query is non-necessary and can be used to extract the variables
+    String occurrenceQuery = this.getService.getQuery(replacementQueryLine, true);
     Map<Variable, List<Integer>> dispatchVars = LifecycleResource.extractOccurrenceVariables(occurrenceQuery,
         groupIndex);
     varSequences.putAll(dispatchVars);

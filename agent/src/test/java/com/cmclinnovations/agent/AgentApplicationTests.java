@@ -71,7 +71,7 @@ class AgentApplicationTests {
   @ParameterizedTest
   @ValueSource(strings = {
       "/missing", // getAllInstances
-      "/missing/label", // getAllInstancesWithLabel
+      "/missing/label?page=0&limit=10", // getAllInstancesWithLabel
       "/parent/id/missing", // getAllInstancesWithParent
       "/missing/id", // getInstance
       "/missing/label/id", // getInstanceWithLabels
@@ -89,7 +89,7 @@ class AgentApplicationTests {
   private static Stream<Arguments> provideParametersForInvalidRoutes() {
     return Stream.of(
         Arguments.of("en-US", "/invalid", INVALID_ROUTE_MESSAGE_EN), // getAllInstances
-        Arguments.of("en-GB", "/invalid/label", INVALID_ROUTE_MESSAGE_EN), // getAllInstancesWithLabel
+        Arguments.of("en-GB", "/invalid/label?page=0&limit=10", INVALID_ROUTE_MESSAGE_EN), // getAllInstancesWithLabel
         Arguments.of("en-GB", "/parent/id/invalid", INVALID_ROUTE_MESSAGE_EN), // getAllInstancesWithParent
         Arguments.of("en-GB", "/invalid/id", INVALID_ROUTE_MESSAGE_EN), // getInstance
         Arguments.of("en-GB", "/invalid/label/id", INVALID_ROUTE_MESSAGE_EN), // getInstanceWithLabels
