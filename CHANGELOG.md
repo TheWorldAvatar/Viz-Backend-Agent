@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.16.2
+
+### Changes
+
+- Provide a custom data property for text area inputs
+
 ## 1.16.1
 
 ### Bug fixes
