@@ -69,6 +69,7 @@ public class LifecycleController {
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
       // Add current date into parameters
+      params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
       params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
       params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_PENDING_STATUS);
       LOGGER.info("Received request to generate a new lifecycle for contract <{}>...", contractId);
@@ -334,6 +335,7 @@ public class LifecycleController {
             HttpStatus.CONFLICT);
       }
       // Add current date into parameters
+      params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
       params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
       params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
       ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.updateContractSchedule(params);
