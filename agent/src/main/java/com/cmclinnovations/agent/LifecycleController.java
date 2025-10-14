@@ -387,49 +387,36 @@ public class LifecycleController {
   }
 
   /**
-   * Retrieve all draft contracts ie awaiting approval.
+   * Retrieve all contracts in the target stage:
+   * 1) draft - awaiting approval
+   * 2) service - active and in progress
+   * 3) archive - expired
    */
-  @GetMapping("/draft")
-  public ResponseEntity<StandardApiResponse<?>> getDraftContracts(
+  @GetMapping("/{stage}")
+  public ResponseEntity<StandardApiResponse<?>> getContracts(
+      @PathVariable String stage,
       @RequestParam(required = true) String type,
       @RequestParam(defaultValue = "false") boolean label,
       @RequestParam(name = "page", required = true) int page,
       @RequestParam(name = "limit", required = true) int limit) {
-    LOGGER.info("Received request to retrieve draft contracts...");
+    LifecycleEventType eventType = switch (stage.toLowerCase()) {
+      case "draft" -> {
+        LOGGER.info("Received request to retrieve draft contracts...");
+        yield LifecycleEventType.APPROVED;
+      }
+      case "service" -> {
+        LOGGER.info("Received request to retrieve contracts in progress...");
+        yield LifecycleEventType.SERVICE_EXECUTION;
+      }
+      case "archive" -> {
+        LOGGER.info("Received request to retrieve archived contracts...");
+        yield LifecycleEventType.ARCHIVE_COMPLETION;
+      }
+      default -> throw new IllegalArgumentException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
+    };
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      return this.lifecycleService.getContracts(type, label, LifecycleEventType.APPROVED,
-          new PaginationState(page, limit));
-    });
-  }
-
-  /**
-   * Retrieve all contracts that are currently in progress.
-   */
-  @GetMapping("/service")
-  public ResponseEntity<StandardApiResponse<?>> getInProgressContracts(
-      @RequestParam(required = true) String type,
-      @RequestParam(defaultValue = "false") boolean label,
-      @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit) {
-    LOGGER.info("Received request to retrieve contracts in progress...");
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      return this.lifecycleService.getContracts(type, label, LifecycleEventType.SERVICE_EXECUTION,
-          new PaginationState(page, limit));
-    });
-  }
-
-  /**
-   * Retrieve all archived contracts.
-   */
-  @GetMapping("/archive")
-  public ResponseEntity<StandardApiResponse<?>> getArchivedContracts(
-      @RequestParam(required = true) String type,
-      @RequestParam(defaultValue = "false") boolean label,
-      @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit) {
-    LOGGER.info("Received request to retrieve archived contracts...");
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      return this.lifecycleService.getContracts(type, label, LifecycleEventType.ARCHIVE_COMPLETION,
+      return this.lifecycleService.getContracts(type, label, eventType,
           new PaginationState(page, limit));
     });
   }
