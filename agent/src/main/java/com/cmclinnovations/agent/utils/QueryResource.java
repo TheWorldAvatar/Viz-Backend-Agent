@@ -70,6 +70,7 @@ public class QueryResource {
     public static final Variable IRI_VAR = SparqlBuilder.var(IRI_KEY);
     public static final String ID_KEY = "id";
     public static final Variable ID_VAR = SparqlBuilder.var(ID_KEY);
+    public static final Variable EVENT_ID_VAR = QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY);
 
     // Private constructor to prevent instantiation
     private QueryResource() {

@@ -95,10 +95,12 @@ public class QueryTemplateService {
    * placeholder class is used and MUST be replaced to get the right ids.
    * 
    * @param nodeShapeReplacement The statement to target the node shape.
+   * @param addQueryStatements   Additional query statements to be added.
    * @param pagination           Optional state containing the current page and
    *                             limit.
    */
-  public String getAllIdsQueryTemplate(String nodeShapeReplacement, PaginationState pagination) {
+  public String getAllIdsQueryTemplate(String nodeShapeReplacement, String addQueryStatements,
+      PaginationState pagination) {
     // If pagination is not given, no limits and offset should be set
     return QueryResource.getSelectQuery(false, pagination == null ? null : pagination.limit())
         .select(QueryResource.ID_VAR)
@@ -107,7 +109,8 @@ public class QueryTemplateService {
             .andHas(QueryResource.DC_TERM_ID, QueryResource.ID_VAR))
         .orderBy(QueryResource.ID_VAR)
         .offset(pagination == null ? 0 : pagination.offset())
-        .getQueryString();
+        .getQueryString()
+        .replace("?id .", "?id ." + addQueryStatements);
   }
 
   /**

@@ -16,7 +16,9 @@ import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.utils.LocalisationResource;
 
 @Service
 public class DateTimeService {
@@ -139,6 +141,35 @@ public class DateTimeService {
     } else {
       throw new IllegalArgumentException("Input format is incorrect: " + recurrence);
     }
+  }
+
+  /**
+   * Get start and end date from the input timestamps.
+   * 
+   * @param startTimestamp Start timestamp in UNIX format.
+   * @param endTimestamp   End timestamp in UNIX format.
+   * @param isClosed       Indicates whether to retrieve closed tasks.
+   */
+  public String[] getStartEndDate(String startTimestamp, String endTimestamp, boolean isClosed) {
+    String startDate = "";
+    String endDate = "";
+    if (startTimestamp == null && endTimestamp == null) {
+      endDate = this.getCurrentDate();
+    } else {
+      startDate = this.getDateFromTimestamp(startTimestamp);
+      endDate = this.getDateFromTimestamp(endTimestamp);
+      // Verify that the end date occurs after the start date
+      if (this.isFutureDate(startDate, endDate)) {
+        throw new IllegalArgumentException(
+            LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CHRONOLOGY_KEY));
+      }
+      // Users can only view upcoming scheduled tasks after today
+      if (!isClosed && !this.isFutureDate(startDate)) {
+        throw new IllegalArgumentException(
+            LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_SCHEDULED_PRESENT_KEY));
+      }
+    }
+    return new String[] { startDate, endDate };
   }
 
   /**

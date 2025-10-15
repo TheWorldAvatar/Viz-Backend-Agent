@@ -543,6 +543,8 @@ When users edit a draft contract, this will move the status to amended. Users ca
 
 > Get all draft contracts
 
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft/count?type={type}` endpoint to retrieve the number of draft contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
+
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft?type={type}&page={page}&limit={limit}` endpoint to retrieve all draft contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page.
 
 There is also an additional optional parameter `label` to retrieve draft contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise.
@@ -638,6 +640,8 @@ This `<baseURL>/vis-backend-agent/contracts/service` endpoint serves to interact
 
 > Active contracts
 
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/count?type={type}` endpoint to retrieve the number of active contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
+
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service?type={type}&page={page}&limit={limit}` endpoint to retrieve all active contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page.
 
 There is also an additional optional parameter `label` to retrieve in progress contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise.
@@ -646,11 +650,11 @@ There is also an additional optional parameter `label` to retrieve in progress c
 
 For tasks associated with a contract, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/{contract}?type={contractType}&page={page}&limit={limit}` endpoint to retrieve all tasks for the target contract, where `contract` is the contract's identifier and `contractType` is the resource ID of the contract type, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page.
 
-For outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding?type={contractType}&page={page}&limit={limit}` endpoint to retrieve all outstanding open tasks, where `contractType` is the resource ID of the contract type, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page.
+For outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding?type={contractType}&page={page}&limit={limit}` endpoint to retrieve all outstanding open tasks, where `contractType` is the resource ID of the contract type, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page. To get the count of outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding/count?type={contractType}` endpoint.
 
-For upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}` endpoint to retrieve all scheduled tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. The start date must occur after today, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page.
+For upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}` endpoint to retrieve all scheduled tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. The start date must occur after today, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page. To get the count of upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled/count?type={contractType}}&startTimestamp={start}&endTimestamp={end}` endpoint.
 
-For closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}` endpoint to retrieve all closed tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page.
+For closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}` endpoint to retrieve all closed tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page. To get the count of closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed/count?type={contractType}}&startTimestamp={start}&endTimestamp={end}` endpoint.
 
 > Service dispatch
 
@@ -715,6 +719,8 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/se
 The endpoint serves to archive in progress contracts as well as retrieve all contracts that have expired and are in archive.
 
 > Get all archived contracts
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/archive/count?type={type}` endpoint to retrieve the number of archived contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/archive?type={type}` endpoint to retrieve all archived contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
 

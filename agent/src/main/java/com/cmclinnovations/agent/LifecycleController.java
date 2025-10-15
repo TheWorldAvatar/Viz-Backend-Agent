@@ -387,6 +387,37 @@ public class LifecycleController {
   }
 
   /**
+   * Retrieve the number of contracts in the target stage:
+   * 1) draft - awaiting approval
+   * 2) service - active and in progress
+   * 3) archive - expired
+   */
+  @GetMapping("/{stage}/count")
+  public ResponseEntity<StandardApiResponse<?>> getContractCount(
+      @PathVariable String stage,
+      @RequestParam(required = true) String type) {
+    LifecycleEventType eventType = switch (stage.toLowerCase()) {
+      case "draft" -> {
+        LOGGER.info("Received request to retrieve number of draft contracts...");
+        yield LifecycleEventType.APPROVED;
+      }
+      case "service" -> {
+        LOGGER.info("Received request to retrieve number of contracts in progress...");
+        yield LifecycleEventType.SERVICE_EXECUTION;
+      }
+      case "archive" -> {
+        LOGGER.info("Received request to retrieve number of archived contracts...");
+        yield LifecycleEventType.ARCHIVE_COMPLETION;
+      }
+      default -> throw new IllegalArgumentException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
+    };
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
+      return this.lifecycleService.getContractCount(type, eventType);
+    });
+  }
+
+  /**
    * Retrieve all contracts in the target stage:
    * 1) draft - awaiting approval
    * 2) service - active and in progress
@@ -422,6 +453,18 @@ public class LifecycleController {
   }
 
   /**
+   * Retrieve the number of outstanding tasks.
+   */
+  @GetMapping("/service/outstanding/count")
+  public ResponseEntity<StandardApiResponse<?>> getOutstandingTaskCount(
+      @RequestParam(required = true) String type) {
+    LOGGER.info("Received request to retrieve number of outstanding tasks...");
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
+      return this.lifecycleService.getOccurrenceCount(type, null, null, false);
+    });
+  }
+
+  /**
    * Retrieve all outstanding tasks.
    */
   @GetMapping("/service/outstanding")
@@ -432,6 +475,35 @@ public class LifecycleController {
     LOGGER.info("Received request to retrieve outstanding tasks...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrences(null, null, type, false, new PaginationState(page, limit));
+    });
+  }
+
+  /**
+   * Retrieve the number of tasks at the following event stage:
+   * 
+   * 1) scheduled - upcoming tasks on the specified date(s)
+   * 2) closed - completed or problematic tasks on the specified date(s)
+   */
+  @GetMapping("/service/{task}/count")
+  public ResponseEntity<StandardApiResponse<?>> getOutstandingTaskCount(
+      @PathVariable(name = "task") String taskType,
+      @RequestParam(required = true) String type,
+      @RequestParam(required = true) String startTimestamp,
+      @RequestParam(required = true) String endTimestamp) {
+    boolean isClosed = switch (taskType.toLowerCase()) {
+      case "scheduled" -> {
+        LOGGER.info("Received request to retrieve number of scheduled contract task...");
+        yield false;
+      }
+      case "closed" -> {
+        LOGGER.info("Received request to retrieve number of closed contract task...");
+        yield true;
+      }
+      default -> throw new IllegalArgumentException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
+    };
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
+      return this.lifecycleService.getOccurrenceCount(type, startTimestamp, endTimestamp, isClosed);
     });
   }
 

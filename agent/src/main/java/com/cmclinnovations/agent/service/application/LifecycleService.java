@@ -147,6 +147,18 @@ public class LifecycleService {
   }
 
   /**
+   * Retrieve the number of contract instances in the specific stage.
+   * 
+   * @param resourceID The target resource identifier for the instance class.
+   * @param eventType  The target event type to retrieve.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getContractCount(String resourceID, LifecycleEventType eventType) {
+    String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
+    return this.responseEntityBuilder.success(null,
+        String.valueOf(this.getService.getCount(resourceID, additionalQueryStatement)));
+  }
+
+  /**
    * Retrieve all the contract instances and their information based on the
    * resource ID.
    * 
@@ -192,6 +204,24 @@ public class LifecycleService {
   }
 
   /**
+   * Retrieve the number of task in the specific stage and status.
+   * 
+   * @param resourceID     The target resource identifier for the instance class.
+   * @param startTimestamp Start timestamp in UNIX format.
+   * @param endTimestamp   End timestamp in UNIX format.
+   * @param isClosed       Indicates whether to retrieve closed tasks.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getOccurrenceCount(String resourceID, String startTimestamp,
+      String endTimestamp, boolean isClosed) {
+    String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
+
+    String additionalFilters = this.lifecycleQueryFactory.getServiceTasksFilter(targetStartEndDates[0],
+        targetStartEndDates[1], isClosed);
+    return this.responseEntityBuilder.success(null,
+        String.valueOf(this.getService.getCount(resourceID, additionalFilters)));
+  }
+
+  /**
    * Retrieve all service related occurrences in the lifecycle for the specified
    * date.
    * 
@@ -220,25 +250,9 @@ public class LifecycleService {
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String startTimestamp, String endTimestamp,
       String entityType, boolean isClosed, PaginationState pagination) {
-    String targetStartDate = "";
-    String targetEndDate = "";
-    if (startTimestamp == null && endTimestamp == null) {
-      targetEndDate = this.dateTimeService.getCurrentDate();
-    } else {
-      targetStartDate = this.dateTimeService.getDateFromTimestamp(startTimestamp);
-      targetEndDate = this.dateTimeService.getDateFromTimestamp(endTimestamp);
-      // Verify that the end date occurs after the start date
-      if (this.dateTimeService.isFutureDate(targetStartDate, targetEndDate)) {
-        throw new IllegalArgumentException(
-            LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CHRONOLOGY_KEY));
-      }
-      // Users can only view upcoming scheduled tasks after today
-      if (!isClosed && !this.dateTimeService.isFutureDate(targetStartDate)) {
-        throw new IllegalArgumentException(
-            LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_SCHEDULED_PRESENT_KEY));
-      }
-    }
-    String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetStartDate, targetEndDate);
+    String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
+    String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetStartEndDates[0],
+        targetStartEndDates[1]);
     List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, isClosed,
         pagination);
     LOGGER.info("Successfuly retrieved tasks!");

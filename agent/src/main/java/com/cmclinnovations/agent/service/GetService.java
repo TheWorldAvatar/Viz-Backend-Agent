@@ -204,9 +204,19 @@ public class GetService {
    * @param resourceID Target resource identifier for the instance class.
    */
   public int getCount(String resourceID) {
+    return this.getCount(resourceID, "");
+  }
+
+  /**
+   * Retrieves the number of instances belonging to the resource.
+   * 
+   * @param resourceID         Target resource identifier for the instance class.
+   * @param addQueryStatements Additional query statements to be added.
+   */
+  public int getCount(String resourceID, String addQueryStatements) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
-    Queue<String> ids = this.getAllIds(iri, null);
+    Queue<String> ids = this.getAllIds(iri, addQueryStatements, null);
     return ids.size();
   }
 
@@ -219,16 +229,16 @@ public class GetService {
    * @param requireLabel       Indicates if labels should be returned for all
    *                           the fields that are IRIs.
    * @param parentField        Optional parent field.
-   * @param addQueryStatements Additional query statements to be added
+   * @param addQueryStatements Additional query statements to be added.
    * @param addVars            Optional additional variables to be included in
-   *                           the query, along with their order sequence
+   *                           the query, along with their order sequence.
    * @param pagination         Optional pagination state to filter results.
    */
   public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, ParentField parentField,
       String addQueryStatements, Map<Variable, List<Integer>> addVars, PaginationState pagination) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
-    Queue<String> ids = this.getAllIds(iri, pagination);
+    Queue<String> ids = this.getAllIds(iri, addQueryStatements, pagination);
     if (ids.isEmpty()) {
       return new ArrayDeque<>();
     }
@@ -272,12 +282,14 @@ public class GetService {
    * Retrieve all IDs associated with the target replacement.
    * 
    * @param nodeShapeReplacement The statement to target the node shape.
+   * @param addQueryStatements   Additional query statements to be added.
    * @param pagination           Optional state containing the current page and
    *                             limit.
    */
-  private Queue<String> getAllIds(String nodeShapeReplacement, PaginationState pagination) {
+  private Queue<String> getAllIds(String nodeShapeReplacement, String addQueryStatements, PaginationState pagination) {
     LOGGER.info("Retrieving all ids...");
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(nodeShapeReplacement, pagination);
+    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(nodeShapeReplacement,
+        addQueryStatements, pagination);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> binding.getFieldValue(QueryResource.ID_KEY))
         .collect(Collectors.toCollection(ArrayDeque::new));
