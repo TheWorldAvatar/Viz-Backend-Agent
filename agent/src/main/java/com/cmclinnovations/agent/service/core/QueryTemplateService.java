@@ -102,7 +102,7 @@ public class QueryTemplateService {
   public String getAllIdsQueryTemplate(String nodeShapeReplacement, String addQueryStatements,
       PaginationState pagination) {
     // If pagination is not given, no limits and offset should be set
-    return QueryResource.getSelectQuery(false, pagination == null ? null : pagination.limit())
+    return QueryResource.getSelectQuery(true, pagination == null ? null : pagination.limit())
         .select(QueryResource.ID_VAR)
         .where(QueryResource.IRI_VAR.isA(Rdf.iri(
             nodeShapeReplacement.substring(1, nodeShapeReplacement.length() - 1)))
