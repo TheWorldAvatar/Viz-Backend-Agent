@@ -34,6 +34,7 @@ public class LocalisationResource {
   public static final String ERROR_DELETE_KEY = ERROR_PREFIX + "delete";
   public static final String ERROR_MISSING_FIELD_KEY = ERROR_PREFIX + "missing.field";
   public static final String ERROR_MISSING_FILE_KEY = ERROR_PREFIX + "missing.file";
+  public static final String ERROR_APPROVE_PARTIAL_KEY = ERROR_PREFIX + "approve.partial";
   public static final String ERROR_ORDERS_PARTIAL_KEY = ERROR_PREFIX + "orders.partial";
   public static final String ERROR_INVALID_DATE_CHRONOLOGY_KEY = ERROR_PREFIX + "invalid.date.chronology";
   public static final String ERROR_INVALID_DATE_SCHEDULED_PRESENT_KEY = ERROR_PREFIX + "invalid.date.scheduledpresent";

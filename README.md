@@ -604,7 +604,7 @@ Note that this route does require the following `JSON` request parameters:
 ```json
 {
   /* parameters */
-  "contract": "The target contract IRI",
+  "contract": "Either one contract IRI or an array of contract IRIs",
   "remarks": "Remarks for the approval"
 }
 ```
