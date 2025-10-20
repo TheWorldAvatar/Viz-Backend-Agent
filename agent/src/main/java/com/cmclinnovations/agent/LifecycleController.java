@@ -127,11 +127,13 @@ public class LifecycleController {
     List<String> contractIds = TypeCastUtils.castToListObject(params.get(LifecycleResource.CONTRACT_KEY), String.class);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
       if (contractIds.size() == 1) {
+        params.put(LifecycleResource.CONTRACT_KEY, contractIds.get(0));
         return this.commenceContract(contractIds.get(0), params);
       }
       boolean hasError = false;
       for (String contractId : contractIds) {
         try {
+          params.put(LifecycleResource.CONTRACT_KEY, contractId);
           this.commenceContract(contractId, params);
         } catch (IllegalArgumentException e) {
           LOGGER.error("Error encountered while commencing contract for {}! Read error logs for more details",
