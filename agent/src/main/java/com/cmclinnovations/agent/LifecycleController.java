@@ -169,8 +169,7 @@ public class LifecycleController {
       LOGGER.info("All orders has been successfully received!");
       JsonNode report = this.lifecycleReportService.genReportInstance(contractId);
       try {
-        ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiateJsonLd(report, "unknown",
-            LocalisationResource.SUCCESS_ADD_REPORT_KEY);
+        this.addService.instantiateJsonLd(report, "unknown", LocalisationResource.SUCCESS_ADD_REPORT_KEY);
       } catch (IllegalStateException e) {
         LOGGER.warn("Something went wrong with instantiating a report for {}!", contractId);
         throw e;
