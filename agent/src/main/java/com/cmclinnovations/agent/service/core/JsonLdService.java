@@ -60,32 +60,27 @@ public class JsonLdService {
         targetKey = key;
       }
     }
-    try {
-      // Return the replacement value with the target key for literal
-      if (replacementType.equals("literal")) {
+    if (targetKey.isEmpty()) {
+      LOGGER.error("Missing {} in request payload!", replacementId);
+      throw new NullPointerException("Unable to find a matching replacement key in request!");
+    }
+    // Return the replacement value with the target key for literal
+    if (replacementType.equals("literal")) {
+      return replacements.get(targetKey).toString();
+    } else if (replacementType.equals(QueryResource.IRI_KEY)) {
+      JsonNode prefixNode = replacementNode.path("prefix");
+      // Return the replacement value with the target key for any iris without a
+      // prefix
+      if (prefixNode.isMissingNode()) {
         return replacements.get(targetKey).toString();
-      } else if (replacementType.equals(QueryResource.IRI_KEY)) {
-        JsonNode prefixNode = replacementNode.path("prefix");
-        // Return the replacement value with the target key for any iris without a
-        // prefix
-        if (prefixNode.isMissingNode()) {
-          return replacements.get(targetKey).toString();
-        } else {
-          // If a prefix is present, extract the identifer and append the prefix
-          return prefixNode.asText() + StringResource.getLocalName(replacements.get(targetKey).toString());
-        }
       } else {
-        LOGGER.error("Invalid replacement type {} for {}!", replacementType, replacementId);
-        throw new IllegalArgumentException(
-            MessageFormat.format("Invalid replacement type {0} for {1}!", replacementType, replacementId));
+        // If a prefix is present, extract the identifer and append the prefix
+        return prefixNode.asText() + StringResource.getLocalName(replacements.get(targetKey).toString());
       }
-    } catch (NullPointerException e) {
-      // Add additional logging message for the missing key
-      if (e.getMessage().equals(
-          "Cannot invoke \"Object.toString()\" because the return value of \"java.util.Map.get(Object)\" is null")) {
-        LOGGER.error("Missing {} in request payload!", replacementId);
-      }
-      throw e;
+    } else {
+      LOGGER.error("Invalid replacement type {} for {}!", replacementType, replacementId);
+      throw new IllegalArgumentException(
+          MessageFormat.format("Invalid replacement type {0} for {1}!", replacementType, replacementId));
     }
   }
 
