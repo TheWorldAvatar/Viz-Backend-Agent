@@ -56,13 +56,23 @@ public class JsonLdService {
         targetKey = key;
         break;
       }
+      // Allow either a subset from either ends
       if (key.contains(replacementId) || key.contains(altReplacementId)) {
         targetKey = key;
       }
+      if (replacementId.contains(key) || altReplacementId.contains(key)) {
+        targetKey = key;
+      }
     }
+    // For non-matching targets
     if (targetKey.isEmpty()) {
-      LOGGER.error("Missing {} in request payload!", replacementId);
-      throw new NullPointerException("Unable to find a matching replacement key in request!");
+      // If optional, ignores it and continue
+      if (replacementNode.has(ShaclResource.OPTIONAL_KEY) && replacementNode.path(ShaclResource.OPTIONAL_KEY).asBoolean()) {
+        return "";
+      } else {
+        LOGGER.error("Missing {} in request payload!", replacementId);
+        throw new NullPointerException("Unable to find a matching replacement key in request!");
+      }
     }
     // Return the replacement value with the target key for literal
     if (replacementType.equals("literal")) {
