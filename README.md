@@ -545,6 +545,7 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/dr
   /* parameters */
   "id": "Either a string literal of the existing target contract ID or an array of the target contract IDs",
   "type": "The requested identifier that must correspond to the target contract class in `./resources/application-form.json`",
+  "recurrence": "Number of copies required. If an array is given in the id, all selected contracts will be copied according to the number",
 }
 ```
 

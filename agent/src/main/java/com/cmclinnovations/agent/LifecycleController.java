@@ -133,10 +133,14 @@ public class LifecycleController {
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> contractIds = TypeCastUtils.castToListObject(params.get(QueryResource.ID_KEY), String.class);
       String entityType = TypeCastUtils.castToObject(params.get("type"), String.class);
+      Integer reqCopies = TypeCastUtils.castToObject(params.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY),
+          Integer.class);
       boolean hasError = false;
       for (String contractId : contractIds) {
         try {
-          this.cloneDraftContract(contractId, entityType);
+          for (int i = 0; i < reqCopies; i++) {
+            this.cloneDraftContract(contractId, entityType);
+          }
         } catch (IllegalArgumentException e) {
           LOGGER.error("Error encountered while copying contract for {}! Read error logs for more details",
               contractId);
