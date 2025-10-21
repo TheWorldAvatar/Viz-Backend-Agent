@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.model.function.ContractOperation;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
@@ -126,29 +127,17 @@ public class LifecycleController {
     LOGGER.info("Received request to commence the services for a contract...");
     List<String> contractIds = TypeCastUtils.castToListObject(params.get(LifecycleResource.CONTRACT_KEY), String.class);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
+      ContractOperation operation = (contractId) -> {
+        params.put(LifecycleResource.CONTRACT_KEY, contractId);
+        return this.commenceContract(contractId, params);
+      };
       if (contractIds.size() == 1) {
-        params.put(LifecycleResource.CONTRACT_KEY, contractIds.get(0));
-        return this.commenceContract(contractIds.get(0), params);
+        return operation.apply(contractIds.get(0));
       }
-      boolean hasError = false;
-      for (String contractId : contractIds) {
-        try {
-          params.put(LifecycleResource.CONTRACT_KEY, contractId);
-          this.commenceContract(contractId, params);
-        } catch (IllegalArgumentException e) {
-          LOGGER.error("Error encountered while commencing contract for {}! Read error logs for more details",
-              contractId);
-          hasError = true;
-        }
-      }
-      if (hasError) {
-        return this.responseEntityBuilder.error(
-            LocalisationTranslator.getMessage(LocalisationResource.ERROR_APPROVE_PARTIAL_KEY),
-            HttpStatus.INTERNAL_SERVER_ERROR);
-      }
-
-      return this.responseEntityBuilder
-          .success("contract", LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY));
+      return this.executeIterativeContractOperation(contractIds, operation,
+          "Error encountered while commencing contract for {}! Read error logs for more details",
+          LocalisationResource.ERROR_APPROVE_PARTIAL_KEY,
+          LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
     });
   }
 
@@ -344,32 +333,21 @@ public class LifecycleController {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     List<String> contractIds = TypeCastUtils.castToListObject(params.get(LifecycleResource.CONTRACT_KEY), String.class);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      boolean hasError = false;
-      for (String contractId : contractIds) {
-        try {
-          // Verify if the contract has already been approved
-          String contractStatus = this.lifecycleService.getContractStatus(contractId).getBody().data().message();
-          // If approved, do not allow modifications
-          if (!contractStatus.equals("Pending")) {
-            LOGGER.warn("Contract {} has already been approved and will not be reset!", contractId);
-          } else {
-            this.lifecycleService.updateContractStatus(contractId);
-          }
-        } catch (IllegalArgumentException e) {
-          LOGGER.error("Error encountered while resetting contract for {}! Read error logs for more details",
-              contractId);
-          hasError = true;
+      ContractOperation operation = (contractId) -> {
+        // Verify if the contract has already been approved
+        String contractStatus = this.lifecycleService.getContractStatus(contractId).getBody().data().message();
+        // If approved, do not allow modifications
+        if (!contractStatus.equals("Pending")) {
+          LOGGER.warn("Contract {} has already been approved and will not be reset!", contractId);
+          return null;
+        } else {
+          return this.lifecycleService.updateContractStatus(contractId);
         }
-      }
-      if (hasError) {
-        return this.responseEntityBuilder.error(
-            LocalisationTranslator.getMessage(LocalisationResource.ERROR_RESET_PARTIAL_KEY),
-            HttpStatus.INTERNAL_SERVER_ERROR);
-      }
-
-      return this.responseEntityBuilder
-          .success("contract", LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_RESET_KEY));
-
+      };
+      return this.executeIterativeContractOperation(contractIds, operation,
+          "Error encountered while resetting contract for {}! Read error logs for more details",
+          LocalisationResource.ERROR_RESET_PARTIAL_KEY,
+          LocalisationResource.SUCCESS_CONTRACT_DRAFT_RESET_KEY);
     });
   }
 
@@ -594,5 +572,41 @@ public class LifecycleController {
       throw new IllegalArgumentException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY, field));
     }
+  }
+
+  /**
+   * Executes an operation across all contract IDs.
+   * 
+   * @param contractIds             List of target all contract IDs.
+   * @param singleContractOperation Operation on each contract.
+   * @param partialErrorWarning     Warning message for each operation failure.
+   * @param partialErrorKey         Localisation message key for operation failure
+   *                                on any contract.
+   * @param successMessageKey       Localisation message key for successful
+   *                                operations on all contracts.
+   */
+  private ResponseEntity<StandardApiResponse<?>> executeIterativeContractOperation(
+      List<String> contractIds,
+      ContractOperation singleContractOperation,
+      String partialErrorWarning,
+      String partialErrorKey,
+      String successMessageKey) {
+    boolean hasError = false;
+    for (String contractId : contractIds) {
+      try {
+        singleContractOperation.apply(contractId);
+      } catch (IllegalArgumentException e) {
+        LOGGER.error(partialErrorWarning, contractId);
+        hasError = true;
+      }
+    }
+    if (hasError) {
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(partialErrorKey),
+          HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    return this.responseEntityBuilder
+        .success("contract", LocalisationTranslator.getMessage(successMessageKey));
   }
 }
