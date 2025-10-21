@@ -338,19 +338,38 @@ public class LifecycleController {
   /**
    * Reset the draft contract's status to pending.
    */
-  @PutMapping("/draft/{id}")
-  public ResponseEntity<StandardApiResponse<?>> resetDraftContractStatus(@PathVariable String id) {
+  @PutMapping("/draft/reset")
+  public ResponseEntity<StandardApiResponse<?>> resetDraftContractStatus(@RequestBody Map<String, Object> params) {
     LOGGER.info("Received request to reset status of draft contract...");
+    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
+    List<String> contractIds = TypeCastUtils.castToListObject(params.get(LifecycleResource.CONTRACT_KEY), String.class);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      // Verify if the contract has already been approved
-      String contractStatus = this.lifecycleService.getContractStatus(id).getBody().data().message();
-      // If approved, do not allow modifications
-      if (!contractStatus.equals("Pending")) {
-        return this.responseEntityBuilder.error(
-            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY),
-            HttpStatus.CONFLICT);
+      boolean hasError = false;
+      for (String contractId : contractIds) {
+        try {
+          // Verify if the contract has already been approved
+          String contractStatus = this.lifecycleService.getContractStatus(contractId).getBody().data().message();
+          // If approved, do not allow modifications
+          if (!contractStatus.equals("Pending")) {
+            LOGGER.warn("Contract {} has already been approved and will not be reset!", contractId);
+          } else {
+            this.lifecycleService.updateContractStatus(contractId);
+          }
+        } catch (IllegalArgumentException e) {
+          LOGGER.error("Error encountered while resetting contract for {}! Read error logs for more details",
+              contractId);
+          hasError = true;
+        }
       }
-      return this.lifecycleService.updateContractStatus(id);
+      if (hasError) {
+        return this.responseEntityBuilder.error(
+            LocalisationTranslator.getMessage(LocalisationResource.ERROR_RESET_PARTIAL_KEY),
+            HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      return this.responseEntityBuilder
+          .success("contract", LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_RESET_KEY));
+
     });
   }
 
