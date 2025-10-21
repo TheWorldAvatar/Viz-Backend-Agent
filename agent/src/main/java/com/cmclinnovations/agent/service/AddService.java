@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.Lang;
@@ -303,8 +304,11 @@ public class AddService {
       // options may matched and cannot be discerned
       if (availableFields.size() <= matchingFields.size()) {
         // Verify if there are more matched fields than the current maximum
-        Set<String> intersection = new HashSet<>(availableFields);
-        intersection.retainAll(matchingFields);
+        Set<String> intersection = this.findCustomMatchingFields(availableFields, matchingFields,
+            (availableField, targetField) -> availableField.equals(targetField)
+                // Target field will be unlikely to match unless when copying contracts where
+                // group names are excluded
+                || availableField.contains(targetField.replaceAll("\\_+", " ")));
         if (intersection.size() > maxMatches) {
           maxMatches = intersection.size();
           bestMatchNode = this.jsonLdService.getObjectNode(currentOption);
@@ -312,6 +316,30 @@ public class AddService {
       }
     }
     return bestMatchNode;
+  }
+
+  /**
+   * Finds fields that match between two sets based on a custom matching logic.
+   *
+   * @param availableFields The complete set of fields that may or may not be
+   *                        irrelevant.
+   * @param targetFields    The set of fields to match.
+   * @param matcher         Custom matching logic.
+   */
+  private Set<String> findCustomMatchingFields(
+      Set<String> availableFields,
+      Set<String> targetFields,
+      BiPredicate<String, String> matcher) {
+    Set<String> result = new HashSet<>();
+    for (String target : targetFields) {
+      for (String availableField : availableFields) {
+        if (matcher.test(availableField, target)) {
+          result.add(target);
+          break;
+        }
+      }
+    }
+    return result;
   }
 
   /**
@@ -415,5 +443,5 @@ public class AddService {
       }
     }
     parentNode.set(parentField, results);
-  } 
+  }
 }
