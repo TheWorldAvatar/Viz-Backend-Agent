@@ -1,6 +1,5 @@
 package com.cmclinnovations.agent;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
@@ -18,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.model.PaginationState;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
@@ -98,11 +98,24 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", false, new HashMap<>());
+      Queue<SparqlBinding> instances = this.getService.getInstances(type, false, null, null);
       return this.responseEntityBuilder.success(null,
           instances.stream()
               .map(SparqlBinding::get)
               .toList());
+    });
+  }
+
+  /**
+   * Retrieves the count of all instances belonging to the specified type in the
+   * knowledge graph.
+   */
+  @GetMapping("/{type}/count")
+  public ResponseEntity<StandardApiResponse<?>> getInstancesCount(
+      @PathVariable(name = "type") String type) {
+    LOGGER.info("Received request to get all instances for {}...", type);
+    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
+      return this.responseEntityBuilder.success(null, String.valueOf(this.getService.getCount(type)));
     });
   }
 
@@ -112,11 +125,13 @@ public class VisBackendAgent {
    */
   @GetMapping("/{type}/label")
   public ResponseEntity<StandardApiResponse<?>> getAllInstancesWithLabel(
-      @PathVariable(name = "type") String type) {
+      @PathVariable(name = "type") String type,
+      @RequestParam(name = "page", required = true) int page,
+      @RequestParam(name = "limit", required = true) int limit) {
     LOGGER.info("Received request to get all instances with labels for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", true, new HashMap<>());
+      Queue<SparqlBinding> instances = this.getService.getInstances(type, true, null, new PaginationState(page, limit));
       return this.responseEntityBuilder.success(null,
           instances.stream()
               .map(SparqlBinding::get)
@@ -136,8 +151,7 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances of target {} associated with the parent type {}...", type,
         parent);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, new ParentField(id, parent), "", "", false,
-          new HashMap<>());
+      Queue<SparqlBinding> instances = this.getService.getInstances(type, false, new ParentField(id, parent), null);
       return this.responseEntityBuilder.success(null,
           instances.stream()
               .map(SparqlBinding::get)

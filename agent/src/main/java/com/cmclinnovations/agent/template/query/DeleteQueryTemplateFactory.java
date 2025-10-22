@@ -53,7 +53,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    */
   public String write(QueryTemplateFactoryParameters params) {
     this.reset();
-    ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetId());
+    ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetIds().poll());
     this.recursiveParseNode(deleteTemplate, null, params.rootNode());
     this.addBranches(deleteTemplate);
 
