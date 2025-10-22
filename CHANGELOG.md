@@ -1,5 +1,19 @@
 # Change Log
 
+## 1.18.0
+
+### Changes
+
+- Added a route to copy contracts X number of times based on parameter
+- Added an `@optional` key in JSONLD to denote optional parameters
+
+## 1.17.0
+
+### Changes
+
+- Extended contract commence route to allow users to commence multiple contracts
+- Refactored the draft contract reset route into a new reset route to reset multiple contracts
+
 ## 1.16.2
 
 ### Changes

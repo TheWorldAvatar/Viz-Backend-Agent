@@ -539,7 +539,13 @@ A successful request will return:
 
 > Reset draft contract status
 
-When users edit a draft contract, this will move the status to amended. Users can reset this to the original status by sending a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/draft/{id}` endpoint where `{id}`is the requested identifier of the contract.
+When users edit a draft contract, this will move the status to amended. Users can reset this to the original status by sending a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/draft/reset` endpoint. Note that this route does require the following `JSON` request parameters:
+
+```json
+{
+  "contract": "Either one contract IRI or an array of contract IRIs",
+}
+```
 
 > Get all draft contracts
 
@@ -548,6 +554,19 @@ Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/dra
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft?type={type}&page={page}&limit={limit}` endpoint to retrieve all draft contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page.
 
 There is also an additional optional parameter `label` to retrieve draft contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise.
+
+> Copy contract as a draft
+
+Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/draft/copy` endpoint to clone an existing contract as a new draft contract that is pending approval. This route will require the following `JSON` request parameters:
+
+```json
+{
+  /* parameters */
+  "id": "Either a string literal of the existing target contract ID or an array of the target contract IDs",
+  "type": "The requested identifier that must correspond to the target contract class in `./resources/application-form.json`",
+  "recurrence": "Number of copies required. If an array is given in the id, all selected contracts will be copied according to the number",
+}
+```
 
 #### 2.6.3 Schedule route
 
@@ -617,7 +636,7 @@ Note that this route does require the following `JSON` request parameters:
 ```json
 {
   /* parameters */
-  "contract": "The target contract IRI",
+  "contract": "Either one contract IRI or an array of contract IRIs",
   "remarks": "Remarks for the approval"
 }
 ```
