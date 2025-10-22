@@ -6,6 +6,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
@@ -43,6 +44,16 @@ public class AgentExceptionHandler {
   public ResponseEntity<StandardApiResponse<?>> missingResourceHandling(Exception exception, WebRequest request) {
     LOGGER.error(exception.getMessage());
     return this.responseEntityBuilder.error(exception.getMessage(), HttpStatus.NOT_FOUND);
+  }
+
+  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+  public ResponseEntity<StandardApiResponse<?>> unsupportedHttpRequestTypeHandling(
+      HttpRequestMethodNotSupportedException exception,
+      WebRequest request) {
+    LOGGER.error("Request method \'" + exception.getMethod() + "\' is not supported for this operation!");
+    return this.responseEntityBuilder.error(
+        LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_METHOD_KEY, exception.getMethod()),
+        HttpStatus.METHOD_NOT_ALLOWED);
   }
 
   @ExceptionHandler(Exception.class)

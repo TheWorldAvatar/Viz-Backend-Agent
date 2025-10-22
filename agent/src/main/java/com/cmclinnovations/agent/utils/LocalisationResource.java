@@ -48,6 +48,7 @@ public class LocalisationResource {
   public static final String ERROR_INVALID_GEOCODE_PARAMS_KEY = ERROR_PREFIX + "invalid.geocoding";
   public static final String ERROR_INVALID_INSTANCE_KEY = ERROR_PREFIX + "invalid.instance";
   public static final String ERROR_INVALID_MULTIPLE_INSTANCE_KEY = ERROR_PREFIX + "invalid.multiple.instance";
+  public static final String ERROR_INVALID_METHOD_KEY = ERROR_PREFIX + "invalid.method";
   public static final String ERROR_INVALID_ROUTE_KEY = ERROR_PREFIX + "invalid.route";
   public static final String ERROR_INVALID_SERVER_KEY = ERROR_PREFIX + "invalid.server";
   public static final String LABEL_SINGLE_SERVICE_KEY = LABEL_PREFIX + "single.service";
