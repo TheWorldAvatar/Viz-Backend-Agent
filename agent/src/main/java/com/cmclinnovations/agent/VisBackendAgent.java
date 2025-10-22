@@ -127,11 +127,12 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> getAllInstancesWithLabel(
       @PathVariable(name = "type") String type,
       @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit) {
+      @RequestParam(name = "limit", required = true) int limit,
+      @RequestParam(name = "sort_by", required = true) String sortBy) {
     LOGGER.info("Received request to get all instances with labels for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, true, null, new PaginationState(page, limit));
+      Queue<SparqlBinding> instances = this.getService.getInstances(type, true, null, new PaginationState(page, limit, sortBy));
       return this.responseEntityBuilder.success(null,
           instances.stream()
               .map(SparqlBinding::get)

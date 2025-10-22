@@ -248,10 +248,9 @@ public class GetService {
    * @param addQueryStatements Additional query statements to be added.
    * @param addVars            Optional additional variables to be included in
    *                           the query, along with their order sequence.
-   * @param pagination         Optional pagination state to filter results.
    */
   public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, Queue<String> ids,
-      String addQueryStatements, Map<Variable, List<Integer>> addVars, PaginationState pagination) {
+      String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
     if (ids.isEmpty()) {

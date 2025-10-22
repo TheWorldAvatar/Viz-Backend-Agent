@@ -178,7 +178,7 @@ public class LifecycleService {
     }
     Queue<String> ids = this.getService.getAllIds(resourceID, additionalQueryStatement, pagination);
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,
-        additionalQueryStatement, contractVariables, pagination);
+        additionalQueryStatement, contractVariables);
     return this.responseEntityBuilder.success(null, instances.stream()
         .map(binding -> {
           return (Map<String, Object>) binding.get().entrySet().stream()
@@ -276,8 +276,7 @@ public class LifecycleService {
     addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
     addQuery += this.parseEventOccurrenceQuery(-1, LifecycleEventType.SERVICE_EXECUTION, varSequences);
     addQuery += additionalQuery;
-    Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, ids, addQuery, varSequences,
-        pagination);
+    Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, ids, addQuery, varSequences);
     return results.stream()
         .filter(binding -> {
           // If filter is not required, break early

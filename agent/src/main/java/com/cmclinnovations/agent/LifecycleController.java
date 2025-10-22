@@ -525,7 +525,8 @@ public class LifecycleController {
       @RequestParam(required = true) String type,
       @RequestParam(defaultValue = "false") boolean label,
       @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit) {
+      @RequestParam(name = "limit", required = true) int limit,
+      @RequestParam(name = "sort_by", required = true) String sortBy) {
     LifecycleEventType eventType = switch (stage.toLowerCase()) {
       case "draft" -> {
         LOGGER.info("Received request to retrieve draft contracts...");
@@ -544,7 +545,7 @@ public class LifecycleController {
     };
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       return this.lifecycleService.getContracts(type, label, eventType,
-          new PaginationState(page, limit));
+          new PaginationState(page, limit, sortBy));
     });
   }
 
@@ -567,10 +568,11 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> getAllOutstandingTasks(
       @RequestParam(required = true) String type,
       @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit) {
+      @RequestParam(name = "limit", required = true) int limit,
+      @RequestParam(name = "sort_by", required = true) String sortBy) {
     LOGGER.info("Received request to retrieve outstanding tasks...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.getOccurrences(null, null, type, false, new PaginationState(page, limit));
+      return this.lifecycleService.getOccurrences(null, null, type, false, new PaginationState(page, limit, sortBy));
     });
   }
 
@@ -612,11 +614,12 @@ public class LifecycleController {
       @RequestParam(required = true) String startTimestamp,
       @RequestParam(required = true) String endTimestamp,
       @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit) {
+      @RequestParam(name = "limit", required = true) int limit,
+      @RequestParam(name = "sort_by", required = true) String sortBy) {
     LOGGER.info("Received request to retrieve scheduled tasks for the specified dates...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, false,
-          new PaginationState(page, limit));
+          new PaginationState(page, limit, sortBy));
     });
   }
 
@@ -629,11 +632,12 @@ public class LifecycleController {
       @RequestParam(required = true) String startTimestamp,
       @RequestParam(required = true) String endTimestamp,
       @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit) {
+      @RequestParam(name = "limit", required = true) int limit,
+      @RequestParam(name = "sort_by", required = true) String sortBy) {
     LOGGER.info("Received request to retrieve closed tasks for the specified dates...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, true,
-          new PaginationState(page, limit));
+          new PaginationState(page, limit, sortBy));
     });
   }
 
@@ -645,10 +649,11 @@ public class LifecycleController {
       @PathVariable(name = "id") String contract,
       @RequestParam(required = true) String type,
       @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit) {
+      @RequestParam(name = "limit", required = true) int limit,
+      @RequestParam(name = "sort_by", required = true) String sortBy) {
     LOGGER.info("Received request to retrieve services in progress for a specified contract...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.getOccurrences(contract, type, new PaginationState(page, limit));
+      return this.lifecycleService.getOccurrences(contract, type, new PaginationState(page, limit, sortBy));
     });
   }
 

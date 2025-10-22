@@ -10,6 +10,7 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
+import com.cmclinnovations.agent.model.pagination.SortDirective;
 import com.cmclinnovations.agent.template.FormTemplateFactory;
 import com.cmclinnovations.agent.template.query.DeleteQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
@@ -102,13 +104,25 @@ public class QueryTemplateService {
   public String getAllIdsQueryTemplate(String nodeShapeReplacement, String addQueryStatements,
       PaginationState pagination) {
     // If pagination is not given, no limits and offset should be set
-    return QueryResource.getSelectQuery(true, pagination == null ? null : pagination.limit())
+    SelectQuery query = QueryResource.getSelectQuery(true, pagination == null ? null : pagination.limit())
         .select(QueryResource.ID_VAR)
         .where(QueryResource.IRI_VAR.isA(Rdf.iri(
             nodeShapeReplacement.substring(1, nodeShapeReplacement.length() - 1)))
             .andHas(QueryResource.DC_TERM_ID, QueryResource.ID_VAR))
-        .orderBy(QueryResource.ID_VAR)
-        .offset(pagination == null ? 0 : pagination.offset())
+        .offset(pagination == null ? 0 : pagination.offset());
+    if (pagination == null) {
+      query.orderBy(QueryResource.ID_VAR);
+    } else {
+      Queue<SortDirective> sortDirectives = pagination.getSortDirectives();
+      while (!sortDirectives.isEmpty()) {
+        SortDirective directive = sortDirectives.poll();
+        if (!directive.field().getVarName().equals(QueryResource.ID_KEY)) {
+          query.select(directive.field());
+        }
+        query.orderBy(directive.order());
+      }
+    }
+    return query
         .getQueryString()
         .replace("?id .", "?id ." + addQueryStatements);
   }
