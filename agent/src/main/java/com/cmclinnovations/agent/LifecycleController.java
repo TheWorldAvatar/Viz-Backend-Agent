@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.model.function.ContractOperation;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
@@ -197,40 +198,62 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> commenceContract(@RequestBody Map<String, Object> params) {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     LOGGER.info("Received request to commence the services for a contract...");
-    String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
+    List<String> contractIds = TypeCastUtils.castToListObject(params.get(LifecycleResource.CONTRACT_KEY), String.class);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      // Verify if the contract has already been approved
-      String contractStatus = this.lifecycleService.getContractStatus(contractId).getBody().data().message();
-      // If approved, do not allow duplicate approval
-      if (!contractStatus.equals("Pending")) {
-        return this.responseEntityBuilder.success(contractId,
-            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_APPROVAL_KEY));
+      ContractOperation operation = (contractId) -> {
+        params.put(LifecycleResource.CONTRACT_KEY, contractId);
+        return this.commenceContract(contractId, params);
+      };
+      if (contractIds.size() == 1) {
+        return operation.apply(contractIds.get(0));
       }
-      boolean hasError = this.lifecycleService.genOrderReceivedOccurrences(contractId);
-      if (hasError) {
-        throw new IllegalStateException(
-            LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));
-      } else {
-        LOGGER.info("All orders has been successfully received!");
-        JsonNode report = this.lifecycleReportService.genReportInstance(contractId);
-        ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiateJsonLd(report, "unknown",
-            LocalisationResource.SUCCESS_ADD_REPORT_KEY);
-        if (response.getStatusCode() != HttpStatus.OK) {
-          return response;
-        }
+      return this.executeIterativeContractOperation(contractIds, operation,
+          "Error encountered while commencing contract for {}! Read error logs for more details",
+          LocalisationResource.ERROR_APPROVE_PARTIAL_KEY,
+          LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
+    });
+  }
+
+  private ResponseEntity<StandardApiResponse<?>> commenceContract(String contractId, Map<String, Object> params) {
+    // Verify if the contract has already been approved
+    String contractStatus = this.lifecycleService.getContractStatus(contractId).getBody().data().message();
+    // If approved, do not allow duplicate approval
+    if (!contractStatus.equals("Pending")) {
+      LOGGER.warn("Contract for {} has already been approved! Skipping this iteration...", contractId);
+      return this.responseEntityBuilder.success(contractId,
+          LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_APPROVAL_KEY));
+    }
+    boolean hasError = this.lifecycleService.genOrderReceivedOccurrences(contractId);
+    if (hasError) {
+      LOGGER.warn(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY),
+          HttpStatus.INTERNAL_SERVER_ERROR);
+    } else {
+      LOGGER.info("All orders has been successfully received!");
+      JsonNode report = this.lifecycleReportService.genReportInstance(contractId);
+      try {
+        this.addService.instantiateJsonLd(report, "unknown", LocalisationResource.SUCCESS_ADD_REPORT_KEY);
+      } catch (IllegalStateException e) {
+        LOGGER.warn("Something went wrong with instantiating a report for {}!", contractId);
+        throw e;
+      }
+      try {
         this.lifecycleService.addOccurrenceParams(params, LifecycleEventType.APPROVED);
-        response = this.addService.instantiate(
-            LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
+        ResponseEntity<StandardApiResponse<?>> response = this.addService
+            .instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
         if (response.getStatusCode() == HttpStatus.OK) {
-          LOGGER.info("Contract has been approved for service execution!");
+          LOGGER.info("Contract {} has been approved for service execution!", contractId);
           return this.responseEntityBuilder
               .success(response.getBody().data().id(),
                   LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY));
-        } else {
-          return response;
         }
+      } catch (IllegalStateException e) {
+        LOGGER.warn("Something went wrong with instantiating the approve event for {}!", contractId);
+        throw e;
       }
-    });
+      return null;
+    }
   }
 
   /**
@@ -377,19 +400,27 @@ public class LifecycleController {
   /**
    * Reset the draft contract's status to pending.
    */
-  @PutMapping("/draft/{id}")
-  public ResponseEntity<StandardApiResponse<?>> resetDraftContractStatus(@PathVariable String id) {
+  @PutMapping("/draft/reset")
+  public ResponseEntity<StandardApiResponse<?>> resetDraftContractStatus(@RequestBody Map<String, Object> params) {
     LOGGER.info("Received request to reset status of draft contract...");
+    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
+    List<String> contractIds = TypeCastUtils.castToListObject(params.get(LifecycleResource.CONTRACT_KEY), String.class);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      // Verify if the contract has already been approved
-      String contractStatus = this.lifecycleService.getContractStatus(id).getBody().data().message();
-      // If approved, do not allow modifications
-      if (!contractStatus.equals("Pending")) {
-        return this.responseEntityBuilder.error(
-            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY),
-            HttpStatus.CONFLICT);
-      }
-      return this.lifecycleService.updateContractStatus(id);
+      ContractOperation operation = (contractId) -> {
+        // Verify if the contract has already been approved
+        String contractStatus = this.lifecycleService.getContractStatus(contractId).getBody().data().message();
+        // If approved, do not allow modifications
+        if (!contractStatus.equals("Pending")) {
+          LOGGER.warn("Contract {} has already been approved and will not be reset!", contractId);
+          return null;
+        } else {
+          return this.lifecycleService.updateContractStatus(contractId);
+        }
+      };
+      return this.executeIterativeContractOperation(contractIds, operation,
+          "Error encountered while resetting contract for {}! Read error logs for more details",
+          LocalisationResource.ERROR_RESET_PARTIAL_KEY,
+          LocalisationResource.SUCCESS_CONTRACT_DRAFT_RESET_KEY);
     });
   }
 
@@ -614,5 +645,41 @@ public class LifecycleController {
       throw new IllegalArgumentException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY, field));
     }
+  }
+
+  /**
+   * Executes an operation across all contract IDs.
+   * 
+   * @param contractIds             List of target all contract IDs.
+   * @param singleContractOperation Operation on each contract.
+   * @param partialErrorWarning     Warning message for each operation failure.
+   * @param partialErrorKey         Localisation message key for operation failure
+   *                                on any contract.
+   * @param successMessageKey       Localisation message key for successful
+   *                                operations on all contracts.
+   */
+  private ResponseEntity<StandardApiResponse<?>> executeIterativeContractOperation(
+      List<String> contractIds,
+      ContractOperation singleContractOperation,
+      String partialErrorWarning,
+      String partialErrorKey,
+      String successMessageKey) {
+    boolean hasError = false;
+    for (String contractId : contractIds) {
+      try {
+        singleContractOperation.apply(contractId);
+      } catch (IllegalArgumentException e) {
+        LOGGER.error(partialErrorWarning, contractId);
+        hasError = true;
+      }
+    }
+    if (hasError) {
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(partialErrorKey),
+          HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    return this.responseEntityBuilder
+        .success("contract", LocalisationTranslator.getMessage(successMessageKey));
   }
 }

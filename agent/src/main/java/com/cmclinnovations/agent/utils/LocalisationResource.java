@@ -19,6 +19,7 @@ public class LocalisationResource {
   public static final String SUCCESS_CONTRACT_DRAFT_KEY = SUCCESS_CONTRACT_PREFIX + "draft";
   public static final String SUCCESS_SCHEDULE_DRAFT_KEY = SUCCESS_PREFIX + "schedule.draft";
   public static final String SUCCESS_CONTRACT_DRAFT_COPY_KEY = SUCCESS_CONTRACT_DRAFT_KEY + ".copy";
+  public static final String SUCCESS_CONTRACT_DRAFT_RESET_KEY = SUCCESS_CONTRACT_DRAFT_KEY + ".reset";
   public static final String SUCCESS_CONTRACT_DRAFT_UPDATE_KEY = SUCCESS_CONTRACT_DRAFT_KEY + ".update";
   public static final String SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY = SUCCESS_SCHEDULE_DRAFT_KEY + ".update";
   public static final String SUCCESS_CONTRACT_APPROVED_KEY = SUCCESS_CONTRACT_PREFIX + "approved";
@@ -35,8 +36,10 @@ public class LocalisationResource {
   public static final String ERROR_DELETE_KEY = ERROR_PREFIX + "delete";
   public static final String ERROR_MISSING_FIELD_KEY = ERROR_PREFIX + "missing.field";
   public static final String ERROR_MISSING_FILE_KEY = ERROR_PREFIX + "missing.file";
+  public static final String ERROR_APPROVE_PARTIAL_KEY = ERROR_PREFIX + "approve.partial";
   public static final String ERROR_COPY_DRAFT_PARTIAL_KEY = ERROR_PREFIX + "copy.partial";
   public static final String ERROR_ORDERS_PARTIAL_KEY = ERROR_PREFIX + "orders.partial";
+  public static final String ERROR_RESET_PARTIAL_KEY = ERROR_PREFIX + "reset.partial";
   public static final String ERROR_INVALID_DATE_CHRONOLOGY_KEY = ERROR_PREFIX + "invalid.date.chronology";
   public static final String ERROR_INVALID_DATE_SCHEDULED_PRESENT_KEY = ERROR_PREFIX + "invalid.date.scheduledpresent";
   public static final String ERROR_INVALID_DATE_CANCEL_KEY = ERROR_PREFIX + "invalid.date.cancel";

@@ -390,10 +390,10 @@ public class LifecycleService {
       params.remove(QueryResource.ID_KEY);
       LifecycleResource.genIdAndInstanceParameters(orderPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
       params.put(LifecycleResource.DATE_TIME_KEY, occurrenceDate);
-      ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
-          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
-      // Error logs for any specified occurrence
-      if (response.getStatusCode() != HttpStatus.OK) {
+      try {
+        // Error logs for any specified occurrence
+        this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
+      } catch (IllegalStateException e) {
         LOGGER.error("Error encountered while creating order for {} on {}! Read error logs for more details",
             contract, occurrenceDate);
         hasError = true;

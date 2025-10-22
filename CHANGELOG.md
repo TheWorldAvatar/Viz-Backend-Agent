@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.17.0
+
+### Changes
+
+- Extended contract commence route to allow users to commence multiple contracts
+- Refactored the draft contract reset route into a new reset route to reset multiple contracts
+
 ## 1.16.2
 
 ### Changes
