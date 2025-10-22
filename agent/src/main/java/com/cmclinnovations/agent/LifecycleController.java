@@ -20,8 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
-import com.cmclinnovations.agent.model.function.ContractOperation;
 import com.cmclinnovations.agent.model.SparqlResponseField;
+import com.cmclinnovations.agent.model.function.ContractOperation;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
@@ -136,26 +136,16 @@ public class LifecycleController {
       String entityType = TypeCastUtils.castToObject(params.get("type"), String.class);
       Integer reqCopies = TypeCastUtils.castToObject(params.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY),
           Integer.class);
-      boolean hasError = false;
-      for (String contractId : contractIds) {
-        try {
-          for (int i = 0; i < reqCopies; i++) {
-            this.cloneDraftContract(contractId, entityType);
-          }
-        } catch (IllegalArgumentException e) {
-          LOGGER.error("Error encountered while copying contract for {}! Read error logs for more details",
-              contractId);
-          hasError = true;
+      ContractOperation operation = (contractId) -> {
+        for (int i = 0; i < reqCopies; i++) {
+          this.cloneDraftContract(contractId, entityType);
         }
-      }
-      if (hasError) {
-        return this.responseEntityBuilder.error(
-            LocalisationTranslator.getMessage(LocalisationResource.ERROR_COPY_DRAFT_PARTIAL_KEY),
-            HttpStatus.INTERNAL_SERVER_ERROR);
-      }
-
-      return this.responseEntityBuilder
-          .success("contract", LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_COPY_KEY));
+        return null;
+      };
+      return this.executeIterativeContractOperation(contractIds, operation,
+          "Error encountered while copying contract for {}! Read error logs for more details",
+          LocalisationResource.ERROR_COPY_DRAFT_PARTIAL_KEY,
+          LocalisationResource.SUCCESS_CONTRACT_DRAFT_COPY_KEY);
     });
   }
 
