@@ -16,6 +16,7 @@ public class ShaclResource {
   public static final String BRANCH_KEY = "@branch";
   public static final String CONTENTS_KEY = "@contents";
   public static final String REVERSE_KEY = "@reverse";
+  public static final String OPTIONAL_KEY = "@optional";
   public static final String UNIT_KEY = "unit";
   public static final String VARIABLE_KEY = "variable";
   public static final String OUTPUT_KEY = "output";

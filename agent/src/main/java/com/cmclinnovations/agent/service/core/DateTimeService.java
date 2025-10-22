@@ -6,8 +6,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
 import java.util.ArrayDeque;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -58,6 +60,13 @@ public class DateTimeService {
   public String getCurrentDate() {
     // Define the date format
     return LocalDate.now().format(this.formatter);
+  }
+
+  /**
+   * Get current day of the week as full lowercase english.
+   */
+  public String getCurrentDayOfWeek() {
+    return LocalDate.now().getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH).toLowerCase();
   }
 
   /**

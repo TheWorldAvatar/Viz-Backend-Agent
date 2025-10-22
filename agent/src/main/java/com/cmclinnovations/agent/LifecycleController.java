@@ -1,7 +1,9 @@
 package com.cmclinnovations.agent;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.function.ContractOperation;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
@@ -69,31 +72,35 @@ public class LifecycleController {
   @PostMapping("/draft")
   public ResponseEntity<StandardApiResponse<?>> genContractLifecycle(@RequestBody Map<String, Object> params) {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
-    String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      // Add current date into parameters
-      params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
-      params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
-      params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_PENDING_STATUS);
-      LOGGER.info("Received request to generate a new lifecycle for contract <{}>...", contractId);
-      ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
-          LifecycleResource.LIFECYCLE_RESOURCE,
-          params);
-      if (response.getStatusCode() == HttpStatus.OK) {
-        LOGGER.info("The lifecycle of the contract has been successfully drafted!");
-        // Execute request for schedule as well
-        ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.genContractSchedule(params);
-        if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
-          LOGGER.info("Contract has been successfully drafted!");
-          return this.responseEntityBuilder
-              .success(scheduleResponse.getBody().data().id(),
-                  LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY));
-        }
-        return scheduleResponse;
-      } else {
-        return response;
-      }
+      return this.execGenContractLifecycle(params);
     });
+  }
+
+  private ResponseEntity<StandardApiResponse<?>> execGenContractLifecycle(Map<String, Object> params) {
+    String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
+    // Add current date into parameters
+    params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
+    params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
+    params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_PENDING_STATUS);
+    LOGGER.info("Received request to generate a new lifecycle for contract <{}>...", contractId);
+    ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
+        LifecycleResource.LIFECYCLE_RESOURCE,
+        params);
+    if (response.getStatusCode() == HttpStatus.OK) {
+      LOGGER.info("The lifecycle of the contract has been successfully drafted!");
+      // Execute request for schedule as well
+      ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.genContractSchedule(params);
+      if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
+        LOGGER.info("Contract has been successfully drafted!");
+        return this.responseEntityBuilder
+            .success(scheduleResponse.getBody().data().id(),
+                LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY));
+      }
+      return scheduleResponse;
+    } else {
+      return response;
+    }
   }
 
   /**
@@ -116,6 +123,62 @@ public class LifecycleController {
         return response;
       }
     });
+  }
+
+  /**
+   * Create a new draft contract based on the values of an existing contract
+   */
+  @PostMapping("/draft/copy")
+  public ResponseEntity<StandardApiResponse<?>> copyContract(@RequestBody Map<String, Object> params) {
+    this.checkMissingParams(params, QueryResource.ID_KEY);
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
+      List<String> contractIds = TypeCastUtils.castToListObject(params.get(QueryResource.ID_KEY), String.class);
+      String entityType = TypeCastUtils.castToObject(params.get("type"), String.class);
+      Integer reqCopies = TypeCastUtils.castToObject(params.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY),
+          Integer.class);
+      ContractOperation operation = (contractId) -> {
+        for (int i = 0; i < reqCopies; i++) {
+          this.cloneDraftContract(contractId, entityType);
+        }
+        return null;
+      };
+      return this.executeIterativeContractOperation(contractIds, operation,
+          "Error encountered while copying contract for {}! Read error logs for more details",
+          LocalisationResource.ERROR_COPY_DRAFT_PARTIAL_KEY,
+          LocalisationResource.SUCCESS_CONTRACT_DRAFT_COPY_KEY);
+    });
+  }
+
+  private void cloneDraftContract(String contractId, String entityType) {
+    // Retrieve current contract details for the target instance
+    StandardApiResponse<?> response = this.getService.getInstance(contractId, entityType, false).getBody();
+    // Generate new contract details from existing contract
+    Map<String, Object> contractDetails = ((Map<String, Object>) response.data().items().get(0))
+        .entrySet().stream()
+        .filter((entry) -> entry.getKey() != QueryResource.ID_KEY && entry.getKey() != QueryResource.IRI_KEY)
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            entry -> {
+              List<SparqlResponseField> values = TypeCastUtils.castToListObject(entry.getValue(),
+                  SparqlResponseField.class);
+              if (values.size() == 1) {
+                return values.get(0).value();
+              }
+              return values.stream().map(value -> value.value()).toList();
+            }));
+    response = this.addService.instantiate(entityType, contractDetails).getBody();
+    // Generate the params to be sent to the draft route
+    Map<String, Object> draftDetails = new HashMap<>();
+    // New ID should be added as a side effect of instantiate
+    draftDetails.put(QueryResource.ID_KEY, contractDetails.get(QueryResource.ID_KEY));
+    draftDetails.put(LifecycleResource.CONTRACT_KEY, response.data().id());
+    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, "P1D");
+    draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, this.dateTimeService.getCurrentDate());
+    draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, this.dateTimeService.getCurrentDate());
+    draftDetails.put("time slot start", "00:00");
+    draftDetails.put("time slot end", "23:59");
+    draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
+    this.execGenContractLifecycle(draftDetails);
   }
 
   /**

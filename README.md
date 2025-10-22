@@ -542,6 +542,19 @@ Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/dra
 
 There is also an additional optional parameter `label` to retrieve draft contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise.
 
+> Copy contract as a draft
+
+Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/draft/copy` endpoint to clone an existing contract as a new draft contract that is pending approval. This route will require the following `JSON` request parameters:
+
+```json
+{
+  /* parameters */
+  "id": "Either a string literal of the existing target contract ID or an array of the target contract IDs",
+  "type": "The requested identifier that must correspond to the target contract class in `./resources/application-form.json`",
+  "recurrence": "Number of copies required. If an array is given in the id, all selected contracts will be copied according to the number",
+}
+```
+
 #### 2.6.3 Schedule route
 
 > Get contract schedule
