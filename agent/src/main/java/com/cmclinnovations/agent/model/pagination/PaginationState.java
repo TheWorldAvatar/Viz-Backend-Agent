@@ -1,4 +1,4 @@
-package com.cmclinnovations.agent.model;
+package com.cmclinnovations.agent.model.pagination;
 
 public record PaginationState(int pageIndex, int limit, Integer offset) {
     public PaginationState {
