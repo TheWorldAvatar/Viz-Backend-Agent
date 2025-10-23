@@ -1,5 +1,7 @@
 package com.cmclinnovations.agent.service.core;
 
+import java.io.File;
+import java.nio.file.FileSystemNotFoundException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -204,12 +206,21 @@ public class QueryTemplateService {
    */
   private JsonNode getJsonLDResource(String resourceID) {
     String filePath = LifecycleResource.getLifecycleResourceFilePath(resourceID);
-    // Default to the file name in application-service if it is not a lifecycle
-    // route
+
     if (filePath == null) {
-      String fileName = this.fileService.getTargetFileName(resourceID);
-      filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileName + ".jsonld";
+        // Has no default JSON-LD. These must be provided
+        String fileName = this.fileService.getTargetFileName(resourceID);
+        filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileName + ".jsonld";
+    } else {
+        // Check for potential overwrite; if not use default
+        try {
+            String fileName = this.fileService.getTargetFileName(resourceID);
+            filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileName + ".jsonld";
+        } catch (FileSystemNotFoundException e) {
+            // Keep original lifecycle path
+        }
     }
+
     // Retrieve the instantiation JSON schema
     JsonNode contents = this.fileService.getJsonContents(filePath);
     if (!contents.isObject()) {
