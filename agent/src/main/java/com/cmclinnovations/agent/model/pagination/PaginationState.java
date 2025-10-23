@@ -9,6 +9,9 @@ import org.eclipse.rdf4j.sparqlbuilder.core.OrderCondition;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 
 public record PaginationState(int pageIndex, int limit, String sortBy, Integer offset) {
@@ -32,6 +35,13 @@ public record PaginationState(int pageIndex, int limit, String sortBy, Integer o
                 .results()
                 .map(match -> {
                     String field = match.group(2);
+                    if (field.toLowerCase()
+                            .equals(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY))) {
+                        field = LifecycleResource.EVENT_KEY;
+                    } else if (field.toLowerCase().equals(LocalisationTranslator
+                            .getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY).toLowerCase())) {
+                        field = LifecycleResource.SCHEDULE_RECURRENCE_KEY;
+                    }
                     Variable fieldVar = QueryResource.genVariable(field);
                     // First group matches the sign
                     String sign = match.group(1);
