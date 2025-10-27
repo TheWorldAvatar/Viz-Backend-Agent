@@ -3,12 +3,14 @@ package com.cmclinnovations.agent.template.query;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfLiteral.StringLiteral;
@@ -16,6 +18,8 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfObject;
 
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
+import com.cmclinnovations.agent.model.ShaclPropertyBinding;
+import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
@@ -75,6 +79,21 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
 
     String valuesClause = this.appendOptionalIdFilters(selectTemplate, params.targetIds(), params.parent());
     return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause);
+  }
+
+  /**
+   * Generate the WHERE clause of a query:
+   * 
+   * @param queryVarsAndPaths The query construction requirements.
+   */
+  public String genWhereClause(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
+    LOGGER.info("Generating the WHERE clause...");
+    // Extract out select and where, test what we get
+    Map<String, Map<String, ShaclPropertyBinding>> propertyBindingMap = super.parseNodeShapes(queryVarsAndPaths);
+    return super.write(Queries.SELECT(), propertyBindingMap)
+        .getQueryString()
+        // Extract only the WHERE clause content
+        .replaceAll("(?s)SELECT\\s*\\*\\s*\\nWHERE\\s*(.*)\\n$", "OPTIONAL$1");
   }
 
   /**

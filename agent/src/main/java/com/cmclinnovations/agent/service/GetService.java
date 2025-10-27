@@ -33,6 +33,7 @@ import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
@@ -229,7 +230,9 @@ public class GetService {
   public Queue<String> getAllIds(String resourceID, String addQueryStatements, PaginationState pagination) {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addQueryStatements, pagination);
+    String additionalStatements = pagination == null ? addQueryStatements
+        : addQueryStatements + this.getQueryStatementsForSorting(resourceID, pagination.getSortFields());
+    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements, pagination);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> binding.getFieldValue(QueryResource.ID_KEY))
         .collect(Collectors.toCollection(ArrayDeque::new));
@@ -312,6 +315,48 @@ public class GetService {
     Queue<SparqlBinding> instances = this.execGetInstances(eventType.getShaclReplacement(),
         new ArrayDeque<>(List.of(targetId)), false, null, lifecycleEventPattern.getQueryString(), new HashMap<>());
     return this.getSingleInstanceResponse(instances);
+  }
+
+  /**
+   * Gets the query statements required for sorting the fields.
+   * 
+   * @param resourceID   The target resource identifier for the instance class.
+   * @param sortedFields Set of fields that should be included sorted.
+   */
+  private String getQueryStatementsForSorting(String resourceID, Set<String> sortedFields) {
+    // First query for all the available query construction params associated with
+    // the target replacement
+    String iri = this.queryTemplateService.getIri(resourceID);
+    String query = this.queryTemplateService.getShaclQuery(iri, true);
+    ArrayDeque<Queue<SparqlBinding>> results = (ArrayDeque<Queue<SparqlBinding>>) this.kgService
+        .queryNestedPredicates(query);
+    // Filter out only the required fields for sorting, excluding others
+    ArrayDeque<Queue<SparqlBinding>> queryVarsAndPaths = new ArrayDeque<>();
+    while (!results.isEmpty()) {
+      // Retrieve the last element first, which are not mixed with node groups
+      // Queue sorts them by node groups first if available, and we want to reverse
+      // this process instead
+      Queue<SparqlBinding> currentQueryVarsAndPaths = results.pollLast();
+      Queue<SparqlBinding> tempQueue = new ArrayDeque<>();
+      while (!currentQueryVarsAndPaths.isEmpty()) {
+        SparqlBinding binding = currentQueryVarsAndPaths.poll();
+        String fieldName = binding.getFieldValue(ShaclResource.NAME_PROPERTY);
+        if (sortedFields.contains(fieldName)) {
+          tempQueue.offer(binding);
+          // When there are node groups, add them into the sorted fields so that it will
+          // be picked up in later queues
+          if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
+            sortedFields.add(binding.getFieldValue(ShaclResource.NODE_GROUP_VAR));
+          }
+        }
+      }
+      // Ensures only if there are filters meeting the requirements, append to the
+      // final query
+      if (!tempQueue.isEmpty()) {
+        queryVarsAndPaths.offerFirst(tempQueue);
+      }
+    }
+    return queryVarsAndPaths.isEmpty() ? "" : this.queryTemplateService.genWhereClause(queryVarsAndPaths);
   }
 
   /**

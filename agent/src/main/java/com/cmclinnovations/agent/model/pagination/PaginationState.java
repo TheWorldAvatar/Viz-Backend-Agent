@@ -1,7 +1,9 @@
 package com.cmclinnovations.agent.model.pagination;
 
 import java.util.ArrayDeque;
+import java.util.HashSet;
 import java.util.Queue;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -24,6 +26,17 @@ public record PaginationState(int pageIndex, int limit, String sortBy, Integer o
 
     public PaginationState(int pageIndex, int limit, String sortBy) {
         this(pageIndex, limit, sortBy, null);
+    }
+
+    /**
+     * Retrieve the sort fields from the 'sort_by' parameter.
+     */
+    public Set<String> getSortFields() {
+        // REGEX will match two groups per sort directive in the url
+        return SORT_PARAM_PATTERN.matcher(this.sortBy)
+                .results()
+                .map(match -> match.group(2))
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
     /**

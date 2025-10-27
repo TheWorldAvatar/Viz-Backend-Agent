@@ -215,6 +215,16 @@ public class QueryTemplateService {
   }
 
   /**
+   * Generates a WHERE SPARQL query to retrieve instances from the inputs.
+   * 
+   * @param queryVarsAndPaths The query construction requirements.
+   */
+  public String genWhereClause(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
+    LOGGER.debug("Generating the SELECT query to get instances...");
+    return this.getQueryTemplateFactory.genWhereClause(queryVarsAndPaths);
+  }
+
+  /**
    * Generates a SELECT SPARQL query for searching instances from the inputs.
    * 
    * @param queryVarsAndPaths The query construction requirements.
