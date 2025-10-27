@@ -19,7 +19,8 @@ public class LifecycleResource {
   public static final String SCHEDULE_RESOURCE = "schedule";
   public static final String TASK_RESOURCE = "task";
   public static final String OCCURRENCE_INSTANT_RESOURCE = "occurrence instant";
-  public static final String OCCURRENCE_LINK_RESOURCE = "occurrence link";
+  public static final String CANCEL_RESOURCE = "cancel";
+  public static final String REPORT_RESOURCE = "report";
 
   public static final String INSTANCE_KEY = "id_instance";
   public static final String CONTRACT_KEY = "contract";
@@ -129,7 +130,9 @@ public class LifecycleResource {
         return FileService.LIFECYCLE_JSON_LD_RESOURCE;
       case LifecycleResource.OCCURRENCE_INSTANT_RESOURCE:
         return FileService.OCCURRENCE_INSTANT_JSON_LD_RESOURCE;
-      case LifecycleResource.OCCURRENCE_LINK_RESOURCE:
+      case LifecycleResource.CANCEL_RESOURCE:
+        return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
+      case LifecycleResource.REPORT_RESOURCE:
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
       case LifecycleResource.SCHEDULE_RESOURCE:
         return FileService.SCHEDULE_JSON_LD_RESOURCE;
