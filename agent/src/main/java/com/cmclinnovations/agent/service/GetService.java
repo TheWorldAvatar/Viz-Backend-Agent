@@ -69,6 +69,7 @@ public class GetService {
   public String getQuery(String shaclReplacement, boolean requireLabel) {
     String query = this.queryTemplateService.getShaclQuery(shaclReplacement, requireLabel);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
+    //
     return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, new ArrayDeque<>(),
         null, "", new HashMap<>());
   }
@@ -231,7 +232,7 @@ public class GetService {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
     String additionalStatements = pagination == null ? addQueryStatements
-        : addQueryStatements + this.getQueryStatementsForSorting(resourceID, pagination.getSortFields());
+        : addQueryStatements + this.getQueryStatementsForSorting(iri, pagination.getSortFields());
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements, pagination);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> binding.getFieldValue(QueryResource.ID_KEY))
@@ -320,14 +321,13 @@ public class GetService {
   /**
    * Gets the query statements required for sorting the fields.
    * 
-   * @param resourceID   The target resource identifier for the instance class.
-   * @param sortedFields Set of fields that should be included sorted.
+   * @param shaclReplacement The replacement value of the SHACL query target
+   * @param sortedFields     Set of fields that should be included sorted.
    */
-  private String getQueryStatementsForSorting(String resourceID, Set<String> sortedFields) {
+  private String getQueryStatementsForSorting(String shaclReplacement, Set<String> sortedFields) {
     // First query for all the available query construction params associated with
     // the target replacement
-    String iri = this.queryTemplateService.getIri(resourceID);
-    String query = this.queryTemplateService.getShaclQuery(iri, true);
+    String query = this.queryTemplateService.getShaclQuery(shaclReplacement, true);
     ArrayDeque<Queue<SparqlBinding>> results = (ArrayDeque<Queue<SparqlBinding>>) this.kgService
         .queryNestedPredicates(query);
     // Filter out only the required fields for sorting, excluding others
