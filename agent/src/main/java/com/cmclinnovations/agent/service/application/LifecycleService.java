@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -270,7 +271,12 @@ public class LifecycleService {
    */
   private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String additionalQuery,
       Boolean isClosed, PaginationState pagination) {
-    Queue<String> ids = this.getService.getAllIds(entityType, additionalQuery, pagination);
+    String addSortQueries = additionalQuery;
+    addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+        pagination.getSortFields());
+    addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
+        pagination.getSortFields());
+    Queue<String> ids = this.getService.getAllIds(entityType, addSortQueries, pagination);
     Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = "";
     addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
@@ -343,6 +349,21 @@ public class LifecycleService {
                   LinkedHashMap::new));
         })
         .toList();
+  }
+
+  /**
+   * Generates the query statements to sort by event occurrences.
+   * 
+   * @param lifecycleEvent Target event type.
+   * @param sortedFields   Set of fields that should be included for sorting.
+   */
+  private String genEventOccurrenceSortQueryStatements(LifecycleEventType lifecycleEvent, Set<String> sortedFields) {
+    String sortQueryStatements = this.getService.getQueryStatementsForSorting(lifecycleEvent.getShaclReplacement(),
+        sortedFields);
+    if (sortQueryStatements.isEmpty()) {
+      return sortQueryStatements;
+    }
+    return LifecycleResource.parseOccurrenceSortQueryStatements(sortQueryStatements, lifecycleEvent);
   }
 
   /**

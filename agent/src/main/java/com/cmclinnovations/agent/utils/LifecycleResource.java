@@ -165,31 +165,55 @@ public class LifecycleResource {
   }
 
   /**
+   * Parses the query statements for sorting by event occurrences.
+   * 
+   * @param query          Target query for parsing.
+   * @param lifecycleEvent Target event type.
+   */
+  public static String parseOccurrenceSortQueryStatements(String query, LifecycleEventType lifecycleEvent) {
+    String eventVar = QueryResource.genVariable(lifecycleEvent.getId() + "_event").getQueryString();
+    return query.replace(QueryResource.IRI_VAR.getQueryString(), eventVar)
+        .replaceFirst("OPTIONAL\\{",
+            "OPTIONAL{" + genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent));
+  }
+
+  /**
    * Extract the occurrence's WHERE clause for an additional query additions.
    * 
    * @param query          Target query for extraction.
    * @param lifecycleEvent Target event type.
    */
   public static String extractOccurrenceQuery(String query, LifecycleEventType lifecycleEvent) {
-    Pattern pattern = Pattern.compile("WHERE\\s*\\{(.*?)\\}$", Pattern.DOTALL);
+    Pattern pattern = Pattern.compile("WHERE\\s*\\{(.*)\\}$", Pattern.DOTALL);
     Matcher matcher = pattern.matcher(query);
 
     if (!matcher.find()) {
       return "";
     }
     String eventVar = QueryResource.genVariable(lifecycleEvent.getId() + "_event").getQueryString();
-    String parsedWhereClause = matcher.group(1)
-        .trim()
+    String parsedWhereClause = matcher.group(1).trim()
         // Remove the following unneeded statements
         // Use of replaceFirst to improve performance as it occurs only once
         .replaceFirst(
             "\\?iri \\<http\\:\\/\\/www\\.w3\\.org\\/1999\\/02\\/22\\-rdf\\-syntax\\-ns\\#type\\> \\<https\\:\\/\\/spec\\.edmcouncil\\.org\\/fibo\\/ontology\\/FBC\\/ProductsAndServices\\/FinancialProductsAndServices\\/ContractLifecycleEventOccurrence\\>\\ .",
             "")
-        .replaceFirst("\\?iri dc\\-terms\\:identifier \\?id \\.", "")
+        .replaceFirst("\\?iri dc\\-terms\\:identifier \\?id \\.",
+            genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent))
         // Replace iri with event variable
         .replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
-    return "OPTIONAL {" + eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+    return "OPTIONAL {" + parsedWhereClause + "}";
+  }
+
+  /**
+   * Generates a query to target the specific occurrence.
+   * 
+   * @param eventVar       The event variable of interest.
+   * @param lifecycleEvent Target event type.
+   */
+  private static String genOccurrenceTargetQueryStatement(String eventVar, LifecycleEventType lifecycleEvent) {
+    return "?stage <https://www.omg.org/spec/Commons/Collections/comprises> " + eventVar + "." + eventVar
+        + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + Rdf.iri(lifecycleEvent.getEvent()).getQueryString()
-        + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event." + parsedWhereClause + "}";
+        + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event.";
   }
 }

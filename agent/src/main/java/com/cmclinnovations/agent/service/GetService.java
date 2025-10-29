@@ -69,7 +69,6 @@ public class GetService {
   public String getQuery(String shaclReplacement, boolean requireLabel) {
     String query = this.queryTemplateService.getShaclQuery(shaclReplacement, requireLabel);
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
-    //
     return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, new ArrayDeque<>(),
         null, "", new HashMap<>());
   }
@@ -324,7 +323,7 @@ public class GetService {
    * @param shaclReplacement The replacement value of the SHACL query target
    * @param sortedFields     Set of fields that should be included sorted.
    */
-  private String getQueryStatementsForSorting(String shaclReplacement, Set<String> sortedFields) {
+  public String getQueryStatementsForSorting(String shaclReplacement, Set<String> sortedFields) {
     // First query for all the available query construction params associated with
     // the target replacement
     String query = this.queryTemplateService.getShaclQuery(shaclReplacement, true);
