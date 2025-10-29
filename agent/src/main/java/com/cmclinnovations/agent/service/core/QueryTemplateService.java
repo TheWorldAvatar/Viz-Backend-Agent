@@ -110,10 +110,10 @@ public class QueryTemplateService {
             nodeShapeReplacement.substring(1, nodeShapeReplacement.length() - 1)))
             .andHas(QueryResource.DC_TERM_ID, QueryResource.ID_VAR))
         .offset(pagination == null ? 0 : pagination.offset());
-    if (pagination == null || pagination.sortBy().isEmpty()) {
+    if (pagination == null || pagination.sortFields().isEmpty()) {
       query.orderBy(QueryResource.ID_VAR);
     } else {
-      Queue<SortDirective> sortDirectives = pagination.getSortDirectives();
+      Queue<SortDirective> sortDirectives = pagination.sortDirectives();
       boolean hasNoIdToSort = sortDirectives.stream()
           .allMatch(directive -> !directive.field().getVarName().equals(QueryResource.ID_KEY));
       while (!sortDirectives.isEmpty()) {

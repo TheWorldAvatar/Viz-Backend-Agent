@@ -16,35 +16,50 @@ import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 
-public record PaginationState(int pageIndex, int limit, String sortBy, Integer offset) {
+public class PaginationState {
     private static final Pattern SORT_PARAM_PATTERN = Pattern.compile("([-+])?([^,]+)");
 
-    public PaginationState {
-        // Page index starts from 0
-        offset = pageIndex * limit;
-    }
+    private final int limit;
+    private final Integer offset;
+    private final Set<String> sortedFields;
+    private final Queue<SortDirective> sortedDirectives;
 
     public PaginationState(int pageIndex, int limit, String sortBy) {
-        this(pageIndex, limit, sortBy, null);
-    }
-
-    /**
-     * Retrieve the sort fields from the 'sort_by' parameter.
-     */
-    public Set<String> getSortFields() {
+        this.limit = limit;
+        // Page index starts from 0
+        this.offset = pageIndex * limit;
         // REGEX will match two groups per sort directive in the url
-        return SORT_PARAM_PATTERN.matcher(this.sortBy)
+        this.sortedFields = SORT_PARAM_PATTERN.matcher(sortBy)
                 .results()
                 .map(match -> match.group(2))
                 .collect(Collectors.toCollection(HashSet::new));
+        this.sortedDirectives = this.parseSortDirectives(sortBy);
+    }
+
+    public int limit() {
+        return this.limit;
+    }
+
+    public Integer offset() {
+        return this.offset;
+    }
+
+    public Set<String> sortFields() {
+        return this.sortedFields;
+    }
+
+    public Queue<SortDirective> sortDirectives() {
+        return this.sortedDirectives;
     }
 
     /**
-     * Retrieve the sort directives from the 'sort_by' parameter.
+     * Parses the sort directives from the 'sort_by' parameter.
+     * 
+     * @param sortBy The `sort_by` parameter string.
      */
-    public Queue<SortDirective> getSortDirectives() {
+    private Queue<SortDirective> parseSortDirectives(String sortBy) {
         // REGEX will match two groups per sort directive in the url
-        return SORT_PARAM_PATTERN.matcher(this.sortBy)
+        return SORT_PARAM_PATTERN.matcher(sortBy)
                 .results()
                 .map(match -> {
                     String field = match.group(2);
