@@ -254,7 +254,7 @@ public class KGService {
     LOGGER.debug("Retrieving SHACL rules for resource: {}", resourceId);
     String target;
     try {
-      target = this.fileService.getTargetIri(resourceId);
+      target = this.fileService.getTargetIri(resourceId).getQueryString();
     } catch (InvalidRouteException e) {
       LifecycleEventType eventType = LifecycleEventType.fromId(resourceId);
       if (eventType != null) {

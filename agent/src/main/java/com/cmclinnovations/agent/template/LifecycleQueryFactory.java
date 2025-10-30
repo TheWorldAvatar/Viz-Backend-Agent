@@ -94,6 +94,57 @@ public class LifecycleQueryFactory {
   }
 
   /**
+   * Retrieves the simplified SPARQL query to get the service tasks with the right
+   * event.
+   * 
+   * @param startDate Target start date in YYYY-MM-DD format. Optional when
+   *                  passing "".
+   * @param endDate   Target end date in YYYY-MM-DD format.
+   * @param isClosed  Indicates if task has been closed or not.
+   */
+  public String getServiceTasksFilter(String startDate, String endDate, boolean isClosed) {
+    String eventDateVar = QueryResource.genVariable(LifecycleResource.DATE_KEY).getQueryString();
+    String eventIdVar = QueryResource.EVENT_ID_VAR.getQueryString();
+    String filterDateStatement = "";
+    // For outstanding tasks, start dates are omitted
+    if (!startDate.isEmpty()) {
+      filterDateStatement = "xsd:date(" + eventDateVar + ")>=\"" + startDate + "\"^^xsd:date && ";
+    }
+    filterDateStatement = "FILTER(" + filterDateStatement + "xsd:date(" + eventDateVar + ")<=\"" + endDate
+        + "\"^^xsd:date)";
+    String minusEventStatements = "";
+    if (isClosed) {
+      minusEventStatements += genMinusEventClause(LifecycleEventType.SERVICE_ORDER_RECEIVED).getQueryString();
+      minusEventStatements += genMinusEventClause(LifecycleEventType.SERVICE_ORDER_DISPATCHED).getQueryString();
+      minusEventStatements += QueryResource.genFilterExists(
+          QueryResource.EVENT_ID_VAR.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+              Rdf.iri(LifecycleEventType.SERVICE_EXECUTION.getEvent()))
+              .andHas(QueryResource.CMNS_DSG_DESCRIBES, Rdf.iri(LifecycleResource.EVENT_PENDING_STATUS)),
+          false)
+          .getQueryString();
+    } else {
+      minusEventStatements += genMinusEventClause(LifecycleEventType.SERVICE_INCIDENT_REPORT).getQueryString();
+      minusEventStatements += genMinusEventClause(LifecycleEventType.SERVICE_CANCELLATION).getQueryString();
+      minusEventStatements += QueryResource.genFilterExists(
+          QueryResource.EVENT_ID_VAR.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+              Rdf.iri(LifecycleEventType.SERVICE_EXECUTION.getEvent()))
+              .andHas(QueryResource.CMNS_DSG_DESCRIBES, Rdf.iri(LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS)),
+          false)
+          .getQueryString();
+    }
+    return "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
+        + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
+        + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
+        + "<https://www.omg.org/spec/Commons/Collections/comprises> " + eventIdVar + "."
+        + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
+        + eventDateVar + "."
+        + filterDateStatement
+        // Event must be the last in the chain ie no other events will succeed it
+        + "MINUS{" + eventIdVar + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}"
+        + minusEventStatements;
+  }
+
+  /**
    * Retrieves the SPARQL query to get the service tasks for the specified
    * date and/or contract.
    * 
@@ -355,6 +406,17 @@ public class LifecycleQueryFactory {
         .then(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES), Rdf.iri(instance));
     GraphPatternNotTriples filterClause = QueryResource.genFilterExists(pattern, exists);
     query.append(filterClause.getQueryString());
+  }
+
+  /**
+   * Generates a MINUS event clause for the target event type.
+   * 
+   * @param eventType Lifecycle event to be generated.
+   */
+  private GraphPatternNotTriples genMinusEventClause(LifecycleEventType eventType) {
+    return QueryResource.genFilterExists(QueryResource.EVENT_ID_VAR.has(
+        QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+        Rdf.iri(eventType.getEvent())), false);
   }
 
   /**
