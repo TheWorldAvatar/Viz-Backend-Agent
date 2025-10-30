@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -132,11 +133,26 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances with labels for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, true, null, new PaginationState(page, limit, sortBy));
+      Queue<SparqlBinding> instances = this.getService.getInstances(type, true, null,
+          new PaginationState(page, limit, sortBy));
       return this.responseEntityBuilder.success(null,
           instances.stream()
               .map(SparqlBinding::get)
               .toList());
+    });
+  }
+
+  /**
+   * Retrieves all distinct filter options for the specified type.
+   */
+  @GetMapping("/{type}/filter")
+  public ResponseEntity<StandardApiResponse<?>> getDistinctFilterOptions(
+      @PathVariable(name = "type") String type,
+      @RequestParam(name = "field", required = true) String field) {
+    LOGGER.info("Received request to get all distinct filter options for {}...", type);
+    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
+      List<String> options = this.getService.getAllFilterOptions(type, field, "");
+      return this.responseEntityBuilder.success(options);
     });
   }
 

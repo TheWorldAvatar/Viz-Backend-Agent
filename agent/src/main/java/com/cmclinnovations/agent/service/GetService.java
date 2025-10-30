@@ -232,10 +232,30 @@ public class GetService {
     String iri = this.queryTemplateService.getIri(resourceID);
     String additionalStatements = pagination == null ? addQueryStatements
         : addQueryStatements + this.getQueryStatementsForSorting(iri, pagination.sortFields());
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements, pagination);
+    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements, pagination,
+        true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> binding.getFieldValue(QueryResource.ID_KEY))
         .collect(Collectors.toCollection(ArrayDeque::new));
+  }
+
+  /**
+   * Retrieve all filter options associated with the resource and the target
+   * field.
+   * 
+   * @param resourceID         Target resource identifier for the instance class.
+   * @param field              The field of interest.
+   * @param addQueryStatements Additional query statements to be added if any.
+   */
+  public List<String> getAllFilterOptions(String resourceID, String field, String addQueryStatements) {
+    LOGGER.info("Retrieving all filter options...");
+    String iri = this.queryTemplateService.getIri(resourceID);
+    String additionalStatements = addQueryStatements + this.getQueryStatementsForSorting(iri, Set.of(field));
+    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements,
+        new PaginationState(0, 21, "-" + field), false);
+    return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
+        .map(binding -> binding.getFieldValue(field))
+        .toList();
   }
 
   /**

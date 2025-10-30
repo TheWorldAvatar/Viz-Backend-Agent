@@ -393,8 +393,9 @@ There are several routes for retrieving instances associated with a specific `ty
 2. Get all instances
 3. Get a specific instance
 4. Get all instances with human readable fields
-5. Get all instances associated with a specific parent instance
-6. Get all instances matching the search criteria
+5. Get the distinct field options of all instances
+6. Get all instances associated with a specific parent instance
+7. Get all instances matching the search criteria
 
 ##### Get the count of all instances
 
@@ -440,6 +441,16 @@ where `{type}`is the requested identifier that must correspond to a target class
 
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
+
+##### Get the distinct field options of all instances
+
+This route retrieves all the distinct field options for instances of a specific type and filter. Users can send a `GET` request to
+
+```
+<baseURL>/vis-backend-agent/{type}/filter?field={field}
+```
+
+where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. 
 
 ##### Get all instances associated with a specific parent instance
 
