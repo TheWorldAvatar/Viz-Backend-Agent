@@ -66,6 +66,9 @@ public class LifecycleResource {
   public static final String EVENT_PENDING_STATUS = "https://www.theworldavatar.com/kg/ontoservice/PendingStatus";
   public static final String COMPLETION_EVENT_COMPLETED_STATUS = "https://www.theworldavatar.com/kg/ontoservice/CompletedStatus";
   public static final String LIFECYCLE_REPORT = "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Reporting/Report";
+  public static final Pattern OCCURRENCE_VARIABLES_PATTERN = Pattern.compile("SELECT\\s+DISTINCT\\s+(.*?)\\s+WHERE",
+      Pattern.DOTALL);
+  public static final Pattern OCCURRENCE_WHERE_CLAUSE_PATTERN = Pattern.compile("WHERE\\s*\\{(.*)\\}$", Pattern.DOTALL);
 
   // Private constructor to prevent instantiation
   private LifecycleResource() {
@@ -145,9 +148,7 @@ public class LifecycleResource {
    * @param groupIndex The group index for the variables.
    */
   public static Map<Variable, List<Integer>> extractOccurrenceVariables(String query, int groupIndex) {
-    Pattern pattern = Pattern.compile("SELECT\\s+DISTINCT\\s+(.*?)\\s+WHERE", Pattern.DOTALL);
-    Matcher matcher = pattern.matcher(query);
-
+    Matcher matcher = OCCURRENCE_VARIABLES_PATTERN.matcher(query);
     if (!matcher.find()) {
       return new HashMap<>();
     }
@@ -184,9 +185,7 @@ public class LifecycleResource {
    * @param lifecycleEvent Target event type.
    */
   public static String extractOccurrenceQuery(String query, LifecycleEventType lifecycleEvent) {
-    Pattern pattern = Pattern.compile("WHERE\\s*\\{(.*)\\}$", Pattern.DOTALL);
-    Matcher matcher = pattern.matcher(query);
-
+    Matcher matcher = OCCURRENCE_WHERE_CLAUSE_PATTERN.matcher(query);
     if (!matcher.find()) {
       return "";
     }

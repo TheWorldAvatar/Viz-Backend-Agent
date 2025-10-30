@@ -26,6 +26,7 @@ import com.cmclinnovations.agent.utils.LocalisationResource;
 public class DateTimeService {
   private final DateTimeFormatter formatter;
   private final DateTimeFormatter timeFormatter;
+  private static final Pattern WEEKLY_INTERVAL_PATERN = Pattern.compile("P(\\d+)D");
 
   /**
    * Constructs a new service with the following dependencies.
@@ -141,9 +142,7 @@ public class DateTimeService {
    */
   public int getWeeklyInterval(String recurrence) {
     // Regex to extract numbers from a string
-    Pattern pattern = Pattern.compile("P(\\d+)D");
-    Matcher matcher = pattern.matcher(recurrence);
-
+    Matcher matcher = WEEKLY_INTERVAL_PATERN.matcher(recurrence);
     if (matcher.matches()) {
       int number = Integer.parseInt(matcher.group(1));
       return number / 7;
