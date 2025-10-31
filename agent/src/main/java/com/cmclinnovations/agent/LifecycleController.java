@@ -35,6 +35,7 @@ import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -522,11 +523,14 @@ public class LifecycleController {
   @GetMapping("/{stage}")
   public ResponseEntity<StandardApiResponse<?>> getContracts(
       @PathVariable String stage,
-      @RequestParam(required = true) String type,
-      @RequestParam(defaultValue = "false") boolean label,
-      @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit,
-      @RequestParam(name = "sort_by", required = true) String sortBy) {
+      @RequestParam Map<String, String> allRequestParams) {
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    boolean label = allRequestParams.getOrDefault(StringResource.LABEL_REQUEST_PARAM, "false").equals("true");
+    allRequestParams.remove(StringResource.LABEL_REQUEST_PARAM);
+    Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
+    Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
+    String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
+    allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     LifecycleEventType eventType = switch (stage.toLowerCase()) {
       case "draft" -> {
         LOGGER.info("Received request to retrieve draft contracts...");
@@ -566,11 +570,13 @@ public class LifecycleController {
    */
   @GetMapping("/service/outstanding")
   public ResponseEntity<StandardApiResponse<?>> getAllOutstandingTasks(
-      @RequestParam(required = true) String type,
-      @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit,
-      @RequestParam(name = "sort_by", required = true) String sortBy) {
+      @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve outstanding tasks...");
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
+    Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
+    String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
+    allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrences(null, null, type, false, new PaginationState(page, limit, sortBy));
     });
@@ -610,13 +616,15 @@ public class LifecycleController {
    */
   @GetMapping("/service/scheduled")
   public ResponseEntity<StandardApiResponse<?>> getAllScheduledTasks(
-      @RequestParam(required = true) String type,
-      @RequestParam(required = true) String startTimestamp,
-      @RequestParam(required = true) String endTimestamp,
-      @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit,
-      @RequestParam(name = "sort_by", required = true) String sortBy) {
+      @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve scheduled tasks for the specified dates...");
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    String startTimestamp = allRequestParams.remove(StringResource.START_TIMESTAMP_REQUEST_PARAM);
+    String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
+    Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
+    Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
+    String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
+    allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, false,
           new PaginationState(page, limit, sortBy));
@@ -628,13 +636,15 @@ public class LifecycleController {
    */
   @GetMapping("/service/closed")
   public ResponseEntity<StandardApiResponse<?>> getAllClosedTasks(
-      @RequestParam(required = true) String type,
-      @RequestParam(required = true) String startTimestamp,
-      @RequestParam(required = true) String endTimestamp,
-      @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit,
-      @RequestParam(name = "sort_by", required = true) String sortBy) {
+      @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve closed tasks for the specified dates...");
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    String startTimestamp = allRequestParams.remove(StringResource.START_TIMESTAMP_REQUEST_PARAM);
+    String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
+    Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
+    Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
+    String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
+    allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, true,
           new PaginationState(page, limit, sortBy));
@@ -647,11 +657,13 @@ public class LifecycleController {
   @GetMapping("/service/{id}")
   public ResponseEntity<StandardApiResponse<?>> getAllTasksForTargetContract(
       @PathVariable(name = "id") String contract,
-      @RequestParam(required = true) String type,
-      @RequestParam(name = "page", required = true) int page,
-      @RequestParam(name = "limit", required = true) int limit,
-      @RequestParam(name = "sort_by", required = true) String sortBy) {
+      @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve services in progress for a specified contract...");
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
+    Integer limit = Integer.valueOf(allRequestParams.get(StringResource.LIMIT_REQUEST_PARAM));
+    String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
+    allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrences(contract, type, new PaginationState(page, limit, sortBy));
     });

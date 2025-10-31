@@ -10,6 +10,14 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class StringResource {
+  public static final String LABEL_REQUEST_PARAM = "label";
+  public static final String LIMIT_REQUEST_PARAM = "limit";
+  public static final String PAGE_REQUEST_PARAM = "page";
+  public static final String SORT_BY_REQUEST_PARAM = "sort_by";
+  public static final String START_TIMESTAMP_REQUEST_PARAM = "startTimestamp";
+  public static final String END_TIMESTAMP_REQUEST_PARAM = "endTimestamp";
+  public static final String TYPE_REQUEST_PARAM = "type";
+  public static final String DEFAULT_SORT_BY = "-id";
   public static final String CLAZZ_VAR = "clazz";
 
   // Private constructor to prevent instantiation
