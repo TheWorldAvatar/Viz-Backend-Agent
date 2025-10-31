@@ -1,7 +1,9 @@
 package com.cmclinnovations.agent.model.pagination;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -21,19 +23,31 @@ public class PaginationState {
 
     private final int limit;
     private final Integer offset;
-    private final Set<String> sortedFields;
+    private final Set<String> targetFields;
+    private final Map<String, Set<String>> filters;
     private final Queue<SortDirective> sortedDirectives;
 
-    public PaginationState(int pageIndex, int limit, String sortBy) {
+    public PaginationState(int pageIndex, int limit, String sortBy, Map<String, String> filters) {
         this.limit = limit;
         // Page index starts from 0
         this.offset = pageIndex * limit;
         // REGEX will match two groups per sort directive in the url
-        this.sortedFields = SORT_PARAM_PATTERN.matcher(sortBy)
+        this.targetFields = SORT_PARAM_PATTERN.matcher(sortBy)
                 .results()
                 .map(match -> match.group(2))
                 .collect(Collectors.toCollection(HashSet::new));
         this.sortedDirectives = this.parseSortDirectives(sortBy);
+        this.filters = filters.entrySet()
+                .stream()
+                .map(entry -> Map.entry(
+                        entry.getKey(),
+                        Arrays.stream(entry.getValue().split("\\|"))
+                                .map(string -> "\"" + string.trim() + "\"")
+                                .collect(Collectors.toSet())))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        // Add filter fields to target fields to keep track of which variables to
+        // include in the query
+        this.targetFields.addAll(this.filters.keySet());
     }
 
     public int limit() {
@@ -44,12 +58,16 @@ public class PaginationState {
         return this.offset;
     }
 
-    public Set<String> sortFields() {
-        return this.sortedFields;
+    public Set<String> targetFields() {
+        return this.targetFields;
     }
 
     public Queue<SortDirective> sortDirectives() {
         return this.sortedDirectives;
+    }
+
+    public Map<String, Set<String>> filters() {
+        return this.filters;
     }
 
     /**

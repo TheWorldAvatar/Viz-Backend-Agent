@@ -273,9 +273,9 @@ public class LifecycleService {
       Boolean isClosed, PaginationState pagination) {
     String addSortQueries = additionalQuery;
     addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-        pagination.sortFields());
+        pagination.targetFields());
     addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
-        pagination.sortFields());
+        pagination.targetFields());
     Queue<String> ids = this.getService.getAllIds(entityType, addSortQueries, pagination);
     Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = "";

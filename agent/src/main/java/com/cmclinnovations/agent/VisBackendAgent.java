@@ -137,7 +137,7 @@ public class VisBackendAgent {
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
       Queue<SparqlBinding> instances = this.getService.getInstances(type, true, null,
-          new PaginationState(page, limit, sortBy));
+          new PaginationState(page, limit, sortBy, allRequestParams));
       return this.responseEntityBuilder.success(null,
           instances.stream()
               .map(SparqlBinding::get)

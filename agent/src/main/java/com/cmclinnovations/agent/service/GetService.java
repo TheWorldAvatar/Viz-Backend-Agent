@@ -231,7 +231,7 @@ public class GetService {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
     String additionalStatements = pagination == null ? addQueryStatements
-        : addQueryStatements + this.getQueryStatementsForSorting(iri, pagination.sortFields());
+        : addQueryStatements + this.getQueryStatementsForSorting(iri, pagination.targetFields());
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements, pagination,
         true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
@@ -252,7 +252,7 @@ public class GetService {
     String iri = this.queryTemplateService.getIri(resourceID);
     String additionalStatements = addQueryStatements + this.getQueryStatementsForSorting(iri, Set.of(field));
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements,
-        new PaginationState(0, 21, "-" + field), false);
+        new PaginationState(0, 21, "-" + field, new HashMap<>()), false);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> binding.getFieldValue(field))
         .toList();

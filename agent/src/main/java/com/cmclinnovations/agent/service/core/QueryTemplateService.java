@@ -1,11 +1,15 @@
 package com.cmclinnovations.agent.service.core;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,6 +29,7 @@ import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.SearchQueryTemplateFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -112,7 +117,7 @@ public class QueryTemplateService {
     if (requireId) {
       query.select(QueryResource.ID_VAR);
     }
-    if (pagination == null || pagination.sortFields().isEmpty()) {
+    if (pagination == null) {
       query.orderBy(QueryResource.ID_VAR);
     } else {
       Queue<SortDirective> sortDirectives = pagination.sortDirectives();
@@ -129,6 +134,33 @@ public class QueryTemplateService {
       if (hasNoIdToSort) {
         query.orderBy(QueryResource.ID_VAR);
       }
+    }
+    if (pagination != null && !pagination.filters().isEmpty()) {
+      StringBuilder valuesClause = new StringBuilder("VALUES (");
+      // Concatenate all possible filter values, and they will be duplicated for each
+      // level of set
+      List<Set<String>> allPossibleValues = pagination.filters().entrySet().stream()
+          .map(entry -> {
+            // Append var to the initial VALUES clause
+            String varName = QueryResource.genVariable(entry.getKey()).getQueryString();
+            valuesClause.append(ShaclResource.WHITE_SPACE)
+                .append(varName);
+            return entry.getValue();
+          }).toList();
+      Stream<String> runningCombinations = allPossibleValues.get(0).stream()
+          .map(s -> "(" + s);
+      for (int i = 1; i < allPossibleValues.size(); i++) {
+        Set<String> nextSet = allPossibleValues.get(i);
+        runningCombinations = runningCombinations.flatMap(currentCombination -> nextSet.stream()
+            .map(nextElement -> currentCombination + ShaclResource.WHITE_SPACE + nextElement));
+      }
+      String valuesForClause = runningCombinations
+          .map(s -> s + ")")
+          .collect(Collectors.joining(ShaclResource.WHITE_SPACE));
+      valuesClause.append(") {")
+          .append(valuesForClause)
+          .append("}");
+      addQueryStatements += valuesClause.toString();
     }
     return query
         .getQueryString()
