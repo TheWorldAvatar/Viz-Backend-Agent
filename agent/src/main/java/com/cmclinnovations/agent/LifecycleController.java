@@ -581,7 +581,8 @@ public class LifecycleController {
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrences(null, null, type, false,
-          new PaginationState(page, limit, sortBy, allRequestParams));
+
+          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, allRequestParams));
     });
   }
 
@@ -631,7 +632,7 @@ public class LifecycleController {
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, false,
-          new PaginationState(page, limit, sortBy, allRequestParams));
+          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, allRequestParams));
     });
   }
 
@@ -670,7 +671,7 @@ public class LifecycleController {
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrences(contract, type,
-          new PaginationState(page, limit, sortBy, allRequestParams));
+          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, allRequestParams));
     });
   }
 
