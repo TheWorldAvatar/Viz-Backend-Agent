@@ -203,9 +203,10 @@ public class GetService {
    * Retrieves the number of instances belonging to the resource.
    * 
    * @param resourceID Target resource identifier for the instance class.
+   * @param filters    Mappings between filter fields and their values.
    */
-  public int getCount(String resourceID) {
-    return this.getCount(resourceID, "");
+  public int getCount(String resourceID, Map<String, String> filters) {
+    return this.getCount(resourceID, "", filters);
   }
 
   /**
@@ -213,9 +214,11 @@ public class GetService {
    * 
    * @param resourceID         Target resource identifier for the instance class.
    * @param addQueryStatements Additional query statements to be added.
+   * @param filters            Mappings between filter fields and their values.
    */
-  public int getCount(String resourceID, String addQueryStatements) {
-    Queue<String> ids = this.getAllIds(resourceID, addQueryStatements, null);
+  public int getCount(String resourceID, String addQueryStatements, Map<String, String> filters) {
+    Queue<String> ids = this.getAllIds(resourceID, addQueryStatements,
+        new PaginationState(0, null, "-id", filters));
     return ids.size();
   }
 
@@ -230,8 +233,8 @@ public class GetService {
   public Queue<String> getAllIds(String resourceID, String addQueryStatements, PaginationState pagination) {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    String additionalStatements = pagination == null ? addQueryStatements
-        : addQueryStatements + this.getQueryStatementsForSorting(iri, pagination.targetFields());
+    String additionalStatements = addQueryStatements
+        + this.getQueryStatementsForSorting(iri, pagination.targetFields());
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements, pagination,
         true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()

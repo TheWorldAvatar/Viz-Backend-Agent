@@ -21,16 +21,20 @@ import com.cmclinnovations.agent.utils.QueryResource;
 public class PaginationState {
     private static final Pattern SORT_PARAM_PATTERN = Pattern.compile("([-+])?([^,]+)");
 
-    private final int limit;
-    private final Integer offset;
+    private final Integer limit;
+    private final int offset;
     private final Set<String> targetFields;
     private final Map<String, Set<String>> filters;
     private final Queue<SortDirective> sortedDirectives;
 
-    public PaginationState(int pageIndex, int limit, String sortBy, Map<String, String> filters) {
+    public PaginationState(int pageIndex, Integer limit, String sortBy, Map<String, String> filters) {
         this.limit = limit;
         // Page index starts from 0
-        this.offset = pageIndex * limit;
+        if (limit == null) {
+            this.offset = 0;
+        } else {
+            this.offset = pageIndex * limit;
+        }
         // REGEX will match two groups per sort directive in the url
         this.targetFields = SORT_PARAM_PATTERN.matcher(sortBy)
                 .results()
@@ -50,11 +54,11 @@ public class PaginationState {
         this.targetFields.addAll(this.filters.keySet());
     }
 
-    public int limit() {
+    public Integer limit() {
         return this.limit;
     }
 
-    public Integer offset() {
+    public int offset() {
         return this.offset;
     }
 

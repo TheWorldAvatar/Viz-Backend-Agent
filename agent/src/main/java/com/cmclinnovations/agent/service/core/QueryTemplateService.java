@@ -109,15 +109,15 @@ public class QueryTemplateService {
   public String getAllIdsQueryTemplate(String nodeShapeReplacement, String addQueryStatements,
       PaginationState pagination, boolean requireId) {
     // If pagination is not given, no limits and offset should be set
-    SelectQuery query = QueryResource.getSelectQuery(true, pagination == null ? null : pagination.limit())
+    SelectQuery query = QueryResource.getSelectQuery(true, pagination.limit())
         .where(QueryResource.IRI_VAR.isA(Rdf.iri(
             nodeShapeReplacement.substring(1, nodeShapeReplacement.length() - 1)))
             .andHas(QueryResource.DC_TERM_ID, QueryResource.ID_VAR))
-        .offset(pagination == null ? 0 : pagination.offset());
+        .offset(pagination.offset());
     if (requireId) {
       query.select(QueryResource.ID_VAR);
     }
-    if (pagination == null) {
+    if (pagination.limit() == null) {
       query.orderBy(QueryResource.ID_VAR);
     } else {
       Queue<SortDirective> sortDirectives = pagination.sortDirectives();
@@ -135,7 +135,7 @@ public class QueryTemplateService {
         query.orderBy(QueryResource.ID_VAR);
       }
     }
-    if (pagination != null && !pagination.filters().isEmpty()) {
+    if (!pagination.filters().isEmpty()) {
       StringBuilder valuesClause = new StringBuilder("VALUES (");
       // Concatenate all possible filter values, and they will be duplicated for each
       // level of set

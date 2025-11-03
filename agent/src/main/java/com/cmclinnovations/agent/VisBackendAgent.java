@@ -114,10 +114,11 @@ public class VisBackendAgent {
    */
   @GetMapping("/{type}/count")
   public ResponseEntity<StandardApiResponse<?>> getInstancesCount(
-      @PathVariable(name = "type") String type) {
+      @PathVariable(name = "type") String type,
+      @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      return this.responseEntityBuilder.success(null, String.valueOf(this.getService.getCount(type)));
+      return this.responseEntityBuilder.success(null, String.valueOf(this.getService.getCount(type, allRequestParams)));
     });
   }
 

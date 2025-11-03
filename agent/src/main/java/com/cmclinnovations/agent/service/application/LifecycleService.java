@@ -152,11 +152,13 @@ public class LifecycleService {
    * 
    * @param resourceID The target resource identifier for the instance class.
    * @param eventType  The target event type to retrieve.
+   * @param filters    Mappings between filter fields and their values.
    */
-  public ResponseEntity<StandardApiResponse<?>> getContractCount(String resourceID, LifecycleEventType eventType) {
+  public ResponseEntity<StandardApiResponse<?>> getContractCount(String resourceID, LifecycleEventType eventType,
+      Map<String, String> filters) {
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
     return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(resourceID, additionalQueryStatement)));
+        String.valueOf(this.getService.getCount(resourceID, additionalQueryStatement, filters)));
   }
 
   /**
@@ -212,15 +214,15 @@ public class LifecycleService {
    * @param startTimestamp Start timestamp in UNIX format.
    * @param endTimestamp   End timestamp in UNIX format.
    * @param isClosed       Indicates whether to retrieve closed tasks.
+   * @param filters        Mappings between filter fields and their values.
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrenceCount(String resourceID, String startTimestamp,
-      String endTimestamp, boolean isClosed) {
+      String endTimestamp, boolean isClosed, Map<String, String> filters) {
     String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
-
     String additionalFilters = this.lifecycleQueryFactory.getServiceTasksFilter(targetStartEndDates[0],
         targetStartEndDates[1], isClosed);
     return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(resourceID, additionalFilters)));
+        String.valueOf(this.getService.getCount(resourceID, additionalFilters, filters)));
   }
 
   /**
