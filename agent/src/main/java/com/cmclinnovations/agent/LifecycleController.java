@@ -572,7 +572,8 @@ public class LifecycleController {
       @RequestParam(name = "sort_by", required = true) String sortBy) {
     LOGGER.info("Received request to retrieve outstanding tasks...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.getOccurrences(null, null, type, false, new PaginationState(page, limit, sortBy));
+      return this.lifecycleService.getOccurrences(null, null, type, false,
+          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS));
     });
   }
 
@@ -619,7 +620,7 @@ public class LifecycleController {
     LOGGER.info("Received request to retrieve scheduled tasks for the specified dates...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, false,
-          new PaginationState(page, limit, sortBy));
+          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS));
     });
   }
 
@@ -653,7 +654,8 @@ public class LifecycleController {
       @RequestParam(name = "sort_by", required = true) String sortBy) {
     LOGGER.info("Received request to retrieve services in progress for a specified contract...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.getOccurrences(contract, type, new PaginationState(page, limit, sortBy));
+      return this.lifecycleService.getOccurrences(contract, type,
+          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS));
     });
   }
 

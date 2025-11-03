@@ -20,6 +20,7 @@ public class LifecycleResource {
   public static final String TASK_RESOURCE = "task";
   public static final String OCCURRENCE_INSTANT_RESOURCE = "occurrence instant";
   public static final String OCCURRENCE_LINK_RESOURCE = "occurrence link";
+  public static final String TASK_ID_SORT_BY_PARAMS = ",+event_id";
 
   public static final String INSTANCE_KEY = "id_instance";
   public static final String CONTRACT_KEY = "contract";
