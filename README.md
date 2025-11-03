@@ -405,7 +405,7 @@ Users can send a `GET` request to
 <baseURL>/vis-backend-agent/{type}/count
 ```
 
-where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`.
+where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`. To retrieve a count of instances meeting specific criteria, users can include filters as query parameters, following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
 ##### Get all instances
 
@@ -438,9 +438,12 @@ This route retrieves all instances with human-readable fields. Users can send a 
 ```
 
 where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. 
-
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
+
+> [!IMPORTANT]  
+> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
+
 
 ##### Get the distinct field options of all instances
 
