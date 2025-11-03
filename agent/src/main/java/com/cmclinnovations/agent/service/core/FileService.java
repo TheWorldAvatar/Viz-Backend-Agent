@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -137,6 +138,9 @@ public class FileService {
    */
   public Iri getTargetIri(String resourceID) {
     LOGGER.debug("Retrieving the target class associated with the resource identifier: {} ...", resourceID);
+    if (resourceID.equals(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE)) {
+      return Rdf.iri(LifecycleResource.EVENT_OCCURRENCE_IRI);
+    }
     String targetClass = this.getResourceTarget(resourceID,
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_FORM_RESOURCE);
     // Handle invalid target type
