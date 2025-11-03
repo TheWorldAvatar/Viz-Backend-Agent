@@ -66,6 +66,7 @@ public class LifecycleResource {
   public static final String EVENT_PENDING_STATUS = "https://www.theworldavatar.com/kg/ontoservice/PendingStatus";
   public static final String COMPLETION_EVENT_COMPLETED_STATUS = "https://www.theworldavatar.com/kg/ontoservice/CompletedStatus";
   public static final String LIFECYCLE_REPORT = "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Reporting/Report";
+  public static final String EVENT_OCCURRENCE_IRI = "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence";
   public static final Pattern OCCURRENCE_VARIABLES_PATTERN = Pattern.compile("SELECT\\s+DISTINCT\\s+(.*?)\\s+WHERE",
       Pattern.DOTALL);
   public static final Pattern OCCURRENCE_WHERE_CLAUSE_PATTERN = Pattern.compile("WHERE\\s*\\{(.*)\\}$", Pattern.DOTALL);

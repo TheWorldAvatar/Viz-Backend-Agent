@@ -104,7 +104,6 @@ public class LifecycleQueryFactory {
    */
   public String getServiceTasksFilter(String startDate, String endDate, boolean isClosed) {
     String eventDateVar = QueryResource.genVariable(LifecycleResource.DATE_KEY).getQueryString();
-    String eventIdVar = QueryResource.EVENT_ID_VAR.getQueryString();
     String filterDateStatement = "";
     // For outstanding tasks, start dates are omitted
     if (!startDate.isEmpty()) {
@@ -114,8 +113,8 @@ public class LifecycleQueryFactory {
         + "\"^^xsd:date)";
     String minusEventStatements = "";
     if (isClosed) {
-      minusEventStatements += genMinusEventClause(LifecycleEventType.SERVICE_ORDER_RECEIVED).getQueryString();
-      minusEventStatements += genMinusEventClause(LifecycleEventType.SERVICE_ORDER_DISPATCHED).getQueryString();
+      minusEventStatements += this.genMinusEventClause(LifecycleEventType.SERVICE_ORDER_RECEIVED).getQueryString();
+      minusEventStatements += this.genMinusEventClause(LifecycleEventType.SERVICE_ORDER_DISPATCHED).getQueryString();
       minusEventStatements += QueryResource.genFilterExists(
           QueryResource.EVENT_ID_VAR.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
               Rdf.iri(LifecycleEventType.SERVICE_EXECUTION.getEvent()))
@@ -123,8 +122,8 @@ public class LifecycleQueryFactory {
           false)
           .getQueryString();
     } else {
-      minusEventStatements += genMinusEventClause(LifecycleEventType.SERVICE_INCIDENT_REPORT).getQueryString();
-      minusEventStatements += genMinusEventClause(LifecycleEventType.SERVICE_CANCELLATION).getQueryString();
+      minusEventStatements += this.genMinusEventClause(LifecycleEventType.SERVICE_INCIDENT_REPORT).getQueryString();
+      minusEventStatements += this.genMinusEventClause(LifecycleEventType.SERVICE_CANCELLATION).getQueryString();
       minusEventStatements += QueryResource.genFilterExists(
           QueryResource.EVENT_ID_VAR.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
               Rdf.iri(LifecycleEventType.SERVICE_EXECUTION.getEvent()))
@@ -132,15 +131,16 @@ public class LifecycleQueryFactory {
           false)
           .getQueryString();
     }
-    return "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
-        + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
+    return "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
         + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
-        + "<https://www.omg.org/spec/Commons/Collections/comprises> " + eventIdVar + "."
-        + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
+        + "<https://www.omg.org/spec/Commons/Collections/comprises> " + QueryResource.IRI_VAR.getQueryString() + "."
+        + QueryResource.IRI_VAR.getQueryString()
+        + " <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
         + eventDateVar + "."
         + filterDateStatement
         // Event must be the last in the chain ie no other events will succeed it
-        + "MINUS{" + eventIdVar + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}"
+        + "MINUS{" + QueryResource.IRI_VAR.getQueryString()
+        + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}"
         + minusEventStatements;
   }
 
@@ -414,7 +414,7 @@ public class LifecycleQueryFactory {
    * @param eventType Lifecycle event to be generated.
    */
   private GraphPatternNotTriples genMinusEventClause(LifecycleEventType eventType) {
-    return QueryResource.genFilterExists(QueryResource.EVENT_ID_VAR.has(
+    return QueryResource.genFilterExists(QueryResource.IRI_VAR.has(
         QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
         Rdf.iri(eventType.getEvent())), false);
   }

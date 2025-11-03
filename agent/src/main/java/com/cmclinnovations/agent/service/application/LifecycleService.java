@@ -208,19 +208,18 @@ public class LifecycleService {
   /**
    * Retrieve the number of task in the specific stage and status.
    * 
-   * @param resourceID     The target resource identifier for the instance class.
    * @param startTimestamp Start timestamp in UNIX format.
    * @param endTimestamp   End timestamp in UNIX format.
    * @param isClosed       Indicates whether to retrieve closed tasks.
    */
-  public ResponseEntity<StandardApiResponse<?>> getOccurrenceCount(String resourceID, String startTimestamp,
+  public ResponseEntity<StandardApiResponse<?>> getOccurrenceCount(String startTimestamp,
       String endTimestamp, boolean isClosed) {
     String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
 
     String additionalFilters = this.lifecycleQueryFactory.getServiceTasksFilter(targetStartEndDates[0],
         targetStartEndDates[1], isClosed);
     return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(resourceID, additionalFilters)));
+        String.valueOf(this.getService.getCount(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, additionalFilters)));
   }
 
   /**

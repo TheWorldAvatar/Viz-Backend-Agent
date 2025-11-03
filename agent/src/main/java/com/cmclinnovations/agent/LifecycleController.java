@@ -557,7 +557,7 @@ public class LifecycleController {
       @RequestParam(required = true) String type) {
     LOGGER.info("Received request to retrieve number of outstanding tasks...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.getOccurrenceCount(type, null, null, false);
+      return this.lifecycleService.getOccurrenceCount(null, null, false);
     });
   }
 
@@ -601,7 +601,7 @@ public class LifecycleController {
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     };
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.getOccurrenceCount(type, startTimestamp, endTimestamp, isClosed);
+      return this.lifecycleService.getOccurrenceCount(startTimestamp, endTimestamp, isClosed);
     });
   }
 
