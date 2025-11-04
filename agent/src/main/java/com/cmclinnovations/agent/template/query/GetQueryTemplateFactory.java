@@ -88,6 +88,7 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    */
   public String genWhereClause(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
     LOGGER.info("Generating the WHERE clause...");
+    super.reset();
     // Extract out select and where, test what we get
     Map<String, Map<String, ShaclPropertyBinding>> propertyBindingMap = super.parseNodeShapes(queryVarsAndPaths);
     return super.write(Queries.SELECT(), propertyBindingMap)

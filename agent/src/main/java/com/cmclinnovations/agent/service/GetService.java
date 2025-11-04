@@ -255,6 +255,8 @@ public class GetService {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
     String additionalStatements = addQueryStatements
+        // For filter options, blanks should be included, and only sort statements
+        // remain optional in the query
         + this.getQueryStatementsForTargetFields(iri, Set.of(field), new HashSet<>());
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements,
         new PaginationState(0, 21, "-" + field, new HashMap<>()), false);
@@ -369,12 +371,14 @@ public class GetService {
       while (!currentQueryVarsAndPaths.isEmpty()) {
         SparqlBinding binding = currentQueryVarsAndPaths.poll();
         String fieldName = binding.getFieldValue(ShaclResource.NAME_PROPERTY);
+        fieldName = QueryResource.genVariable(fieldName).getVarName();
         if (sortedFields.contains(fieldName)) {
           tempSortedQueue.offer(binding);
           // When there are node groups, add them into the sorted fields so that it will
           // be picked up in later queues
           if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
-            sortedFields.add(binding.getFieldValue(ShaclResource.NODE_GROUP_VAR));
+            String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
+            sortedFields.add(QueryResource.genVariable(group).getVarName());
           }
         }
         if (filterFields.contains(fieldName)) {
@@ -382,7 +386,8 @@ public class GetService {
           // When there are node groups, add them into the sorted fields so that it will
           // be picked up in later queues
           if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
-            filterFields.add(binding.getFieldValue(ShaclResource.NODE_GROUP_VAR));
+            String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
+            filterFields.add(QueryResource.genVariable(group).getVarName());
           }
         }
       }
