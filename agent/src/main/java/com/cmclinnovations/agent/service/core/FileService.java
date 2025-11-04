@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -134,8 +136,11 @@ public class FileService {
    * 
    * @param resourceID The target resource identifier for the instance class.
    */
-  public String getTargetIri(String resourceID) {
+  public Iri getTargetIri(String resourceID) {
     LOGGER.debug("Retrieving the target class associated with the resource identifier: {} ...", resourceID);
+    if (resourceID.equals(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE)) {
+      return Rdf.iri(LifecycleResource.EVENT_OCCURRENCE_IRI);
+    }
     String targetClass = this.getResourceTarget(resourceID,
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_FORM_RESOURCE);
     // Handle invalid target type
@@ -144,7 +149,7 @@ public class FileService {
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, resourceID));
     }
     // For valid target type, return the associated target class
-    return Rdf.iri(targetClass).getQueryString();
+    return Rdf.iri(targetClass);
   }
 
   /**

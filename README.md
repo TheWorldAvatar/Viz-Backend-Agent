@@ -389,11 +389,22 @@ A successful request will return:
 
 There are several routes for retrieving instances associated with a specific `type` to populate the records in the registry. The agent will automatically generate the query and parameters based on the SHACL restrictions developed. The agent will return **EITHER** a `JSON` array containing entities as their corresponding `JSON` object **OR** one Entity `JSON` object depending on which `GET` route is executed.
 
-1. Get all instances
-2. Get a specific instance
-3. Get all instances with human readable fields
-4. Get all instances associated with a specific parent instance
-5. Get all instances matching the search criteria
+1. Get the count of all instances
+2. Get all instances
+3. Get a specific instance
+4. Get all instances with human readable fields
+5. Get all instances associated with a specific parent instance
+6. Get all instances matching the search criteria
+
+##### Get the count of all instances
+
+Users can send a `GET` request to
+
+```
+<baseURL>/vis-backend-agent/{type}/count
+```
+
+where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`.
 
 ##### Get all instances
 
@@ -422,10 +433,13 @@ To retrieve an instance with human-readable fields, users can send a `GET` reque
 This route retrieves all instances with human-readable fields. Users can send a `GET` request to
 
 ```
-<baseURL>/vis-backend-agent/{type}/label
+<baseURL>/vis-backend-agent/{type}/label?page={page}&limit={limit}&sort_by={sortby}
 ```
 
-where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`.
+where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. 
+
+> [!TIP]  
+> `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
 
 ##### Get all instances associated with a specific parent instance
 
@@ -538,7 +552,12 @@ When users edit a draft contract, this will move the status to amended. Users ca
 
 > Get all draft contracts
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft?type={type}` endpoint to retrieve all draft contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft/count?type={type}` endpoint to retrieve the number of draft contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all draft contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. 
+
+> [!TIP]  
+> `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`.
 
 There is also an additional optional parameter `label` to retrieve draft contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise.
 
@@ -646,19 +665,42 @@ This `<baseURL>/vis-backend-agent/contracts/service` endpoint serves to interact
 
 > Active contracts
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service?type={type}` endpoint to retrieve all active contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/count?type={type}` endpoint to retrieve the number of active contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all active contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. 
+
+> [!TIP]  
+> `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
 
 There is also an additional optional parameter `label` to retrieve in progress contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise.
 
 > Records of service tasks
 
-For tasks associated with a contract, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/{contract}?type={contractType}` endpoint to retrieve all tasks for the target contract, where `contract` is the contract's identifier and `contractType` is the resource ID of the contract type.
+For tasks associated with a contract, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/{contract}?type={contractType}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all tasks for the target contract, where `contract` is the contract's identifier and `contractType` is the resource ID of the contract type, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. 
 
-For outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding?type={contractType}` endpoint to retrieve all outstanding open tasks, where `contractType` is the resource ID of the contract type.
+> [!TIP]  
+> `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
 
-For upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled?type={contractType}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all scheduled tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. The start date must occur after today.
+For outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding?type={contractType}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all outstanding open tasks, where `contractType` is the resource ID of the contract type, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. 
 
-For closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed?type={contractType}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all closed tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in.
+> [!TIP]  
+> `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
+
+To get the count of outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding/count?type={contractType}` endpoint.
+
+For upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all scheduled tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. The start date must occur after today, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. 
+
+> [!TIP]  
+> `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
+
+To get the count of upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled/count?type={contractType}}&startTimestamp={start}&endTimestamp={end}` endpoint.
+
+For closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all closed tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. 
+
+> [!TIP]  
+> `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
+
+To get the count of closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed/count?type={contractType}}&startTimestamp={start}&endTimestamp={end}` endpoint.
 
 > Service dispatch
 
@@ -723,6 +765,8 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/se
 The endpoint serves to archive in progress contracts as well as retrieve all contracts that have expired and are in archive.
 
 > Get all archived contracts
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/archive/count?type={type}` endpoint to retrieve the number of archived contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/archive?type={type}` endpoint to retrieve all archived contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
 
