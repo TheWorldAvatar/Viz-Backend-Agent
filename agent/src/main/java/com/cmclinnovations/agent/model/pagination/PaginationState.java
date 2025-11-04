@@ -23,7 +23,7 @@ public class PaginationState {
 
     private final Integer limit;
     private final int offset;
-    private final Set<String> targetFields;
+    private final Set<String> sortedFields;
     private final Map<String, Set<String>> filters;
     private final Queue<SortDirective> sortedDirectives;
 
@@ -36,7 +36,7 @@ public class PaginationState {
             this.offset = pageIndex * limit;
         }
         // REGEX will match two groups per sort directive in the url
-        this.targetFields = SORT_PARAM_PATTERN.matcher(sortBy)
+        this.sortedFields = SORT_PARAM_PATTERN.matcher(sortBy)
                 .results()
                 .map(match -> match.group(2))
                 .collect(Collectors.toCollection(HashSet::new));
@@ -49,9 +49,6 @@ public class PaginationState {
                                 .map(string -> "\"" + string.trim() + "\"")
                                 .collect(Collectors.toSet())))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        // Add filter fields to target fields to keep track of which variables to
-        // include in the query
-        this.targetFields.addAll(this.filters.keySet());
     }
 
     public Integer limit() {
@@ -62,8 +59,12 @@ public class PaginationState {
         return this.offset;
     }
 
-    public Set<String> targetFields() {
-        return this.targetFields;
+    public Set<String> sortedFields() {
+        return this.sortedFields;
+    }
+
+    public Set<String> filterFields() {
+        return this.filters.keySet();
     }
 
     public Queue<SortDirective> sortDirectives() {

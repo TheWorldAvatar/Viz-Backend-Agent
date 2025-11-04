@@ -96,7 +96,7 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
         // code is an adjustment
         .replaceAll("OPTIONAL\\s*(\\{.*})\\s*UNION\\s*OPTIONAL\\s*(\\{.*\\})", "$1 UNION $2")
         // Extract only the WHERE clause content
-        .replaceAll("(?s)SELECT\\s*\\*\\s*\\nWHERE\\s*(.*)\\n$", "OPTIONAL$1");
+        .replaceAll("(?s)SELECT\\s*\\*\\s*\\nWHERE\\s*\\{(.*)\\}\\n$", "$1");
   }
 
   /**

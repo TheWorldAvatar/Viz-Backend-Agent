@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -234,7 +235,7 @@ public class GetService {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
     String additionalStatements = addQueryStatements
-        + this.getQueryStatementsForSorting(iri, pagination.targetFields());
+        + this.getQueryStatementsForTargetFields(iri, pagination.sortedFields(), pagination.filterFields());
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements, pagination,
         true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
@@ -253,7 +254,8 @@ public class GetService {
   public List<String> getAllFilterOptions(String resourceID, String field, String addQueryStatements) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    String additionalStatements = addQueryStatements + this.getQueryStatementsForSorting(iri, Set.of(field));
+    String additionalStatements = addQueryStatements
+        + this.getQueryStatementsForTargetFields(iri, Set.of(field), new HashSet<>());
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements,
         new PaginationState(0, 21, "-" + field, new HashMap<>()), false);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
@@ -341,44 +343,64 @@ public class GetService {
   }
 
   /**
-   * Gets the query statements required for sorting the fields.
+   * Gets the query statements associated with the fields of interest.
    * 
-   * @param shaclReplacement The replacement value of the SHACL query target
-   * @param sortedFields     Set of fields that should be included sorted.
+   * @param shaclReplacement The replacement value of the SHACL query target.
+   * @param sortedFields     Set of fields for sorting that should be included.
+   * @param filterFields     Set of fields for filtering that should be included.
    */
-  public String getQueryStatementsForSorting(String shaclReplacement, Set<String> sortedFields) {
+  public String getQueryStatementsForTargetFields(String shaclReplacement, Set<String> sortedFields,
+      Set<String> filterFields) {
     // First query for all the available query construction params associated with
     // the target replacement
     String query = this.queryTemplateService.getShaclQuery(shaclReplacement, true);
     ArrayDeque<Queue<SparqlBinding>> results = (ArrayDeque<Queue<SparqlBinding>>) this.kgService
         .queryNestedPredicates(query);
     // Filter out only the required fields for sorting, excluding others
-    ArrayDeque<Queue<SparqlBinding>> queryVarsAndPaths = new ArrayDeque<>();
+    ArrayDeque<Queue<SparqlBinding>> sortedQueryVarsAndPaths = new ArrayDeque<>();
+    ArrayDeque<Queue<SparqlBinding>> filterQueryVarsAndPaths = new ArrayDeque<>();
     while (!results.isEmpty()) {
       // Retrieve the last element first, which are not mixed with node groups
       // Queue sorts them by node groups first if available, and we want to reverse
       // this process instead
       Queue<SparqlBinding> currentQueryVarsAndPaths = results.pollLast();
-      Queue<SparqlBinding> tempQueue = new ArrayDeque<>();
+      Queue<SparqlBinding> tempSortedQueue = new ArrayDeque<>();
+      Queue<SparqlBinding> tempFilterQueue = new ArrayDeque<>();
       while (!currentQueryVarsAndPaths.isEmpty()) {
         SparqlBinding binding = currentQueryVarsAndPaths.poll();
         String fieldName = binding.getFieldValue(ShaclResource.NAME_PROPERTY);
         if (sortedFields.contains(fieldName)) {
-          tempQueue.offer(binding);
+          tempSortedQueue.offer(binding);
           // When there are node groups, add them into the sorted fields so that it will
           // be picked up in later queues
           if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
             sortedFields.add(binding.getFieldValue(ShaclResource.NODE_GROUP_VAR));
           }
         }
+        if (filterFields.contains(fieldName)) {
+          tempFilterQueue.offer(binding);
+          // When there are node groups, add them into the sorted fields so that it will
+          // be picked up in later queues
+          if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
+            filterFields.add(binding.getFieldValue(ShaclResource.NODE_GROUP_VAR));
+          }
+        }
       }
       // Ensures only if there are filters meeting the requirements, append to the
       // final query
-      if (!tempQueue.isEmpty()) {
-        queryVarsAndPaths.offerFirst(tempQueue);
+      if (!tempSortedQueue.isEmpty()) {
+        sortedQueryVarsAndPaths.offerFirst(tempSortedQueue);
+      }
+      if (!tempFilterQueue.isEmpty()) {
+        filterQueryVarsAndPaths.offerFirst(tempFilterQueue);
       }
     }
-    return queryVarsAndPaths.isEmpty() ? "" : this.queryTemplateService.genWhereClause(queryVarsAndPaths);
+    String sortedStatements = sortedQueryVarsAndPaths.isEmpty() ? ""
+        : "OPTIONAL{" + this.queryTemplateService.genWhereClause(sortedQueryVarsAndPaths) + "}";
+    String filterStatements = filterQueryVarsAndPaths.isEmpty() ? ""
+        : this.queryTemplateService.genWhereClause(filterQueryVarsAndPaths)
+            .replaceAll("\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
+    return sortedStatements + filterStatements;
   }
 
   /**

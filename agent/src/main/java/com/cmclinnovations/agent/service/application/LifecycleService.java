@@ -74,7 +74,7 @@ public class LifecycleService {
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY), List.of(2, 4));
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY),
         List.of(2, 5));
-    
+
     Integer MIN_INDEX = -5;
 
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.DATE_KEY), List.of(MIN_INDEX, 1));
@@ -223,7 +223,8 @@ public class LifecycleService {
     String additionalFilters = this.lifecycleQueryFactory.getServiceTasksFilter(targetStartEndDates[0],
         targetStartEndDates[1], isClosed);
     return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, additionalFilters, filters)));
+        String.valueOf(
+            this.getService.getCount(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, additionalFilters, filters)));
   }
 
   /**
@@ -276,9 +277,9 @@ public class LifecycleService {
       Boolean isClosed, PaginationState pagination) {
     String addSortQueries = additionalQuery;
     addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-        pagination.targetFields());
+        pagination);
     addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
-        pagination.targetFields());
+        pagination);
     Queue<String> ids = this.getService.getAllIds(entityType, addSortQueries, pagination);
     Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = "";
@@ -360,11 +361,11 @@ public class LifecycleService {
    * Generates the query statements to sort by event occurrences.
    * 
    * @param lifecycleEvent Target event type.
-   * @param sortedFields   Set of fields that should be included for sorting.
+   * @param pagination     Holds the pagination state.
    */
-  private String genEventOccurrenceSortQueryStatements(LifecycleEventType lifecycleEvent, Set<String> sortedFields) {
-    String sortQueryStatements = this.getService.getQueryStatementsForSorting(lifecycleEvent.getShaclReplacement(),
-        sortedFields);
+  private String genEventOccurrenceSortQueryStatements(LifecycleEventType lifecycleEvent, PaginationState pagination) {
+    String sortQueryStatements = this.getService.getQueryStatementsForTargetFields(lifecycleEvent.getShaclReplacement(),
+        pagination.sortedFields(), pagination.filterFields());
     if (sortQueryStatements.isEmpty()) {
       return sortQueryStatements;
     }

@@ -178,8 +178,7 @@ public class LifecycleResource {
   public static String parseOccurrenceSortQueryStatements(String query, LifecycleEventType lifecycleEvent) {
     String eventVar = QueryResource.genVariable(lifecycleEvent.getId() + "_event").getQueryString();
     return query.replace(QueryResource.IRI_VAR.getQueryString(), eventVar)
-        .replaceFirst("OPTIONAL\\{",
-            "OPTIONAL{" + genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent));
+        + genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent);
   }
 
   /**
