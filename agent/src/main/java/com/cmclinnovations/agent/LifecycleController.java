@@ -561,7 +561,6 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> getOutstandingTaskCount(
       @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve number of outstanding tasks...");
-    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrenceCount(null, null, false, allRequestParams);
     });
@@ -596,7 +595,6 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> getScheduledOrClosedTaskCount(
       @PathVariable(name = "task") String taskType,
       @RequestParam Map<String, String> allRequestParams) {
-    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
     String startTimestamp = allRequestParams.remove(StringResource.START_TIMESTAMP_REQUEST_PARAM);
     String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
     boolean isClosed = switch (taskType.toLowerCase()) {
