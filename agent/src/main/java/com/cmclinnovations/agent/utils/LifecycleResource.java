@@ -131,7 +131,6 @@ public class LifecycleResource {
       case LifecycleResource.OCCURRENCE_INSTANT_RESOURCE:
         return FileService.OCCURRENCE_INSTANT_JSON_LD_RESOURCE;
       case LifecycleResource.CANCEL_RESOURCE:
-        return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
       case LifecycleResource.REPORT_RESOURCE:
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
       case LifecycleResource.SCHEDULE_RESOURCE:
