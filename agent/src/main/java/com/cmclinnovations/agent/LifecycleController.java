@@ -529,7 +529,7 @@ public class LifecycleController {
       @PathVariable String stage,
       @RequestParam Map<String, String> allRequestParams) {
     String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
-    boolean label = allRequestParams.getOrDefault(StringResource.LABEL_REQUEST_PARAM, "false").equals("true");
+    boolean label = allRequestParams.getOrDefault(StringResource.LABEL_REQUEST_PARAM, "no").equals("yes");
     allRequestParams.remove(StringResource.LABEL_REQUEST_PARAM);
     Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
     Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
