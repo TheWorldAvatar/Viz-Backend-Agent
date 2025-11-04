@@ -293,6 +293,7 @@ public class LifecycleController {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
       String successMsgId = "";
+      String resourceId = "";
       switch (type.toLowerCase()) {
         case "cancel":
           LOGGER.info("Received request to cancel the upcoming service...");
@@ -306,6 +307,7 @@ public class LifecycleController {
           }
           this.lifecycleService.addOccurrenceParams(params, LifecycleEventType.SERVICE_CANCELLATION);
           successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY;
+          resourceId = LifecycleResource.CANCEL_RESOURCE;
           break;
         case "report":
           LOGGER.info("Received request to report an unfulfilled service...");
@@ -317,6 +319,7 @@ public class LifecycleController {
           }
           this.lifecycleService.addOccurrenceParams(params, LifecycleEventType.SERVICE_INCIDENT_REPORT);
           successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY;
+          resourceId = LifecycleResource.REPORT_RESOURCE;
           break;
         default:
           throw new IllegalArgumentException(
@@ -324,7 +327,7 @@ public class LifecycleController {
       }
       // Executes common code only for cancel or report route
       ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
-          LifecycleResource.OCCURRENCE_LINK_RESOURCE, params);
+          resourceId, params);
       if (response.getStatusCode() == HttpStatus.OK) {
         LOGGER.info(successMsgId);
         return this.responseEntityBuilder.success(response.getBody().data().id(),
