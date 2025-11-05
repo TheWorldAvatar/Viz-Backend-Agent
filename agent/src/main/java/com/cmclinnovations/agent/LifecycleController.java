@@ -519,6 +519,48 @@ public class LifecycleController {
   }
 
   /**
+   * Retrieve the filter options for the draft contracts.
+   */
+  @GetMapping("/draft/filter")
+  public ResponseEntity<StandardApiResponse<?>> getDraftContractFilters(
+      @RequestParam(name = "type") String type,
+      @RequestParam(name = "field", required = true) String field) {
+    LOGGER.info("Received request to retrieve filter options for draft contracts...");
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
+      List<String> options = this.lifecycleService.getFilterOptions(type, field, LifecycleEventType.APPROVED);
+      return this.responseEntityBuilder.success(options);
+    });
+  }
+
+  /**
+   * Retrieve the filter options for the active contracts.
+   */
+  @GetMapping("/service/filter")
+  public ResponseEntity<StandardApiResponse<?>> getActiveContractFilters(
+      @RequestParam(name = "type") String type,
+      @RequestParam(name = "field", required = true) String field) {
+    LOGGER.info("Received request to retrieve filter options for contracts in progress...");
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
+      List<String> options = this.lifecycleService.getFilterOptions(type, field, LifecycleEventType.SERVICE_EXECUTION);
+      return this.responseEntityBuilder.success(options);
+    });
+  }
+
+  /**
+   * Retrieve the filter options for the archived contracts.
+   */
+  @GetMapping("/archive/filter")
+  public ResponseEntity<StandardApiResponse<?>> getArchivedContractFilters(
+      @RequestParam(name = "type") String type,
+      @RequestParam(name = "field", required = true) String field) {
+    LOGGER.info("Received request to retrieve filter options for archived contracts...");
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
+      List<String> options = this.lifecycleService.getFilterOptions(type, field, LifecycleEventType.ARCHIVE_COMPLETION);
+      return this.responseEntityBuilder.success(options);
+    });
+  }
+
+  /**
    * Retrieve all contracts in the target stage:
    * 1) draft - awaiting approval
    * 2) service - active and in progress

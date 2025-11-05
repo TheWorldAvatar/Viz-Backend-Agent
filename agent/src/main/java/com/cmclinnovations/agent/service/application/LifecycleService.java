@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -161,6 +160,18 @@ public class LifecycleService {
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
     return this.responseEntityBuilder.success(null,
         String.valueOf(this.getService.getCount(resourceID, additionalQueryStatement, filters)));
+  }
+
+  /**
+   * Retrieve filter options for the current event type.
+   * 
+   * @param resourceID The target resource identifier for the instance class.
+   * @param field      The field of filtering.
+   * @param eventType  The target event type to retrieve.
+   */
+  public List<String> getFilterOptions(String resourceID, String field, LifecycleEventType eventType) {
+    String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
+    return this.getService.getAllFilterOptions(resourceID, field, additionalQueryStatement);
   }
 
   /**
