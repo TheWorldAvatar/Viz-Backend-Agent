@@ -44,7 +44,7 @@ public class PaginationState {
         this.filters = filters.entrySet()
                 .stream()
                 .map(entry -> Map.entry(
-                        entry.getKey(),
+                        LocalisationResource.parseTranslationToOriginal(entry.getKey()),
                         Arrays.stream(entry.getValue().split("\\|"))
                                 .map(string -> "\"" + string.trim() + "\"")
                                 .collect(Collectors.toSet())))
@@ -86,13 +86,7 @@ public class PaginationState {
                 .results()
                 .map(match -> {
                     String field = match.group(2);
-                    if (field.toLowerCase()
-                            .equals(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY))) {
-                        field = LifecycleResource.EVENT_KEY;
-                    } else if (field.toLowerCase().equals(LocalisationTranslator
-                            .getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY).toLowerCase())) {
-                        field = LifecycleResource.SCHEDULE_RECURRENCE_KEY;
-                    }
+                    field = LocalisationResource.parseTranslationToOriginal(field);
                     Variable fieldVar = QueryResource.genVariable(field);
                     // First group matches the sign
                     String sign = match.group(1);

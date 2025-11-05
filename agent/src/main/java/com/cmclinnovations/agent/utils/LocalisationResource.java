@@ -1,5 +1,7 @@
 package com.cmclinnovations.agent.utils;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
+
 public class LocalisationResource {
   private static final String ERROR_PREFIX = "error.";
   private static final String MESSAGE_PREFIX = "message.";
@@ -61,5 +63,21 @@ public class LocalisationResource {
   // Private constructor to prevent instantiation
   private LocalisationResource() {
     throw new UnsupportedOperationException("This class cannot be instantiated!");
+  }
+
+  /**
+   * Parses the translated field back to the original.
+   * 
+   * @param field Translated field name.
+   */
+  public static String parseTranslationToOriginal(String field) {
+    String lowerCaseField = field.toLowerCase();
+    if (lowerCaseField.equals(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY))) {
+      return LifecycleResource.EVENT_KEY;
+    } else if (lowerCaseField.equals(LocalisationTranslator
+        .getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY).toLowerCase())) {
+      return LifecycleResource.SCHEDULE_RECURRENCE_KEY;
+    }
+    return field;
   }
 }
