@@ -13,8 +13,6 @@ import org.eclipse.rdf4j.sparqlbuilder.core.OrderCondition;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 
-import com.cmclinnovations.agent.component.LocalisationTranslator;
-import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 
@@ -27,7 +25,13 @@ public class PaginationState {
     private final Map<String, Set<String>> filters;
     private final Queue<SortDirective> sortedDirectives;
 
+    // Overloaded method without isConstract
     public PaginationState(int pageIndex, Integer limit, String sortBy, Map<String, String> filters) {
+        this(pageIndex, limit, sortBy, null, filters);
+    }
+
+    public PaginationState(int pageIndex, Integer limit, String sortBy, Boolean isContract,
+            Map<String, String> filters) {
         this.limit = limit;
         // Page index starts from 0
         if (limit == null) {
@@ -40,11 +44,11 @@ public class PaginationState {
                 .results()
                 .map(match -> match.group(2))
                 .collect(Collectors.toCollection(HashSet::new));
-        this.sortedDirectives = this.parseSortDirectives(sortBy);
+        this.sortedDirectives = this.parseSortDirectives(sortBy, isContract);
         this.filters = filters.entrySet()
                 .stream()
                 .map(entry -> Map.entry(
-                        LocalisationResource.parseTranslationToOriginal(entry.getKey()),
+                        entry.getKey(),
                         Arrays.stream(entry.getValue().split("\\|"))
                                 .map(string -> "\"" + string.trim() + "\"")
                                 .collect(Collectors.toSet())))
@@ -78,15 +82,18 @@ public class PaginationState {
     /**
      * Parses the sort directives from the 'sort_by' parameter.
      * 
-     * @param sortBy The `sort_by` parameter string.
+     * @param sortBy     The `sort_by` parameter string.
+     * @param isContract Indicates if it is a contract or task otherwise.
      */
-    private Queue<SortDirective> parseSortDirectives(String sortBy) {
+    private Queue<SortDirective> parseSortDirectives(String sortBy, Boolean isContract) {
         // REGEX will match two groups per sort directive in the url
         return SORT_PARAM_PATTERN.matcher(sortBy)
                 .results()
                 .map(match -> {
                     String field = match.group(2);
-                    field = LocalisationResource.parseTranslationToOriginal(field);
+                    if (isContract != null) {
+                        field = LocalisationResource.parseTranslationToOriginal(field, isContract);
+                    }
                     Variable fieldVar = QueryResource.genVariable(field);
                     // First group matches the sign
                     String sign = match.group(1);
@@ -96,7 +103,6 @@ public class PaginationState {
                     } else {
                         orderCondition = SparqlBuilder.asc(fieldVar);
                     }
-
                     return new SortDirective(fieldVar, orderCondition);
                 })
                 .collect(Collectors.toCollection(ArrayDeque::new));

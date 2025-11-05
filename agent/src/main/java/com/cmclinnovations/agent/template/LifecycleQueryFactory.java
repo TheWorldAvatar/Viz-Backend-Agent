@@ -333,7 +333,7 @@ public class LifecycleQueryFactory {
         query.append(creationStatement).append(creationEventStatement);
         this.appendFilterExists(query, false, LifecycleResource.EVENT_APPROVAL);
         break;
-      case LifecycleEventType.SERVICE_EXECUTION:
+      case LifecycleEventType.ACTIVE_SERVICE:
         this.appendFilterExists(query, true, LifecycleResource.EVENT_APPROVAL);
         this.appendArchivedFilterExists(query, false);
         break;

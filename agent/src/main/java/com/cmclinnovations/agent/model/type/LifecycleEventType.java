@@ -5,24 +5,34 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 
 public enum LifecycleEventType {
-  APPROVED("approve", LifecycleResource.CREATION_STAGE, LifecycleResource.EVENT_APPROVAL),
-  SERVICE_ORDER_RECEIVED("order", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_ORDER_RECEIVED),
-  SERVICE_ORDER_DISPATCHED("dispatch", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_DISPATCH),
-  SERVICE_EXECUTION("complete", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_DELIVERY),
-  SERVICE_CANCELLATION("cancel", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_CANCELLATION),
-  SERVICE_INCIDENT_REPORT("report", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_INCIDENT_REPORT),
-  ARCHIVE_COMPLETION("completed", LifecycleResource.EXPIRATION_STAGE, LifecycleResource.EVENT_CONTRACT_COMPLETION),
-  ARCHIVE_RESCINDMENT("rescinded", LifecycleResource.EXPIRATION_STAGE, LifecycleResource.EVENT_CONTRACT_RESCISSION),
-  ARCHIVE_TERMINATION("terminated", LifecycleResource.EXPIRATION_STAGE, LifecycleResource.EVENT_CONTRACT_TERMINATION);
+  APPROVED("approve", LifecycleResource.CREATION_STAGE, LifecycleResource.EVENT_APPROVAL, true),
+  ACTIVE_SERVICE("complete", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_DELIVERY, true),
+  SERVICE_ORDER_RECEIVED("order", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_ORDER_RECEIVED,
+      false),
+  SERVICE_ORDER_DISPATCHED("dispatch", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_DISPATCH,
+      false),
+  SERVICE_EXECUTION("complete", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_DELIVERY, false),
+  SERVICE_CANCELLATION("cancel", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_CANCELLATION,
+      false),
+  SERVICE_INCIDENT_REPORT("report", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_INCIDENT_REPORT,
+      false),
+  ARCHIVE_COMPLETION("completed", LifecycleResource.EXPIRATION_STAGE, LifecycleResource.EVENT_CONTRACT_COMPLETION,
+      true),
+  ARCHIVE_RESCINDMENT("rescinded", LifecycleResource.EXPIRATION_STAGE, LifecycleResource.EVENT_CONTRACT_RESCISSION,
+      false),
+  ARCHIVE_TERMINATION("terminated", LifecycleResource.EXPIRATION_STAGE, LifecycleResource.EVENT_CONTRACT_TERMINATION,
+      false);
 
   private final String id;
   private final String stage;
   private final String event;
+  private final boolean isContract;
 
-  LifecycleEventType(String id, String stage, String event) {
+  LifecycleEventType(String id, String stage, String event, boolean isContract) {
     this.id = id;
     this.stage = stage;
     this.event = event;
+    this.isContract = isContract;
   }
 
   public String getId() {
@@ -35,6 +45,10 @@ public enum LifecycleEventType {
 
   public String getEvent() {
     return this.event;
+  }
+
+  public boolean getIsContract() {
+    return this.isContract;
   }
 
   public String getShaclReplacement() {

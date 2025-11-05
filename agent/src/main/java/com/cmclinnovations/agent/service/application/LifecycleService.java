@@ -171,7 +171,8 @@ public class LifecycleService {
    */
   public List<String> getFilterOptions(String resourceID, String field, LifecycleEventType eventType) {
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
-    return this.getService.getAllFilterOptions(resourceID, field, additionalQueryStatement);
+    String originalField = LocalisationResource.parseTranslationToOriginal(field, eventType.getIsContract());
+    return this.getService.getAllFilterOptions(resourceID, originalField, additionalQueryStatement);
   }
 
   /**
