@@ -372,15 +372,6 @@ public class GetService {
         SparqlBinding binding = currentQueryVarsAndPaths.poll();
         String fieldName = binding.getFieldValue(ShaclResource.NAME_PROPERTY);
         fieldName = QueryResource.genVariable(fieldName).getVarName();
-        if (sortedFields.contains(fieldName)) {
-          tempSortedQueue.offer(binding);
-          // When there are node groups, add them into the sorted fields so that it will
-          // be picked up in later queues
-          if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
-            String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
-            sortedFields.add(QueryResource.genVariable(group).getVarName());
-          }
-        }
         if (filterFields.contains(fieldName)) {
           tempFilterQueue.offer(binding);
           // When there are node groups, add them into the sorted fields so that it will
@@ -388,6 +379,14 @@ public class GetService {
           if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
             String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
             filterFields.add(QueryResource.genVariable(group).getVarName());
+          }
+        } else if (sortedFields.contains(fieldName)) {
+          tempSortedQueue.offer(binding);
+          // When there are node groups, add them into the sorted fields so that it will
+          // be picked up in later queues
+          if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
+            String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
+            sortedFields.add(QueryResource.genVariable(group).getVarName());
           }
         }
       }
