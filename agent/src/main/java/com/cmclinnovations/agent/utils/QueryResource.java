@@ -97,6 +97,13 @@ public class QueryResource {
     }
 
     /**
+     * Wraps the clause into an OPTIONAL clause.
+     */
+    public static String optional(String clause) {
+        return "OPTIONAL{" + clause + "}";
+    }
+
+    /**
      * Generates an empty DELETE query template.
      */
     public static ModifyQuery getDeleteQuery() {
@@ -105,8 +112,7 @@ public class QueryResource {
     }
 
     /**
-     * Generates an empty SELECT query template with no DISTINCT or LIMIT modifiers
-     * .
+     * Generates an empty SELECT query template with no DISTINCT or LIMIT modifiers.
      */
     public static SelectQuery getSelectQuery() {
         return getSelectQuery(false, null);

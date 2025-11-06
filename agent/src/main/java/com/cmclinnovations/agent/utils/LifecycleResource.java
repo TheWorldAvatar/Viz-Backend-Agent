@@ -203,7 +203,7 @@ public class LifecycleResource {
             genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent))
         // Replace iri with event variable
         .replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
-    return "OPTIONAL {" + parsedWhereClause + "}";
+    return QueryResource.optional(parsedWhereClause);
   }
 
   /**

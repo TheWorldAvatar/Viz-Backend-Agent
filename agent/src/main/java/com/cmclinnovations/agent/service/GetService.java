@@ -400,7 +400,7 @@ public class GetService {
       }
     }
     String sortedStatements = sortedQueryVarsAndPaths.isEmpty() ? ""
-        : "OPTIONAL{" + this.queryTemplateService.genWhereClause(sortedQueryVarsAndPaths) + "}";
+        : QueryResource.optional(this.queryTemplateService.genWhereClause(sortedQueryVarsAndPaths));
     String filterStatements = filterQueryVarsAndPaths.isEmpty() ? ""
         : this.queryTemplateService.genWhereClause(filterQueryVarsAndPaths)
             .replaceAll("\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
