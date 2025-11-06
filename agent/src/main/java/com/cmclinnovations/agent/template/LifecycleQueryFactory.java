@@ -113,8 +113,10 @@ public class LifecycleQueryFactory {
         + "\"^^xsd:date)";
     String minusEventStatements = "";
     if (isClosed) {
-      minusEventStatements += this.genMinusEventClause(LifecycleEventType.SERVICE_ORDER_RECEIVED).getQueryString();
-      minusEventStatements += this.genMinusEventClause(LifecycleEventType.SERVICE_ORDER_DISPATCHED).getQueryString();
+      minusEventStatements += this.genMinusEventClause(QueryResource.IRI_VAR, LifecycleEventType.SERVICE_ORDER_RECEIVED)
+          .getQueryString();
+      minusEventStatements += this
+          .genMinusEventClause(QueryResource.IRI_VAR, LifecycleEventType.SERVICE_ORDER_DISPATCHED).getQueryString();
       minusEventStatements += QueryResource.genFilterExists(
           QueryResource.EVENT_ID_VAR.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
               Rdf.iri(LifecycleEventType.SERVICE_EXECUTION.getEvent()))
@@ -122,8 +124,10 @@ public class LifecycleQueryFactory {
           false)
           .getQueryString();
     } else {
-      minusEventStatements += this.genMinusEventClause(LifecycleEventType.SERVICE_INCIDENT_REPORT).getQueryString();
-      minusEventStatements += this.genMinusEventClause(LifecycleEventType.SERVICE_CANCELLATION).getQueryString();
+      minusEventStatements += this
+          .genMinusEventClause(QueryResource.IRI_VAR, LifecycleEventType.SERVICE_INCIDENT_REPORT).getQueryString();
+      minusEventStatements += this.genMinusEventClause(QueryResource.IRI_VAR, LifecycleEventType.SERVICE_CANCELLATION)
+          .getQueryString();
       minusEventStatements += QueryResource.genFilterExists(
           QueryResource.EVENT_ID_VAR.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
               Rdf.iri(LifecycleEventType.SERVICE_EXECUTION.getEvent()))
@@ -142,6 +146,17 @@ public class LifecycleQueryFactory {
         + "MINUS{" + QueryResource.IRI_VAR.getQueryString()
         + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}"
         + minusEventStatements;
+  }
+
+  /**
+   * Generates a MINUS event clause for the target event type.
+   * 
+   * @param eventType Lifecycle event to be generated.
+   */
+  public GraphPatternNotTriples genMinusEventClause(Variable subject, LifecycleEventType eventType) {
+    return QueryResource.genFilterExists(subject.has(
+        QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+        Rdf.iri(eventType.getEvent())), false);
   }
 
   /**
@@ -406,17 +421,6 @@ public class LifecycleQueryFactory {
         .then(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES), Rdf.iri(instance));
     GraphPatternNotTriples filterClause = QueryResource.genFilterExists(pattern, exists);
     query.append(filterClause.getQueryString());
-  }
-
-  /**
-   * Generates a MINUS event clause for the target event type.
-   * 
-   * @param eventType Lifecycle event to be generated.
-   */
-  private GraphPatternNotTriples genMinusEventClause(LifecycleEventType eventType) {
-    return QueryResource.genFilterExists(QueryResource.IRI_VAR.has(
-        QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-        Rdf.iri(eventType.getEvent())), false);
   }
 
   /**
