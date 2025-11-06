@@ -3,10 +3,12 @@ package com.cmclinnovations.agent.service.application;
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -216,6 +218,20 @@ public class LifecycleService {
         false)
         .getQueryString();
     String originalField = LocalisationResource.parseTranslationToOriginal(field, false);
+    Set<String> targetFields = Set.of(field);
+    // Wrap an optional clause around each different type of event
+    additionalQueryStatement += QueryResource
+        .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+            new HashSet<>(), targetFields));
+    additionalQueryStatement += QueryResource
+        .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
+            new HashSet<>(), targetFields));
+    additionalQueryStatement += QueryResource
+        .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,
+            new HashSet<>(), targetFields));
+    additionalQueryStatement += QueryResource
+        .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
+            new HashSet<>(), targetFields));
     return this.getService.getAllFilterOptions(resourceID, originalField, additionalQueryStatement);
   }
 
@@ -333,13 +349,13 @@ public class LifecycleService {
       Boolean isClosed, PaginationState pagination) {
     String addSortQueries = additionalQuery;
     addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-        pagination);
+        pagination.sortedFields(), pagination.filterFields());
     addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
-        pagination);
+        pagination.sortedFields(), pagination.filterFields());
     addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,
-        pagination);
+        pagination.sortedFields(), pagination.filterFields());
     addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
-        pagination);
+        pagination.sortedFields(), pagination.filterFields());
     Queue<String> ids = this.getService.getAllIds(entityType, addSortQueries, pagination);
     Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = "";
@@ -423,9 +439,10 @@ public class LifecycleService {
    * @param lifecycleEvent Target event type.
    * @param pagination     Holds the pagination state.
    */
-  private String genEventOccurrenceSortQueryStatements(LifecycleEventType lifecycleEvent, PaginationState pagination) {
+  private String genEventOccurrenceSortQueryStatements(LifecycleEventType lifecycleEvent, Set<String> sortedFields,
+      Set<String> filterFields) {
     String sortQueryStatements = this.getService.getQueryStatementsForTargetFields(lifecycleEvent.getShaclReplacement(),
-        pagination.sortedFields(), pagination.filterFields());
+        sortedFields, filterFields);
     if (sortQueryStatements.isEmpty()) {
       return sortQueryStatements;
     }
