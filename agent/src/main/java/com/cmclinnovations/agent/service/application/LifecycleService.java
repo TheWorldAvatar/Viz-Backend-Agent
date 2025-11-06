@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -163,7 +164,7 @@ public class LifecycleService {
   }
 
   /**
-   * Retrieve filter options for the current event type.
+   * Retrieve filter options at the contract level.
    * 
    * @param resourceID The target resource identifier for the instance class.
    * @param field      The field of filtering.
@@ -171,7 +172,50 @@ public class LifecycleService {
    */
   public List<String> getFilterOptions(String resourceID, String field, LifecycleEventType eventType) {
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
-    String originalField = LocalisationResource.parseTranslationToOriginal(field, eventType.getIsContract());
+    String originalField = LocalisationResource.parseTranslationToOriginal(field, true);
+    return this.getService.getAllFilterOptions(resourceID, originalField, additionalQueryStatement);
+  }
+
+  /**
+   * Retrieve filter options at the task level.
+   * 
+   * @param resourceID     The target resource identifier for the instance class.
+   * @param field          The field of filtering.
+   * @param startTimestamp Start timestamp in UNIX format.
+   * @param endTimestamp   End timestamp in UNIX format.
+   * @param isClosed       Indicates whether to retrieve closed tasks.
+   */
+  public List<String> getFilterOptions(String resourceID, String field, String startTimestamp, String endTimestamp,
+      boolean isClosed) {
+    String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
+    String additionalQueryStatement = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetStartEndDates[0],
+        targetStartEndDates[1]);
+    String completionEventStatus;
+    if (isClosed) {
+      additionalQueryStatement += this.lifecycleQueryFactory
+          .genMinusEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_ORDER_RECEIVED)
+          .getQueryString();
+      additionalQueryStatement += this.lifecycleQueryFactory
+          .genMinusEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_ORDER_DISPATCHED)
+          .getQueryString();
+      completionEventStatus = LifecycleResource.EVENT_PENDING_STATUS;
+    } else {
+      additionalQueryStatement += this.lifecycleQueryFactory
+          .genMinusEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_INCIDENT_REPORT)
+          .getQueryString();
+      additionalQueryStatement += this.lifecycleQueryFactory
+          .genMinusEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_CANCELLATION)
+          .getQueryString();
+      completionEventStatus = LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS;
+    }
+    // Completed events has event status that differs to be removed
+    additionalQueryStatement += QueryResource.genFilterExists(QueryResource.EVENT_ID_VAR.has(
+        QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+        Rdf.iri(LifecycleEventType.SERVICE_EXECUTION.getEvent()))
+        .andHas(QueryResource.CMNS_DSG_DESCRIBES, Rdf.iri(completionEventStatus)),
+        false)
+        .getQueryString();
+    String originalField = LocalisationResource.parseTranslationToOriginal(field, false);
     return this.getService.getAllFilterOptions(resourceID, originalField, additionalQueryStatement);
   }
 

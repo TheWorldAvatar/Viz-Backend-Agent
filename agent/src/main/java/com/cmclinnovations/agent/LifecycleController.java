@@ -630,6 +630,20 @@ public class LifecycleController {
   }
 
   /**
+   * Retrieve the filter options for outstanding task contracts.
+   */
+  @GetMapping("/service/outstanding/filter")
+  public ResponseEntity<StandardApiResponse<?>> getAllOutstandingTaskFilters(
+      @RequestParam(name = "type") String type,
+      @RequestParam(name = "field", required = true) String field) {
+    LOGGER.info("Received request to retrieve filter options for contracts in progress...");
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
+      List<String> options = this.lifecycleService.getFilterOptions(type, field, null, null, false);
+      return this.responseEntityBuilder.success(options);
+    });
+  }
+
+  /**
    * Retrieve the number of tasks at the following event stage:
    * 
    * 1) scheduled - upcoming tasks on the specified date(s)
@@ -695,6 +709,27 @@ public class LifecycleController {
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, true,
           new PaginationState(page, limit, sortBy, false, allRequestParams));
+    });
+  }
+
+  /**
+   * Retrieve the filter options for the following types of task:
+   * 
+   * 1) scheduled - upcoming tasks on the specified date(s)
+   * 2) closed - completed or problematic tasks on the specified date(s)
+   */
+  @GetMapping("/service/{task}/filter")
+  public ResponseEntity<StandardApiResponse<?>> getScheduledOrClosedTaskFilters(
+      @PathVariable(name = "task") String taskType,
+      @RequestParam(name = "type") String type,
+      @RequestParam(name = "field", required = true) String field,
+      @RequestParam(required = true) String startTimestamp,
+      @RequestParam(required = true) String endTimestamp) {
+    LOGGER.info("Received request to retrieve filter options for contracts in progress...");
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
+      List<String> options = this.lifecycleService.getFilterOptions(type, field, startTimestamp, endTimestamp,
+          taskType.equals("closed"));
+      return this.responseEntityBuilder.success(options);
     });
   }
 
