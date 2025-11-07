@@ -250,14 +250,19 @@ public class GetService {
    * @param resourceID         Target resource identifier for the instance class.
    * @param field              The field of interest.
    * @param addQueryStatements Additional query statements to be added if any.
+   * @param search             String subset to narrow filter scope.
    */
-  public List<String> getAllFilterOptions(String resourceID, String field, String addQueryStatements) {
+  public List<String> getAllFilterOptions(String resourceID, String field, String addQueryStatements, String search) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
     String additionalStatements = addQueryStatements
         // For filter options, blanks should be included, and only sort statements
         // remain optional in the query
         + this.getQueryStatementsForTargetFields(iri, Set.of(field), new HashSet<>());
+    if (search != null && !search.isBlank()) {
+      additionalStatements += "FILTER(CONTAINS(LCASE(" + QueryResource.genVariable(field).getQueryString() + ") ,\""
+          + search + "\"))";
+    }
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements,
         new PaginationState(0, 21, "-" + field, new HashMap<>()), false);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()

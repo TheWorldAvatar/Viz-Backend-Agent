@@ -154,10 +154,11 @@ public class VisBackendAgent {
   @GetMapping("/{type}/filter")
   public ResponseEntity<StandardApiResponse<?>> getDistinctFilterOptions(
       @PathVariable(name = "type") String type,
-      @RequestParam(name = "field", required = true) String field) {
+      @RequestParam(name = "field", required = true) String field,
+      @RequestParam(name = "search", required = false) String search) {
     LOGGER.info("Received request to get all distinct filter options for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      List<String> options = this.getService.getAllFilterOptions(type, field, "");
+      List<String> options = this.getService.getAllFilterOptions(type, field, "", search);
       return this.responseEntityBuilder.success(options);
     });
   }

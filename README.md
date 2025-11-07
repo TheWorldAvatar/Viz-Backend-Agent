@@ -454,7 +454,7 @@ This route retrieves all the distinct field options for instances of a specific 
 <baseURL>/vis-backend-agent/{type}/filter?field={field}
 ```
 
-where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. 
+where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. Users can also include an optional `search` parameter.
 
 ##### Get all instances associated with a specific parent instance
 
@@ -579,7 +579,7 @@ There is also an additional optional parameter `label` to retrieve draft contrac
 > [!IMPORTANT]  
 > Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
-Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all draft contracts, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. 
+Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all draft contracts, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. Users can also include an optional `search` parameter.
 
 > Copy contract as a draft
 
@@ -697,7 +697,7 @@ There is also an additional optional parameter `label` to retrieve in progress c
 > [!IMPORTANT]  
 > Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
-Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all active contracts, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. 
+Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all active contracts, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. Users can also include an optional `search` parameter.
 
 > Records of service tasks
 
@@ -716,7 +716,7 @@ For outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-back
 
 To get the count of outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding/count?type={contractType}` endpoint.
 
-Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all outstanding tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. 
+Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all outstanding tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. Users can also include an optional `search` parameter.
 
 --- 
 
@@ -730,7 +730,7 @@ For upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/v
 
 To get the count of upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled/count?type={contractType}}&startTimestamp={start}&endTimestamp={end}` endpoint.
 
-Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled/filter?type={type}&field={field}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all the distinct field options for a specific field on all scheduled tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{field}` is the target field, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in.
+Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled/filter?type={type}&field={field}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all the distinct field options for a specific field on all scheduled tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{field}` is the target field, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. Users can also include an optional `search` parameter.
 
 --- 
 
@@ -744,7 +744,7 @@ For closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-a
 
 To get the count of closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed/count?type={contractType}}&startTimestamp={start}&endTimestamp={end}` endpoint.
 
-Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed/filter?type={type}&field={field}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all the distinct field options for a specific field on all closed tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{field}` is the target field, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in.
+Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed/filter?type={type}&field={field}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all the distinct field options for a specific field on all closed tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{field}` is the target field, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. Users can also include an optional `search` parameter.
 
 > Service dispatch
 
@@ -819,7 +819,7 @@ There is also an additional optional parameter `label` to retrieve archived cont
 > [!IMPORTANT]  
 > Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
-Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/archive/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all archived contracts, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. 
+Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/archive/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all archived contracts, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. Users can also include an optional `search` parameter.
 
 > Rescind an ongoing contract
 

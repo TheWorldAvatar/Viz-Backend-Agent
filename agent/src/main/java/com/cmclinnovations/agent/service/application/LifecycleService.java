@@ -170,12 +170,13 @@ public class LifecycleService {
    * 
    * @param resourceID The target resource identifier for the instance class.
    * @param field      The field of filtering.
+   * @param search     String subset to narrow filter scope.
    * @param eventType  The target event type to retrieve.
    */
-  public List<String> getFilterOptions(String resourceID, String field, LifecycleEventType eventType) {
+  public List<String> getFilterOptions(String resourceID, String field, String search, LifecycleEventType eventType) {
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
     String originalField = LocalisationResource.parseTranslationToOriginal(field, true);
-    return this.getService.getAllFilterOptions(resourceID, originalField, additionalQueryStatement);
+    return this.getService.getAllFilterOptions(resourceID, originalField, additionalQueryStatement, search);
   }
 
   /**
@@ -183,11 +184,13 @@ public class LifecycleService {
    * 
    * @param resourceID     The target resource identifier for the instance class.
    * @param field          The field of filtering.
+   * @param search         String subset to narrow filter scope.
    * @param startTimestamp Start timestamp in UNIX format.
    * @param endTimestamp   End timestamp in UNIX format.
    * @param isClosed       Indicates whether to retrieve closed tasks.
    */
-  public List<String> getFilterOptions(String resourceID, String field, String startTimestamp, String endTimestamp,
+  public List<String> getFilterOptions(String resourceID, String field, String search, String startTimestamp,
+      String endTimestamp,
       boolean isClosed) {
     String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
     String additionalQueryStatement = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetStartEndDates[0],
@@ -232,7 +235,7 @@ public class LifecycleService {
     additionalQueryStatement += QueryResource
         .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
             new HashSet<>(), targetFields));
-    return this.getService.getAllFilterOptions(resourceID, originalField, additionalQueryStatement);
+    return this.getService.getAllFilterOptions(resourceID, originalField, additionalQueryStatement, search);
   }
 
   /**
