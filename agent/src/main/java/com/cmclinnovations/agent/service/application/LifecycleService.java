@@ -267,7 +267,7 @@ public class LifecycleService {
                   return new AbstractMap.SimpleEntry<>(
                       LocalisationTranslator.getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY),
                       new SparqlResponseField(recurrence.type(),
-                          LifecycleResource.getScheduleTypeFromRecurrence(recurrence.value()),
+                          LocalisationTranslator.getScheduleTypeFromRecurrence(recurrence.value()),
                           recurrence.dataType(), recurrence.lang()));
                 }
                 return entry;
@@ -401,7 +401,7 @@ public class LifecycleService {
                   return new AbstractMap.SimpleEntry<>(
                       LocalisationTranslator.getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY),
                       new SparqlResponseField(recurrence.type(),
-                          LifecycleResource.getScheduleTypeFromRecurrence(recurrence.value()),
+                          LocalisationTranslator.getScheduleTypeFromRecurrence(recurrence.value()),
                           recurrence.dataType(), recurrence.lang()));
                 }
                 if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {

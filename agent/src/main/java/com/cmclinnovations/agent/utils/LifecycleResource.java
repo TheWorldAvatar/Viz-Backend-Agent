@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
-import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.core.FileService;
 
@@ -108,20 +107,6 @@ public class LifecycleResource {
       default:
         throw new IllegalArgumentException("Invalid order enum number!");
     }
-  }
-
-  /**
-   * Retrieve the schedule type based on the recurrence interval.
-   * 
-   * @param recurrence The recurrence value.
-   */
-  public static String getScheduleTypeFromRecurrence(String recurrence) {
-    return switch (recurrence) {
-      case "" -> LocalisationTranslator.getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY);
-      case "P1D" -> LocalisationTranslator.getMessage(LocalisationResource.LABEL_SINGLE_SERVICE_KEY);
-      case "P2D" -> LocalisationTranslator.getMessage(LocalisationResource.LABEL_ALTERNATE_DAY_SERVICE_KEY);
-      default -> LocalisationTranslator.getMessage(LocalisationResource.LABEL_REGULAR_SERVICE_KEY);
-    };
   }
 
   /**
