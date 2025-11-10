@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -363,53 +364,76 @@ public class GetService {
     String query = this.queryTemplateService.getShaclQuery(shaclReplacement, true);
     ArrayDeque<Queue<SparqlBinding>> results = (ArrayDeque<Queue<SparqlBinding>>) this.kgService
         .queryNestedPredicates(query);
-    // Filter out only the required fields for sorting, excluding others
-    ArrayDeque<Queue<SparqlBinding>> sortedQueryVarsAndPaths = new ArrayDeque<>();
-    ArrayDeque<Queue<SparqlBinding>> filterQueryVarsAndPaths = new ArrayDeque<>();
+    // Next, parse and get the query statements for the fields of interest that
+    // requires sorting or filtering
+    Map<String, ArrayDeque<Queue<SparqlBinding>>> filterQueryPartMappings = new HashMap<>();
+    Map<String, ArrayDeque<Queue<SparqlBinding>>> sortedQueryPartMappings = new HashMap<>();
+    // Stores the node group name to the corresponding field for easier access
+    Map<String, String> groupFieldMappings = new HashMap<>();
     while (!results.isEmpty()) {
-      // Retrieve the last element first, which are not mixed with node groups
+      // Retrieve the last list of parts first, which are not mixed with node groups
       // Queue sorts them by node groups first if available, and we want to reverse
       // this process instead
       Queue<SparqlBinding> currentQueryVarsAndPaths = results.pollLast();
-      Queue<SparqlBinding> tempSortedQueue = new ArrayDeque<>();
-      Queue<SparqlBinding> tempFilterQueue = new ArrayDeque<>();
+      Map<String, Queue<SparqlBinding>> tempFilterPartsMapping = new HashMap<>();
+      Map<String, Queue<SparqlBinding>> tempSortedPartsMapping = new HashMap<>();
+      // Iterate over the list to find bindings matching the field
       while (!currentQueryVarsAndPaths.isEmpty()) {
         SparqlBinding binding = currentQueryVarsAndPaths.poll();
         String fieldName = binding.getFieldValue(ShaclResource.NAME_PROPERTY);
         fieldName = QueryResource.genVariable(fieldName).getVarName();
+        // If the field name is a group with a corresponding field, find its original
+        // child field name
+        String fieldKey = groupFieldMappings.getOrDefault(fieldName, fieldName);
+        // Filters are prioritised over sorted fields to prevent duplicating query
+        // statements
         if (filterFields.contains(fieldName)) {
-          tempFilterQueue.offer(binding);
-          // When there are node groups, add them into the sorted fields so that it will
-          // be picked up in later queues
+          Queue<SparqlBinding> currentQueue = Optional.ofNullable(
+              tempFilterPartsMapping.putIfAbsent(fieldKey, new ArrayDeque<>()))
+              .orElseGet(() -> tempFilterPartsMapping.get(fieldKey));
+          currentQueue.offer(binding);
+          // Add node groups to ensure they are parsed in later iteration
           if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
             String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
             filterFields.add(QueryResource.genVariable(group).getVarName());
           }
         } else if (sortedFields.contains(fieldName)) {
-          tempSortedQueue.offer(binding);
-          // When there are node groups, add them into the sorted fields so that it will
-          // be picked up in later queues
+          Queue<SparqlBinding> currentQueue = Optional.ofNullable(
+              tempSortedPartsMapping.putIfAbsent(fieldKey, new ArrayDeque<>()))
+              .orElseGet(() -> tempSortedPartsMapping.get(fieldKey));
+          currentQueue.offer(binding);
+          // Add node groups to ensure they are parsed in later iteration
           if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
             String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
             sortedFields.add(QueryResource.genVariable(group).getVarName());
           }
         }
       }
-      // Ensures only if there are filters meeting the requirements, append to the
-      // final query
-      if (!tempSortedQueue.isEmpty()) {
-        sortedQueryVarsAndPaths.offerFirst(tempSortedQueue);
-      }
-      if (!tempFilterQueue.isEmpty()) {
-        filterQueryVarsAndPaths.offerFirst(tempFilterQueue);
-      }
+      // After iteration at the nested queue level, add them to the respective mappings
+      tempFilterPartsMapping.forEach((key, value) -> {
+        ArrayDeque<Queue<SparqlBinding>> currentQueryParts = Optional.ofNullable(
+            filterQueryPartMappings.putIfAbsent(key, new ArrayDeque<>()))
+            .orElseGet(() -> filterQueryPartMappings.get(key));
+        currentQueryParts.offerFirst(value);
+      });
+      tempSortedPartsMapping.forEach((key, value) -> {
+        ArrayDeque<Queue<SparqlBinding>> currentQueryParts = Optional.ofNullable(
+            sortedQueryPartMappings.putIfAbsent(key, new ArrayDeque<>()))
+            .orElseGet(() -> sortedQueryPartMappings.get(key));
+        currentQueryParts.offerFirst(value);
+      });
     }
-    String sortedStatements = sortedQueryVarsAndPaths.isEmpty() ? ""
-        : QueryResource.optional(this.queryTemplateService.genWhereClause(sortedQueryVarsAndPaths));
-    String filterStatements = filterQueryVarsAndPaths.isEmpty() ? ""
-        : this.queryTemplateService.genWhereClause(filterQueryVarsAndPaths)
-            .replaceAll("\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
-    return sortedStatements + filterStatements;
+    // Generate statements for each mappings as individual parts
+    StringBuilder filterStatementBuilder = new StringBuilder();
+    filterQueryPartMappings.forEach((key, queryParts) -> {
+      filterStatementBuilder.append(this.queryTemplateService.genWhereClause(queryParts)
+          .replaceAll("\\s*OPTIONAL\\s*\\{(.*)\\}", "$1"));
+    });
+    StringBuilder sortStatementBuilder = new StringBuilder();
+    sortedQueryPartMappings.forEach((key, queryParts) -> {
+      filterStatementBuilder.append(QueryResource.optional(this.queryTemplateService.genWhereClause(queryParts)));
+    });
+    return filterStatementBuilder.toString() + sortStatementBuilder.toString();
   }
 
   /**
