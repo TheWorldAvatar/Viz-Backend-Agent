@@ -134,33 +134,6 @@ public class QueryTemplateService {
         query.orderBy(QueryResource.ID_VAR);
       }
     }
-    if (!pagination.filters().isEmpty()) {
-      StringBuilder valuesClause = new StringBuilder("VALUES (");
-      // Concatenate all possible filter values, and they will be duplicated for each
-      // level of set
-      List<Set<String>> allPossibleValues = pagination.filters().entrySet().stream()
-          .map(entry -> {
-            // Append var to the initial VALUES clause
-            String varName = QueryResource.genVariable(entry.getKey()).getQueryString();
-            valuesClause.append(ShaclResource.WHITE_SPACE)
-                .append(varName);
-            return entry.getValue();
-          }).toList();
-      Stream<String> runningCombinations = allPossibleValues.get(0).stream()
-          .map(s -> "(" + s);
-      for (int i = 1; i < allPossibleValues.size(); i++) {
-        Set<String> nextSet = allPossibleValues.get(i);
-        runningCombinations = runningCombinations.flatMap(currentCombination -> nextSet.stream()
-            .map(nextElement -> currentCombination + ShaclResource.WHITE_SPACE + nextElement));
-      }
-      String valuesForClause = runningCombinations
-          .map(s -> s + ")")
-          .collect(Collectors.joining(ShaclResource.WHITE_SPACE));
-      valuesClause.append(") {")
-          .append(valuesForClause)
-          .append("}");
-      addQueryStatements += valuesClause.toString();
-    }
     return query
         .getQueryString()
         .replace("?id .", "?id ." + addQueryStatements);

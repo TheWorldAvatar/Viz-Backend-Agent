@@ -236,7 +236,7 @@ public class GetService {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
     String additionalStatements = addQueryStatements
-        + this.getQueryStatementsForTargetFields(iri, pagination.sortedFields(), pagination.filterFields());
+        + this.getQueryStatementsForTargetFields(iri, pagination.sortedFields(), pagination.filters());
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements, pagination,
         true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
@@ -257,9 +257,9 @@ public class GetService {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
     String additionalStatements = addQueryStatements
-        // For filter options, blanks should be included, and only sort statements
-        // remain optional in the query
-        + this.getQueryStatementsForTargetFields(iri, Set.of(field), new HashSet<>());
+        // Requires the use of OPTIONAL query (typically used with sorting) to retrive
+        // possible blanks for filter options
+        + this.getQueryStatementsForTargetFields(iri, Set.of(field), new HashMap<>());
     if (search != null && !search.isBlank()) {
       additionalStatements += "FILTER(CONTAINS(LCASE(" + QueryResource.genVariable(field).getQueryString() + ") ,\""
           + search + "\"))";
@@ -355,10 +355,10 @@ public class GetService {
    * 
    * @param shaclReplacement The replacement value of the SHACL query target.
    * @param sortedFields     Set of fields for sorting that should be included.
-   * @param filterFields     Set of fields for filtering that should be included.
+   * @param filters          Filters with name and values.
    */
   public String getQueryStatementsForTargetFields(String shaclReplacement, Set<String> sortedFields,
-      Set<String> filterFields) {
+      Map<String, Set<String>> filters) {
     // First query for all the available query construction params associated with
     // the target replacement
     String query = this.queryTemplateService.getShaclQuery(shaclReplacement, true);
@@ -366,6 +366,7 @@ public class GetService {
         .queryNestedPredicates(query);
     // Next, parse and get the query statements for the fields of interest that
     // requires sorting or filtering
+    Set<String> filterFields = new HashSet<>(filters.keySet());
     Map<String, ArrayDeque<Queue<SparqlBinding>>> filterQueryPartMappings = new HashMap<>();
     Map<String, ArrayDeque<Queue<SparqlBinding>>> sortedQueryPartMappings = new HashMap<>();
     // Stores the node group name to the corresponding field for easier access
@@ -409,7 +410,8 @@ public class GetService {
           }
         }
       }
-      // After iteration at the nested queue level, add them to the respective mappings
+      // After iteration at the nested queue level, add them to the respective
+      // mappings
       tempFilterPartsMapping.forEach((key, value) -> {
         ArrayDeque<Queue<SparqlBinding>> currentQueryParts = Optional.ofNullable(
             filterQueryPartMappings.putIfAbsent(key, new ArrayDeque<>()))
@@ -428,6 +430,18 @@ public class GetService {
     filterQueryPartMappings.forEach((key, queryParts) -> {
       filterStatementBuilder.append(this.queryTemplateService.genWhereClause(queryParts)
           .replaceAll("\\s*OPTIONAL\\s*\\{(.*)\\}", "$1"));
+      Set<String> filterValues = filters.get(key);
+      // Append all values for each filter field directly
+      if (!filterValues.isEmpty()) {
+        filterStatementBuilder.append("VALUES ?")
+            .append(key)
+            .append(" {");
+        filterValues.forEach(filterVal -> {
+          filterStatementBuilder.append(ShaclResource.WHITE_SPACE)
+              .append(filterVal);
+        });
+        filterStatementBuilder.append("}");
+      }
     });
     StringBuilder sortStatementBuilder = new StringBuilder();
     sortedQueryPartMappings.forEach((key, queryParts) -> {

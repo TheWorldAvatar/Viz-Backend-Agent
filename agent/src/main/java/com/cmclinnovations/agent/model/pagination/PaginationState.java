@@ -67,10 +67,6 @@ public class PaginationState {
         return this.sortedFields;
     }
 
-    public Set<String> filterFields() {
-        return this.filters.keySet();
-    }
-
     public Queue<SortDirective> sortDirectives() {
         return this.sortedDirectives;
     }

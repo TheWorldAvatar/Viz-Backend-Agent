@@ -221,7 +221,8 @@ public class LifecycleService {
         false)
         .getQueryString();
     String originalField = LocalisationResource.parseTranslationToOriginal(field, false);
-    Set<String> targetFields = Set.of(field);
+    Map<String, Set<String>> targetFields = new HashMap<>();
+    targetFields.put(field, new HashSet<>());
     // Wrap an optional clause around each different type of event
     additionalQueryStatement += QueryResource
         .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
@@ -352,13 +353,13 @@ public class LifecycleService {
       Boolean isClosed, PaginationState pagination) {
     String addSortQueries = additionalQuery;
     addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-        pagination.sortedFields(), pagination.filterFields());
+        pagination.sortedFields(), pagination.filters());
     addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
-        pagination.sortedFields(), pagination.filterFields());
+        pagination.sortedFields(), pagination.filters());
     addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,
-        pagination.sortedFields(), pagination.filterFields());
+        pagination.sortedFields(), pagination.filters());
     addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
-        pagination.sortedFields(), pagination.filterFields());
+        pagination.sortedFields(), pagination.filters());
     Queue<String> ids = this.getService.getAllIds(entityType, addSortQueries, pagination);
     Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = "";
@@ -440,12 +441,13 @@ public class LifecycleService {
    * Generates the query statements to sort by event occurrences.
    * 
    * @param lifecycleEvent Target event type.
-   * @param pagination     Holds the pagination state.
+   * @param sortedFields   Set of fields for sorting that should be included.
+   * @param filters        Filters with name and values.
    */
   private String genEventOccurrenceSortQueryStatements(LifecycleEventType lifecycleEvent, Set<String> sortedFields,
-      Set<String> filterFields) {
+      Map<String, Set<String>> filters) {
     String sortQueryStatements = this.getService.getQueryStatementsForTargetFields(lifecycleEvent.getShaclReplacement(),
-        sortedFields, filterFields);
+        sortedFields, filters);
     if (sortQueryStatements.isEmpty()) {
       return sortQueryStatements;
     }
