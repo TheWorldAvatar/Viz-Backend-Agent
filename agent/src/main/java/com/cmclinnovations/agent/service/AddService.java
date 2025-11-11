@@ -32,6 +32,7 @@ import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
@@ -177,7 +178,7 @@ public class AddService {
     if (currentNode.has(ShaclResource.REPLACE_KEY)) {
       if (parentNode != null) {
         // Add a different interaction for schedule types
-        if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals("schedule")) {
+        if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(LifecycleResource.SCHEDULE_RESOURCE)) {
           this.replaceDayOfWeekSchedule(parentNode, parentField, replacements);
           // When parsing an array for an object node
         } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)) {
