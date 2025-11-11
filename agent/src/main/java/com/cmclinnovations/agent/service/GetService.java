@@ -265,7 +265,7 @@ public class GetService {
           + search + "\"))";
     }
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements,
-        new PaginationState(0, 21, "-" + field, new HashMap<>()), false);
+        new PaginationState(0, 21, "+" + field, new HashMap<>()), false);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> binding.getFieldValue(field))
         .toList();
