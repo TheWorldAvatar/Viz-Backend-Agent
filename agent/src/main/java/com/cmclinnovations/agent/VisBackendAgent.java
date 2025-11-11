@@ -154,11 +154,15 @@ public class VisBackendAgent {
   @GetMapping("/{type}/filter")
   public ResponseEntity<StandardApiResponse<?>> getDistinctFilterOptions(
       @PathVariable(name = "type") String type,
-      @RequestParam(name = "field", required = true) String field,
-      @RequestParam(name = "search", required = false) String search) {
+      @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to get all distinct filter options for {}...", type);
+    // Extract non-filter related request parameters directly, and remove them so
+    // that the mappings only contain filters
+    String field = allRequestParams.remove(StringResource.FIELD_REQUEST_PARAM);
+    String search = allRequestParams.getOrDefault(StringResource.SEARCH_REQUEST_PARAM, "");
+    allRequestParams.remove(StringResource.SEARCH_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      List<String> options = this.getService.getAllFilterOptions(type, field, "", search);
+      List<String> options = this.getService.getAllFilterOptions(type, field, "", search, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }

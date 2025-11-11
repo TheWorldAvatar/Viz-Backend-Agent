@@ -36,6 +36,7 @@ import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
+import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
@@ -252,14 +253,18 @@ public class GetService {
    * @param field              The field of interest.
    * @param addQueryStatements Additional query statements to be added if any.
    * @param search             String subset to narrow filter scope.
+   * @param filters            Optional additional filters.
    */
-  public List<String> getAllFilterOptions(String resourceID, String field, String addQueryStatements, String search) {
+  public List<String> getAllFilterOptions(String resourceID, String field, String addQueryStatements, String search,
+      Map<String, String> filters) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters);
+    parsedFilters.remove(field);
     String additionalStatements = addQueryStatements
         // Requires the use of OPTIONAL query (typically used with sorting) to retrive
         // possible blanks for filter options
-        + this.getQueryStatementsForTargetFields(iri, Set.of(field), new HashMap<>());
+        + this.getQueryStatementsForTargetFields(iri, Set.of(field), parsedFilters);
     if (search != null && !search.isBlank()) {
       additionalStatements += "FILTER(CONTAINS(LCASE(" + QueryResource.genVariable(field).getQueryString() + ") ,\""
           + search + "\"))";

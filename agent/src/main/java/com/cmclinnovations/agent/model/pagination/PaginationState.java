@@ -15,6 +15,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.StringResource;
 
 public class PaginationState {
     private static final Pattern SORT_PARAM_PATTERN = Pattern.compile("([-+])?([^,]+)");
@@ -45,15 +46,7 @@ public class PaginationState {
                 .map(match -> match.group(2))
                 .collect(Collectors.toCollection(HashSet::new));
         this.sortedDirectives = this.parseSortDirectives(sortBy, isContract);
-        this.filters = filters.entrySet()
-                .stream()
-                .map(entry -> Map.entry(
-                        entry.getKey(),
-                        Arrays.stream(entry.getValue().split("\\|"))
-                                .map(string -> string.equals(QueryResource.NULL_KEY) ? string
-                                        : "\"" + string.trim() + "\"")
-                                .collect(Collectors.toSet())))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        this.filters = StringResource.parseFilters(filters);
     }
 
     public Integer limit() {

@@ -172,11 +172,13 @@ public class LifecycleService {
    * @param field      The field of filtering.
    * @param search     String subset to narrow filter scope.
    * @param eventType  The target event type to retrieve.
+   * @param filters    Optional additional filters.
    */
-  public List<String> getFilterOptions(String resourceID, String field, String search, LifecycleEventType eventType) {
+  public List<String> getFilterOptions(String resourceID, String field, String search, LifecycleEventType eventType,
+      Map<String, String> filters) {
     String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
     String originalField = LocalisationResource.parseTranslationToOriginal(field, true);
-    return this.getService.getAllFilterOptions(resourceID, originalField, additionalQueryStatement, search);
+    return this.getService.getAllFilterOptions(resourceID, originalField, additionalQueryStatement, search, filters);
   }
 
   /**
@@ -188,10 +190,10 @@ public class LifecycleService {
    * @param startTimestamp Start timestamp in UNIX format.
    * @param endTimestamp   End timestamp in UNIX format.
    * @param isClosed       Indicates whether to retrieve closed tasks.
+   * @param filters        Optional additional filters.
    */
   public List<String> getFilterOptions(String resourceID, String field, String search, String startTimestamp,
-      String endTimestamp,
-      boolean isClosed) {
+      String endTimestamp, boolean isClosed, Map<String, String> filters) {
     String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
     String additionalQueryStatement = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetStartEndDates[0],
         targetStartEndDates[1]);
@@ -236,7 +238,7 @@ public class LifecycleService {
     additionalQueryStatement += QueryResource
         .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
             new HashSet<>(), targetFields));
-    return this.getService.getAllFilterOptions(resourceID, originalField, additionalQueryStatement, search);
+    return this.getService.getAllFilterOptions(resourceID, originalField, additionalQueryStatement, search, filters);
   }
 
   /**

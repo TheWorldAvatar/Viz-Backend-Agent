@@ -523,12 +523,12 @@ public class LifecycleController {
    */
   @GetMapping("/draft/filter")
   public ResponseEntity<StandardApiResponse<?>> getDraftContractFilters(
-      @RequestParam(name = "type") String type,
-      @RequestParam(name = "field", required = true) String field,
-      @RequestParam(name = "search", required = false) String search) {
+      @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve filter options for draft contracts...");
+    String[] filterOptionParams = getFilterOptionParams(allRequestParams);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> options = this.lifecycleService.getFilterOptions(type, field, search, LifecycleEventType.APPROVED);
+      List<String> options = this.lifecycleService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
+          filterOptionParams[2], LifecycleEventType.APPROVED, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -538,13 +538,12 @@ public class LifecycleController {
    */
   @GetMapping("/service/filter")
   public ResponseEntity<StandardApiResponse<?>> getActiveContractFilters(
-      @RequestParam(name = "type") String type,
-      @RequestParam(name = "field", required = true) String field,
-      @RequestParam(name = "search", required = false) String search) {
+      @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve filter options for contracts in progress...");
+    String[] filterOptionParams = getFilterOptionParams(allRequestParams);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> options = this.lifecycleService.getFilterOptions(type, field, search,
-          LifecycleEventType.ACTIVE_SERVICE);
+      List<String> options = this.lifecycleService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
+          filterOptionParams[2], LifecycleEventType.ACTIVE_SERVICE, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -554,13 +553,12 @@ public class LifecycleController {
    */
   @GetMapping("/archive/filter")
   public ResponseEntity<StandardApiResponse<?>> getArchivedContractFilters(
-      @RequestParam(name = "type") String type,
-      @RequestParam(name = "field", required = true) String field,
-      @RequestParam(name = "search", required = false) String search) {
+      @RequestParam Map<String, String> allRequestParams) {
+    String[] filterOptionParams = getFilterOptionParams(allRequestParams);
     LOGGER.info("Received request to retrieve filter options for archived contracts...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> options = this.lifecycleService.getFilterOptions(type, field, search,
-          LifecycleEventType.ARCHIVE_COMPLETION);
+      List<String> options = this.lifecycleService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
+          filterOptionParams[2], LifecycleEventType.ARCHIVE_COMPLETION, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -639,12 +637,12 @@ public class LifecycleController {
    */
   @GetMapping("/service/outstanding/filter")
   public ResponseEntity<StandardApiResponse<?>> getAllOutstandingTaskFilters(
-      @RequestParam(name = "type") String type,
-      @RequestParam(name = "field", required = true) String field,
-      @RequestParam(name = "search", required = false) String search) {
+      @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve filter options for contracts in progress...");
+    String[] filterOptionParams = getFilterOptionParams(allRequestParams);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> options = this.lifecycleService.getFilterOptions(type, field, search, null, null, false);
+      List<String> options = this.lifecycleService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
+          filterOptionParams[2], null, null, false, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -727,15 +725,16 @@ public class LifecycleController {
   @GetMapping("/service/{task}/filter")
   public ResponseEntity<StandardApiResponse<?>> getScheduledOrClosedTaskFilters(
       @PathVariable(name = "task") String taskType,
-      @RequestParam(name = "type") String type,
-      @RequestParam(name = "field", required = true) String field,
-      @RequestParam(required = true) String startTimestamp,
-      @RequestParam(required = true) String endTimestamp,
-      @RequestParam(name = "search", required = false) String search) {
+      @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve filter options for contracts in progress...");
+    String[] filterOptionParams = getFilterOptionParams(allRequestParams);
+    String startTimestamp = allRequestParams.remove(StringResource.START_TIMESTAMP_REQUEST_PARAM);
+    String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> options = this.lifecycleService.getFilterOptions(type, field, search, startTimestamp, endTimestamp,
-          taskType.equals("closed"));
+      List<String> options = this.lifecycleService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
+          filterOptionParams[2],
+          startTimestamp, endTimestamp,
+          taskType.equals("closed"), allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -857,5 +856,22 @@ public class LifecycleController {
 
     return this.responseEntityBuilder
         .success("contract", LocalisationTranslator.getMessage(successMessageKey));
+  }
+
+  /**
+   * Retrieves the default filter option parameters fom the request parameters.
+   * Remove the default ones for the route, while only retaining the filter
+   * values.
+   * 
+   * @param allRequestParams All request parameters given to the agent.
+   */
+  private String[] getFilterOptionParams(Map<String, String> allRequestParams) {
+    // Extract non-filter related request parameters directly, and remove them so
+    // that the mappings only contain filters
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    String field = allRequestParams.remove(StringResource.FIELD_REQUEST_PARAM);
+    String search = allRequestParams.getOrDefault(StringResource.SEARCH_REQUEST_PARAM, "");
+    allRequestParams.remove(StringResource.SEARCH_REQUEST_PARAM);
+    return new String[] { type, field, search };
   }
 }
