@@ -426,26 +426,40 @@ public class GetService {
       });
     }
     // Generate statements for each mappings as individual parts
-    StringBuilder filterStatementBuilder = new StringBuilder();
-    filterQueryPartMappings.forEach((key, queryParts) -> {
-      filterStatementBuilder.append(this.queryTemplateService.genWhereClause(queryParts)
-          .replaceAll("\\s*OPTIONAL\\s*\\{(.*)\\}", "$1"));
-      Set<String> filterValues = filters.get(key);
-      // Append all values for each filter field directly
-      if (!filterValues.isEmpty()) {
-        filterStatementBuilder.append("VALUES ?")
-            .append(key)
-            .append(" {");
-        filterValues.forEach(filterVal -> {
-          filterStatementBuilder.append(ShaclResource.WHITE_SPACE)
-              .append(filterVal);
-        });
-        filterStatementBuilder.append("}");
-      }
-    });
     StringBuilder sortStatementBuilder = new StringBuilder();
     sortedQueryPartMappings.forEach((key, queryParts) -> {
-      filterStatementBuilder.append(QueryResource.optional(this.queryTemplateService.genWhereClause(queryParts)));
+      sortStatementBuilder.append(QueryResource.optional(this.queryTemplateService.genWhereClause(queryParts)));
+    });
+
+    StringBuilder filterStatementBuilder = new StringBuilder();
+    filterQueryPartMappings.forEach((key, queryParts) -> {
+      // Generate the query statements for this filter
+      String clause = this.queryTemplateService.genWhereClause(queryParts)
+          .replaceAll("\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
+      Set<String> filterValues = filters.get(key);
+      // When there are null filter values, the user has requested for blank values,
+      // and this should be excluded from the query via a MINUS clause
+      if (filterValues.contains(QueryResource.NULL_KEY)) {
+        String minusStatement = QueryResource.minus(clause);
+        // If there is only one null filter, this should merely be a MINUS clause
+        if (filterValues.size() == 1) {
+          filterStatementBuilder.append(minusStatement);
+        } else {
+          // When there are multiple filters, MINUS and default clause with values should
+          // be provided; Remove the null key before generating the VALUES clause
+          filterValues.remove(QueryResource.NULL_KEY);
+          String valuesClause = QueryResource.values(key, filterValues);
+          filterStatementBuilder.append(QueryResource.union(minusStatement, clause + valuesClause));
+        }
+      } else {
+        // For default filters, add clause to restrict them
+        // But only add VALUES if they are available
+        filterStatementBuilder.append(clause);
+        if (!filterValues.isEmpty()) {
+          String valuesClause = QueryResource.values(key, filterValues);
+          filterStatementBuilder.append(valuesClause);
+        }
+      }
     });
     return filterStatementBuilder.toString() + sortStatementBuilder.toString();
   }

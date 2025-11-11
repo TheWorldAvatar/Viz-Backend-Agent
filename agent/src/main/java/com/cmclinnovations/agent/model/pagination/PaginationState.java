@@ -50,7 +50,8 @@ public class PaginationState {
                 .map(entry -> Map.entry(
                         entry.getKey(),
                         Arrays.stream(entry.getValue().split("\\|"))
-                                .map(string -> "\"" + string.trim() + "\"")
+                                .map(string -> string.equals(QueryResource.NULL_KEY) ? string
+                                        : "\"" + string.trim() + "\"")
                                 .collect(Collectors.toSet())))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }

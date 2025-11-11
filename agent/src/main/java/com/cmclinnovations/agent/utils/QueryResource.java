@@ -1,5 +1,7 @@
 package com.cmclinnovations.agent.utils;
 
+import java.util.Collection;
+
 import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expression;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
@@ -66,6 +68,7 @@ public class QueryResource {
     public static final Iri FIBO_FND_DT_OC_HAS_EVENT_DATE = FIBO_FND_DT_OC.iri("hasEventDate");
     public static final Iri FIBO_FND_REL_REL_EXEMPLIFIES = FIBO_FND_REL_REL.iri("exemplifies");
 
+    public static final String NULL_KEY = "null";
     public static final String IRI_KEY = "iri";
     public static final Variable IRI_VAR = SparqlBuilder.var(IRI_KEY);
     public static final String ID_KEY = "id";
@@ -94,13 +97,6 @@ public class QueryResource {
      */
     public static Variable genVariable(String varName) {
         return SparqlBuilder.var(varName.replaceAll("\\s+", "_"));
-    }
-
-    /**
-     * Wraps the clause into an OPTIONAL clause.
-     */
-    public static String optional(String clause) {
-        return "OPTIONAL{" + clause + "}";
     }
 
     /**
@@ -168,6 +164,60 @@ public class QueryResource {
     public static Expression<?> genLowercaseExpression(Variable variable, String literalValue) {
         return Expressions.equals(
                 Expressions.function(SparqlFunction.LCASE, variable), Rdf.literalOf(literalValue));
+    }
+
+    /**
+     * Wraps the query statements into a MINUS clause.
+     * 
+     * @param queryStatements Query statements to be added to minus.
+     */
+    public static String minus(String queryStatements) {
+        return "MINUS{" + queryStatements + "}";
+
+    }
+
+    /**
+     * Wraps the query statements into an OPTIONAL clause.
+     * 
+     * @param queryStatements Query statements to be added to minus.
+     */
+    public static String optional(String queryStatements) {
+        return "OPTIONAL{" + queryStatements + "}";
+    }
+
+    /**
+     * Generate an UNION clause between several set of query statements
+     * 
+     * @param firstStatements The first set of statements.
+     * @param statements      The subsequent set of statements to be placed into
+     *                        separate UNION clauses.
+     */
+    public static String union(String firstStatements, String... statements) {
+        StringBuilder unionBuilder = new StringBuilder();
+        unionBuilder.append("{").append(firstStatements).append("}");
+        for (String currentStatements : statements) {
+            unionBuilder.append("UNION{").append(currentStatements).append("}");
+        }
+        return unionBuilder.toString();
+    }
+
+    /**
+     * Generate a VALUES clause for the specific field and values
+     * 
+     * @param field  The field of interest.
+     * @param values The values to be inserted into the VALUES clause.
+     */
+    public static String values(String field, Collection<String> values) {
+        StringBuilder valuesBuilder = new StringBuilder();
+        valuesBuilder.append("VALUES ?")
+                .append(field)
+                .append(" {");
+        values.forEach(value -> {
+            valuesBuilder.append(ShaclResource.WHITE_SPACE)
+                    .append(value);
+        });
+        valuesBuilder.append("}");
+        return valuesBuilder.toString();
     }
 
     /**
