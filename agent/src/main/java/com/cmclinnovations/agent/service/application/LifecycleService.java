@@ -200,18 +200,11 @@ public class LifecycleService {
     String originalField = LocalisationResource.parseTranslationToOriginal(field, false);
     Map<String, Set<String>> targetFields = new HashMap<>();
     targetFields.put(field, new HashSet<>());
-
-    String additionalStatements = "";
-    String completionEventStatus;
-    // Add filter clause to narrow down the search for tasks of certain types
+    // Dispatch parameters will always be present
+    String additionalStatements = QueryResource
+        .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+            new HashSet<>(), targetFields));
     if (isClosed) {
-      additionalStatements += this.lifecycleQueryFactory
-          .genMinusEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_ORDER_RECEIVED)
-          .getQueryString();
-      additionalStatements += this.lifecycleQueryFactory
-          .genMinusEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_ORDER_DISPATCHED)
-          .getQueryString();
-      completionEventStatus = LifecycleResource.EVENT_PENDING_STATUS;
       // Only closed tasks will have the associated closed task parameters
       // that should be wrapped in optional
       additionalStatements += QueryResource
@@ -223,26 +216,7 @@ public class LifecycleService {
       additionalStatements += QueryResource
           .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
               new HashSet<>(), targetFields));
-    } else {
-      additionalStatements += this.lifecycleQueryFactory
-          .genMinusEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_INCIDENT_REPORT)
-          .getQueryString();
-      additionalStatements += this.lifecycleQueryFactory
-          .genMinusEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_CANCELLATION)
-          .getQueryString();
-      completionEventStatus = LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS;
     }
-    // Completed events has event status that differs to be removed
-    additionalStatements += QueryResource.genFilterExists(QueryResource.EVENT_ID_VAR.has(
-        QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-        Rdf.iri(LifecycleEventType.SERVICE_EXECUTION.getEvent()))
-        .andHas(QueryResource.CMNS_DSG_DESCRIBES, Rdf.iri(completionEventStatus)),
-        false)
-        .getQueryString();
-    // Dispatch parameters will always be present
-    additionalStatements += QueryResource
-        .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-            new HashSet<>(), targetFields));
     // Update lifecycle query statements accordingly
     queryMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
         queryMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + additionalStatements);
