@@ -255,6 +255,10 @@ public class GetService {
         QueryResource.genFilterStatements(statements, field, pagination.filters().get(field), addStatementBuilder);
       }
     });
+    if (queryMappings.containsKey(LifecycleResource.LIFECYCLE_RESOURCE)
+        && Arrays.stream(SCHEDULE_VARIABLES).anyMatch(pagination.filters().keySet()::contains)) {
+      addStatementBuilder.append(queryMappings.get(LifecycleResource.SCHEDULE_RESOURCE));
+    }
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatementBuilder.toString(),
         pagination, true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
