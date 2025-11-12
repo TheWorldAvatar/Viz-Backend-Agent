@@ -75,6 +75,16 @@ public class QueryResource {
     public static final String ID_KEY = "id";
     public static final Variable ID_VAR = SparqlBuilder.var(ID_KEY);
     public static final Variable EVENT_ID_VAR = QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY);
+    public static final Variable SCHEDULE_START_DATE_VAR = QueryResource
+            .genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY);
+    public static final Variable SCHEDULE_END_DATE_VAR = QueryResource
+            .genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY);
+    public static final Variable SCHEDULE_START_TIME_VAR = QueryResource
+            .genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY);
+    public static final Variable SCHEDULE_END_TIME_VAR = QueryResource
+            .genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY);
+    public static final Variable SCHEDULE_RECURRENCE_VAR = QueryResource
+            .genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY);
 
     // Private constructor to prevent instantiation
     private QueryResource() {

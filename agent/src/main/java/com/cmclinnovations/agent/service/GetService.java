@@ -48,6 +48,11 @@ public class GetService {
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final String SUCCESSFUL_REQUEST_MSG = "Request has been completed successfully!";
+  private static final String[] SCHEDULE_VARIABLES = new String[] {
+      QueryResource.SCHEDULE_START_DATE_VAR.getVarName(), QueryResource.SCHEDULE_END_DATE_VAR.getVarName(),
+      QueryResource.SCHEDULE_START_TIME_VAR.getVarName(), QueryResource.SCHEDULE_END_TIME_VAR.getVarName(),
+      QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName()
+  };
   private static final Logger LOGGER = LogManager.getLogger(GetService.class);
 
   /**
@@ -251,8 +256,7 @@ public class GetService {
       }
     });
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatementBuilder.toString(),
-        pagination,
-        true);
+        pagination, true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> binding.getFieldValue(QueryResource.ID_KEY))
         .collect(Collectors.toCollection(ArrayDeque::new));
@@ -285,6 +289,11 @@ public class GetService {
         QueryResource.genFilterStatements(statements, fieldKey, parsedFilters.get(fieldKey), addStatementBuilder);
       }
     });
+    if (queryMappings.containsKey(LifecycleResource.LIFECYCLE_RESOURCE)
+        && (Arrays.stream(SCHEDULE_VARIABLES).anyMatch(field::equals)
+            || Arrays.stream(SCHEDULE_VARIABLES).anyMatch(parsedFilters.keySet()::contains))) {
+      addStatementBuilder.append(queryMappings.get(LifecycleResource.SCHEDULE_RESOURCE));
+    }
     if (search != null && !search.isBlank()) {
       addStatementBuilder.append("FILTER(CONTAINS(LCASE(")
           .append(QueryResource.genVariable(field).getQueryString())

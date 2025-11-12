@@ -1,7 +1,9 @@
 package com.cmclinnovations.agent.template;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
@@ -19,12 +21,35 @@ import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 
 public class LifecycleQueryFactory {
+  private static final Map<String, String> SCHEDULE_QUERY_MAPPINGS;
 
   /**
    * Constructs a new query factory.
    */
   public LifecycleQueryFactory() {
     // No set up required
+  }
+
+  static {
+    Map<String, String> template = new HashMap<>();
+    template.put(LifecycleResource.SCHEDULE_RESOURCE, "?iri " + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH
+        + "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule> ?schedule.");
+    template.put(QueryResource.SCHEDULE_START_DATE_VAR.getVarName(),
+        "?schedule <https://www.omg.org/spec/Commons/DatesAndTimes/hasStartDate>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> "
+            + QueryResource.SCHEDULE_START_DATE_VAR.getQueryString() + ShaclResource.FULL_STOP);
+    template.put(QueryResource.SCHEDULE_START_TIME_VAR.getVarName(),
+        "?schedule <https://www.omg.org/spec/Commons/DatesAndTimes/hasTimePeriod>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasStart>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue> "
+            + QueryResource.SCHEDULE_START_TIME_VAR.getQueryString() + ShaclResource.FULL_STOP);
+    template.put(QueryResource.SCHEDULE_END_TIME_VAR.getVarName(),
+        "?schedule <https://www.omg.org/spec/Commons/DatesAndTimes/hasTimePeriod>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndTime>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue> "
+            + QueryResource.SCHEDULE_END_TIME_VAR.getQueryString() + ShaclResource.FULL_STOP);
+    template.put(QueryResource.SCHEDULE_END_DATE_VAR.getVarName(),
+        "OPTIONAL{?schedule ^<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndDate>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> "
+            + QueryResource.SCHEDULE_END_DATE_VAR.getQueryString() + ".}");
+    template.put(QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName(),
+        "OPTIONAL{?schedule <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?"
+            + LifecycleResource.SCHEDULE_RECURRENCE_KEY + ".}");
+    SCHEDULE_QUERY_MAPPINGS = Collections.unmodifiableMap(template);
   }
 
   /**
@@ -58,7 +83,7 @@ public class LifecycleQueryFactory {
   public String getServiceScheduleQuery(String contractId) {
     return QueryResource.PREFIX_TEMPLATE
         + "SELECT DISTINCT * WHERE{"
-        + this.getScheduleTemplate()
+        + SCHEDULE_QUERY_MAPPINGS.values().stream().collect(Collectors.joining("\n"))
         + "?iri dc-terms:identifier \"" + contractId + "\";"
         // Nested query for all days
         + "{SELECT ?iri "
@@ -224,7 +249,7 @@ public class LifecycleQueryFactory {
         + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
         "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?recurrences.}"
         + "BIND(IF(BOUND(?recurrences),?recurrences,\"\") AS "
-        + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString()
+        + QueryResource.SCHEDULE_RECURRENCE_VAR.getQueryString()
         + ")");
     return results;
   }
@@ -339,17 +364,13 @@ public class LifecycleQueryFactory {
   public Map<String, String> genLifecycleFilterStatements(LifecycleEventType lifecycleEvent) {
     Map<String, String> statementMappings = new HashMap<>();
     // Generate schedule related mappings
-    StringBuilder scheduleBuilder = new StringBuilder();
-    String recurrenceVar = QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString();
-    scheduleBuilder.append(this.getScheduleTemplate())
-        .append("BIND(IF(BOUND(")
-        .append(recurrenceVar)
-        .append("),")
-        .append(recurrenceVar)
-        .append(",\"\") AS ")
-        .append(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).getQueryString())
-        .append(")");
-    statementMappings.put(LifecycleResource.SCHEDULE_RESOURCE, scheduleBuilder.toString());
+    String recurrenceVar = QueryResource.SCHEDULE_RECURRENCE_VAR.getQueryString();
+    statementMappings.putAll(SCHEDULE_QUERY_MAPPINGS);
+    statementMappings.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY,
+        statementMappings.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY) + "BIND(IF(BOUND("
+            + recurrenceVar + ")," + recurrenceVar + ",\"\") AS "
+            + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).getQueryString()
+            + ")");
     StringBuilder coreQueryBuilder = new StringBuilder();
     switch (lifecycleEvent) {
       case LifecycleEventType.APPROVED:
@@ -445,23 +466,5 @@ public class LifecycleQueryFactory {
         .then(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES), Rdf.iri(instance));
     GraphPatternNotTriples filterClause = QueryResource.genFilterExists(pattern, exists);
     query.append(filterClause.getQueryString());
-  }
-
-  /**
-   * Gets the template query for regular schedules.
-   */
-  private String getScheduleTemplate() {
-    return "?iri " + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH
-        + "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule> ?schedule."
-        + "?schedule <https://www.omg.org/spec/Commons/DatesAndTimes/hasStartDate>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> "
-        + QueryResource.genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY).getQueryString() + ";"
-        + "<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimePeriod>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasStart>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue> "
-        + QueryResource.genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY).getQueryString() + ";"
-        + "<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimePeriod>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndTime>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue> "
-        + QueryResource.genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY).getQueryString() + ShaclResource.FULL_STOP
-        + "OPTIONAL{?schedule ^<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndDate>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> "
-        + QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY).getQueryString() + ".}"
-        + "OPTIONAL{?schedule <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?"
-        + LifecycleResource.SCHEDULE_RECURRENCE_KEY + ".}";
   }
 }
