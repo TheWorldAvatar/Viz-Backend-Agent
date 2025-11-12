@@ -33,6 +33,7 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
@@ -209,18 +210,21 @@ public class GetService {
    * @param filters    Mappings between filter fields and their values.
    */
   public int getCount(String resourceID, Map<String, String> filters) {
-    return this.getCount(resourceID, "", filters);
+    return this.getCount(resourceID, new HashMap<>(), filters);
   }
 
   /**
    * Retrieves the number of instances belonging to the resource.
    * 
-   * @param resourceID         Target resource identifier for the instance class.
-   * @param addQueryStatements Additional query statements to be added.
-   * @param filters            Mappings between filter fields and their values.
+   * @param resourceID              Target resource identifier for the instance
+   *                                class.
+   * @param queryStatementsMappings Additional query statements to be added if
+   *                                any.
+   * @param filters                 Mappings between filter fields and their
+   *                                values.
    */
-  public int getCount(String resourceID, String addQueryStatements, Map<String, String> filters) {
-    Queue<String> ids = this.getAllIds(resourceID, addQueryStatements,
+  public int getCount(String resourceID, Map<String, String> queryStatementsMappings, Map<String, String> filters) {
+    Queue<String> ids = this.getAllIds(resourceID, queryStatementsMappings,
         new PaginationState(0, null, "-id", filters));
     return ids.size();
   }
@@ -228,17 +232,26 @@ public class GetService {
   /**
    * Retrieve all IDs associated with the target replacement.
    * 
-   * @param resourceID         Target resource identifier for the instance class.
-   * @param addQueryStatements Additional query statements to be added if any.
-   * @param pagination         Optional state containing the current page and
-   *                           limit.
+   * @param resourceID    Target resource identifier for the instance class.
+   * @param queryMappings Additional query statements to be added if any.
+   * @param pagination    Optional state containing the current page and limit.
    */
-  public Queue<String> getAllIds(String resourceID, String addQueryStatements, PaginationState pagination) {
+  public Queue<String> getAllIds(String resourceID, Map<String, String> queryMappings,
+      PaginationState pagination) {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    String additionalStatements = addQueryStatements
-        + this.getQueryStatementsForTargetFields(iri, pagination.sortedFields(), pagination.filters());
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements, pagination,
+    StringBuilder addStatementBuilder = new StringBuilder();
+    addStatementBuilder.append(this.getQueryStatementsForTargetFields(iri, pagination.sortedFields(),
+        pagination.filters()));
+    queryMappings.forEach((field, statements) -> {
+      if (field.equals(LifecycleResource.LIFECYCLE_RESOURCE)) {
+        addStatementBuilder.append(statements);
+      } else if (pagination.filters().containsKey(field)) {
+        QueryResource.genFilterStatements(statements, field, pagination.filters().get(field), addStatementBuilder);
+      }
+    });
+    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatementBuilder.toString(),
+        pagination,
         true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> binding.getFieldValue(QueryResource.ID_KEY))
@@ -249,27 +262,37 @@ public class GetService {
    * Retrieve all filter options associated with the resource and the target
    * field.
    * 
-   * @param resourceID         Target resource identifier for the instance class.
-   * @param field              The field of interest.
-   * @param addQueryStatements Additional query statements to be added if any.
-   * @param search             String subset to narrow filter scope.
-   * @param filters            Optional additional filters.
+   * @param resourceID    Target resource identifier for the instance class.
+   * @param field         The field of interest.
+   * @param queryMappings Additional query statements to be added if any.
+   * @param search        String subset to narrow filter scope.
+   * @param filters       Optional additional filters.
    */
-  public List<String> getAllFilterOptions(String resourceID, String field, String addQueryStatements, String search,
-      Map<String, String> filters) {
+  public List<String> getAllFilterOptions(String resourceID, String field, Map<String, String> queryMappings,
+      String search, Map<String, String> filters) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
     Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters);
     parsedFilters.remove(field);
-    String additionalStatements = addQueryStatements
-        // Requires the use of OPTIONAL query (typically used with sorting) to retrive
-        // possible blanks for filter options
-        + this.getQueryStatementsForTargetFields(iri, Set.of(field), parsedFilters);
+    StringBuilder addStatementBuilder = new StringBuilder();
+    // Requires the use of OPTIONAL query (typically used with sorting) to retrive
+    // possible blanks for filter options
+    addStatementBuilder.append(this.getQueryStatementsForTargetFields(iri, Set.of(field), parsedFilters));
+    queryMappings.forEach((fieldKey, statements) -> {
+      if (fieldKey.equals(LifecycleResource.LIFECYCLE_RESOURCE) || field.equals(fieldKey)) {
+        addStatementBuilder.append(statements);
+      } else if (parsedFilters.containsKey(fieldKey)) {
+        QueryResource.genFilterStatements(statements, fieldKey, parsedFilters.get(fieldKey), addStatementBuilder);
+      }
+    });
     if (search != null && !search.isBlank()) {
-      additionalStatements += "FILTER(CONTAINS(LCASE(" + QueryResource.genVariable(field).getQueryString() + ") ,\""
-          + search + "\"))";
+      addStatementBuilder.append("FILTER(CONTAINS(LCASE(")
+          .append(QueryResource.genVariable(field).getQueryString())
+          .append(") ,\"")
+          .append(search)
+          .append("\"))");
     }
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements,
+    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatementBuilder.toString(),
         new PaginationState(0, 21, "+" + field, new HashMap<>()), false);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> binding.getFieldValue(field))
@@ -315,7 +338,7 @@ public class GetService {
       PaginationState pagination) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
-    Queue<String> ids = this.getAllIds(resourceID, "", pagination);
+    Queue<String> ids = this.getAllIds(resourceID, new HashMap<>(), pagination);
     if (ids.isEmpty()) {
       return new ArrayDeque<>();
     }
@@ -442,29 +465,7 @@ public class GetService {
       String clause = this.queryTemplateService.genWhereClause(queryParts)
           .replaceAll("\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
       Set<String> filterValues = filters.get(key);
-      // When there are null filter values, the user has requested for blank values,
-      // and this should be excluded from the query via a MINUS clause
-      if (filterValues.contains(QueryResource.NULL_KEY)) {
-        String minusStatement = QueryResource.minus(clause);
-        // If there is only one null filter, this should merely be a MINUS clause
-        if (filterValues.size() == 1) {
-          filterStatementBuilder.append(minusStatement);
-        } else {
-          // When there are multiple filters, MINUS and default clause with values should
-          // be provided; Remove the null key before generating the VALUES clause
-          filterValues.remove(QueryResource.NULL_KEY);
-          String valuesClause = QueryResource.values(key, filterValues);
-          filterStatementBuilder.append(QueryResource.union(minusStatement, clause + valuesClause));
-        }
-      } else {
-        // For default filters, add clause to restrict them
-        // But only add VALUES if they are available
-        filterStatementBuilder.append(clause);
-        if (!filterValues.isEmpty()) {
-          String valuesClause = QueryResource.values(key, filterValues);
-          filterStatementBuilder.append(valuesClause);
-        }
-      }
+      QueryResource.genFilterStatements(clause, key, filterValues, filterStatementBuilder);
     });
     return filterStatementBuilder.toString() + sortStatementBuilder.toString();
   }

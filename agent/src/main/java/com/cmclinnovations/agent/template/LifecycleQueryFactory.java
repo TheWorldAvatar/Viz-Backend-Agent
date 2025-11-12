@@ -1,5 +1,8 @@
 package com.cmclinnovations.agent.template;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
@@ -102,15 +105,9 @@ public class LifecycleQueryFactory {
    * @param endDate   Target end date in YYYY-MM-DD format.
    * @param isClosed  Indicates if task has been closed or not.
    */
-  public String getServiceTasksFilter(String startDate, String endDate, boolean isClosed) {
+  public Map<String, String> getServiceTasksFilter(String startDate, String endDate, boolean isClosed) {
     String eventDateVar = QueryResource.genVariable(LifecycleResource.DATE_KEY).getQueryString();
-    String filterDateStatement = "";
-    // For outstanding tasks, start dates are omitted
-    if (!startDate.isEmpty()) {
-      filterDateStatement = "xsd:date(" + eventDateVar + ")>=\"" + startDate + "\"^^xsd:date && ";
-    }
-    filterDateStatement = "FILTER(" + filterDateStatement + "xsd:date(" + eventDateVar + ")<=\"" + endDate
-        + "\"^^xsd:date)";
+    Map<String, String> results = new HashMap<>();
     String minusEventStatements = "";
     if (isClosed) {
       minusEventStatements += this.genMinusEventClause(QueryResource.IRI_VAR, LifecycleEventType.SERVICE_ORDER_RECEIVED)
@@ -135,17 +132,27 @@ public class LifecycleQueryFactory {
           false)
           .getQueryString();
     }
-    return "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
-        + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
-        + "<https://www.omg.org/spec/Commons/Collections/comprises> " + QueryResource.IRI_VAR.getQueryString() + "."
-        + QueryResource.IRI_VAR.getQueryString()
+    results.put(LifecycleResource.LIFECYCLE_RESOURCE,
+        "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
+            + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
+            + "<https://www.omg.org/spec/Commons/Collections/comprises> " + QueryResource.IRI_VAR.getQueryString() + "."
+            // Event must be the last in the chain ie no other events will succeed it
+            + "MINUS{" + QueryResource.IRI_VAR.getQueryString()
+            + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}"
+            + minusEventStatements);
+    // Generate date query
+    String filterDateStatement = "";
+    // For outstanding tasks, start dates are omitted
+    if (!startDate.isEmpty()) {
+      filterDateStatement = "xsd:date(" + eventDateVar + ")>=\"" + startDate + "\"^^xsd:date && ";
+    }
+    filterDateStatement = "FILTER(" + filterDateStatement + "xsd:date(" + eventDateVar + ")<=\"" + endDate
+        + "\"^^xsd:date)";
+    results.put(LifecycleResource.DATE_KEY, QueryResource.IRI_VAR.getQueryString()
         + " <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
         + eventDateVar + "."
-        + filterDateStatement
-        // Event must be the last in the chain ie no other events will succeed it
-        + "MINUS{" + QueryResource.IRI_VAR.getQueryString()
-        + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}"
-        + minusEventStatements;
+        + filterDateStatement);
+    return results;
   }
 
   /**
@@ -169,7 +176,7 @@ public class LifecycleQueryFactory {
    * @param endDate   Target end date in YYYY-MM-DD format. Optional if null is
    *                  passed.
    */
-  public String getServiceTasksQuery(String contract, String startDate, String endDate) {
+  public Map<String, String> getServiceTasksQuery(String contract, String startDate, String endDate) {
     String eventDateVar = QueryResource.genVariable(LifecycleResource.DATE_KEY).getQueryString();
     String eventDatePlaceholderVar = QueryResource.genVariable("event_date").getQueryString();
     String eventVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY).getQueryString();
@@ -177,7 +184,24 @@ public class LifecycleQueryFactory {
     String eventStatusVar = QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY).getQueryString();
     String lastModifiedVar = QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY).getQueryString();
 
+    Map<String, String> results = new HashMap<>();
     String filterContractStatement = contract != null ? "?iri dc-terms:identifier \"" + contract + "\"." : "";
+
+    results.put(LifecycleResource.LIFECYCLE_RESOURCE,
+        "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
+            + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
+            + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
+            + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
+            + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+            + Rdf.iri(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString() + "."
+            + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+            + eventVar + ";"
+            + "<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
+            + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar
+            + "}"
+            + filterContractStatement
+            // Event must be the last in the chain ie no other events will succeed it
+            + "MINUS{" + eventIdVar + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}");
     // Filter dates
     String filterDateStatement = "";
     if (contract == null && endDate != null) {
@@ -188,30 +212,21 @@ public class LifecycleQueryFactory {
       filterDateStatement = "FILTER(" + filterDateStatement + eventDateVar + "<=\"" + endDate
           + "\"^^xsd:date)";
     }
-    return "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
-        + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
-        + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
-        + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
-        + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
-        + eventDatePlaceholderVar
-        + ";<https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
-        + Rdf.iri(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString() + "."
-        + "BIND(xsd:date(" + eventDatePlaceholderVar + ") AS " + eventDateVar + ")"
-        + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
-        + eventVar + ";"
+    results.put(LifecycleResource.DATE_KEY,
+        "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
+            + eventDatePlaceholderVar
+            + ". BIND(xsd:date(" + eventDatePlaceholderVar + ") AS " + eventDateVar + ")"
+            + filterDateStatement);
+    results.put(LifecycleResource.LAST_MODIFIED_KEY, eventIdVar
         + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
-        + lastModifiedVar
-        + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
-        + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar + "}"
-        + "OPTIONAL{?iri " + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
+        + lastModifiedVar);
+    results.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, "OPTIONAL{?iri "
+        + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
         "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?recurrences.}"
         + "BIND(IF(BOUND(?recurrences),?recurrences,\"\") AS "
         + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString()
-        + ")"
-        + filterDateStatement
-        + filterContractStatement
-        // Event must be the last in the chain ie no other events will succeed it
-        + "MINUS{" + eventIdVar + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}";
+        + ")");
+    return results;
   }
 
   /**
@@ -321,10 +336,12 @@ public class LifecycleQueryFactory {
    * 
    * @param lifecycleEvent Target event for filter.
    */
-  public String genLifecycleFilterStatements(LifecycleEventType lifecycleEvent) {
-    StringBuilder query = new StringBuilder();
+  public Map<String, String> genLifecycleFilterStatements(LifecycleEventType lifecycleEvent) {
+    Map<String, String> statementMappings = new HashMap<>();
+    // Generate schedule related mappings
+    StringBuilder scheduleBuilder = new StringBuilder();
     String recurrenceVar = QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getQueryString();
-    query.append(this.getScheduleTemplate())
+    scheduleBuilder.append(this.getScheduleTemplate())
         .append("BIND(IF(BOUND(")
         .append(recurrenceVar)
         .append("),")
@@ -332,34 +349,41 @@ public class LifecycleQueryFactory {
         .append(",\"\") AS ")
         .append(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).getQueryString())
         .append(")");
+    statementMappings.put(LifecycleResource.SCHEDULE_RESOURCE, scheduleBuilder.toString());
+    StringBuilder coreQueryBuilder = new StringBuilder();
     switch (lifecycleEvent) {
       case LifecycleEventType.APPROVED:
         Variable creationVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY);
+        // Add last modified statement separately
+        statementMappings.put(LifecycleResource.LAST_MODIFIED_KEY, creationVar
+            .has(QueryResource.FIBO_FND_DT_OC_HAS_EVENT_DATE,
+                QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY))
+            .getQueryString());
+        // Continue with required lifecycle statements
         String creationStatement = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
             .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE)
             .then(QueryResource.CMNS_COL_COMPRISES), creationVar).getQueryString();
         String creationEventStatement = creationVar
             .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, QueryResource.ONTOSERVICE.iri("ContractCreation"))
-            .andHas(QueryResource.FIBO_FND_DT_OC_HAS_EVENT_DATE,
-                QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY))
             .andHas(p -> p.pred(QueryResource.CMNS_DSG_DESCRIBES).then(RDFS.LABEL),
                 QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)))
             .getQueryString();
-        query.append(creationStatement).append(creationEventStatement);
-        this.appendFilterExists(query, false, LifecycleResource.EVENT_APPROVAL);
+        coreQueryBuilder.append(creationStatement).append(creationEventStatement);
+        this.appendFilterExists(coreQueryBuilder, false, LifecycleResource.EVENT_APPROVAL);
         break;
       case LifecycleEventType.ACTIVE_SERVICE:
-        this.appendFilterExists(query, true, LifecycleResource.EVENT_APPROVAL);
-        this.appendArchivedFilterExists(query, false);
+        this.appendFilterExists(coreQueryBuilder, true, LifecycleResource.EVENT_APPROVAL);
+        this.appendArchivedFilterExists(coreQueryBuilder, false);
         break;
       case LifecycleEventType.ARCHIVE_COMPLETION:
-        this.appendArchivedStateQuery(query);
+        this.appendArchivedStateQuery(coreQueryBuilder);
         break;
       default:
         // Do nothing if it doesnt meet the above events
         break;
     }
-    return query.toString();
+    statementMappings.put(LifecycleResource.LIFECYCLE_RESOURCE, coreQueryBuilder.toString());
+    return statementMappings;
   }
 
   /**

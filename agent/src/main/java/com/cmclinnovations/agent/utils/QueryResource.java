@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.utils;
 
 import java.util.Collection;
+import java.util.Set;
 
 import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expression;
@@ -177,11 +178,15 @@ public class QueryResource {
     }
 
     /**
-     * Wraps the query statements into an OPTIONAL clause.
+     * Wraps the query statements into an OPTIONAL clause. Clause will not be
+     * appended if no statements are given.
      * 
-     * @param queryStatements Query statements to be added to minus.
+     * @param queryStatements Query statements to be added.
      */
     public static String optional(String queryStatements) {
+        if (queryStatements.isEmpty()) {
+            return queryStatements;
+        }
         return "OPTIONAL{" + queryStatements + "}";
     }
 
@@ -218,6 +223,42 @@ public class QueryResource {
         });
         valuesBuilder.append("}");
         return valuesBuilder.toString();
+    }
+
+    /**
+     * Generates query statements for filtering targets based on the filters if
+     * available.
+     * 
+     * @param query   The query to be added.
+     * @param field   The field of interest.
+     * @param filters The list of filter values to target by.
+     * @param builder Stores the output.
+     */
+    public static void genFilterStatements(String query, String field, Set<String> filters, StringBuilder builder) {
+        // When there are null filter values, the user has requested for blank values,
+        // and this should be excluded from the query via a MINUS clause
+        if (filters.contains(QueryResource.NULL_KEY)) {
+            String minusStatement = QueryResource.minus(query);
+            // If there is only one null filter, this should merely be a MINUS clause
+            if (filters.size() == 1) {
+                builder.append(minusStatement);
+            } else {
+                // When there are multiple filters, MINUS and default clause with values should
+                // be provided; Remove the null key before generating the VALUES clause
+                filters.remove(QueryResource.NULL_KEY);
+                String valuesClause = QueryResource.values(field, filters);
+                builder
+                        .append(QueryResource.union(minusStatement, query + valuesClause));
+            }
+        } else {
+            // For default filters, add clause to restrict them
+            // But only add VALUES if they are available
+            builder.append(query);
+            if (!filters.isEmpty()) {
+                String valuesClause = QueryResource.values(field, filters);
+                builder.append(valuesClause);
+            }
+        }
     }
 
     /**

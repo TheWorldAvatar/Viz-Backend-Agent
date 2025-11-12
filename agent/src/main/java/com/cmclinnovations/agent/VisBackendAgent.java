@@ -162,7 +162,8 @@ public class VisBackendAgent {
     String search = allRequestParams.getOrDefault(StringResource.SEARCH_REQUEST_PARAM, "");
     allRequestParams.remove(StringResource.SEARCH_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      List<String> options = this.getService.getAllFilterOptions(type, field, "", search, allRequestParams);
+      List<String> options = this.getService.getAllFilterOptions(type, field, new HashMap<>(), search,
+          allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }
