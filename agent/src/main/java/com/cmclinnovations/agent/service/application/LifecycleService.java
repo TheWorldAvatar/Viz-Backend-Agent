@@ -196,7 +196,11 @@ public class LifecycleService {
       String endTimestamp, boolean isClosed, Map<String, String> filters) {
     String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
     Map<String, String> queryMappings = this.lifecycleQueryFactory.getServiceTasksQuery(null,
-        targetStartEndDates[0], targetStartEndDates[1]);
+        targetStartEndDates[0], targetStartEndDates[1], isClosed);
+    String originalField = LocalisationResource.parseTranslationToOriginal(field, false);
+    Map<String, Set<String>> targetFields = new HashMap<>();
+    targetFields.put(field, new HashSet<>());
+
     String additionalStatements = "";
     String completionEventStatus;
     // Add filter clause to narrow down the search for tasks of certain types
@@ -208,6 +212,17 @@ public class LifecycleService {
           .genMinusEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_ORDER_DISPATCHED)
           .getQueryString();
       completionEventStatus = LifecycleResource.EVENT_PENDING_STATUS;
+      // Only closed tasks will have the associated closed task parameters
+      // that should be wrapped in optional
+      additionalStatements += QueryResource
+          .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
+              new HashSet<>(), targetFields));
+      additionalStatements += QueryResource
+          .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,
+              new HashSet<>(), targetFields));
+      additionalStatements += QueryResource
+          .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
+              new HashSet<>(), targetFields));
     } else {
       additionalStatements += this.lifecycleQueryFactory
           .genMinusEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_INCIDENT_REPORT)
@@ -224,21 +239,9 @@ public class LifecycleService {
         .andHas(QueryResource.CMNS_DSG_DESCRIBES, Rdf.iri(completionEventStatus)),
         false)
         .getQueryString();
-    String originalField = LocalisationResource.parseTranslationToOriginal(field, false);
-    Map<String, Set<String>> targetFields = new HashMap<>();
-    targetFields.put(field, new HashSet<>());
-    // Wrap an optional clause around each different type of event
+    // Dispatch parameters will always be present
     additionalStatements += QueryResource
         .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-            new HashSet<>(), targetFields));
-    additionalStatements += QueryResource
-        .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
-            new HashSet<>(), targetFields));
-    additionalStatements += QueryResource
-        .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,
-            new HashSet<>(), targetFields));
-    additionalStatements += QueryResource
-        .optional(this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
             new HashSet<>(), targetFields));
     // Update lifecycle query statements accordingly
     queryMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
@@ -321,7 +324,8 @@ public class LifecycleService {
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String contract, String entityType,
       PaginationState pagination) {
-    Map<String, String> activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(contract, null, null);
+    Map<String, String> activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(contract, null, null,
+        null);
     List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, null,
         pagination);
     LOGGER.info("Successfuly retrieved all associated services!");
@@ -342,8 +346,7 @@ public class LifecycleService {
       String entityType, boolean isClosed, PaginationState pagination) {
     String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
     Map<String, String> activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null,
-        targetStartEndDates[0],
-        targetStartEndDates[1]);
+        targetStartEndDates[0], targetStartEndDates[1], isClosed);
     List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, isClosed,
         pagination);
     LOGGER.info("Successfuly retrieved tasks!");
@@ -363,12 +366,15 @@ public class LifecycleService {
     // Retrieve query statements that matches any sort or filter criteria
     String addFilterQueries = this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
         pagination.sortedFields(), pagination.filters());
-    addFilterQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
-        pagination.sortedFields(), pagination.filters());
-    addFilterQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,
-        pagination.sortedFields(), pagination.filters());
-    addFilterQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
-        pagination.sortedFields(), pagination.filters());
+    // Non-closed tasks should not have the closed related statements
+    if (isClosed) {
+      addFilterQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
+          pagination.sortedFields(), pagination.filters());
+      addFilterQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,
+          pagination.sortedFields(), pagination.filters());
+      addFilterQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
+          pagination.sortedFields(), pagination.filters());
+    }
     // Update lifecycle statements accordingly
     queryMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
         queryMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + addFilterQueries);
@@ -376,36 +382,15 @@ public class LifecycleService {
     Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = queryMappings.values().stream().collect(Collectors.joining("\n"));
     addQuery += this.parseEventOccurrenceQuery(-4, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
-    addQuery += this.parseEventOccurrenceQuery(-3, LifecycleEventType.SERVICE_EXECUTION, varSequences);
-    addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_CANCELLATION, varSequences);
-    addQuery += this.parseEventOccurrenceQuery(-1, LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
+    if (isClosed) {
+      addQuery += this.parseEventOccurrenceQuery(-3, LifecycleEventType.SERVICE_EXECUTION, varSequences);
+      addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_CANCELLATION, varSequences);
+      addQuery += this.parseEventOccurrenceQuery(-1, LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
+    }
     Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, ids, addQuery, varSequences);
     return results.stream()
-        .filter(binding -> {
-          // If filter is not required, break early
-          if (isClosed == null) {
-            return false;
-          }
-          String eventType = binding.getFieldValue(LifecycleResource.EVENT_KEY);
-          String eventStatus = binding.getFieldValue(LifecycleResource.EVENT_STATUS_KEY);
-          // Verify if event matches closed or open state
-          if (isClosed) {
-            // When event is delivery and has completed status, it is closed
-            return (eventType.equals(LifecycleResource.EVENT_DELIVERY)
-                && LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS.equals(eventStatus)) ||
-                eventType.equals(LifecycleResource.EVENT_CANCELLATION) ||
-                eventType.equals(LifecycleResource.EVENT_INCIDENT_REPORT);
-          } else {
-            // When event is delivery and has pending status, it is still open for changes
-            return (eventType.equals(LifecycleResource.EVENT_DELIVERY)
-                && LifecycleResource.EVENT_PENDING_STATUS.equals(eventStatus)) ||
-                eventType.equals(LifecycleResource.EVENT_DISPATCH) ||
-                eventType.equals(LifecycleResource.EVENT_ORDER_RECEIVED);
-          }
-        })
         .map(binding -> {
           String eventStatus = binding.getFieldValue(LifecycleResource.EVENT_STATUS_KEY);
-
           return (Map<String, Object>) binding.get().entrySet().stream()
               .filter(entry -> !entry.getKey()
                   .equals(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY).getVarName()))
