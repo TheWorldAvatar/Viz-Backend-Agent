@@ -2,6 +2,8 @@ package com.cmclinnovations.agent.template;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -38,15 +40,15 @@ public class LifecycleQueryFactoryTest {
     private static Stream<Arguments> provideParametersForLifecycleFilterStatements() {
         return Stream.of(
                 Arguments.of(LifecycleEventType.APPROVED,
-                        EXPECTED_SCHEDULE_TEMPLATE
-                                + "?iri fibo-fnd-arr-lif:hasLifecycle / fibo-fnd-arr-lif:hasStage / cmns-col:comprises ?event .?event fibo-fnd-rel-rel:exemplifies ontoservice:ContractCreation ;    fibo-fnd-dt-oc:hasEventDate ?lastModified ;    cmns-dsg:describes / <http://www.w3.org/2000/01/rdf-schema#label> ?status ."
-                                + "MINUS { ?iri fibo-fnd-arr-lif:hasLifecycle / fibo-fnd-arr-lif:hasStage / cmns-col:comprises / fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/ContractApproval> . }"),
+                        "?iri fibo-fnd-arr-lif:hasLifecycle / fibo-fnd-arr-lif:hasStage / cmns-col:comprises ?event .?event fibo-fnd-rel-rel:exemplifies ontoservice:ContractCreation ;    cmns-dsg:describes / <http://www.w3.org/2000/01/rdf-schema#label> ?status ."
+                                + "MINUS { ?iri fibo-fnd-arr-lif:hasLifecycle / fibo-fnd-arr-lif:hasStage / cmns-col:comprises / fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/ContractApproval> . }"
+                                + EXPECTED_SCHEDULE_TEMPLATE
+                                + "?event fibo-fnd-dt-oc:hasEventDate ?lastModified ."),
                 Arguments.of(LifecycleEventType.SERVICE_EXECUTION,
-                        EXPECTED_SCHEDULE_TEMPLATE
-                                + "FILTER EXISTS { ?iri fibo-fnd-arr-lif:hasLifecycle / fibo-fnd-arr-lif:hasStage / cmns-col:comprises / fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/ContractApproval> . }MINUS { ?iri fibo-fnd-arr-lif:hasLifecycle / fibo-fnd-arr-lif:hasStage ?stage_archived ;    fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/ExpirationStage> ;    cmns-col:comprises ?event . }"),
+                        EXPECTED_SCHEDULE_TEMPLATE),
                 Arguments.of(LifecycleEventType.ARCHIVE_COMPLETION,
-                        EXPECTED_SCHEDULE_TEMPLATE
-                                + "?iri fibo-fnd-arr-lif:hasLifecycle / fibo-fnd-arr-lif:hasStage / cmns-col:comprises / fibo-fnd-rel-rel:exemplifies ?event .BIND(IF(?event=<https://www.theworldavatar.com/kg/ontoservice/ContractDischarge>,\"Completed\",IF(?event=<https://www.theworldavatar.com/kg/ontoservice/ContractRescission>,\"Rescinded\",IF(?event=<https://www.theworldavatar.com/kg/ontoservice/ContractTermination>,\"Terminated\",\"Unknown\"))) AS ?status)FILTER(?status!=\"Unknown\")"),
+                        "?iri fibo-fnd-arr-lif:hasLifecycle / fibo-fnd-arr-lif:hasStage / cmns-col:comprises / fibo-fnd-rel-rel:exemplifies ?event .BIND(IF(?event=<https://www.theworldavatar.com/kg/ontoservice/ContractDischarge>,\"Completed\",IF(?event=<https://www.theworldavatar.com/kg/ontoservice/ContractRescission>,\"Rescinded\",IF(?event=<https://www.theworldavatar.com/kg/ontoservice/ContractTermination>,\"Terminated\",\"Unknown\"))) AS ?status)FILTER(?status!=\"Unknown\")"
+                                + EXPECTED_SCHEDULE_TEMPLATE),
                 Arguments.of(LifecycleEventType.SERVICE_ORDER_RECEIVED, EXPECTED_SCHEDULE_TEMPLATE));
     }
 
@@ -59,7 +61,7 @@ public class LifecycleQueryFactoryTest {
                     .thenReturn("status");
         }
 
-        String query = SAMPLE_FACTORY.genLifecycleFilterStatements(eventType);
-        assertEquals(expected, query.replace("\n", ""));
+        Map<String, String> query = SAMPLE_FACTORY.genLifecycleFilterStatements(eventType);
+        assertEquals(expected, query.values().stream().collect(Collectors.joining("")).replace("\n", ""));
     }
 }
