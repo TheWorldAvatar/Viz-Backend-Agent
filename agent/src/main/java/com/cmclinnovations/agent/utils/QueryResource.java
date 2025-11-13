@@ -1,7 +1,10 @@
 package com.cmclinnovations.agent.utils;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expression;
@@ -19,6 +22,8 @@ import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+
+import com.cmclinnovations.agent.component.LocalisationTranslator;
 
 public class QueryResource {
     public static final Prefix CMNS_COL = genPrefix("cmns-col", "https://www.omg.org/spec/Commons/Collections/");
@@ -247,28 +252,65 @@ public class QueryResource {
      * @param builder Stores the output.
      */
     public static void genFilterStatements(String query, String field, Set<String> filters, StringBuilder builder) {
-        // When there are null filter values, the user has requested for blank values,
-        // and this should be excluded from the query via a MINUS clause
-        if (filters.contains(QueryResource.NULL_KEY)) {
-            String minusStatement = QueryResource.minus(query);
-            // If there is only one null filter, this should merely be a MINUS clause
-            if (filters.size() == 1) {
-                builder.append(minusStatement);
+        // Special parsing for recurrence/schedule type
+        if (field.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
+            builder.append(query); // Append general query
+            boolean hasRegularService = filters.stream()
+                    .anyMatch(scheduleType -> scheduleType.substring(1, scheduleType.length() - 1).equals(
+                            LocalisationTranslator.getMessage(LocalisationResource.LABEL_REGULAR_SERVICE_KEY)));
+            Set<String> parsedFilters = filters.stream()
+                    // Filter out regular service
+                    .filter(scheduleType -> !scheduleType.substring(1, scheduleType.length() - 1).equals(
+                            LocalisationTranslator.getMessage(LocalisationResource.LABEL_REGULAR_SERVICE_KEY)))
+                    .map(scheduleType -> {
+                        String scheduleTypeContent = scheduleType.substring(1, scheduleType.length() - 1);
+                        if (scheduleTypeContent.equals(
+                                LocalisationTranslator.getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY))) {
+                            return LifecycleResource.EMPTY_STRING;
+                        } else if (scheduleTypeContent
+                                .equals(LocalisationTranslator
+                                        .getMessage(LocalisationResource.LABEL_SINGLE_SERVICE_KEY))) {
+                            return LifecycleResource.RECURRENCE_DAILY_TASK_STRING;
+                        } else if (scheduleTypeContent.equals(
+                                LocalisationTranslator
+                                        .getMessage(LocalisationResource.LABEL_ALTERNATE_DAY_SERVICE_KEY))) {
+                            return LifecycleResource.RECURRENCE_ALT_DAY_TASK_STRING;
+                        }
+                        return scheduleType;
+                    }).collect(Collectors.toSet());
+            if (hasRegularService) {
+                // Remove the negation if the filter is present
+                Map<String, String> negationMappings = new HashMap<>(LifecycleResource.NEGATE_RECURRENCE_MAP);
+                parsedFilters.forEach(filter -> negationMappings.remove(filter));
+                builder.append("FILTER(").append(negationMappings.values().stream().collect(Collectors.joining("&&")))
+                        .append(")");
             } else {
-                // When there are multiple filters, MINUS and default clause with values should
-                // be provided; Remove the null key before generating the VALUES clause
-                filters.remove(QueryResource.NULL_KEY);
-                String valuesClause = QueryResource.values(field, filters);
-                builder
-                        .append(QueryResource.union(minusStatement, query + valuesClause));
+                String valuesClause = QueryResource.values(field, parsedFilters);
+                builder.append(valuesClause);
             }
         } else {
-            // For default filters, add clause to restrict them
-            // But only add VALUES if they are available
-            builder.append(query);
-            if (!filters.isEmpty()) {
-                String valuesClause = QueryResource.values(field, filters);
-                builder.append(valuesClause);
+            // When there are null filter values, the user has requested for blank values,
+            // and this should be excluded from the query via a MINUS clause
+            if (filters.contains(QueryResource.NULL_KEY)) {
+                String minusStatement = QueryResource.minus(query);
+                // If there is only one null filter, this should merely be a MINUS clause
+                if (filters.size() == 1) {
+                    builder.append(minusStatement);
+                } else {
+                    // When there are multiple filters, MINUS and default clause with values should
+                    // be provided; Remove the null key before generating the VALUES clause
+                    filters.remove(QueryResource.NULL_KEY);
+                    String valuesClause = QueryResource.values(field, filters);
+                    builder.append(QueryResource.union(minusStatement, query + valuesClause));
+                }
+            } else {
+                // For default filters, add clause to restrict them
+                // But only add VALUES if they are available
+                builder.append(query);
+                if (!filters.isEmpty()) {
+                    String valuesClause = QueryResource.values(field, filters);
+                    builder.append(valuesClause);
+                }
             }
         }
     }

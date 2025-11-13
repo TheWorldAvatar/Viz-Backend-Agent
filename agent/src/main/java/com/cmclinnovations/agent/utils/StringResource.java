@@ -138,13 +138,14 @@ public class StringResource {
   /**
    * Parses the filters given in request parameters to readable format.
    * 
-   * @param filters Filters provided in the request parameters.
+   * @param filters    Filters provided in the request parameters.
+   * @param isContract Indicates if it is a contract or task otherwise.
    */
-  public static Map<String, Set<String>> parseFilters(Map<String, String> filters) {
+  public static Map<String, Set<String>> parseFilters(Map<String, String> filters, Boolean isContract) {
     return filters.entrySet()
         .stream()
         .map(entry -> Map.entry(
-            entry.getKey(),
+            LocalisationResource.parseTranslationToOriginal(entry.getKey(), isContract),
             Arrays.stream(entry.getValue().split("\\|"))
                 .map(string -> string.equals(QueryResource.NULL_KEY) ? string
                     : "\"" + string.trim() + "\"")

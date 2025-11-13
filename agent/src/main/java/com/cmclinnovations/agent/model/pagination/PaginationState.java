@@ -46,7 +46,7 @@ public class PaginationState {
                 .map(match -> match.group(2))
                 .collect(Collectors.toCollection(HashSet::new));
         this.sortedDirectives = this.parseSortDirectives(sortBy, isContract);
-        this.filters = StringResource.parseFilters(filters);
+        this.filters = StringResource.parseFilters(filters, isContract);
     }
 
     public Integer limit() {

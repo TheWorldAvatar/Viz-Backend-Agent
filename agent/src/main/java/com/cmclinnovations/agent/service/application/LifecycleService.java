@@ -73,8 +73,7 @@ public class LifecycleService {
     this.lifecycleVarSequence.put(QueryResource.SCHEDULE_START_TIME_VAR, List.of(2, 2));
     this.lifecycleVarSequence.put(QueryResource.SCHEDULE_END_TIME_VAR, List.of(2, 3));
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY), List.of(2, 4));
-    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY),
-        List.of(2, 5));
+    this.lifecycleVarSequence.put(QueryResource.SCHEDULE_RECURRENCE_VAR, List.of(2, 5));
 
     Integer MIN_INDEX = -5;
 
@@ -164,7 +163,7 @@ public class LifecycleService {
     Map<String, String> extendedLifecycleStatements = this.lifecycleQueryFactory
         .insertExtendedScheduleFilters(lifecycleStatements);
     return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(resourceID, extendedLifecycleStatements, filters)));
+        String.valueOf(this.getService.getCount(resourceID, extendedLifecycleStatements, filters, true)));
   }
 
   /**
@@ -183,7 +182,13 @@ public class LifecycleService {
     Map<String, String> extendedLifecycleStatements = this.lifecycleQueryFactory
         .insertExtendedScheduleFilters(lifecycleStatements);
     String originalField = LocalisationResource.parseTranslationToOriginal(field, true);
-    return this.getService.getAllFilterOptions(resourceID, originalField, extendedLifecycleStatements, search, filters);
+    List<String> options = this.getService.getAllFilterOptions(resourceID, originalField, extendedLifecycleStatements,
+        search, filters, true);
+    if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
+      return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();
+    }
+    return options;
+
   }
 
   /**
@@ -225,7 +230,7 @@ public class LifecycleService {
     // Update lifecycle query statements accordingly
     queryMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
         queryMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + additionalStatements);
-    return this.getService.getAllFilterOptions(resourceID, originalField, queryMappings, search, filters);
+    return this.getService.getAllFilterOptions(resourceID, originalField, queryMappings, search, filters, false);
   }
 
   /**
@@ -258,7 +263,7 @@ public class LifecycleService {
           return (Map<String, Object>) binding.get().entrySet().stream()
               .map(entry -> {
                 // Replace recurrence with schedule type
-                if (entry.getKey().equals(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY)) {
+                if (entry.getKey().equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
                   SparqlResponseField recurrence = TypeCastUtils.castToObject(entry.getValue(),
                       SparqlResponseField.class);
                   return new AbstractMap.SimpleEntry<>(
@@ -293,7 +298,8 @@ public class LifecycleService {
         targetStartEndDates[1], isClosed);
     return this.responseEntityBuilder.success(null,
         String.valueOf(
-            this.getService.getCount(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, additionalFilters, filters)));
+            this.getService.getCount(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, additionalFilters, filters,
+                false)));
   }
 
   /**
@@ -472,9 +478,9 @@ public class LifecycleService {
     Queue<String> occurrences = new ArrayDeque<>();
     // Extract date of occurrences based on the schedule information
     // For perpetual and single time schedules, simply add the start date
-    if (recurrence == null || recurrence.equals("P1D")) {
+    if (recurrence == null || recurrence.equals(LifecycleResource.RECURRENCE_DAILY_TASK)) {
       occurrences.offer(this.dateTimeService.getDateTimeFromDate(startDate));
-    } else if (recurrence.equals("P2D")) {
+    } else if (recurrence.equals(LifecycleResource.RECURRENCE_ALT_DAY_TASK)) {
       // Alternate day recurrence should have dual interval
       occurrences = this.dateTimeService.getOccurrenceDates(startDate, endDate, 2);
     } else {

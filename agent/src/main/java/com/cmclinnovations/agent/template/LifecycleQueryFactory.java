@@ -49,7 +49,7 @@ public class LifecycleQueryFactory {
             + QueryResource.SCHEDULE_END_DATE_VAR.getQueryString() + ".}");
     template.put(QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName(),
         "OPTIONAL{?schedule <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?"
-            + LifecycleResource.SCHEDULE_RECURRENCE_KEY + ".}");
+            + LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY + ".}");
     SCHEDULE_QUERY_MAPPINGS = Collections.unmodifiableMap(template);
     // Add extended statements to the right mappings with a full reset
     Map<String, String> filterTemplate = new HashMap<>();
@@ -396,12 +396,13 @@ public class LifecycleQueryFactory {
   public Map<String, String> genLifecycleFilterStatements(LifecycleEventType lifecycleEvent) {
     Map<String, String> statementMappings = new HashMap<>();
     // Generate schedule related mappings
-    String recurrenceVar = QueryResource.SCHEDULE_RECURRENCE_VAR.getQueryString();
+    String recurrenceVar = QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY)
+        .getQueryString();
     statementMappings.putAll(SCHEDULE_QUERY_MAPPINGS);
     statementMappings.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY,
         statementMappings.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY) + "BIND(IF(BOUND("
             + recurrenceVar + ")," + recurrenceVar + ",\"\") AS "
-            + QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).getQueryString()
+            + QueryResource.SCHEDULE_RECURRENCE_VAR.getQueryString()
             + ")");
     StringBuilder coreQueryBuilder = new StringBuilder();
     switch (lifecycleEvent) {

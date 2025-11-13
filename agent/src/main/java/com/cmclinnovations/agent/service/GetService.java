@@ -215,22 +215,21 @@ public class GetService {
    * @param filters    Mappings between filter fields and their values.
    */
   public int getCount(String resourceID, Map<String, String> filters) {
-    return this.getCount(resourceID, new HashMap<>(), filters);
+    return this.getCount(resourceID, new HashMap<>(), filters, null);
   }
 
   /**
    * Retrieves the number of instances belonging to the resource.
    * 
-   * @param resourceID              Target resource identifier for the instance
-   *                                class.
-   * @param queryStatementsMappings Additional query statements to be added if
-   *                                any.
-   * @param filters                 Mappings between filter fields and their
-   *                                values.
+   * @param resourceID    Target resource identifier for the instance class.
+   * @param queryMappings Additional query statements to be added if any.
+   * @param filters       Mappings between filter fields and their values.
+   * @param isContract    Indicates if it is a contract or task otherwise.
    */
-  public int getCount(String resourceID, Map<String, String> queryStatementsMappings, Map<String, String> filters) {
-    Queue<String> ids = this.getAllIds(resourceID, queryStatementsMappings,
-        new PaginationState(0, null, "-id", filters));
+  public int getCount(String resourceID, Map<String, String> queryMappings, Map<String, String> filters,
+      Boolean isContract) {
+    Queue<String> ids = this.getAllIds(resourceID, queryMappings,
+        new PaginationState(0, null, "-id", isContract, filters));
     return ids.size();
   }
 
@@ -275,12 +274,13 @@ public class GetService {
    * @param queryMappings Additional query statements to be added if any.
    * @param search        String subset to narrow filter scope.
    * @param filters       Optional additional filters.
+   * @param isContract    Indicates if it is a contract or task otherwise.
    */
   public List<String> getAllFilterOptions(String resourceID, String field, Map<String, String> queryMappings,
-      String search, Map<String, String> filters) {
+      String search, Map<String, String> filters, Boolean isContract) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters);
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, isContract);
     parsedFilters.remove(field);
     StringBuilder addStatementBuilder = new StringBuilder();
     // Requires the use of OPTIONAL query (typically used with sorting) to retrive

@@ -71,7 +71,10 @@ public class LocalisationResource {
    * @param field      Translated field name.
    * @param isContract Indicates if it is a contract or task otherwise.
    */
-  public static String parseTranslationToOriginal(String field, boolean isContract) {
+  public static String parseTranslationToOriginal(String field, Boolean isContract) {
+    if (isContract == null) {
+      return field;
+    }
     String lowerCaseField = field.toLowerCase();
     if (lowerCaseField.equals(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY))) {
       return isContract ? LifecycleResource.STATUS_KEY : LifecycleResource.EVENT_KEY;

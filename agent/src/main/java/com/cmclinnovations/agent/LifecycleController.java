@@ -174,7 +174,7 @@ public class LifecycleController {
     // New ID should be added as a side effect of instantiate
     draftDetails.put(QueryResource.ID_KEY, contractDetails.get(QueryResource.ID_KEY));
     draftDetails.put(LifecycleResource.CONTRACT_KEY, response.data().id());
-    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, "P1D");
+    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, LifecycleResource.RECURRENCE_DAILY_TASK);
     draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, this.dateTimeService.getCurrentDate());
     draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, this.dateTimeService.getCurrentDate());
     draftDetails.put("time slot start", "00:00");

@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.utils;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,11 @@ public class LifecycleResource {
   public static final String CANCEL_RESOURCE = "cancel";
   public static final String REPORT_RESOURCE = "report";
   public static final String TASK_ID_SORT_BY_PARAMS = ",+event_id";
+  public static final String RECURRENCE_DAILY_TASK = "P1D";
+  public static final String RECURRENCE_ALT_DAY_TASK = "P2D";
+  public static final String EMPTY_STRING = "\"\"";
+  public static final String RECURRENCE_DAILY_TASK_STRING = "\"" + RECURRENCE_DAILY_TASK + "\"";
+  public static final String RECURRENCE_ALT_DAY_TASK_STRING = "\"" + RECURRENCE_ALT_DAY_TASK + "\"";
 
   public static final String INSTANCE_KEY = "id_instance";
   public static final String CONTRACT_KEY = "contract";
@@ -71,10 +77,19 @@ public class LifecycleResource {
   public static final Pattern OCCURRENCE_VARIABLES_PATTERN = Pattern.compile("SELECT\\s+DISTINCT\\s+(.*?)\\s+WHERE",
       Pattern.DOTALL);
   public static final Pattern OCCURRENCE_WHERE_CLAUSE_PATTERN = Pattern.compile("WHERE\\s*\\{(.*)\\}$", Pattern.DOTALL);
+  public static final Map<String, String> NEGATE_RECURRENCE_MAP;
 
   // Private constructor to prevent instantiation
   private LifecycleResource() {
     throw new UnsupportedOperationException("This class cannot be instantiated!");
+  }
+
+  static {
+    Map<String, String> template = new HashMap<>();
+    template.put(RECURRENCE_DAILY_TASK_STRING, "?recurrence!=\"P1D\"");
+    template.put(RECURRENCE_ALT_DAY_TASK, "?recurrence!=\"P2D\"");
+    template.put(EMPTY_STRING, "?recurrence!=\"\"");
+    NEGATE_RECURRENCE_MAP = Collections.unmodifiableMap(template);
   }
 
   /**
