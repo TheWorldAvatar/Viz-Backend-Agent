@@ -22,6 +22,7 @@ import com.cmclinnovations.agent.utils.ShaclResource;
 
 public class LifecycleQueryFactory {
   private static final Map<String, String> SCHEDULE_QUERY_MAPPINGS;
+  private static final Map<String, String> SCHEDULE_FILTER_QUERY_MAPPINGS;
 
   /**
    * Constructs a new query factory.
@@ -50,6 +51,13 @@ public class LifecycleQueryFactory {
         "OPTIONAL{?schedule <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?"
             + LifecycleResource.SCHEDULE_RECURRENCE_KEY + ".}");
     SCHEDULE_QUERY_MAPPINGS = Collections.unmodifiableMap(template);
+    // Add extended statements to the right mappings with a full reset
+    Map<String, String> filterTemplate = new HashMap<>();
+    LifecycleResource.convertVarForStrFilter(QueryResource.SCHEDULE_START_DATE_VAR, template, filterTemplate);
+    LifecycleResource.convertVarForStrFilter(QueryResource.SCHEDULE_END_DATE_VAR, template, filterTemplate);
+    LifecycleResource.convertVarForStrFilter(QueryResource.SCHEDULE_START_TIME_VAR, template, filterTemplate);
+    LifecycleResource.convertVarForStrFilter(QueryResource.SCHEDULE_END_TIME_VAR, template, filterTemplate);
+    SCHEDULE_FILTER_QUERY_MAPPINGS = Collections.unmodifiableMap(filterTemplate);
   }
 
   /**
@@ -402,7 +410,7 @@ public class LifecycleQueryFactory {
         // Add last modified statement separately
         statementMappings.put(LifecycleResource.LAST_MODIFIED_KEY, creationVar
             .has(QueryResource.FIBO_FND_DT_OC_HAS_EVENT_DATE,
-                QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY))
+                QueryResource.LAST_MODIFIED_VAR)
             .getQueryString());
         // Continue with required lifecycle statements
         String creationStatement = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
@@ -428,6 +436,20 @@ public class LifecycleQueryFactory {
         break;
     }
     statementMappings.put(LifecycleResource.LIFECYCLE_RESOURCE, coreQueryBuilder.toString());
+    return statementMappings;
+  }
+
+  /**
+   * Insert and generate new mappings with the extended schedule filters for
+   * lifecycle filter .
+   * 
+   * @param queryMappings Target mappings containing the existing statements.
+   */
+  public Map<String, String> insertExtendedScheduleFilters(Map<String, String> queryMappings) {
+    Map<String, String> statementMappings = new HashMap<>(queryMappings);
+    // Replaces all existing mappings with the same key to the extended version
+    statementMappings.putAll(SCHEDULE_FILTER_QUERY_MAPPINGS);
+    LifecycleResource.convertVarForStrFilter(QueryResource.LAST_MODIFIED_VAR, queryMappings, statementMappings);
     return statementMappings;
   }
 

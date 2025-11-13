@@ -155,6 +155,23 @@ public class LifecycleResource {
   }
 
   /**
+   * Converts the current query statement for the target variable into a string
+   * that can be compared to the filter value.
+   * 
+   * @param variable       The variable of interest.
+   * @param inputMappings  Mappings to retrieve the current statements.
+   * @param outputMappings Mappings to store the updated statements.
+   */
+  public static void convertVarForStrFilter(Variable variable, Map<String, String> inputMappings,
+      Map<String, String> outputMappings) {
+    String varName = variable.getVarName();
+    String newVarName = StringResource.ORIGINAL_PREFIX + varName;
+    outputMappings.put(varName,
+        inputMappings.get(varName).replace(varName, newVarName) + "BIND(STR(?" + newVarName
+            + ") AS " + variable.getQueryString() + ")");
+  }
+
+  /**
    * Parses the query statements for sorting by event occurrences.
    * 
    * @param query          Target query for parsing.

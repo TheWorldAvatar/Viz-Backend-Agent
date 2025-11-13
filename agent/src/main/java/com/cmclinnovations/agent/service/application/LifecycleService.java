@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
-import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -161,8 +160,11 @@ public class LifecycleService {
   public ResponseEntity<StandardApiResponse<?>> getContractCount(String resourceID, LifecycleEventType eventType,
       Map<String, String> filters) {
     Map<String, String> lifecycleStatements = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
+    // Use extended lifecycle statements for applying filters
+    Map<String, String> extendedLifecycleStatements = this.lifecycleQueryFactory
+        .insertExtendedScheduleFilters(lifecycleStatements);
     return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(resourceID, lifecycleStatements, filters)));
+        String.valueOf(this.getService.getCount(resourceID, extendedLifecycleStatements, filters)));
   }
 
   /**
@@ -177,8 +179,11 @@ public class LifecycleService {
   public List<String> getFilterOptions(String resourceID, String field, String search, LifecycleEventType eventType,
       Map<String, String> filters) {
     Map<String, String> lifecycleStatements = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
+    // Use extended lifecycle statements for applying filters
+    Map<String, String> extendedLifecycleStatements = this.lifecycleQueryFactory
+        .insertExtendedScheduleFilters(lifecycleStatements);
     String originalField = LocalisationResource.parseTranslationToOriginal(field, true);
-    return this.getService.getAllFilterOptions(resourceID, originalField, lifecycleStatements, search, filters);
+    return this.getService.getAllFilterOptions(resourceID, originalField, extendedLifecycleStatements, search, filters);
   }
 
   /**
@@ -241,7 +246,10 @@ public class LifecycleService {
           QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)),
           List.of(1, 1));
     }
-    Queue<String> ids = this.getService.getAllIds(resourceID, lifecycleStatements, pagination);
+    // Use extended lifecycle statements for applying filters when getting IDs only
+    Map<String, String> extendedLifecycleStatements = this.lifecycleQueryFactory
+        .insertExtendedScheduleFilters(lifecycleStatements);
+    Queue<String> ids = this.getService.getAllIds(resourceID, extendedLifecycleStatements, pagination);
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,
         lifecycleStatements.values().stream().collect(Collectors.joining("\n")),
         contractVariables);
