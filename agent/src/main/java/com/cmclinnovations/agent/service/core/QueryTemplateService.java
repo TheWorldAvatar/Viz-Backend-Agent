@@ -1,11 +1,14 @@
 package com.cmclinnovations.agent.service.core;
 
+import java.nio.file.FileSystemNotFoundException;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,6 +28,7 @@ import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.SearchQueryTemplateFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -102,15 +106,17 @@ public class QueryTemplateService {
    *                             limit.
    */
   public String getAllIdsQueryTemplate(String nodeShapeReplacement, String addQueryStatements,
-      PaginationState pagination) {
+      PaginationState pagination, boolean requireId) {
     // If pagination is not given, no limits and offset should be set
-    SelectQuery query = QueryResource.getSelectQuery(true, pagination == null ? null : pagination.limit())
-        .select(QueryResource.ID_VAR)
+    SelectQuery query = QueryResource.getSelectQuery(true, pagination.limit())
         .where(QueryResource.IRI_VAR.isA(Rdf.iri(
             nodeShapeReplacement.substring(1, nodeShapeReplacement.length() - 1)))
             .andHas(QueryResource.DC_TERM_ID, QueryResource.ID_VAR))
-        .offset(pagination == null ? 0 : pagination.offset());
-    if (pagination == null || pagination.sortFields().isEmpty()) {
+        .offset(pagination.offset());
+    if (requireId) {
+      query.select(QueryResource.ID_VAR);
+    }
+    if (pagination.limit() == null) {
       query.orderBy(QueryResource.ID_VAR);
     } else {
       Queue<SortDirective> sortDirectives = pagination.sortDirectives();
@@ -256,13 +262,22 @@ public class QueryTemplateService {
    * @param resourceID The target resource identifier for the instance.
    */
   private JsonNode getJsonLDResource(String resourceID) {
+    // Retrieve the default lifecycle resources if available
     String filePath = LifecycleResource.getLifecycleResourceFilePath(resourceID);
-    // Default to the file name in application-service if it is not a lifecycle
-    // route
-    if (filePath == null) {
+    try {
+      // Attempt to retrieve any custom JSON-LD if they exist
       String fileName = this.fileService.getTargetFileName(resourceID);
+      // Overwrite the custom JSON-LD for non-lifecycle and lifecycle resources
       filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileName + ".jsonld";
+    } catch (FileSystemNotFoundException e) {
+      // Non-lifecycle resources will always have a custom JSON-LD, else, its an
+      // invalid file that should throw an error
+      if (filePath == null) {
+        throw e;
+      }
+      // No error will be thrown for lifecycle resources which has default resources
     }
+
     // Retrieve the instantiation JSON schema
     JsonNode contents = this.fileService.getJsonContents(filePath);
     if (!contents.isObject()) {

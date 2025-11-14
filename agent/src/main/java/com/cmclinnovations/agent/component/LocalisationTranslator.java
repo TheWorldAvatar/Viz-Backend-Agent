@@ -7,6 +7,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.LocalisationResource;
 
 @Component
 public class LocalisationTranslator {
@@ -63,5 +64,21 @@ public class LocalisationTranslator {
         throw new IllegalArgumentException("Unknown event: " + event);
     }
     return LocalisationTranslator.getMessage(localisedKey);
+  }
+
+  /**
+   * Retrieve the schedule type based on the recurrence interval.
+   * 
+   * @param recurrence The recurrence value.
+   */
+  public static String getScheduleTypeFromRecurrence(String recurrence) {
+    return switch (recurrence) {
+      case null -> getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY);
+      case "" -> getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY);
+      case LifecycleResource.RECURRENCE_DAILY_TASK -> getMessage(LocalisationResource.LABEL_SINGLE_SERVICE_KEY);
+      case LifecycleResource.RECURRENCE_ALT_DAY_TASK ->
+        getMessage(LocalisationResource.LABEL_ALTERNATE_DAY_SERVICE_KEY);
+      default -> getMessage(LocalisationResource.LABEL_REGULAR_SERVICE_KEY);
+    };
   }
 }
