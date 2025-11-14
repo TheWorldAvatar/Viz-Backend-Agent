@@ -259,7 +259,7 @@ public class GetService {
     });
     if (queryMappings.containsKey(LifecycleResource.LIFECYCLE_RESOURCE)
         && Arrays.stream(SCHEDULE_VARIABLES).anyMatch(pagination.filters().keySet()::contains)) {
-      addStatementBuilder.append(queryMappings.get(LifecycleResource.SCHEDULE_RESOURCE));
+      addStatementBuilder.append(queryMappings.getOrDefault(LifecycleResource.SCHEDULE_RESOURCE, ""));
     }
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatementBuilder.toString(),
         pagination, true);
@@ -286,8 +286,6 @@ public class GetService {
     Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, isContract);
     parsedFilters.remove(field);
     StringBuilder addStatementBuilder = new StringBuilder();
-    // Requires the use of OPTIONAL query (typically used with sorting) to retrive
-    // possible blanks for filter options
     addStatementBuilder.append(this.getQueryStatementsForTargetFields(iri, Set.of(field), parsedFilters));
     queryMappings.forEach((fieldKey, statements) -> {
       if (fieldKey.equals(LifecycleResource.LIFECYCLE_RESOURCE) || field.equals(fieldKey)) {
@@ -299,7 +297,7 @@ public class GetService {
     if (queryMappings.containsKey(LifecycleResource.LIFECYCLE_RESOURCE)
         && (Arrays.stream(SCHEDULE_VARIABLES).anyMatch(field::equals)
             || Arrays.stream(SCHEDULE_VARIABLES).anyMatch(parsedFilters.keySet()::contains))) {
-      addStatementBuilder.append(queryMappings.get(LifecycleResource.SCHEDULE_RESOURCE));
+      addStatementBuilder.append(queryMappings.getOrDefault(LifecycleResource.SCHEDULE_RESOURCE, ""));
     }
     if (search != null && !search.isBlank()) {
       addStatementBuilder.append("FILTER(CONTAINS(LCASE(")

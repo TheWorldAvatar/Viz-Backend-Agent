@@ -167,6 +167,33 @@ public class LifecycleService {
   }
 
   /**
+   * Retrieve the number of task in the specific stage and status.
+   * 
+   * @param startTimestamp Start timestamp in UNIX format.
+   * @param endTimestamp   End timestamp in UNIX format.
+   * @param isClosed       Indicates whether to retrieve closed tasks.
+   * @param filters        Mappings between filter fields and their values.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getOccurrenceCount(String startTimestamp,
+      String endTimestamp, boolean isClosed, Map<String, String> filters) {
+    String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
+    Map<String, String> additionalFilters = this.lifecycleQueryFactory.getServiceTasksFilter(targetStartEndDates[0],
+        targetStartEndDates[1], isClosed);
+    Map<String, String> extendedFilters = this.lifecycleQueryFactory.insertExtendedTaskFilters(additionalFilters);
+    extendedFilters.put(LifecycleResource.DATE_KEY,
+        "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?date."
+            + "BIND(STR(xsd:date(?date)) as ?" + LifecycleResource.NEW_DATE_KEY + ")");
+    extendedFilters.put(QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName(),
+        "OPTIONAL{?iri ^<https://www.omg.org/spec/Commons/Collections/comprises>/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?recurrences.}"
+            + "BIND(IF(BOUND(?recurrences),?recurrences,\"\") AS "
+            + QueryResource.SCHEDULE_RECURRENCE_VAR.getQueryString() + ")");
+    return this.responseEntityBuilder.success(null,
+        String.valueOf(
+            this.getService.getCount(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, extendedFilters, filters,
+                false)));
+  }
+
+  /**
    * Retrieve filter options at the contract level.
    * 
    * @param resourceID The target resource identifier for the instance class.
@@ -231,7 +258,12 @@ public class LifecycleService {
     // Update lifecycle query statements accordingly
     extendedMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
         extendedMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + additionalStatements);
-    return this.getService.getAllFilterOptions(resourceID, originalField, extendedMappings, search, filters, false);
+    List<String> options = this.getService.getAllFilterOptions(resourceID, originalField, extendedMappings, search,
+        filters, false);
+    if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
+      return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();
+    }
+    return options;
   }
 
   /**
@@ -282,29 +314,6 @@ public class LifecycleService {
                   LinkedHashMap::new));
         })
         .toList());
-  }
-
-  /**
-   * Retrieve the number of task in the specific stage and status.
-   * 
-   * @param startTimestamp Start timestamp in UNIX format.
-   * @param endTimestamp   End timestamp in UNIX format.
-   * @param isClosed       Indicates whether to retrieve closed tasks.
-   * @param filters        Mappings between filter fields and their values.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getOccurrenceCount(String startTimestamp,
-      String endTimestamp, boolean isClosed, Map<String, String> filters) {
-    String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
-    Map<String, String> additionalFilters = this.lifecycleQueryFactory.getServiceTasksFilter(targetStartEndDates[0],
-        targetStartEndDates[1], isClosed);
-    Map<String, String> extendedFilters = this.lifecycleQueryFactory.insertExtendedTaskFilters(additionalFilters);
-    extendedFilters.put(LifecycleResource.DATE_KEY,
-        "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?date."
-            + "BIND(STR(xsd:date(?date)) as ?" + LifecycleResource.NEW_DATE_KEY + ")");
-    return this.responseEntityBuilder.success(null,
-        String.valueOf(
-            this.getService.getCount(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, extendedFilters, filters,
-                false)));
   }
 
   /**
