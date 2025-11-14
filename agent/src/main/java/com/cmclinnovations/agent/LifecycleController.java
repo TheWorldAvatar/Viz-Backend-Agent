@@ -732,9 +732,7 @@ public class LifecycleController {
     String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> options = this.lifecycleService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
-          filterOptionParams[2],
-          startTimestamp, endTimestamp,
-          taskType.equals("closed"), allRequestParams);
+          filterOptionParams[2], startTimestamp, endTimestamp, taskType.equals("closed"), allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }
