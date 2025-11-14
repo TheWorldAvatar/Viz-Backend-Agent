@@ -494,7 +494,7 @@ public class LifecycleService {
     String endDate = bindings
         .getFieldValue(QueryResource.SCHEDULE_END_DATE_VAR.getVarName());
     String recurrence = bindings
-        .getFieldValue(QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName());
+        .getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY);
     Queue<String> occurrences = new ArrayDeque<>();
     // Extract date of occurrences based on the schedule information
     // For perpetual and single time schedules, simply add the start date
