@@ -181,8 +181,7 @@ public class LifecycleService {
         targetStartEndDates[1], isClosed);
     Map<String, String> extendedFilters = this.lifecycleQueryFactory.insertExtendedTaskFilters(additionalFilters);
     extendedFilters.put(LifecycleResource.DATE_KEY,
-        "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?date."
-            + "BIND(STR(xsd:date(?date)) as ?" + LifecycleResource.NEW_DATE_KEY + ")");
+        "BIND(STR(xsd:date(?date)) as ?" + LifecycleResource.NEW_DATE_KEY + ")");
     extendedFilters.put(QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName(),
         "OPTIONAL{?iri ^<https://www.omg.org/spec/Commons/Collections/comprises>/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?recurrences.}"
             + "BIND(IF(BOUND(?recurrences),?recurrences,\"\") AS "

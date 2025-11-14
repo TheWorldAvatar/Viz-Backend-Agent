@@ -155,15 +155,6 @@ public class LifecycleQueryFactory {
           this.genEventClause(QueryResource.IRI_VAR, LifecycleEventType.SERVICE_EXECUTION,
               LifecycleResource.EVENT_PENDING_STATUS).getQueryString());
     }
-    results.put(LifecycleResource.LIFECYCLE_RESOURCE,
-        "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
-            + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
-            + "<https://www.omg.org/spec/Commons/Collections/comprises> " + QueryResource.IRI_VAR.getQueryString() + "."
-            // Event must be the last in the chain ie no other events will succeed it
-            + "MINUS{" + QueryResource.IRI_VAR.getQueryString()
-            + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}"
-            + targetEventStatements);
-    // Generate date query
     String filterDateStatement = "";
     // For outstanding tasks, start dates are omitted
     if (!startDate.isEmpty()) {
@@ -171,10 +162,21 @@ public class LifecycleQueryFactory {
     }
     filterDateStatement = "FILTER(" + filterDateStatement + "xsd:date(" + eventDateVar + ")<=\"" + endDate
         + "\"^^xsd:date)";
-    results.put(LifecycleResource.DATE_KEY, QueryResource.IRI_VAR.getQueryString()
-        + " <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
-        + eventDateVar + "."
-        + filterDateStatement);
+    results.put(LifecycleResource.LIFECYCLE_RESOURCE,
+        "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
+            + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
+            + "<https://www.omg.org/spec/Commons/Collections/comprises> " + QueryResource.IRI_VAR.getQueryString() + "."
+            + QueryResource.IRI_VAR.has(pred -> pred.pred(QueryResource.CMNS_DT_SUCCEEDS).zeroOrMore(),
+                QueryResource.EVENT_ID_VAR).getQueryString()
+            + QueryResource.EVENT_ID_VAR.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+                Rdf.iri(LifecycleEventType.SERVICE_ORDER_RECEIVED.getEvent()))
+                .andHas(QueryResource.FIBO_FND_DT_OC_HAS_EVENT_DATE, QueryResource.DATE_VAR)
+                .getQueryString()
+            + filterDateStatement
+            // Event must be the last in the chain ie no other events will succeed it
+            + "MINUS{" + QueryResource.IRI_VAR.getQueryString()
+            + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}"
+            + targetEventStatements);
     results.put(LifecycleResource.LAST_MODIFIED_KEY,
         "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
             + QueryResource.LAST_MODIFIED_VAR.getQueryString() + ShaclResource.FULL_STOP);
