@@ -22,7 +22,7 @@ import com.cmclinnovations.agent.utils.ShaclResource;
 
 public class LifecycleQueryFactory {
   private static final Map<String, String> SCHEDULE_QUERY_MAPPINGS;
-  private static final Map<String, String> SCHEDULE_FILTER_QUERY_MAPPINGS;
+  private static final Map<String, String> SCHEDULE_CONTRACT_FILTER_QUERY_MAPPINGS;
 
   /**
    * Constructs a new query factory.
@@ -57,7 +57,7 @@ public class LifecycleQueryFactory {
     LifecycleResource.convertVarForStrFilter(QueryResource.SCHEDULE_END_DATE_VAR, template, filterTemplate);
     LifecycleResource.convertVarForStrFilter(QueryResource.SCHEDULE_START_TIME_VAR, template, filterTemplate);
     LifecycleResource.convertVarForStrFilter(QueryResource.SCHEDULE_END_TIME_VAR, template, filterTemplate);
-    SCHEDULE_FILTER_QUERY_MAPPINGS = Collections.unmodifiableMap(filterTemplate);
+    SCHEDULE_CONTRACT_FILTER_QUERY_MAPPINGS = Collections.unmodifiableMap(filterTemplate);
   }
 
   /**
@@ -175,6 +175,9 @@ public class LifecycleQueryFactory {
         + " <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
         + eventDateVar + "."
         + filterDateStatement);
+    results.put(LifecycleResource.LAST_MODIFIED_KEY,
+        "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
+            + QueryResource.LAST_MODIFIED_VAR.getQueryString() + ShaclResource.FULL_STOP);
     return results;
   }
 
@@ -449,7 +452,19 @@ public class LifecycleQueryFactory {
   public Map<String, String> insertExtendedScheduleFilters(Map<String, String> queryMappings) {
     Map<String, String> statementMappings = new HashMap<>(queryMappings);
     // Replaces all existing mappings with the same key to the extended version
-    statementMappings.putAll(SCHEDULE_FILTER_QUERY_MAPPINGS);
+    statementMappings.putAll(SCHEDULE_CONTRACT_FILTER_QUERY_MAPPINGS);
+    LifecycleResource.convertVarForStrFilter(QueryResource.LAST_MODIFIED_VAR, queryMappings, statementMappings);
+    return statementMappings;
+  }
+
+  /**
+   * Update mappings with the extended task filters for lifecycle queries.
+   * 
+   * @param queryMappings Target mappings containing the existing statements.
+   */
+  public Map<String, String> insertExtendedTaskFilters(Map<String, String> queryMappings) {
+    Map<String, String> statementMappings = new HashMap<>(queryMappings);
+    // Replaces all existing mappings with the same key to the extended version
     LifecycleResource.convertVarForStrFilter(QueryResource.LAST_MODIFIED_VAR, queryMappings, statementMappings);
     return statementMappings;
   }

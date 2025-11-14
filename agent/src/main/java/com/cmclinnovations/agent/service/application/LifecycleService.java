@@ -207,6 +207,7 @@ public class LifecycleService {
     String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
     Map<String, String> queryMappings = this.lifecycleQueryFactory.getServiceTasksQuery(null,
         targetStartEndDates[0], targetStartEndDates[1], isClosed);
+    Map<String, String> extendedMappings = this.lifecycleQueryFactory.insertExtendedTaskFilters(queryMappings);
     String originalField = LocalisationResource.parseTranslationToOriginal(field, false);
     Map<String, Set<String>> targetFields = new HashMap<>();
     targetFields.put(field, new HashSet<>());
@@ -228,9 +229,9 @@ public class LifecycleService {
               new HashSet<>(), targetFields));
     }
     // Update lifecycle query statements accordingly
-    queryMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
-        queryMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + additionalStatements);
-    return this.getService.getAllFilterOptions(resourceID, originalField, queryMappings, search, filters, false);
+    extendedMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
+        extendedMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + additionalStatements);
+    return this.getService.getAllFilterOptions(resourceID, originalField, extendedMappings, search, filters, false);
   }
 
   /**
@@ -296,9 +297,13 @@ public class LifecycleService {
     String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
     Map<String, String> additionalFilters = this.lifecycleQueryFactory.getServiceTasksFilter(targetStartEndDates[0],
         targetStartEndDates[1], isClosed);
+    Map<String, String> extendedFilters = this.lifecycleQueryFactory.insertExtendedTaskFilters(additionalFilters);
+    extendedFilters.put(LifecycleResource.DATE_KEY,
+        "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?date."
+            + "BIND(STR(xsd:date(?date)) as ?" + LifecycleResource.NEW_DATE_KEY + ")");
     return this.responseEntityBuilder.success(null,
         String.valueOf(
-            this.getService.getCount(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, additionalFilters, filters,
+            this.getService.getCount(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, extendedFilters, filters,
                 false)));
   }
 
@@ -312,9 +317,9 @@ public class LifecycleService {
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String contract, String entityType,
       PaginationState pagination) {
-    Map<String, String> activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(contract, null, null,
+    Map<String, String> lifecycleStatements = this.lifecycleQueryFactory.getServiceTasksQuery(contract, null, null,
         null);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, null,
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, lifecycleStatements, null,
         pagination);
     LOGGER.info("Successfuly retrieved all associated services!");
     return this.responseEntityBuilder.success(null, occurrences);
@@ -333,10 +338,10 @@ public class LifecycleService {
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String startTimestamp, String endTimestamp,
       String entityType, boolean isClosed, PaginationState pagination) {
     String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
-    Map<String, String> activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null,
+    Map<String, String> lifecycleStatements = this.lifecycleQueryFactory.getServiceTasksQuery(null,
         targetStartEndDates[0], targetStartEndDates[1], isClosed);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, isClosed,
-        pagination);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, lifecycleStatements,
+        isClosed, pagination);
     LOGGER.info("Successfuly retrieved tasks!");
     return this.responseEntityBuilder.success(null, occurrences);
   }
@@ -364,9 +369,15 @@ public class LifecycleService {
           pagination.sortedFields(), pagination.filters());
     }
     // Update lifecycle statements accordingly
+    Map<String, String> extendedQueryMappings = this.lifecycleQueryFactory
+        .insertExtendedTaskFilters(queryMappings);
     queryMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
         queryMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + addFilterQueries);
-    Queue<String> ids = this.getService.getAllIds(entityType, queryMappings, pagination);
+    extendedQueryMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
+        queryMappings.get(LifecycleResource.LIFECYCLE_RESOURCE));
+    extendedQueryMappings.put(LifecycleResource.DATE_KEY,
+        "BIND(STR(?date) as ?" + LifecycleResource.NEW_DATE_KEY + ")");
+    Queue<String> ids = this.getService.getAllIds(entityType, extendedQueryMappings, pagination);
     Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = queryMappings.values().stream().collect(Collectors.joining("\n"));
     addQuery += this.parseEventOccurrenceQuery(-4, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);

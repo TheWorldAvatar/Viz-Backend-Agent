@@ -32,6 +32,7 @@ public class LifecycleResource {
   public static final String CONTRACT_KEY = "contract";
   public static final String ORDER_KEY = "order";
   public static final String CURRENT_DATE_KEY = "current date";
+  public static final String NEW_DATE_KEY = "newDate";
   public static final String DATE_KEY = "date";
   public static final String DATE_TIME_KEY = "dateTime";
   public static final String EVENT_KEY = "event";
@@ -182,7 +183,7 @@ public class LifecycleResource {
     String varName = variable.getVarName();
     String newVarName = StringResource.ORIGINAL_PREFIX + varName;
     outputMappings.put(varName,
-        inputMappings.get(varName).replace(varName, newVarName) + "BIND(STR(?" + newVarName
+        inputMappings.getOrDefault(varName, "").replace(varName, newVarName) + "BIND(STR(?" + newVarName
             + ") AS " + variable.getQueryString() + ")");
   }
 
