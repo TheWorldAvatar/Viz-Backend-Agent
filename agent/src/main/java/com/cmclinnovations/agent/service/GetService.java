@@ -228,7 +228,7 @@ public class GetService {
    */
   public int getCount(String resourceID, Map<String, String> queryMappings, Map<String, String> filters,
       Boolean isContract) {
-    Queue<String> ids = this.getAllIds(resourceID, queryMappings,
+    Queue<List<String>> ids = this.getAllIds(resourceID, queryMappings,
         new PaginationState(0, null, "-id", isContract, filters));
     return ids.size();
   }
@@ -240,7 +240,7 @@ public class GetService {
    * @param queryMappings Additional query statements to be added if any.
    * @param pagination    Optional state containing the current page and limit.
    */
-  public Queue<String> getAllIds(String resourceID, Map<String, String> queryMappings,
+  public Queue<List<String>> getAllIds(String resourceID, Map<String, String> queryMappings,
       PaginationState pagination) {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
@@ -264,7 +264,13 @@ public class GetService {
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatementBuilder.toString(),
         pagination, true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
-        .map(binding -> binding.getFieldValue(QueryResource.ID_KEY))
+        .map(binding -> {
+          String eventIdVar = QueryResource.EVENT_ID_VAR.getVarName();
+          if (binding.containsField(eventIdVar)) {
+            return List.of(binding.getFieldValue(QueryResource.ID_KEY), binding.getFieldValue(eventIdVar));
+          }
+          return List.of(binding.getFieldValue(QueryResource.ID_KEY));
+        })
         .collect(Collectors.toCollection(ArrayDeque::new));
   }
 
@@ -327,7 +333,7 @@ public class GetService {
    * @param addVars            Optional additional variables to be included in
    *                           the query, along with their order sequence.
    */
-  public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, Queue<String> ids,
+  public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, Queue<List<String>> ids,
       String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
@@ -352,7 +358,7 @@ public class GetService {
       PaginationState pagination) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
-    Queue<String> ids = this.getAllIds(resourceID, new HashMap<>(), pagination);
+    Queue<List<String>> ids = this.getAllIds(resourceID, new HashMap<>(), pagination);
     if (ids.isEmpty()) {
       return new ArrayDeque<>();
     }
@@ -371,8 +377,8 @@ public class GetService {
   public ResponseEntity<StandardApiResponse<?>> getInstance(String targetId, String resourceID, boolean requireLabel) {
     LOGGER.debug("Retrieving an instance of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
-    Queue<SparqlBinding> instances = this.execGetInstances(iri, new ArrayDeque<>(List.of(targetId)), requireLabel, null,
-        "", new HashMap<>());
+    Queue<SparqlBinding> instances = this.execGetInstances(iri, new ArrayDeque<>(List.of(Arrays.asList(targetId))),
+        requireLabel, null, "", new HashMap<>());
     return this.getSingleInstanceResponse(instances);
   }
 
@@ -388,7 +394,8 @@ public class GetService {
         QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
         Rdf.iri(eventType.getEvent()));
     Queue<SparqlBinding> instances = this.execGetInstances(eventType.getShaclReplacement(),
-        new ArrayDeque<>(List.of(targetId)), false, null, lifecycleEventPattern.getQueryString(), new HashMap<>());
+        new ArrayDeque<>(List.of(Arrays.asList(targetId))), false, null, lifecycleEventPattern.getQueryString(),
+        new HashMap<>());
     return this.getSingleInstanceResponse(instances);
   }
 
@@ -497,7 +504,7 @@ public class GetService {
    * @param addVars              Optional additional variables to be included in
    *                             the query, along with their order sequence
    */
-  private Queue<SparqlBinding> execGetInstances(String nodeShapeReplacement, Queue<String> targetIds,
+  private Queue<SparqlBinding> execGetInstances(String nodeShapeReplacement, Queue<List<String>> targetIds,
       boolean requireLabel, ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     if (requireLabel) {
       // Parent related parameters should be disabled

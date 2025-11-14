@@ -286,7 +286,7 @@ public class LifecycleService {
     // Use extended lifecycle statements for applying filters when getting IDs only
     Map<String, String> extendedLifecycleStatements = this.lifecycleQueryFactory
         .insertExtendedScheduleFilters(lifecycleStatements);
-    Queue<String> ids = this.getService.getAllIds(resourceID, extendedLifecycleStatements, pagination);
+    Queue<List<String>> ids = this.getService.getAllIds(resourceID, extendedLifecycleStatements, pagination);
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,
         lifecycleStatements.values().stream().collect(Collectors.joining("\n")),
         contractVariables);
@@ -385,7 +385,7 @@ public class LifecycleService {
         queryMappings.get(LifecycleResource.LIFECYCLE_RESOURCE));
     extendedQueryMappings.put(LifecycleResource.DATE_KEY,
         "BIND(STR(?date) as ?" + LifecycleResource.NEW_DATE_KEY + ")");
-    Queue<String> ids = this.getService.getAllIds(entityType, extendedQueryMappings, pagination);
+    Queue<List<String>> ids = this.getService.getAllIds(entityType, extendedQueryMappings, pagination);
     Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = queryMappings.values().stream().collect(Collectors.joining("\n"));
     addQuery += this.parseEventOccurrenceQuery(-4, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);

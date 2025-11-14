@@ -109,9 +109,10 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    *                       specific parents.
    * @return A string representing the VALUES clause if multiple IDs are given
    */
-  private String appendOptionalIdFilters(SelectQuery selectTemplate, Queue<String> filterIds, ParentField parentField) {
+  private String appendOptionalIdFilters(SelectQuery selectTemplate, Queue<List<String>> filterIds,
+      ParentField parentField) {
     RdfObject object = QueryResource.ID_VAR;
-    StringBuilder valuesClause = new StringBuilder();
+    String valuesClause = "";
     // Add filter clause for a parent field instead if available
     if (parentField != null) {
       Variable parsedField = null;
@@ -129,18 +130,31 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       }
       selectTemplate.where(parsedField.has(QueryResource.DC_TERM_ID, Rdf.literalOf(parentField.id())));
     } else if (filterIds.size() == 1) {
-      StringLiteral filter = Rdf.literalOf(filterIds.poll());
+      List<String> currentIds = filterIds.poll();
+      StringLiteral filter = Rdf.literalOf(currentIds.get(0));
       object = filter;
       selectTemplate.where(Expressions.bind(Expressions.str(filter), QueryResource.ID_VAR));
-    } else if (filterIds.size() > 1) {
-      valuesClause.append("VALUES ?id {");
-      while (!filterIds.isEmpty()) {
-        String currentId = Rdf.literalOf(filterIds.poll()).getQueryString();
-        valuesClause.append(" ").append(currentId);
+      if (currentIds.size() > 1) {
+        valuesClause += QueryResource.values(QueryResource.EVENT_ID_VAR.getVarName(),
+            List.of(Rdf.iri(currentIds.get(1)).getQueryString()));
       }
-      valuesClause.append("}");
+    } else if (filterIds.size() > 1) {
+      List<String> idValues = new ArrayList<>();
+      List<String> eventIdValues = new ArrayList<>();
+      while (!filterIds.isEmpty()) {
+        List<String> currentIds = filterIds.poll();
+        String currentId = Rdf.literalOf(currentIds.get(0)).getQueryString();
+        idValues.add(currentId);
+        if (currentIds.size() > 1) {
+          eventIdValues.add(Rdf.iri(currentIds.get(1)).getQueryString());
+        }
+      }
+      valuesClause += QueryResource.values(QueryResource.ID_KEY, idValues);
+      if (!eventIdValues.isEmpty()) {
+        valuesClause += QueryResource.values(QueryResource.EVENT_ID_VAR.getVarName(), eventIdValues);
+      }
     }
     selectTemplate.where(QueryResource.IRI_VAR.has(QueryResource.DC_TERM_ID, object));
-    return valuesClause.toString();
+    return valuesClause;
   }
 }
