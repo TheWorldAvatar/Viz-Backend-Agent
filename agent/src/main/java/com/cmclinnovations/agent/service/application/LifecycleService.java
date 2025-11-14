@@ -257,6 +257,8 @@ public class LifecycleService {
     // Update lifecycle query statements accordingly
     extendedMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
         extendedMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + additionalStatements);
+    extendedMappings.put(LifecycleResource.DATE_KEY,
+        "BIND(STR(?date) as ?" + LifecycleResource.NEW_DATE_KEY + ")");
     List<String> options = this.getService.getAllFilterOptions(resourceID, originalField, extendedMappings, search,
         filters, false);
     if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {

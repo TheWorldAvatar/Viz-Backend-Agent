@@ -296,6 +296,9 @@ public class GetService {
     queryMappings.forEach((fieldKey, statements) -> {
       if (fieldKey.equals(LifecycleResource.LIFECYCLE_RESOURCE) || field.equals(fieldKey)) {
         addStatementBuilder.append(statements);
+      } else if (fieldKey.equals(LifecycleResource.DATE_KEY) && parsedFilters.containsKey(fieldKey)) {
+        QueryResource.genFilterStatements(statements, LifecycleResource.NEW_DATE_KEY, parsedFilters.get(fieldKey),
+            addStatementBuilder);
       } else if (parsedFilters.containsKey(fieldKey)) {
         QueryResource.genFilterStatements(statements, fieldKey, parsedFilters.get(fieldKey), addStatementBuilder);
       }
