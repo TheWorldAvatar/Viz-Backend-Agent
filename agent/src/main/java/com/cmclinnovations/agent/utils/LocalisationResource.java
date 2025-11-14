@@ -60,6 +60,12 @@ public class LocalisationResource {
   public static final String VAR_SCHEDULE_TYPE_KEY = VAR_PREFIX + "schedule.type";
   public static final String VAR_STATUS_KEY = VAR_PREFIX + STATUS_KEY;
 
+  public static final String EVENT_STATUS_ASSIGNED_KEY = "assigned";
+  public static final String EVENT_STATUS_CANCELLED_KEY = "cancelled";
+  public static final String EVENT_STATUS_COMPLETED_KEY = "completed";
+  public static final String EVENT_STATUS_ISSUE_KEY = "issue";
+  public static final String EVENT_STATUS_NEW_KEY = "new";
+
   // Private constructor to prevent instantiation
   private LocalisationResource() {
     throw new UnsupportedOperationException("This class cannot be instantiated!");

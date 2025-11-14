@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.component;
 
 import java.util.Locale;
 
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
@@ -43,27 +44,52 @@ public class LocalisationTranslator {
    * @param event The event of interest.
    */
   public static String getEvent(String event) {
-    String localisedKey;
+    String eventStatusLocalisedKey;
     switch (event) {
       case LifecycleResource.EVENT_INCIDENT_REPORT:
-        localisedKey = "issue";
+        eventStatusLocalisedKey = LocalisationResource.EVENT_STATUS_ISSUE_KEY;
         break;
       case LifecycleResource.EVENT_CANCELLATION:
-        localisedKey = "cancelled";
+        eventStatusLocalisedKey = LocalisationResource.EVENT_STATUS_CANCELLED_KEY;
         break;
-      case LifecycleResource.EVENT_DELIVERY:
-        localisedKey = "completed";
+      case LifecycleResource.EVENT_DELIVERY + LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS:
+        eventStatusLocalisedKey = LocalisationResource.EVENT_STATUS_COMPLETED_KEY;
         break;
       case LifecycleResource.EVENT_DISPATCH:
-        localisedKey = "assigned";
+      case LifecycleResource.EVENT_DELIVERY + LifecycleResource.EVENT_PENDING_STATUS:
+        eventStatusLocalisedKey = LocalisationResource.EVENT_STATUS_ASSIGNED_KEY;
         break;
       case LifecycleResource.EVENT_ORDER_RECEIVED:
-        localisedKey = "new";
+        eventStatusLocalisedKey = LocalisationResource.EVENT_STATUS_NEW_KEY;
         break;
       default:
         throw new IllegalArgumentException("Unknown event: " + event);
     }
-    return LocalisationTranslator.getMessage(localisedKey);
+    return eventStatusLocalisedKey;
+  }
+
+  /**
+   * Retrieves the event from the localised event status.
+   *
+   * @param eventStatusLocalisedKey The localised key of the event status.
+   */
+  public static String getEventFromLocalisedEventKey(String eventStatusLocalisedKey) {
+    return switch (eventStatusLocalisedKey) {
+      case LocalisationResource.EVENT_STATUS_ISSUE_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_INCIDENT_REPORT).getQueryString();
+      case LocalisationResource.EVENT_STATUS_CANCELLED_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_CANCELLATION).getQueryString();
+      case LocalisationResource.EVENT_STATUS_COMPLETED_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_DELIVERY + LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS)
+            .getQueryString();
+      case LocalisationResource.EVENT_STATUS_ASSIGNED_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_DELIVERY + LifecycleResource.EVENT_PENDING_STATUS).getQueryString()
+            + " " + Rdf.literalOf(LifecycleResource.EVENT_DISPATCH).getQueryString();
+      case LocalisationResource.EVENT_STATUS_NEW_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString();
+      default:
+        throw new IllegalArgumentException("Unknown event key: " + eventStatusLocalisedKey);
+    };
   }
 
   /**

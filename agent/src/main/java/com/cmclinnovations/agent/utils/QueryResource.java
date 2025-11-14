@@ -289,6 +289,16 @@ public class QueryResource {
                 String valuesClause = QueryResource.values(field, parsedFilters);
                 builder.append(valuesClause);
             }
+            // Special parsing for events at task level
+        } else if (field.equals(LifecycleResource.EVENT_KEY)) {
+            builder.append(query);
+            Set<String> parsedFilters = filters.stream()
+                    .map(eventStatus -> {
+                        String eventStatusContent = eventStatus.substring(1, eventStatus.length() - 1);
+                        return LocalisationTranslator.getEventFromLocalisedEventKey(eventStatusContent);
+                    }).collect(Collectors.toSet());
+            String valuesClause = QueryResource.values(field, parsedFilters);
+            builder.append(valuesClause);
         } else {
             // When there are null filter values, the user has requested for blank values,
             // and this should be excluded from the query via a MINUS clause

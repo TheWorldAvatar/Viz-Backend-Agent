@@ -276,9 +276,10 @@ public class LifecycleQueryFactory {
             // Event must be the last in the chain ie no other events will succeed it
             + "MINUS{" + eventIdVar + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}");
     results.put(LifecycleResource.EVENT_KEY,
-        eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
-            + eventVar + ".OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> "
-            + eventStatusVar + "}");
+        eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> ?temp_event."
+            + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar
+            + "} BIND(CONCAT(STR(?temp_event),IF(BOUND(?event_status),STR(?event_status),\"\")) AS " + eventVar
+            + ")");
     results.put(LifecycleResource.LAST_MODIFIED_KEY, eventIdVar
         + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
         + lastModifiedVar + ShaclResource.FULL_STOP);
@@ -377,7 +378,7 @@ public class LifecycleQueryFactory {
     Variable instance = QueryResource.genVariable(LifecycleResource.INSTANCE_KEY);
     TriplePattern eventStatusPattern = instance.has(
         QueryResource.CMNS_DSG_DESCRIBES,
-        QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY));
+        QueryResource.EVENT_STATUS_VAR);
     ModifyQuery updateQuery = QueryResource.getUpdateQuery()
         .insert(instance.has(
             QueryResource.CMNS_DSG_DESCRIBES,

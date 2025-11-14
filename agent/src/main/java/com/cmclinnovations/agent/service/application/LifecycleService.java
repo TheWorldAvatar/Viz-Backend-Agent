@@ -263,6 +263,8 @@ public class LifecycleService {
         filters, false);
     if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
       return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();
+    } else if (originalField.equals(LifecycleResource.EVENT_KEY)) {
+      return options.stream().map(option -> LocalisationTranslator.getEvent(option)).toList();
     }
     return options;
   }
@@ -420,10 +422,6 @@ public class LifecycleService {
                   // status as they are incomplete or in a saved state, and should still be
                   // outstanding
                   String eventType = eventField.value();
-                  if (eventType.equals(LifecycleResource.EVENT_DELIVERY)
-                      && LifecycleResource.EVENT_PENDING_STATUS.equals(eventStatus)) {
-                    eventType = LifecycleResource.EVENT_DISPATCH;
-                  }
                   return new AbstractMap.SimpleEntry<>(
                       LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY),
                       // Add a new response field
