@@ -16,6 +16,7 @@ import com.cmclinnovations.agent.service.core.FileService;
 
 public class LifecycleResource {
   public static final String LIFECYCLE_RESOURCE = "lifecycle";
+  public static final String LIFECYCLE_REPORT_RESOURCE = "lifecycle report";
   public static final String SCHEDULE_RESOURCE = "schedule";
   public static final String TASK_RESOURCE = "task";
   public static final String OCCURRENCE_INSTANT_RESOURCE = "occurrence instant";
@@ -134,6 +135,8 @@ public class LifecycleResource {
     switch (resourceID) {
       case LifecycleResource.LIFECYCLE_RESOURCE:
         return FileService.LIFECYCLE_JSON_LD_RESOURCE;
+      case LifecycleResource.LIFECYCLE_REPORT_RESOURCE:
+        return FileService.LIFECYCLE_REPORT_JSON_LD_RESOURCE;
       case LifecycleResource.OCCURRENCE_INSTANT_RESOURCE:
         return FileService.OCCURRENCE_INSTANT_JSON_LD_RESOURCE;
       case LifecycleResource.CANCEL_RESOURCE:

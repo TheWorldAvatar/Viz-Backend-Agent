@@ -122,7 +122,7 @@ public class AddService {
    * @param messageResource   Optional resource id of the message to be displayed
    *                          when successful.
    */
-  public ResponseEntity<StandardApiResponse<?>> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID,
+  private ResponseEntity<StandardApiResponse<?>> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID,
       String successLogMessage, String messageResource) {
     LOGGER.info("Adding instance to endpoint...");
     String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();

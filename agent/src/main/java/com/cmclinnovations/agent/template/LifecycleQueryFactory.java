@@ -356,20 +356,6 @@ public class LifecycleQueryFactory {
   }
 
   /**
-   * Retrieves the SPARQL query to get a report associated with the target stage.
-   * 
-   * @param stage The target stage occurrence instance.
-   */
-  public String getReportQuery(String stage) {
-    return QueryResource.PREFIX_TEMPLATE
-        + "SELECT DISTINCT ?iri WHERE {"
-        + "?iri a " + Rdf.iri(LifecycleResource.LIFECYCLE_REPORT).getQueryString() + ";"
-        + Rdf.iri(LifecycleResource.IS_ABOUT_RELATIONS).getQueryString()
-        + "/fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage <" + stage + ">."
-        + "}";
-  }
-
-  /**
    * Generates a UPDATE query to update the contract event status.
    * 
    * @param id Target contract identifier.

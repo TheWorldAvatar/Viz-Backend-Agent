@@ -25,30 +25,25 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
-import com.cmclinnovations.agent.service.core.DateTimeService;
-import com.cmclinnovations.agent.service.core.JsonLdService;
+import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
-import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class LifecycleContractService {
   private final AddService addService;
   private final GetService getService;
   private final UpdateService updateService;
-  private final JsonLdService jsonLdService;
+  private final FileService fileService;
   private final ResponseEntityBuilder responseEntityBuilder;
   private final LifecycleTaskService lifecycleTaskService;
 
   private final LifecycleQueryFactory lifecycleQueryFactory;
   private final Map<Variable, List<Integer>> lifecycleVarSequence = new HashMap<>();
   private static final String SERVICE_DISCHARGE_MESSAGE = "Service has been completed successfully.";
-  private static final String LIFECYCLE_REPORT_PREFIX = "https://www.theworldavatar.io/kg/lifecycle/report/";
   private static final Logger LOGGER = LogManager.getLogger(LifecycleContractService.class);
 
   /**
@@ -56,12 +51,11 @@ public class LifecycleContractService {
    * 
    */
   public LifecycleContractService(AddService addService, GetService getService, UpdateService updateService,
-      JsonLdService jsonLdService, ResponseEntityBuilder responseEntityBuilder,
-      LifecycleTaskService lifecycleTaskService) {
+      FileService fileService, ResponseEntityBuilder responseEntityBuilder, LifecycleTaskService lifecycleTaskService) {
     this.addService = addService;
     this.getService = getService;
     this.updateService = updateService;
-    this.jsonLdService = jsonLdService;
+    this.fileService = fileService;
     this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleTaskService = lifecycleTaskService;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
@@ -92,13 +86,15 @@ public class LifecycleContractService {
   /**
    * Generates a report instance.
    * 
-   * @param contract The subject contract instance of interest to report on.
+   * @param contractId The ID of the target contract to report on.
    */
-  public ObjectNode genReportInstance(String contract) {
-    ObjectNode report = this.jsonLdService.genInstance(LIFECYCLE_REPORT_PREFIX, LifecycleResource.LIFECYCLE_REPORT);
-    ObjectNode contractNode = this.jsonLdService.genObjectNode().put(ShaclResource.ID_KEY, contract);
-    report.set(LifecycleResource.IS_ABOUT_RELATIONS, contractNode);
-    return report;
+  public void genReportInstance(String contractId) {
+    String query = this.fileService.getContentsWithReplacement(FileService.CONTRACT_QUERY_RESOURCE, contractId);
+    String contract = this.getService.getInstance(query).getFieldValue(QueryResource.IRI_KEY);
+    Map<String, Object> reportParams = new HashMap<>();
+    reportParams.put(LifecycleResource.CONTRACT_KEY, contract);
+    this.addService.instantiate(LifecycleResource.LIFECYCLE_REPORT_RESOURCE, reportParams, null,
+        LocalisationResource.SUCCESS_ADD_REPORT_KEY);
   }
 
   /**

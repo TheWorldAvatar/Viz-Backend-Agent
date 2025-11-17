@@ -38,7 +38,6 @@ import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
-import com.fasterxml.jackson.databind.JsonNode;
 
 @RestController
 @RequestMapping("/contracts")
@@ -279,9 +278,8 @@ public class LifecycleController {
           HttpStatus.INTERNAL_SERVER_ERROR);
     } else {
       LOGGER.info("All orders has been successfully received!");
-      JsonNode report = this.lifecycleContractService.genReportInstance(contractId);
       try {
-        this.addService.instantiateJsonLd(report, "unknown", null, LocalisationResource.SUCCESS_ADD_REPORT_KEY);
+        this.lifecycleContractService.genReportInstance(contractId);
       } catch (IllegalStateException e) {
         LOGGER.warn("Something went wrong with instantiating a report for {}!", contractId);
         throw e;

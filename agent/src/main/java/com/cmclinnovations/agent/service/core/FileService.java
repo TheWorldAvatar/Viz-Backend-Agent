@@ -40,6 +40,7 @@ public class FileService {
   private static final String QUERY_DIR = CLASS_PATH_DIR + "query/";
   private static final String QUERY_CONSTR_DIR = QUERY_DIR + "construct/";
   private static final String QUERY_GET_DIR = QUERY_DIR + "get/";
+  private static final String QUERY_GET_LIFECYCLE_DIR = QUERY_GET_DIR + "lifecycle/";
   public static final String FORM_QUERY_RESOURCE = QUERY_CONSTR_DIR + "form.sparql";
   public static final String SHACL_RULE_QUERY_RESOURCE = QUERY_CONSTR_DIR + "shacl_rule.sparql";
   public static final String ENDPOINT_QUERY_RESOURCE = QUERY_GET_DIR + "endpoint.sparql";
@@ -47,9 +48,12 @@ public class FileService {
   public static final String SHACL_PATH_QUERY_RESOURCE = QUERY_GET_DIR + "property_path.sparql";
   public static final String SHACL_PATH_LABEL_QUERY_RESOURCE = QUERY_GET_DIR + "property_path_label.sparql";
   public static final String LIFECYCLE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/lifecycle.jsonld";
+  public static final String LIFECYCLE_REPORT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/report.jsonld";
   public static final String OCCURRENCE_INSTANT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_instant.jsonld";
   public static final String OCCURRENCE_LINK_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_link.jsonld";
   public static final String SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/schedule.jsonld";
+
+  public static final String CONTRACT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract.sparql";
 
   public static final String REPLACEMENT_TARGET = "[target]";
   public static final String REPLACEMENT_SHAPE = "[shape]";
