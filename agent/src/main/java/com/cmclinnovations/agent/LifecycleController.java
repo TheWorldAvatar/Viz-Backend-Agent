@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent;
 
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +29,8 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
-import com.cmclinnovations.agent.service.application.LifecycleReportService;
-import com.cmclinnovations.agent.service.application.LifecycleService;
+import com.cmclinnovations.agent.service.application.LifecycleContractService;
+import com.cmclinnovations.agent.service.application.LifecycleTaskService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
@@ -47,23 +48,22 @@ public class LifecycleController {
   private final GetService getService;
   private final UpdateService updateService;
   private final DateTimeService dateTimeService;
-  private final LifecycleService lifecycleService;
-  private final LifecycleReportService lifecycleReportService;
+  private final LifecycleContractService lifecycleContractService;
+  private final LifecycleTaskService lifecycleTaskService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final Logger LOGGER = LogManager.getLogger(LifecycleController.class);
 
   public LifecycleController(ConcurrencyService concurrencyService, AddService addService, GetService getService,
-      UpdateService updateService,
-      DateTimeService dateTimeService, LifecycleService lifecycleService, LifecycleReportService lifecycleReportService,
-      ResponseEntityBuilder responseEntityBuilder) {
+      UpdateService updateService, DateTimeService dateTimeService, LifecycleContractService lifecycleContractService,
+      LifecycleTaskService lifecycleTaskService, ResponseEntityBuilder responseEntityBuilder) {
     this.concurrencyService = concurrencyService;
     this.addService = addService;
     this.getService = getService;
     this.updateService = updateService;
     this.dateTimeService = dateTimeService;
-    this.lifecycleService = lifecycleService;
-    this.lifecycleReportService = lifecycleReportService;
+    this.lifecycleContractService = lifecycleContractService;
+    this.lifecycleTaskService = lifecycleTaskService;
     this.responseEntityBuilder = responseEntityBuilder;
   }
 
@@ -86,23 +86,72 @@ public class LifecycleController {
     params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
     params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_PENDING_STATUS);
     LOGGER.info("Received request to generate a new lifecycle for contract <{}>...", contractId);
+    // Methods will throw an error if they fail and no status checker is required
+    // Instantiates the lifecycle first before adding schedule parameters
     ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
-        LifecycleResource.LIFECYCLE_RESOURCE,
-        params);
-    if (response.getStatusCode() == HttpStatus.OK) {
-      LOGGER.info("The lifecycle of the contract has been successfully drafted!");
-      // Execute request for schedule as well
-      ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.genContractSchedule(params);
+        LifecycleResource.LIFECYCLE_RESOURCE, params, "The lifecycle of the contract has been successfully drafted!",
+        LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY);
+    this.genContractSchedule(params);
+    // Log out successful message, and return the original response
+    LOGGER.info("Contract has been successfully drafted!");
+    return response;
+  }
+
+  /**
+   * Update the draft contract's lifecycle details in the knowledge graph.
+   */
+  @PutMapping("/draft")
+  public ResponseEntity<StandardApiResponse<?>> updateDraftContract(@RequestBody Map<String, Object> params) {
+    LOGGER.info("Received request to update draft contract...");
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
+      String targetId = params.get(QueryResource.ID_KEY).toString();
+      // Verify if the contract has already been approved
+      String contractStatus = this.lifecycleContractService.getContractStatus(targetId).getBody().data().message();
+      // If approved, do not allow modifications
+      if (!contractStatus.equals("Pending")) {
+        return this.responseEntityBuilder.error(
+            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY),
+            HttpStatus.CONFLICT);
+      }
+      // Add current date into parameters
+      params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
+      params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
+      params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
+      ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.updateContractSchedule(params);
       if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
-        LOGGER.info("Contract has been successfully drafted!");
-        return this.responseEntityBuilder
-            .success(scheduleResponse.getBody().data().id(),
-                LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY));
+        return this.updateService.update(
+            targetId, LifecycleResource.LIFECYCLE_RESOURCE, LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY,
+            params);
       }
       return scheduleResponse;
-    } else {
-      return response;
-    }
+    });
+  }
+
+  /**
+   * Reset the draft contract's status to pending.
+   */
+  @PutMapping("/draft/reset")
+  public ResponseEntity<StandardApiResponse<?>> resetDraftContractStatus(@RequestBody Map<String, Object> params) {
+    LOGGER.info("Received request to reset status of draft contract...");
+    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
+    List<String> contractIds = TypeCastUtils.castToListObject(params.get(LifecycleResource.CONTRACT_KEY), String.class);
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
+      ContractOperation operation = (contractId) -> {
+        // Verify if the contract has already been approved
+        String contractStatus = this.lifecycleContractService.getContractStatus(contractId).getBody().data().message();
+        // If approved, do not allow modifications
+        if (!contractStatus.equals("Pending")) {
+          LOGGER.warn("Contract {} has already been approved and will not be reset!", contractId);
+          return null;
+        } else {
+          return this.lifecycleContractService.updateContractStatus(contractId);
+        }
+      };
+      return this.executeIterativeContractOperation(contractIds, operation,
+          "Error encountered while resetting contract for {}! Read error logs for more details",
+          LocalisationResource.ERROR_RESET_PARTIAL_KEY,
+          LocalisationResource.SUCCESS_CONTRACT_DRAFT_RESET_KEY);
+    });
   }
 
   /**
@@ -113,17 +162,24 @@ public class LifecycleController {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.SCHEDULE_RESOURCE, () -> {
       LOGGER.info("Received request to generate the schedule details for contract...");
-      this.lifecycleService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
-      ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(LifecycleResource.SCHEDULE_RESOURCE,
-          params);
-      if (response.getStatusCode() == HttpStatus.OK) {
-        LOGGER.info("Schedule has been successfully drafted for contract!");
-        return this.responseEntityBuilder
-            .success(response.getBody().data().id(),
-                LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY));
-      } else {
-        return response;
-      }
+      this.lifecycleContractService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
+      return this.addService.instantiate(LifecycleResource.SCHEDULE_RESOURCE,
+          params, "Schedule has been successfully drafted for contract!",
+          LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY);
+    });
+  }
+
+  /**
+   * Update the draft schedule details in the knowledge graph.
+   */
+  @PutMapping("/schedule")
+  public ResponseEntity<StandardApiResponse<?>> updateContractSchedule(@RequestBody Map<String, Object> params) {
+    LOGGER.info("Received request to update a draft schedule...");
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.SCHEDULE_RESOURCE, () -> {
+      this.lifecycleContractService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
+      String targetId = params.get(QueryResource.ID_KEY).toString();
+      return this.updateService.update(targetId, LifecycleResource.SCHEDULE_RESOURCE,
+          LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY, params);
     });
   }
 
@@ -208,14 +264,14 @@ public class LifecycleController {
 
   private ResponseEntity<StandardApiResponse<?>> commenceContract(String contractId, Map<String, Object> params) {
     // Verify if the contract has already been approved
-    String contractStatus = this.lifecycleService.getContractStatus(contractId).getBody().data().message();
+    String contractStatus = this.lifecycleContractService.getContractStatus(contractId).getBody().data().message();
     // If approved, do not allow duplicate approval
     if (!contractStatus.equals("Pending")) {
       LOGGER.warn("Contract for {} has already been approved! Skipping this iteration...", contractId);
       return this.responseEntityBuilder.success(contractId,
           LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_APPROVAL_KEY));
     }
-    boolean hasError = this.lifecycleService.genOrderReceivedOccurrences(contractId);
+    boolean hasError = this.lifecycleTaskService.genOrderReceivedOccurrences(contractId);
     if (hasError) {
       LOGGER.warn(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));
       return this.responseEntityBuilder.error(
@@ -223,28 +279,23 @@ public class LifecycleController {
           HttpStatus.INTERNAL_SERVER_ERROR);
     } else {
       LOGGER.info("All orders has been successfully received!");
-      JsonNode report = this.lifecycleReportService.genReportInstance(contractId);
+      JsonNode report = this.lifecycleContractService.genReportInstance(contractId);
       try {
-        this.addService.instantiateJsonLd(report, "unknown", LocalisationResource.SUCCESS_ADD_REPORT_KEY);
+        this.addService.instantiateJsonLd(report, "unknown", null, LocalisationResource.SUCCESS_ADD_REPORT_KEY);
       } catch (IllegalStateException e) {
         LOGGER.warn("Something went wrong with instantiating a report for {}!", contractId);
         throw e;
       }
       try {
-        this.lifecycleService.addOccurrenceParams(params, LifecycleEventType.APPROVED);
-        ResponseEntity<StandardApiResponse<?>> response = this.addService
-            .instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
-        if (response.getStatusCode() == HttpStatus.OK) {
-          LOGGER.info("Contract {} has been approved for service execution!", contractId);
-          return this.responseEntityBuilder
-              .success(response.getBody().data().id(),
-                  LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY));
-        }
+        this.lifecycleTaskService.addOccurrenceParams(params, LifecycleEventType.APPROVED);
+        return this.addService
+            .instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params,
+                MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
+                LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
       } catch (IllegalStateException e) {
         LOGGER.warn("Something went wrong with instantiating the approve event for {}!", contractId);
         throw e;
       }
-      return null;
     }
   }
 
@@ -278,7 +329,7 @@ public class LifecycleController {
         default:
           break;
       }
-      return this.lifecycleService.genDispatchOrDeliveryOccurrence(params, eventType);
+      return this.lifecycleTaskService.genDispatchOrDeliveryOccurrence(params, eventType);
     });
   }
 
@@ -305,7 +356,7 @@ public class LifecycleController {
             throw new IllegalArgumentException(
                 LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
           }
-          this.lifecycleService.addOccurrenceParams(params, LifecycleEventType.SERVICE_CANCELLATION);
+          this.lifecycleTaskService.addOccurrenceParams(params, LifecycleEventType.SERVICE_CANCELLATION);
           successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY;
           resourceId = LifecycleResource.CANCEL_RESOURCE;
           break;
@@ -317,7 +368,7 @@ public class LifecycleController {
             throw new IllegalArgumentException(
                 LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
           }
-          this.lifecycleService.addOccurrenceParams(params, LifecycleEventType.SERVICE_INCIDENT_REPORT);
+          this.lifecycleTaskService.addOccurrenceParams(params, LifecycleEventType.SERVICE_INCIDENT_REPORT);
           successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY;
           resourceId = LifecycleResource.REPORT_RESOURCE;
           break;
@@ -326,14 +377,7 @@ public class LifecycleController {
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, type));
       }
       // Executes common code only for cancel or report route
-      ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
-          resourceId, params);
-      if (response.getStatusCode() == HttpStatus.OK) {
-        LOGGER.info(successMsgId);
-        return this.responseEntityBuilder.success(response.getBody().data().id(),
-            LocalisationTranslator.getMessage(successMsgId, type));
-      }
-      return response;
+      return this.addService.instantiate(resourceId, params, "Request has been successfully completed!", successMsgId);
     });
   }
 
@@ -346,7 +390,7 @@ public class LifecycleController {
     String taskId = params.get(QueryResource.ID_KEY).toString();
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.continueTaskOnNextWorkingDay(taskId, contractId);
+      return this.lifecycleTaskService.continueTaskOnNextWorkingDay(taskId, contractId);
     });
   }
 
@@ -358,16 +402,10 @@ public class LifecycleController {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     LOGGER.info("Received request to rescind the contract...");
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      this.lifecycleService.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_RESCINDMENT);
-      ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
-          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
-      if (response.getStatusCode() == HttpStatus.OK) {
-        LOGGER.info("Contract has been successfully rescinded!");
-        return this.responseEntityBuilder.success(response.getBody().data().id(),
-            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_RESCIND_KEY));
-      } else {
-        return response;
-      }
+      this.lifecycleTaskService.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_RESCINDMENT);
+      return this.addService.instantiate(
+          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, "Contract has been successfully rescinded!",
+          LocalisationResource.SUCCESS_CONTRACT_RESCIND_KEY);
     });
   }
 
@@ -379,87 +417,11 @@ public class LifecycleController {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     LOGGER.info("Received request to terminate the contract...");
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      this.lifecycleService.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_TERMINATION);
-      ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
-          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
-      if (response.getStatusCode() == HttpStatus.OK) {
-        LOGGER.info("Contract has been successfully terminated!");
-        return this.responseEntityBuilder.success(response.getBody().data().id(),
-            LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_TERMINATE_KEY));
-      } else {
-        return response;
-      }
-    });
-  }
+      this.lifecycleTaskService.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_TERMINATION);
+      return this.addService.instantiate(
+          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, "Contract has been successfully terminated!",
+          LocalisationResource.SUCCESS_CONTRACT_TERMINATE_KEY);
 
-  /**
-   * Reset the draft contract's status to pending.
-   */
-  @PutMapping("/draft/reset")
-  public ResponseEntity<StandardApiResponse<?>> resetDraftContractStatus(@RequestBody Map<String, Object> params) {
-    LOGGER.info("Received request to reset status of draft contract...");
-    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
-    List<String> contractIds = TypeCastUtils.castToListObject(params.get(LifecycleResource.CONTRACT_KEY), String.class);
-    return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      ContractOperation operation = (contractId) -> {
-        // Verify if the contract has already been approved
-        String contractStatus = this.lifecycleService.getContractStatus(contractId).getBody().data().message();
-        // If approved, do not allow modifications
-        if (!contractStatus.equals("Pending")) {
-          LOGGER.warn("Contract {} has already been approved and will not be reset!", contractId);
-          return null;
-        } else {
-          return this.lifecycleService.updateContractStatus(contractId);
-        }
-      };
-      return this.executeIterativeContractOperation(contractIds, operation,
-          "Error encountered while resetting contract for {}! Read error logs for more details",
-          LocalisationResource.ERROR_RESET_PARTIAL_KEY,
-          LocalisationResource.SUCCESS_CONTRACT_DRAFT_RESET_KEY);
-    });
-  }
-
-  /**
-   * Update the draft contract's lifecycle details in the knowledge graph.
-   */
-  @PutMapping("/draft")
-  public ResponseEntity<StandardApiResponse<?>> updateDraftContract(@RequestBody Map<String, Object> params) {
-    LOGGER.info("Received request to update draft contract...");
-    return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      String targetId = params.get(QueryResource.ID_KEY).toString();
-      // Verify if the contract has already been approved
-      String contractStatus = this.lifecycleService.getContractStatus(targetId).getBody().data().message();
-      // If approved, do not allow modifications
-      if (!contractStatus.equals("Pending")) {
-        return this.responseEntityBuilder.error(
-            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY),
-            HttpStatus.CONFLICT);
-      }
-      // Add current date into parameters
-      params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
-      params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
-      params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
-      ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.updateContractSchedule(params);
-      if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
-        return this.updateService.update(
-            targetId, LifecycleResource.LIFECYCLE_RESOURCE, LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY,
-            params);
-      }
-      return scheduleResponse;
-    });
-  }
-
-  /**
-   * Update the draft schedule details in the knowledge graph.
-   */
-  @PutMapping("/schedule")
-  public ResponseEntity<StandardApiResponse<?>> updateContractSchedule(@RequestBody Map<String, Object> params) {
-    LOGGER.info("Received request to update a draft schedule...");
-    return this.concurrencyService.executeInWriteLock(LifecycleResource.SCHEDULE_RESOURCE, () -> {
-      this.lifecycleService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
-      String targetId = params.get(QueryResource.ID_KEY).toString();
-      return this.updateService.update(targetId, LifecycleResource.SCHEDULE_RESOURCE,
-          LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY, params);
     });
   }
 
@@ -470,7 +432,7 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> getContractStatus(@PathVariable String id) {
     LOGGER.info("Received request to retrieve the status for the contract: {}...", id);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      return this.lifecycleService.getContractStatus(id);
+      return this.lifecycleContractService.getContractStatus(id);
     });
   }
 
@@ -482,7 +444,7 @@ public class LifecycleController {
   public ResponseEntity<Map<String, Object>> getSchedule(@PathVariable String id) {
     LOGGER.info("Received request to retrieve the schedule for the contract: {}...", id);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.SCHEDULE_RESOURCE, () -> {
-      return this.lifecycleService.getSchedule(id);
+      return this.lifecycleContractService.getSchedule(id);
     });
   }
 
@@ -514,7 +476,7 @@ public class LifecycleController {
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     };
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      return this.lifecycleService.getContractCount(type, eventType, allRequestParams);
+      return this.lifecycleContractService.getContractCount(type, eventType, allRequestParams);
     });
   }
 
@@ -527,7 +489,8 @@ public class LifecycleController {
     LOGGER.info("Received request to retrieve filter options for draft contracts...");
     String[] filterOptionParams = getFilterOptionParams(allRequestParams);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> options = this.lifecycleService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
+      List<String> options = this.lifecycleContractService.getFilterOptions(filterOptionParams[0],
+          filterOptionParams[1],
           filterOptionParams[2], LifecycleEventType.APPROVED, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
@@ -542,8 +505,8 @@ public class LifecycleController {
     LOGGER.info("Received request to retrieve filter options for contracts in progress...");
     String[] filterOptionParams = getFilterOptionParams(allRequestParams);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> options = this.lifecycleService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
-          filterOptionParams[2], LifecycleEventType.ACTIVE_SERVICE, allRequestParams);
+      List<String> options = this.lifecycleContractService.getFilterOptions(filterOptionParams[0],
+          filterOptionParams[1], filterOptionParams[2], LifecycleEventType.ACTIVE_SERVICE, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -557,8 +520,8 @@ public class LifecycleController {
     String[] filterOptionParams = getFilterOptionParams(allRequestParams);
     LOGGER.info("Received request to retrieve filter options for archived contracts...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> options = this.lifecycleService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
-          filterOptionParams[2], LifecycleEventType.ARCHIVE_COMPLETION, allRequestParams);
+      List<String> options = this.lifecycleContractService.getFilterOptions(filterOptionParams[0],
+          filterOptionParams[1], filterOptionParams[2], LifecycleEventType.ARCHIVE_COMPLETION, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -597,7 +560,7 @@ public class LifecycleController {
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     };
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      return this.lifecycleService.getContracts(type, label, eventType,
+      return this.lifecycleContractService.getContracts(type, label, eventType,
           new PaginationState(page, limit, sortBy, true, allRequestParams));
     });
   }
@@ -610,7 +573,7 @@ public class LifecycleController {
       @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve number of outstanding tasks...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.getOccurrenceCount(null, null, false, allRequestParams);
+      return this.lifecycleTaskService.getOccurrenceCount(null, null, false, allRequestParams);
     });
   }
 
@@ -627,7 +590,7 @@ public class LifecycleController {
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.getOccurrences(null, null, type, false,
+      return this.lifecycleTaskService.getOccurrences(null, null, type, false,
           new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
     });
   }
@@ -641,7 +604,7 @@ public class LifecycleController {
     LOGGER.info("Received request to retrieve filter options for contracts in progress...");
     String[] filterOptionParams = getFilterOptionParams(allRequestParams);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> options = this.lifecycleService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
+      List<String> options = this.lifecycleTaskService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
           filterOptionParams[2], null, null, false, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
@@ -672,7 +635,7 @@ public class LifecycleController {
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     };
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.getOccurrenceCount(startTimestamp, endTimestamp, isClosed, allRequestParams);
+      return this.lifecycleTaskService.getOccurrenceCount(startTimestamp, endTimestamp, isClosed, allRequestParams);
     });
   }
 
@@ -691,7 +654,7 @@ public class LifecycleController {
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, false,
+      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, false,
           new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
     });
   }
@@ -711,7 +674,7 @@ public class LifecycleController {
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.getOccurrences(startTimestamp, endTimestamp, type, true,
+      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, true,
           new PaginationState(page, limit, sortBy, false, allRequestParams));
     });
   }
@@ -731,7 +694,7 @@ public class LifecycleController {
     String startTimestamp = allRequestParams.remove(StringResource.START_TIMESTAMP_REQUEST_PARAM);
     String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> options = this.lifecycleService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
+      List<String> options = this.lifecycleTaskService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
           filterOptionParams[2], startTimestamp, endTimestamp, taskType.equals("closed"), allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
@@ -751,7 +714,7 @@ public class LifecycleController {
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleService.getOccurrences(contract, type,
+      return this.lifecycleTaskService.getOccurrences(contract, type,
           new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
     });
   }
@@ -793,7 +756,7 @@ public class LifecycleController {
         // Search for previous occurrence to retrieve
       } else {
         try {
-          occurrenceId = this.lifecycleService.getPreviousOccurrence(id, orderTypeParams.eventType);
+          occurrenceId = this.lifecycleTaskService.getPreviousOccurrence(id, orderTypeParams.eventType);
         } catch (NullPointerException e) {
           // Fail silently to give blank form template given the missing previous
           occurrenceId = "form";
