@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.function.ContractOperation;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
@@ -393,33 +394,29 @@ public class LifecycleController {
   }
 
   /**
-   * Rescind the ongoing contract specified.
+   * Rescind or terminate the ongoing contract specified.
    */
-  @PostMapping("/archive/rescind")
-  public ResponseEntity<StandardApiResponse<?>> rescindContract(@RequestBody Map<String, Object> params) {
+  @PostMapping("/archive/{action}")
+  public ResponseEntity<StandardApiResponse<?>> rescindOrTerminateContract(@PathVariable String action,
+      @RequestBody Map<String, Object> params) {
+    final record ServiceActionParams(String logSuccess, String messageSuccess, LifecycleEventType eventType) {
+    }
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
-    LOGGER.info("Received request to rescind the contract...");
+    ServiceActionParams serviceActionParams = switch (action) {
+      case "rescind" ->
+        new ServiceActionParams("Contract has been successfully rescinded!",
+            LocalisationResource.SUCCESS_CONTRACT_RESCIND_KEY, LifecycleEventType.ARCHIVE_RESCINDMENT);
+      case "terminate" -> new ServiceActionParams("Contract has been successfully terminated!",
+          LocalisationResource.SUCCESS_CONTRACT_TERMINATE_KEY, LifecycleEventType.ARCHIVE_TERMINATION);
+      default -> throw new InvalidRouteException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, action));
+    };
+    LOGGER.info("Received request to {} the contract...", action);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      this.lifecycleTaskService.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_RESCINDMENT);
+      this.lifecycleTaskService.addOccurrenceParams(params, serviceActionParams.eventType);
       return this.addService.instantiate(
-          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, "Contract has been successfully rescinded!",
-          LocalisationResource.SUCCESS_CONTRACT_RESCIND_KEY);
-    });
-  }
-
-  /**
-   * Terminate the ongoing contract specified.
-   */
-  @PostMapping("/archive/terminate")
-  public ResponseEntity<StandardApiResponse<?>> terminateContract(@RequestBody Map<String, Object> params) {
-    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
-    LOGGER.info("Received request to terminate the contract...");
-    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      this.lifecycleTaskService.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_TERMINATION);
-      return this.addService.instantiate(
-          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, "Contract has been successfully terminated!",
-          LocalisationResource.SUCCESS_CONTRACT_TERMINATE_KEY);
-
+          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, serviceActionParams.logSuccess,
+          serviceActionParams.messageSuccess);
     });
   }
 
