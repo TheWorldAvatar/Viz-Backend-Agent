@@ -40,10 +40,10 @@ import com.cmclinnovations.agent.utils.TypeCastUtils;
 @Service
 public class LifecycleTaskService {
   private final AddService addService;
-  private final DateTimeService dateTimeService;
+  final DateTimeService dateTimeService;
   private final GetService getService;
   private final UpdateService updateService;
-  private final LifecycleQueryService lifecycleQueryService;
+  public final LifecycleQueryService lifecycleQueryService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private final LifecycleQueryFactory lifecycleQueryFactory;
@@ -52,7 +52,7 @@ public class LifecycleTaskService {
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
   private static final String ORDER_COMPLETE_MESSAGE = "Order has been completed successfully.";
-  private static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
+  static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
   /**
    * Constructs a new service with the following dependencies.
@@ -77,29 +77,6 @@ public class LifecycleTaskService {
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY), List.of(1000, 999));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY), List.of(1000, 1000));
     this.taskVarSequence.put(QueryResource.SCHEDULE_RECURRENCE_VAR, List.of(1000, 1001));
-  }
-
-  /**
-   * Populate the remaining occurrence parameters into the request parameters.
-   * 
-   * @param params    The target parameters to update.
-   * @param eventType The target event type to retrieve.
-   */
-  public void addOccurrenceParams(Map<String, Object> params, LifecycleEventType eventType) {
-    String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
-    LOGGER.debug("Adding occurrence parameters for {}...", contractId);
-    String stage = this.lifecycleQueryService.getInstance(FileService.CONTRACT_STAGE_QUERY_RESOURCE, contractId,
-        eventType.getStage()).getFieldValue(QueryResource.IRI_KEY);
-    LifecycleResource.genIdAndInstanceParameters(StringResource.getPrefix(stage), eventType, params);
-    params.put(LifecycleResource.STAGE_KEY, stage);
-    params.put(LifecycleResource.EVENT_KEY, eventType.getEvent());
-    params.putIfAbsent(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
-    // Update the order enum with the specific event instance if it exist
-    params.computeIfPresent(LifecycleResource.ORDER_KEY, (key, value) -> {
-      String orderEnum = value.toString();
-      return this.getPreviousOccurrence(QueryResource.IRI_KEY,
-          LifecycleResource.getEventClassFromOrderEnum(orderEnum), params);
-    });
   }
 
   /**
@@ -262,7 +239,6 @@ public class LifecycleTaskService {
     Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, ids, addQuery, varSequences);
     return results.stream()
         .map(binding -> {
-          String eventStatus = binding.getFieldValue(LifecycleResource.EVENT_STATUS_KEY);
           return (Map<String, Object>) binding.get().entrySet().stream()
               .filter(entry -> !entry.getKey()
                   .equals(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY).getVarName()))
@@ -337,6 +313,39 @@ public class LifecycleTaskService {
   }
 
   /**
+   * Generate a default occurrence instance.
+   * 
+   * @param params            Existing configurable parameters that will be
+   *                          amended to instantiate the occurrence.
+   * @param eventType         Target event type.
+   * @param successLogMessage Optional log message on success.
+   * @param messageResource   Optional resource id of the message to be displayed
+   *                          when successful.
+   */
+  public ResponseEntity<StandardApiResponse<?>> genOccurrence(Map<String, Object> params,
+      LifecycleEventType eventType, String successLogMessage, String messageResource) {
+    return this.genOccurrence(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, eventType, successLogMessage,
+        messageResource);
+  }
+
+  /**
+   * Generate an occurrence for the specified resource.
+   * 
+   * @param resourceId        The target lifecycle resource for instantiation.
+   * @param params            Existing configurable parameters that will be
+   *                          amended to instantiate the occurrence.
+   * @param eventType         Target event type.
+   * @param successLogMessage Optional log message on success.
+   * @param messageResource   Optional resource id of the message to be displayed
+   *                          when successful.
+   */
+  public ResponseEntity<StandardApiResponse<?>> genOccurrence(String resourceId, Map<String, Object> params,
+      LifecycleEventType eventType, String successLogMessage, String messageResource) {
+    this.lifecycleQueryService.addOccurrenceParams(params, eventType);
+    return this.addService.instantiate(resourceId, params, successLogMessage, messageResource);
+  }
+
+  /**
    * Generate occurrences for the order received event of a specified contract.
    * 
    * @param contract Target contract.
@@ -374,7 +383,7 @@ public class LifecycleTaskService {
     Map<String, Object> params = new HashMap<>();
     params.put(LifecycleResource.CONTRACT_KEY, contract);
     params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
-    this.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
     String orderPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
     // Instantiate each occurrence
     boolean hasError = false;
@@ -422,7 +431,7 @@ public class LifecycleTaskService {
     params.put(LifecycleResource.CONTRACT_KEY, contractId);
     params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
     params.put(LifecycleResource.DATE_TIME_KEY, nextWorkingDateTime);
-    this.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
     // Generate a new unique ID for the occurrence by retrieving the prefix from the
     // stage instance
     String defaultPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());

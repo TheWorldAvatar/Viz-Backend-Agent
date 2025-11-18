@@ -280,11 +280,9 @@ public class LifecycleController {
         throw e;
       }
       try {
-        this.lifecycleTaskService.addOccurrenceParams(params, LifecycleEventType.APPROVED);
-        return this.addService
-            .instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params,
-                MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
-                LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
+        return this.lifecycleTaskService.genOccurrence(params, LifecycleEventType.APPROVED,
+            MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
+            LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
       } catch (IllegalStateException e) {
         LOGGER.warn("Something went wrong with instantiating the approve event for {}!", contractId);
         throw e;
@@ -336,23 +334,19 @@ public class LifecycleController {
       @RequestBody Map<String, Object> params) {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      String successMsgId = "";
-      String resourceId = "";
       switch (type.toLowerCase()) {
         case "cancel":
           LOGGER.info("Received request to cancel the upcoming service...");
           this.checkMissingParams(params, LifecycleResource.DATE_KEY);
-
           // Service date selected for cancellation cannot be a past date
           if (this.dateTimeService.isFutureDate(this.dateTimeService.getCurrentDate(),
               params.get(LifecycleResource.DATE_KEY).toString())) {
             throw new IllegalArgumentException(
                 LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
           }
-          this.lifecycleTaskService.addOccurrenceParams(params, LifecycleEventType.SERVICE_CANCELLATION);
-          successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY;
-          resourceId = LifecycleResource.CANCEL_RESOURCE;
-          break;
+          return this.lifecycleTaskService.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params,
+              LifecycleEventType.SERVICE_CANCELLATION, "Request has been successfully completed!",
+              LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
         case "report":
           LOGGER.info("Received request to report an unfulfilled service...");
           this.checkMissingParams(params, LifecycleResource.DATE_KEY);
@@ -361,16 +355,14 @@ public class LifecycleController {
             throw new IllegalArgumentException(
                 LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
           }
-          this.lifecycleTaskService.addOccurrenceParams(params, LifecycleEventType.SERVICE_INCIDENT_REPORT);
-          successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY;
-          resourceId = LifecycleResource.REPORT_RESOURCE;
-          break;
+          return this.lifecycleTaskService.genOccurrence(LifecycleResource.REPORT_RESOURCE, params,
+              LifecycleEventType.SERVICE_CANCELLATION, "Request has been successfully completed!",
+              LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
+
         default:
           throw new IllegalArgumentException(
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, type));
       }
-      // Executes common code only for cancel or report route
-      return this.addService.instantiate(resourceId, params, "Request has been successfully completed!", successMsgId);
     });
   }
 
@@ -407,10 +399,8 @@ public class LifecycleController {
     };
     LOGGER.info("Received request to {} the contract...", action);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      this.lifecycleTaskService.addOccurrenceParams(params, serviceActionParams.eventType);
-      return this.addService.instantiate(
-          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, serviceActionParams.logSuccess,
-          serviceActionParams.messageSuccess);
+      return this.lifecycleTaskService.genOccurrence(params, serviceActionParams.eventType,
+          serviceActionParams.logSuccess, serviceActionParams.messageSuccess);
     });
   }
 

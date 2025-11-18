@@ -39,7 +39,6 @@ public class LifecycleContractService {
   private final UpdateService updateService;
   private final LifecycleQueryService lifecycleQueryService;
   private final ResponseEntityBuilder responseEntityBuilder;
-  private final LifecycleTaskService lifecycleTaskService;
 
   private final LifecycleQueryFactory lifecycleQueryFactory;
   private final Map<Variable, List<Integer>> lifecycleVarSequence = new HashMap<>();
@@ -51,14 +50,12 @@ public class LifecycleContractService {
    * 
    */
   public LifecycleContractService(AddService addService, GetService getService, UpdateService updateService,
-      LifecycleQueryService lifecycleQueryService, ResponseEntityBuilder responseEntityBuilder,
-      LifecycleTaskService lifecycleTaskService) {
+      LifecycleQueryService lifecycleQueryService, ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.getService = getService;
     this.updateService = updateService;
     this.lifecycleQueryService = lifecycleQueryService;
     this.responseEntityBuilder = responseEntityBuilder;
-    this.lifecycleTaskService = lifecycleTaskService;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
 
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY), List.of(-3, 2));
@@ -251,7 +248,7 @@ public class LifecycleContractService {
       Map<String, Object> params = new HashMap<>(paramTemplate);
       String currentContract = results.poll().getFieldValue(QueryResource.IRI_KEY);
       params.put(LifecycleResource.CONTRACT_KEY, currentContract);
-      this.lifecycleTaskService.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_COMPLETION);
+      this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_COMPLETION);
       ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
           LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
       // Error logs for any specified occurrence
