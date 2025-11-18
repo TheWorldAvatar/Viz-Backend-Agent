@@ -416,10 +416,9 @@ public class LifecycleTaskService {
   public ResponseEntity<StandardApiResponse<?>> continueTaskOnNextWorkingDay(String taskId, String contractId) {
     LOGGER.info("Generating the task for the next working day...");
     String nextWorkingDateTime = this.dateTimeService.getNextWorkingDate();
-    String nextEventQuery = this.lifecycleQueryService.getContractEventQuery(contractId,
+    Queue<SparqlBinding> nextEvents = this.lifecycleQueryService.getContractEventQuery(contractId,
         this.dateTimeService.getDateFromDateTime(nextWorkingDateTime),
         LifecycleEventType.SERVICE_ORDER_RECEIVED);
-    Queue<SparqlBinding> nextEvents = this.getService.getInstances(nextEventQuery);
     if (!nextEvents.isEmpty()) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_TASK_KEY),
@@ -539,10 +538,9 @@ public class LifecycleTaskService {
    *                  query.
    */
   private String getPreviousOccurrence(String field, LifecycleEventType eventType, Map<String, Object> params) {
-    String eventQuery = this.lifecycleQueryService.getContractEventQuery(
-        params.get(LifecycleResource.CONTRACT_KEY).toString(),
-        params.get(LifecycleResource.DATE_KEY).toString(),
-        eventType);
-    return this.getService.getInstance(eventQuery).getFieldValue(field);
+    return this.lifecycleQueryService
+        .getContractEventQuery(params.get(LifecycleResource.CONTRACT_KEY).toString(),
+            params.get(LifecycleResource.DATE_KEY).toString(), eventType)
+        .poll().getFieldValue(field);
   }
 }

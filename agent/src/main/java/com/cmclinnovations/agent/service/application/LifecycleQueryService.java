@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.service.application;
 
 import java.util.Map;
+import java.util.Queue;
 
 import org.springframework.stereotype.Service;
 
@@ -39,8 +40,18 @@ public class LifecycleQueryService {
    * @param replacements Replacements for at least one [target] value.
    */
   public SparqlBinding getInstance(String resourceId, String... replacements) {
+    return this.getInstances(resourceId, replacements).poll();
+  }
+
+  /**
+   * Get all instances using a default query based on the resource ID.
+   * 
+   * @param resourceId   The identifier of the query resource.
+   * @param replacements Replacements for at least one [target] value.
+   */
+  public Queue<SparqlBinding> getInstances(String resourceId, String... replacements) {
     String query = this.fileService.getContentsWithReplacement(resourceId, replacements);
-    return this.getService.getInstance(query);
+    return this.getService.getInstances(query);
   }
 
   /**
@@ -51,12 +62,12 @@ public class LifecycleQueryService {
    * @param date      Date for filtering.
    * @param eventType The target event type to retrieve.
    */
-  public String getContractEventQuery(String contract, String date, LifecycleEventType eventType) {
+  public Queue<SparqlBinding> getContractEventQuery(String contract, String date, LifecycleEventType eventType) {
     String dateFilter = "";
     if (date != null) {
       dateFilter = "FILTER(xsd:date(?date)=\"" + date + "\"^^xsd:date)";
     }
-    return this.fileService.getContentsWithReplacement(FileService.CONTRACT_EVENT_QUERY_RESOURCE, contract,
+    return this.getInstances(FileService.CONTRACT_EVENT_QUERY_RESOURCE, contract,
         eventType.getEvent(), dateFilter);
   }
 
@@ -78,11 +89,12 @@ public class LifecycleQueryService {
     // Update the order enum with the specific event instance if it exist
     params.computeIfPresent(LifecycleResource.ORDER_KEY, (key, value) -> {
       String orderEnum = value.toString();
-      String eventQuery = this.getContractEventQuery(
-          params.get(LifecycleResource.CONTRACT_KEY).toString(),
-          params.get(LifecycleResource.DATE_KEY).toString(),
-          LifecycleResource.getEventClassFromOrderEnum(orderEnum));
-      return this.getService.getInstance(eventQuery).getFieldValue(QueryResource.IRI_KEY);
+      return this
+          .getContractEventQuery(params.get(LifecycleResource.CONTRACT_KEY).toString(),
+              params.get(LifecycleResource.DATE_KEY).toString(),
+              LifecycleResource.getEventClassFromOrderEnum(orderEnum))
+          .poll()
+          .getFieldValue(QueryResource.IRI_KEY);
     });
   }
 }
