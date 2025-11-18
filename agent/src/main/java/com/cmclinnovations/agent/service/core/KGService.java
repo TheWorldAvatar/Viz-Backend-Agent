@@ -265,8 +265,7 @@ public class KGService {
         return ModelFactory.createDefaultModel();
       }
     }
-    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target);
-    query = query.replace(FileService.REPLACEMENT_SHAPE,
+    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target,
         isSparqlConstructRules ? ";a <http://www.w3.org/ns/shacl#SPARQLRule>."
             : ".MINUS{?ruleShape a <http://www.w3.org/ns/shacl#SPARQLRule>}");
     List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH);

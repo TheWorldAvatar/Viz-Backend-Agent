@@ -29,6 +29,7 @@ import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
+import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
@@ -42,16 +43,15 @@ public class LifecycleTaskService {
   private final DateTimeService dateTimeService;
   private final GetService getService;
   private final UpdateService updateService;
+  private final LifecycleQueryService lifecycleQueryService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private final LifecycleQueryFactory lifecycleQueryFactory;
-  private final Map<Variable, List<Integer>> lifecycleVarSequence = new HashMap<>();
   private final Map<Variable, List<Integer>> taskVarSequence = new HashMap<>();
 
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
   private static final String ORDER_COMPLETE_MESSAGE = "Order has been completed successfully.";
-  private static final String SERVICE_DISCHARGE_MESSAGE = "Service has been completed successfully.";
   private static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
   /**
@@ -59,11 +59,13 @@ public class LifecycleTaskService {
    * 
    */
   public LifecycleTaskService(AddService addService, DateTimeService dateTimeService, GetService getService,
-      UpdateService updateService, ResponseEntityBuilder responseEntityBuilder) {
+      UpdateService updateService, LifecycleQueryService lifecycleQueryService,
+      ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
     this.getService = getService;
     this.updateService = updateService;
+    this.lifecycleQueryService = lifecycleQueryService;
     this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
 
@@ -86,8 +88,8 @@ public class LifecycleTaskService {
   public void addOccurrenceParams(Map<String, Object> params, LifecycleEventType eventType) {
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     LOGGER.debug("Adding occurrence parameters for {}...", contractId);
-    String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
-    String stage = this.getService.getInstance(query).getFieldValue(QueryResource.IRI_KEY);
+    String stage = this.lifecycleQueryService.getInstance(FileService.CONTRACT_STAGE_QUERY_RESOURCE, contractId,
+        eventType.getStage()).getFieldValue(QueryResource.IRI_KEY);
     LifecycleResource.genIdAndInstanceParameters(StringResource.getPrefix(stage), eventType, params);
     params.put(LifecycleResource.STAGE_KEY, stage);
     params.put(LifecycleResource.EVENT_KEY, eventType.getEvent());
@@ -344,8 +346,8 @@ public class LifecycleTaskService {
   public boolean genOrderReceivedOccurrences(String contract) {
     LOGGER.info("Generating all orders for the active contract {}...", contract);
     // Retrieve schedule information for the specific contract
-    String query = this.lifecycleQueryFactory.getServiceScheduleQuery(contract);
-    SparqlBinding bindings = this.getService.getInstance(query);
+    SparqlBinding bindings = this.lifecycleQueryService.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,
+        contract, contract);
     // Extract specific schedule info
     String startDate = bindings
         .getFieldValue(QueryResource.SCHEDULE_START_DATE_VAR.getVarName());
@@ -405,7 +407,7 @@ public class LifecycleTaskService {
   public ResponseEntity<StandardApiResponse<?>> continueTaskOnNextWorkingDay(String taskId, String contractId) {
     LOGGER.info("Generating the task for the next working day...");
     String nextWorkingDateTime = this.dateTimeService.getNextWorkingDate();
-    String nextEventQuery = this.lifecycleQueryFactory.getContractEventQuery(contractId,
+    String nextEventQuery = this.lifecycleQueryService.getContractEventQuery(contractId,
         this.dateTimeService.getDateFromDateTime(nextWorkingDateTime),
         LifecycleEventType.SERVICE_ORDER_RECEIVED);
     Queue<SparqlBinding> nextEvents = this.getService.getInstances(nextEventQuery);
@@ -486,8 +488,8 @@ public class LifecycleTaskService {
     }
 
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
-    String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
-    String stage = this.getService.getInstance(query).getFieldValue(QueryResource.IRI_KEY);
+    String stage = this.lifecycleQueryService.getInstance(FileService.CONTRACT_STAGE_QUERY_RESOURCE, contractId,
+        eventType.getStage()).getFieldValue(QueryResource.IRI_KEY);
     params.put(LifecycleResource.STAGE_KEY, stage);
     params.put(LifecycleResource.REMARKS_KEY, remarksMsg);
     String occurrenceId = params.get(QueryResource.ID_KEY).toString();
@@ -514,8 +516,9 @@ public class LifecycleTaskService {
    * @param eventType     Target event type to query for.
    */
   public String getPreviousOccurrence(String latestEventId, LifecycleEventType eventType) {
-    String query = this.lifecycleQueryFactory.getContractEventQuery(latestEventId, eventType);
-    return this.getService.getInstance(query).getFieldValue(QueryResource.ID_KEY);
+    return this.lifecycleQueryService
+        .getInstance(FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, latestEventId, eventType.getEvent())
+        .getFieldValue(QueryResource.ID_KEY);
   }
 
   /**
@@ -527,7 +530,7 @@ public class LifecycleTaskService {
    *                  query.
    */
   private String getPreviousOccurrence(String field, LifecycleEventType eventType, Map<String, Object> params) {
-    String eventQuery = this.lifecycleQueryFactory.getContractEventQuery(
+    String eventQuery = this.lifecycleQueryService.getContractEventQuery(
         params.get(LifecycleResource.CONTRACT_KEY).toString(),
         params.get(LifecycleResource.DATE_KEY).toString(),
         eventType);

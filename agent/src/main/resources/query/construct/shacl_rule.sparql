@@ -14,5 +14,5 @@ WHERE {
        sh:node*/sh:rule ?ruleShape .
   ?ruleShape a ?ruleType;
        ?pred ?object
-       [shape]
+       [target]
 }

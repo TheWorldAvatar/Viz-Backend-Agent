@@ -37,7 +37,7 @@ public class LifecycleContractService {
   private final AddService addService;
   private final GetService getService;
   private final UpdateService updateService;
-  private final FileService fileService;
+  private final LifecycleQueryService lifecycleQueryService;
   private final ResponseEntityBuilder responseEntityBuilder;
   private final LifecycleTaskService lifecycleTaskService;
 
@@ -51,11 +51,12 @@ public class LifecycleContractService {
    * 
    */
   public LifecycleContractService(AddService addService, GetService getService, UpdateService updateService,
-      FileService fileService, ResponseEntityBuilder responseEntityBuilder, LifecycleTaskService lifecycleTaskService) {
+      LifecycleQueryService lifecycleQueryService, ResponseEntityBuilder responseEntityBuilder,
+      LifecycleTaskService lifecycleTaskService) {
     this.addService = addService;
     this.getService = getService;
     this.updateService = updateService;
-    this.fileService = fileService;
+    this.lifecycleQueryService = lifecycleQueryService;
     this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleTaskService = lifecycleTaskService;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
@@ -76,11 +77,21 @@ public class LifecycleContractService {
    */
   public ResponseEntity<StandardApiResponse<?>> getContractStatus(String contract) {
     LOGGER.debug("Retrieving the status of the contract...");
-    String query = this.lifecycleQueryFactory.getServiceStatusQuery(contract);
-    SparqlBinding result = this.getService.getInstance(query);
+    SparqlBinding result = this.lifecycleQueryService.getInstance(FileService.CONTRACT_STATUS_QUERY_RESOURCE, contract);
     LOGGER.info("Successfuly retrieved contract status!");
     return this.responseEntityBuilder.success(result.getFieldValue(QueryResource.IRI_KEY),
         result.getFieldValue(LifecycleResource.STATUS_KEY));
+  }
+
+  /**
+   * Verify if the contract should guard against approval.
+   * 
+   * @param contract The target contract id.
+   */
+  public boolean guardAgainstApproval(String contract) {
+    String contractStatus = this.lifecycleQueryService.getInstance(FileService.CONTRACT_STATUS_QUERY_RESOURCE, contract)
+        .getFieldValue(LifecycleResource.STATUS_KEY);
+    return !contractStatus.equals("Pending");
   }
 
   /**
@@ -89,8 +100,8 @@ public class LifecycleContractService {
    * @param contractId The ID of the target contract to report on.
    */
   public void genReportInstance(String contractId) {
-    String query = this.fileService.getContentsWithReplacement(FileService.CONTRACT_QUERY_RESOURCE, contractId);
-    String contract = this.getService.getInstance(query).getFieldValue(QueryResource.IRI_KEY);
+    String contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId)
+        .getFieldValue(QueryResource.IRI_KEY);
     Map<String, Object> reportParams = new HashMap<>();
     reportParams.put(LifecycleResource.CONTRACT_KEY, contract);
     this.addService.instantiate(LifecycleResource.LIFECYCLE_REPORT_RESOURCE, reportParams, null,
@@ -114,8 +125,8 @@ public class LifecycleContractService {
    */
   public ResponseEntity<Map<String, Object>> getSchedule(String contract) {
     LOGGER.debug("Retrieving the schedule details of the contract...");
-    String query = this.lifecycleQueryFactory.getServiceScheduleQuery(contract);
-    SparqlBinding result = this.getService.getInstance(query);
+    SparqlBinding result = this.lifecycleQueryService.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,
+        contract, contract);
     LOGGER.info("Successfuly retrieved schedule!");
     return new ResponseEntity<>(result.get(), HttpStatus.OK);
   }
@@ -129,8 +140,9 @@ public class LifecycleContractService {
   public void addStageInstanceToParams(Map<String, Object> params, LifecycleEventType eventType) {
     String contractId = params.get(QueryResource.ID_KEY).toString();
     LOGGER.debug("Adding stage parameters for contract...");
-    String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
-    String stage = this.getService.getInstance(query).getFieldValue(QueryResource.IRI_KEY);
+    String stage = this.lifecycleQueryService.getInstance(FileService.CONTRACT_STAGE_QUERY_RESOURCE, contractId,
+        eventType.getStage())
+        .getFieldValue(QueryResource.IRI_KEY);
     params.put(LifecycleResource.STAGE_KEY, stage);
   }
 

@@ -105,10 +105,8 @@ public class LifecycleController {
     LOGGER.info("Received request to update draft contract...");
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
       String targetId = params.get(QueryResource.ID_KEY).toString();
-      // Verify if the contract has already been approved
-      String contractStatus = this.lifecycleContractService.getContractStatus(targetId).getBody().data().message();
-      // If approved, do not allow modifications
-      if (!contractStatus.equals("Pending")) {
+      // Do not allow modifications if it has been approved
+      if (this.lifecycleContractService.guardAgainstApproval(targetId)) {
         return this.responseEntityBuilder.error(
             LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY),
             HttpStatus.CONFLICT);
@@ -137,10 +135,8 @@ public class LifecycleController {
     List<String> contractIds = TypeCastUtils.castToListObject(params.get(LifecycleResource.CONTRACT_KEY), String.class);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
       ContractOperation operation = (contractId) -> {
-        // Verify if the contract has already been approved
-        String contractStatus = this.lifecycleContractService.getContractStatus(contractId).getBody().data().message();
-        // If approved, do not allow modifications
-        if (!contractStatus.equals("Pending")) {
+        // Do not allow modifications if it has been approved
+        if (this.lifecycleContractService.guardAgainstApproval(contractId)) {
           LOGGER.warn("Contract {} has already been approved and will not be reset!", contractId);
           return null;
         } else {
@@ -263,10 +259,8 @@ public class LifecycleController {
   }
 
   private ResponseEntity<StandardApiResponse<?>> commenceContract(String contractId, Map<String, Object> params) {
-    // Verify if the contract has already been approved
-    String contractStatus = this.lifecycleContractService.getContractStatus(contractId).getBody().data().message();
-    // If approved, do not allow duplicate approval
-    if (!contractStatus.equals("Pending")) {
+    // Do not allow duplicate approval
+    if (this.lifecycleContractService.guardAgainstApproval(contractId)) {
       LOGGER.warn("Contract for {} has already been approved! Skipping this iteration...", contractId);
       return this.responseEntityBuilder.success(contractId,
           LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_APPROVAL_KEY));

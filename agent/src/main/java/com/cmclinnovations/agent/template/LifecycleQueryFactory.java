@@ -3,10 +3,8 @@ package com.cmclinnovations.agent.template;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.ModifyQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
@@ -58,55 +56,6 @@ public class LifecycleQueryFactory {
     LifecycleResource.convertVarForStrFilter(QueryResource.SCHEDULE_START_TIME_VAR, template, filterTemplate);
     LifecycleResource.convertVarForStrFilter(QueryResource.SCHEDULE_END_TIME_VAR, template, filterTemplate);
     SCHEDULE_CONTRACT_FILTER_QUERY_MAPPINGS = Collections.unmodifiableMap(filterTemplate);
-  }
-
-  /**
-   * Retrieves the SPARQL query to get the current status of the contract.
-   * 
-   * @param contractId the target contract id.
-   */
-  public String getServiceStatusQuery(String contractId) {
-    return QueryResource.PREFIX_TEMPLATE
-        + "SELECT DISTINCT ?iri ?status WHERE{"
-        + "{SELECT DISTINCT ?iri (MAX(?priority_val) AS ?priority) WHERE{"
-        + "?iri dc-terms:identifier \"" + contractId + "\";"
-        + "fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/<https://www.omg.org/spec/Commons/Collections/comprises> ?event."
-        + "?event " + LifecycleResource.LIFECYCLE_EVENT_TYPE_PREDICATE_PATH + " ?event_type."
-        + "BIND(IF(?event_type=ontoservice:ContractDischarge||?event_type=ontoservice:ContractRescission||?event_type=ontoservice:ContractTermination,"
-        + "2,IF(?event_type=ontoservice:ContractApproval,1,0)"
-        + ") AS ?priority_val)"
-        + "}"
-        + "GROUP BY ?iri}"
-        + "BIND(IF(?priority=2,\"Archived\","
-        + "IF(?priority=1,\"Active\",\"Pending\")"
-        + ") AS ?status)"
-        + "}";
-  }
-
-  /**
-   * Retrieves the SPARQL query to get the schedule of the contract.
-   * 
-   * @param contractId the target contract id.
-   */
-  public String getServiceScheduleQuery(String contractId) {
-    return QueryResource.PREFIX_TEMPLATE
-        + "SELECT DISTINCT * WHERE{"
-        + SCHEDULE_QUERY_MAPPINGS.values().stream().collect(Collectors.joining("\n"))
-        + "?iri dc-terms:identifier \"" + contractId + "\";"
-        // Nested query for all days
-        + "{SELECT ?iri "
-        + "(MAX(IF(?day=fibo-fnd-dt-fd:Monday,\"Monday\",\"\")) AS ?monday) "
-        + "(MAX(IF(?day=fibo-fnd-dt-fd:Tuesday,\"Tuesday\",\"\")) AS ?tuesday) "
-        + "(MAX(IF(?day=fibo-fnd-dt-fd:Wednesday,\"Wednesday\",\"\")) AS ?wednesday) "
-        + "(MAX(IF(?day=fibo-fnd-dt-fd:Thursday,\"Thursday\",\"\")) AS ?thursday) "
-        + "(MAX(IF(?day=fibo-fnd-dt-fd:Friday,\"Friday\",\"\")) AS ?friday) "
-        + "(MAX(IF(?day=fibo-fnd-dt-fd:Saturday,\"Saturday\",\"\")) AS ?saturday) "
-        + "(MAX(IF(?day=fibo-fnd-dt-fd:Sunday,\"Sunday\",\"\")) AS ?sunday) "
-        + "WHERE{?iri dc-terms:identifier \"" + contractId + "\";"
-        + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH
-        + "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/fibo-fnd-dt-fd:hasRecurrenceInterval ?day.}"
-        + "GROUP BY ?iri}"
-        + "}";
   }
 
   /**
@@ -290,69 +239,6 @@ public class LifecycleQueryFactory {
         + QueryResource.SCHEDULE_RECURRENCE_VAR.getQueryString()
         + ")");
     return results;
-  }
-
-  /**
-   * Retrieves the SPARQL query to get a stage associated with the target
-   * contract.
-   * 
-   * @param contract  The target contract instance.
-   * @param eventType The target event type to retrieve.
-   */
-  public String getStageQuery(String contract, LifecycleEventType eventType) {
-    return QueryResource.PREFIX_TEMPLATE
-        + "SELECT DISTINCT ?iri WHERE {" +
-        "?contract fibo-fnd-arr-lif:hasLifecycle ?lifecycle;" +
-        "dc-terms:identifier \"" + contract + "\"." +
-        "?lifecycle fibo-fnd-arr-lif:hasStage ?iri ." +
-        "?iri fibo-fnd-rel-rel:exemplifies <" + eventType.getStage() + "> ." +
-        "}";
-  }
-
-  /**
-   * Retrieves the SPARQL query to retrieve the event instance associated with the
-   * target event type for a specific contract and date.
-   * 
-   * @param contract  The input contract instance.
-   * @param date      Date for filtering.
-   * @param eventType The target event type to retrieve.
-   */
-  public String getContractEventQuery(String contract, String date, LifecycleEventType eventType) {
-    String dateFilter = "";
-    if (date != null) {
-      dateFilter = "FILTER(xsd:date(?date)=\"" + date + "\"^^xsd:date)";
-    }
-    return QueryResource.PREFIX_TEMPLATE +
-        "SELECT DISTINCT ?iri ?id WHERE{" +
-        "?contract dc-terms:identifier \"" + contract + "\";" +
-        "fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage." +
-        "?stage cmns-col:comprises ?event;" +
-        "cmns-col:comprises ?iri." +
-        "?event fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;" +
-        "fibo-fnd-dt-oc:hasEventDate ?date;" +
-        "^cmns-dt:succeeds* ?iri." +
-        "?iri dc-terms:identifier ?id;" +
-        "fibo-fnd-rel-rel:exemplifies <" + eventType.getEvent() + ">." +
-        dateFilter +
-        "}";
-  }
-
-  /**
-   * Retrieves the SPARQL query to retrieve the specific event occurrence instance
-   * associated with the target event type based on the latest event id.
-   * 
-   * @param latestEventId The identifier of the latest event in the succeeds
-   *                      chain.
-   * @param eventType     The target event type to retrieve.
-   */
-  public String getContractEventQuery(String latestEventId, LifecycleEventType eventType) {
-    Variable eventVar = SparqlBuilder.var(LifecycleResource.EVENT_KEY);
-    return QueryResource.getSelectQuery(true, null).select(QueryResource.IRI_VAR, QueryResource.ID_VAR)
-        .where(eventVar.has(QueryResource.DC_TERM_ID, Rdf.literalOf(latestEventId))
-            .andHas(p -> p.pred(QueryResource.CMNS_DT_SUCCEEDS).zeroOrMore(), QueryResource.IRI_VAR))
-        .where(QueryResource.IRI_VAR.has(QueryResource.DC_TERM_ID, QueryResource.ID_VAR)
-            .andHas(p -> p.pred(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES), Rdf.iri(eventType.getEvent())))
-        .getQueryString();
   }
 
   /**

@@ -1,0 +1,20 @@
+PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>
+PREFIX cmns-dt: <https://www.omg.org/spec/Commons/DatesAndTimes/>
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX fibo-fnd-arr-lif: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/>
+PREFIX fibo-fnd-dt-oc: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/>
+PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT DISTINCT ?iri ?id WHERE{
+  ?contract dc-terms:identifier "[target]";
+    fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage.
+  ?stage cmns-col:comprises ?event;
+    cmns-col:comprises ?iri.
+  ?event fibo-fnd-rel-rel:exemplifies <https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;
+    fibo-fnd-dt-oc:hasEventDate ?date;
+    ^cmns-dt:succeeds* ?iri.
+  ?iri dc-terms:identifier ?id;
+    fibo-fnd-rel-rel:exemplifies <[target]>.
+  [target]
+}

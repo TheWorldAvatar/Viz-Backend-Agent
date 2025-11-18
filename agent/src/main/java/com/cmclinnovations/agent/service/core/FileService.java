@@ -54,8 +54,14 @@ public class FileService {
   public static final String SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/schedule.jsonld";
 
   public static final String CONTRACT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract.sparql";
+  public static final String CONTRACT_STATUS_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_status.sparql";
+  public static final String CONTRACT_STAGE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_stage.sparql";
+  public static final String CONTRACT_EVENT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_event.sparql";
+  public static final String CONTRACT_PREV_EVENT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR
+      + "contract_prev_event.sparql";
+  public static final String CONTRACT_SCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "schedule.sparql";
 
-  public static final String REPLACEMENT_TARGET = "[target]";
+  public static final String REPLACEMENT_TARGET = "\\[target\\]";
   public static final String REPLACEMENT_SHAPE = "[shape]";
   public static final String REPLACEMENT_PATH = "[path]";
   public static final String REPLACEMENT_FILTER = "[filter]";
@@ -77,14 +83,16 @@ public class FileService {
    * Retrieve the target file contents with replacement for [target].
    * 
    * @param resourceFilePath File path to resource.
-   * @param replacement      The value to replace [target] with.
+   * @param replacements     A variable list values to replace [target] with.
    */
-  public String getContentsWithReplacement(String resourceFilePath, String replacement) {
+  public String getContentsWithReplacement(String resourceFilePath, String... replacements) {
     LOGGER.debug("Retrieving the contents at {}...", resourceFilePath);
     String contents = "";
     try (InputStream inputStream = this.resourceLoader.getResource(resourceFilePath).getInputStream()) {
       contents = this.parseSparqlFile(inputStream);
-      contents = contents.replace(REPLACEMENT_TARGET, replacement);
+      for (String replacement : replacements) {
+        contents = contents.replaceFirst(REPLACEMENT_TARGET, replacement);
+      }
     } catch (FileNotFoundException e) {
       throw new FileSystemNotFoundException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FILE_KEY, resourceFilePath));
