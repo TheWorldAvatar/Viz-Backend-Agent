@@ -69,8 +69,8 @@ public class GetService {
    * @param requireLabel     Indicates if labels should be returned
    */
   public String getQuery(String shaclReplacement, boolean requireLabel) {
-    String query = this.queryTemplateService.getShaclQuery(shaclReplacement, requireLabel);
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
+    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this
+        .getSparqlQueryConstructionParameters(shaclReplacement, requireLabel);
     return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, new ArrayDeque<>(),
         null, "", new HashMap<>());
   }
@@ -84,8 +84,7 @@ public class GetService {
   public ResponseEntity<StandardApiResponse<?>> getMatchingInstances(String resourceID, Map<String, String> criterias) {
     LOGGER.debug("Retrieving the form template for {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
-    String query = this.queryTemplateService.getShaclQuery(iri, false);
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
+    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.getSparqlQueryConstructionParameters(iri, false);
     String searchQuery = this.queryTemplateService.genSearchQuery(nestedVariablesAndPropertyPaths, criterias);
     // Query for direct instances
     Queue<SparqlBinding> results = this.kgService.query(searchQuery, SparqlEndpointType.MIXED);
@@ -368,9 +367,8 @@ public class GetService {
       Map<String, Set<String>> filters) {
     // First query for all the available query construction params associated with
     // the target replacement
-    String query = this.queryTemplateService.getShaclQuery(shaclReplacement, true);
-    ArrayDeque<Queue<SparqlBinding>> results = (ArrayDeque<Queue<SparqlBinding>>) this.kgService
-        .queryNestedPredicates(query);
+    ArrayDeque<Queue<SparqlBinding>> results = (ArrayDeque<Queue<SparqlBinding>>) this
+        .getSparqlQueryConstructionParameters(shaclReplacement, true);
     // Next, parse and get the query statements for the fields of interest that
     // requires sorting or filtering
     Set<String> filterFields = new HashSet<>(filters.keySet());
@@ -468,8 +466,8 @@ public class GetService {
       // Parent related parameters should be disabled
       parentField = null;
     }
-    String query = this.queryTemplateService.getShaclQuery(nodeShapeReplacement, requireLabel);
-    Queue<Queue<SparqlBinding>> queryVarsAndPaths = this.kgService.queryNestedPredicates(query);
+    Queue<Queue<SparqlBinding>> queryVarsAndPaths = this.getSparqlQueryConstructionParameters(nodeShapeReplacement,
+        requireLabel);
     String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetIds,
         parentField, addQueryStatements, addVars);
     LOGGER.debug("Querying the knowledge graph for the instances...");
@@ -482,6 +480,20 @@ public class GetService {
       instances.forEach(instance -> instance.addSequence(varSequence));
     }
     return instances;
+  }
+
+  /**
+   * Retrieve the parameters defined by the user in SHACL to generate the SPARQL
+   * query required.
+   * 
+   * @param shaclReplacement The replacement value of the SHACL query target
+   * @param requireLabel     Indicates if labels should be returned for all the
+   *                         fields that are IRIs.
+   */
+  private Queue<Queue<SparqlBinding>> getSparqlQueryConstructionParameters(String shaclReplacement,
+      boolean requireLabel) {
+    String query = this.queryTemplateService.getShaclQuery(shaclReplacement, requireLabel);
+    return this.kgService.queryNestedPredicates(query);
   }
 
   /**
