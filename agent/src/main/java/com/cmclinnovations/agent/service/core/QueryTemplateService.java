@@ -113,23 +113,19 @@ public class QueryTemplateService {
     if (requireId) {
       query.select(QueryResource.ID_VAR);
     }
-    if (pagination.limit() == null) {
+    Queue<SortDirective> sortDirectives = pagination.sortDirectives();
+    boolean hasNoIdToSort = sortDirectives.stream()
+        .allMatch(directive -> !directive.field().getVarName().equals(QueryResource.ID_KEY));
+    while (!sortDirectives.isEmpty()) {
+      SortDirective directive = sortDirectives.poll();
+      if (!directive.field().getVarName().equals(QueryResource.ID_KEY)) {
+        query.select(directive.field());
+      }
+      query.orderBy(directive.order());
+    }
+    // ID is an index and has to be included even if not specified by the user
+    if (hasNoIdToSort) {
       query.orderBy(QueryResource.ID_VAR);
-    } else {
-      Queue<SortDirective> sortDirectives = pagination.sortDirectives();
-      boolean hasNoIdToSort = sortDirectives.stream()
-          .allMatch(directive -> !directive.field().getVarName().equals(QueryResource.ID_KEY));
-      while (!sortDirectives.isEmpty()) {
-        SortDirective directive = sortDirectives.poll();
-        if (!directive.field().getVarName().equals(QueryResource.ID_KEY)) {
-          query.select(directive.field());
-        }
-        query.orderBy(directive.order());
-      }
-      // ID is an index and has to be included even if not specified by the user
-      if (hasNoIdToSort) {
-        query.orderBy(QueryResource.ID_VAR);
-      }
     }
     return query
         .getQueryString()

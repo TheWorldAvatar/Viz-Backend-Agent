@@ -85,52 +85,6 @@ public class LifecycleQueryFactory {
   }
 
   /**
-   * Retrieves the simplified SPARQL query to get the service tasks with the right
-   * event.
-   * 
-   * @param startDate Target start date in YYYY-MM-DD format. Optional when
-   *                  passing "".
-   * @param endDate   Target end date in YYYY-MM-DD format.
-   * @param isClosed  Indicates if task has been closed or not.
-   */
-  public Map<String, String> getServiceTasksFilter(String startDate, String endDate, boolean isClosed) {
-    String eventDateVar = QueryResource.genVariable(LifecycleResource.DATE_KEY).getQueryString();
-    Map<String, String> results = new HashMap<>();
-    String targetEventStatements;
-    if (isClosed) {
-      targetEventStatements = CLOSED_QUERY_STATEMENTS;
-    } else {
-      targetEventStatements = UNCLOSED_QUERY_STATEMENTS;
-    }
-    String filterDateStatement = "";
-    // For outstanding tasks, start dates are omitted
-    if (!startDate.isEmpty()) {
-      filterDateStatement = "xsd:date(" + eventDateVar + ")>=\"" + startDate + "\"^^xsd:date && ";
-    }
-    filterDateStatement = "FILTER(" + filterDateStatement + "xsd:date(" + eventDateVar + ")<=\"" + endDate
-        + "\"^^xsd:date)";
-    results.put(LifecycleResource.LIFECYCLE_RESOURCE,
-        "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
-            + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
-            + "<https://www.omg.org/spec/Commons/Collections/comprises> " + QueryResource.IRI_VAR.getQueryString() + "."
-            + QueryResource.IRI_VAR.has(pred -> pred.pred(QueryResource.CMNS_DT_SUCCEEDS).zeroOrMore(),
-                QueryResource.EVENT_ID_VAR).getQueryString()
-            + QueryResource.EVENT_ID_VAR.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-                Rdf.iri(LifecycleEventType.SERVICE_ORDER_RECEIVED.getEvent()))
-                .andHas(QueryResource.FIBO_FND_DT_OC_HAS_EVENT_DATE, QueryResource.DATE_VAR)
-                .getQueryString()
-            + filterDateStatement
-            // Event must be the last in the chain ie no other events will succeed it
-            + "MINUS{" + QueryResource.IRI_VAR.getQueryString()
-            + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}"
-            + targetEventStatements);
-    results.put(LifecycleResource.LAST_MODIFIED_KEY,
-        "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
-            + QueryResource.LAST_MODIFIED_VAR.getQueryString() + ShaclResource.FULL_STOP);
-    return results;
-  }
-
-  /**
    * Retrieves the SPARQL query to get the service tasks for the specified
    * date and/or contract.
    * 

@@ -1,7 +1,9 @@
 package com.cmclinnovations.agent.utils;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -209,6 +211,22 @@ public class QueryResource {
     }
 
     /**
+     * Generate a FILTER clause with multiple expressions separated by OR.
+     * 
+     * @param firstExpression The first expression.
+     * @param expressions     The subsequent set of expressions.
+     */
+    public static String filter(String firstExpression, String... expressions) {
+        StringBuilder filterBuilder = new StringBuilder("FILTER(");
+        filterBuilder.append(firstExpression);
+        for (String currentExpression : expressions) {
+            filterBuilder.append("||").append(currentExpression);
+        }
+        filterBuilder.append(")");
+        return filterBuilder.toString();
+    }
+
+    /**
      * Generate an UNION clause between several set of query statements
      * 
      * @param firstStatements The first set of statements.
@@ -245,7 +263,7 @@ public class QueryResource {
 
     /**
      * Generates query statements for filtering targets based on the filters if
-     * available.
+     * available using VALUES clause.
      * 
      * @param query   The query to be added.
      * @param field   The field of interest.
@@ -324,6 +342,43 @@ public class QueryResource {
                 }
             }
         }
+    }
+
+    /**
+     * Generates a FILTER clause for filtering targets based on the filters if
+     * available using the FILTER expression. This is specific for service events
+     * 
+     * @param field   The field of interest.
+     * @param filters The list of filter values to target by.
+     */
+    public static String genServiceEventsFilterClause(String field, Set<String> filters) {
+        StringBuilder builder = new StringBuilder();
+        if (!filters.isEmpty()) {
+            List<String> expressions = new ArrayList<>();
+            if (filters.contains(QueryResource.NULL_KEY)) {
+                filters.remove(QueryResource.NULL_KEY);
+                expressions.add("!BOUND(?" + field + ")");
+            }
+            // On removing null, verify if there are still other filters
+            if (!filters.isEmpty()) {
+                filters.forEach(filter -> {
+                    if (!filter.isEmpty()) {
+                        expressions.add("?" + field + "=" + filter);
+                    }
+                });
+            }
+            String filterClause;
+            if (expressions.size() == 1) {
+                filterClause = QueryResource.filter(expressions.get(0));
+            } else {
+                filterClause = QueryResource.filter(expressions.get(0),
+                        expressions.stream()
+                                .skip(1)
+                                .toArray(String[]::new));
+            }
+            builder.append(filterClause);
+        }
+        return builder.toString();
     }
 
     /**

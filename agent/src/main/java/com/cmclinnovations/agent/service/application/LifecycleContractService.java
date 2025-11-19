@@ -159,7 +159,7 @@ public class LifecycleContractService {
     // Sorting is irrelevant for count
     String[] addStatements = this.genLifecycleStatements(eventType, new HashSet<>(), parsedFilters, "", false);
     return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(resourceID, addStatements[0], filters, true)));
+        String.valueOf(this.getService.getCount(resourceID, addStatements[0], "", filters, true)));
   }
 
   /**

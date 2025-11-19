@@ -23,6 +23,7 @@ public class StringResource {
   public static final String DEFAULT_SORT_BY = "-id";
   public static final String CLAZZ_VAR = "clazz";
   public static final String ORIGINAL_PREFIX = "ori_";
+  public static final String SORT_KEY = "@sort";
 
   // Private constructor to prevent instantiation
   private StringResource() {

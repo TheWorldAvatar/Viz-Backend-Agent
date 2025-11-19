@@ -36,6 +36,7 @@ import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
+import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
@@ -207,7 +208,7 @@ public class GetService {
    * @param filters    Mappings between filter fields and their values.
    */
   public int getCount(String resourceID, Map<String, String> filters) {
-    return this.getCount(resourceID, "", filters, null);
+    return this.getCount(resourceID, "", "", filters, null);
   }
 
   /**
@@ -215,13 +216,14 @@ public class GetService {
    * 
    * @param resourceID    Target resource identifier for the instance class.
    * @param addStatements Additional query statements to be added if any.
+   * @param addSortedBy   Additional sort_by parameters to be added if any.
    * @param filters       Mappings between filter fields and their values.
    * @param isContract    Indicates if it is a contract or task otherwise.
    */
-  public int getCount(String resourceID, String addStatements, Map<String, String> filters,
+  public int getCount(String resourceID, String addStatements, String addSortedBy, Map<String, String> filters,
       Boolean isContract) {
     Queue<List<String>> ids = this.getAllIds(resourceID, addStatements,
-        new PaginationState(0, null, "-id", isContract, filters));
+        new PaginationState(0, null, "-id" + addSortedBy, isContract, filters));
     return ids.size();
   }
 
@@ -365,6 +367,29 @@ public class GetService {
    */
   public String getQueryStatementsForTargetFields(String shaclReplacement, Set<String> sortedFields,
       Map<String, Set<String>> filters) {
+    StringBuilder queryBuilder = new StringBuilder();
+    Map<String, String> filteredStatementMappings = this.getStatementMappingsForTargetFields(shaclReplacement,
+        sortedFields, filters);
+    filteredStatementMappings.forEach((key, value) -> {
+      if (key.equals(StringResource.SORT_KEY)) {
+        queryBuilder.append(value);
+      } else {
+        Set<String> filterValues = filters.get(key);
+        QueryResource.genFilterStatements(value, key, filterValues, queryBuilder);
+      }
+    });
+    return queryBuilder.toString();
+  }
+
+  /**
+   * Gets the query statements associated with the fields of interest.
+   * 
+   * @param shaclReplacement The replacement value of the SHACL query target.
+   * @param sortedFields     Set of fields for sorting that should be included.
+   * @param filters          Filters with name and values.
+   */
+  public Map<String, String> getStatementMappingsForTargetFields(String shaclReplacement, Set<String> sortedFields,
+      Map<String, Set<String>> filters) {
     // First query for all the available query construction params associated with
     // the target replacement
     ArrayDeque<Queue<SparqlBinding>> results = (ArrayDeque<Queue<SparqlBinding>>) this
@@ -435,16 +460,17 @@ public class GetService {
     sortedQueryPartMappings.forEach((key, queryParts) -> {
       sortStatementBuilder.append(QueryResource.optional(this.queryTemplateService.genWhereClause(queryParts)));
     });
-
-    StringBuilder filterStatementBuilder = new StringBuilder();
+    Map<String, String> outputMappings = new HashMap<>();
+    if (!sortStatementBuilder.isEmpty()) {
+      outputMappings.put(StringResource.SORT_KEY, sortStatementBuilder.toString());
+    }
     filterQueryPartMappings.forEach((key, queryParts) -> {
       // Generate the query statements for this filter
       String clause = this.queryTemplateService.genWhereClause(queryParts)
           .replaceAll("\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
-      Set<String> filterValues = filters.get(key);
-      QueryResource.genFilterStatements(clause, key, filterValues, filterStatementBuilder);
+      outputMappings.put(key, clause);
     });
-    return filterStatementBuilder.toString() + sortStatementBuilder.toString();
+    return outputMappings;
   }
 
   /**

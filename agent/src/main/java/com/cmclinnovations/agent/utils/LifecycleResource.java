@@ -191,18 +191,6 @@ public class LifecycleResource {
   }
 
   /**
-   * Parses the query statements for sorting by event occurrences.
-   * 
-   * @param query          Target query for parsing.
-   * @param lifecycleEvent Target event type.
-   */
-  public static String parseOccurrenceSortQueryStatements(String query, LifecycleEventType lifecycleEvent) {
-    String eventVar = QueryResource.genVariable(lifecycleEvent.getId() + "_event").getQueryString();
-    return query.replace(QueryResource.IRI_VAR.getQueryString(), eventVar)
-        + genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent);
-  }
-
-  /**
    * Extract the occurrence's WHERE clause for an additional query additions.
    * 
    * @param query          Target query for extraction.
@@ -233,9 +221,8 @@ public class LifecycleResource {
    * @param eventVar       The event variable of interest.
    * @param lifecycleEvent Target event type.
    */
-  private static String genOccurrenceTargetQueryStatement(String eventVar, LifecycleEventType lifecycleEvent) {
-    return "?stage <https://www.omg.org/spec/Commons/Collections/comprises> " + eventVar + "." + eventVar
-        + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+  public static String genOccurrenceTargetQueryStatement(String eventVar, LifecycleEventType lifecycleEvent) {
+    return eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + Rdf.iri(lifecycleEvent.getEvent()).getQueryString()
         + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event.";
   }
