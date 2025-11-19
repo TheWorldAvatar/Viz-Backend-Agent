@@ -2,10 +2,12 @@ package com.cmclinnovations.agent.service.application;
 
 import java.util.AbstractMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -30,6 +32,7 @@ import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @Service
@@ -152,12 +155,11 @@ public class LifecycleContractService {
    */
   public ResponseEntity<StandardApiResponse<?>> getContractCount(String resourceID, LifecycleEventType eventType,
       Map<String, String> filters) {
-    Map<String, String> lifecycleStatements = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
-    // Use extended lifecycle statements for applying filters
-    Map<String, String> extendedLifecycleStatements = this.lifecycleQueryFactory
-        .insertExtendedScheduleFilters(lifecycleStatements);
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    // Sorting is irrelevant for count
+    String[] addStatements = this.genLifecycleStatements(eventType, new HashSet<>(), parsedFilters, "", false);
     return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(resourceID, extendedLifecycleStatements, filters, true)));
+        String.valueOf(this.getService.getCount(resourceID, addStatements[0], filters, true)));
   }
 
   /**
@@ -171,13 +173,14 @@ public class LifecycleContractService {
    */
   public List<String> getFilterOptions(String resourceID, String field, String search, LifecycleEventType eventType,
       Map<String, String> filters) {
-    Map<String, String> lifecycleStatements = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
-    // Use extended lifecycle statements for applying filters
-    Map<String, String> extendedLifecycleStatements = this.lifecycleQueryFactory
-        .insertExtendedScheduleFilters(lifecycleStatements);
     String originalField = LocalisationResource.parseTranslationToOriginal(field, true);
-    List<String> options = this.getService.getAllFilterOptions(resourceID, originalField, extendedLifecycleStatements,
-        search, filters, true);
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    parsedFilters.remove(originalField);
+    // Sorting is irrelevant for specific lifecycle statements
+    String[] addStatements = this.genLifecycleStatements(eventType, new HashSet<>(), parsedFilters, originalField,
+        false);
+    List<String> options = this.getService.getAllFilterOptions(resourceID, originalField, addStatements[0], search,
+        parsedFilters);
     if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
       return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();
     }
@@ -195,20 +198,17 @@ public class LifecycleContractService {
   public ResponseEntity<StandardApiResponse<?>> getContracts(String resourceID, boolean requireLabel,
       LifecycleEventType eventType, PaginationState pagination) {
     LOGGER.debug("Retrieving all contracts...");
-    Map<String, String> lifecycleStatements = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
     Map<Variable, List<Integer>> contractVariables = new HashMap<>(this.lifecycleVarSequence);
     if (eventType.equals(LifecycleEventType.APPROVED)) {
       contractVariables.put(
           QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)),
           List.of(1, 1));
     }
-    // Use extended lifecycle statements for applying filters when getting IDs only
-    Map<String, String> extendedLifecycleStatements = this.lifecycleQueryFactory
-        .insertExtendedScheduleFilters(lifecycleStatements);
-    Queue<List<String>> ids = this.getService.getAllIds(resourceID, extendedLifecycleStatements, pagination);
+    String[] addStatements = this.genLifecycleStatements(eventType, pagination.sortedFields(), pagination.filters(), "",
+        true);
+    Queue<List<String>> ids = this.getService.getAllIds(resourceID, addStatements[0], pagination);
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,
-        lifecycleStatements.values().stream().collect(Collectors.joining("\n")),
-        contractVariables);
+        addStatements[1], contractVariables);
     return this.responseEntityBuilder.success(null, instances.stream()
         .map(binding -> {
           return (Map<String, Object>) binding.get().entrySet().stream()
@@ -256,6 +256,32 @@ public class LifecycleContractService {
         LOGGER.error("Error encountered while discharging the contract for {}! Read error logs for more details.",
             currentContract);
       }
+    }
+  }
+
+  /**
+   * Generates additional query statements based on the current event during the
+   * lifecycle.
+   * 
+   * @param eventType        The target event type to retrieve.
+   * @param sortedFields     Set of fields for sorting that should be included.
+   * @param filters          Filters set by the user.
+   * @param field            Optional target to include the corresponding filter
+   *                         statements.
+   * @param reqOriStatements Requires that the original statements are present.
+   */
+  private String[] genLifecycleStatements(LifecycleEventType eventType, Set<String> sortedFields,
+      Map<String, Set<String>> filters, String field, boolean reqOriStatements) {
+    Map<String, String> statementMappings = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
+    Map<String, String> extendedMappings = this.lifecycleQueryFactory
+        .insertExtendedScheduleFilters(statementMappings);
+    String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
+        filters, field);
+    if (reqOriStatements) {
+      return new String[] { lifecycleStatements,
+          statementMappings.values().stream().collect(Collectors.joining("\n")) };
+    } else {
+      return new String[] { lifecycleStatements };
     }
   }
 }

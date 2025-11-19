@@ -33,11 +33,9 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
-import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
-import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
@@ -48,11 +46,6 @@ public class GetService {
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final String SUCCESSFUL_REQUEST_MSG = "Request has been completed successfully!";
-  private static final String[] SCHEDULE_VARIABLES = new String[] {
-      QueryResource.SCHEDULE_START_DATE_VAR.getVarName(), QueryResource.SCHEDULE_END_DATE_VAR.getVarName(),
-      QueryResource.SCHEDULE_START_TIME_VAR.getVarName(), QueryResource.SCHEDULE_END_TIME_VAR.getVarName(),
-      QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName()
-  };
   private static final Logger LOGGER = LogManager.getLogger(GetService.class);
 
   /**
@@ -215,20 +208,20 @@ public class GetService {
    * @param filters    Mappings between filter fields and their values.
    */
   public int getCount(String resourceID, Map<String, String> filters) {
-    return this.getCount(resourceID, new HashMap<>(), filters, null);
+    return this.getCount(resourceID, "", filters, null);
   }
 
   /**
    * Retrieves the number of instances belonging to the resource.
    * 
    * @param resourceID    Target resource identifier for the instance class.
-   * @param queryMappings Additional query statements to be added if any.
+   * @param addStatements Additional query statements to be added if any.
    * @param filters       Mappings between filter fields and their values.
    * @param isContract    Indicates if it is a contract or task otherwise.
    */
-  public int getCount(String resourceID, Map<String, String> queryMappings, Map<String, String> filters,
+  public int getCount(String resourceID, String addStatements, Map<String, String> filters,
       Boolean isContract) {
-    Queue<List<String>> ids = this.getAllIds(resourceID, queryMappings,
+    Queue<List<String>> ids = this.getAllIds(resourceID, addStatements,
         new PaginationState(0, null, "-id", isContract, filters));
     return ids.size();
   }
@@ -237,31 +230,15 @@ public class GetService {
    * Retrieve all IDs associated with the target replacement.
    * 
    * @param resourceID    Target resource identifier for the instance class.
-   * @param queryMappings Additional query statements to be added if any.
+   * @param addStatements Additional query statements to be added if any.
    * @param pagination    Optional state containing the current page and limit.
    */
-  public Queue<List<String>> getAllIds(String resourceID, Map<String, String> queryMappings,
-      PaginationState pagination) {
+  public Queue<List<String>> getAllIds(String resourceID, String addStatements, PaginationState pagination) {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    StringBuilder addStatementBuilder = new StringBuilder();
-    addStatementBuilder.append(this.getQueryStatementsForTargetFields(iri, pagination.sortedFields(),
-        pagination.filters()));
-    queryMappings.forEach((field, statements) -> {
-      if (field.equals(LifecycleResource.LIFECYCLE_RESOURCE)) {
-        addStatementBuilder.append(statements);
-      } else if (field.equals(LifecycleResource.DATE_KEY) && pagination.filters().containsKey(field)) {
-        QueryResource.genFilterStatements(statements, LifecycleResource.NEW_DATE_KEY, pagination.filters().get(field),
-            addStatementBuilder);
-      } else if (pagination.filters().containsKey(field)) {
-        QueryResource.genFilterStatements(statements, field, pagination.filters().get(field), addStatementBuilder);
-      }
-    });
-    if (queryMappings.containsKey(LifecycleResource.LIFECYCLE_RESOURCE)
-        && Arrays.stream(SCHEDULE_VARIABLES).anyMatch(pagination.filters().keySet()::contains)) {
-      addStatementBuilder.append(queryMappings.getOrDefault(LifecycleResource.SCHEDULE_RESOURCE, ""));
-    }
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatementBuilder.toString(),
+    addStatements += this.getQueryStatementsForTargetFields(iri, pagination.sortedFields(),
+        pagination.filters());
+    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
         pagination, true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> {
@@ -280,42 +257,20 @@ public class GetService {
    * 
    * @param resourceID    Target resource identifier for the instance class.
    * @param field         The field of interest.
-   * @param queryMappings Additional query statements to be added if any.
+   * @param addStatements Additional query statements to be added if any.
    * @param search        String subset to narrow filter scope.
    * @param filters       Optional additional filters.
-   * @param isContract    Indicates if it is a contract or task otherwise.
    */
-  public List<String> getAllFilterOptions(String resourceID, String field, Map<String, String> queryMappings,
-      String search, Map<String, String> filters, Boolean isContract) {
+  public List<String> getAllFilterOptions(String resourceID, String field, String addStatements,
+      String search, Map<String, Set<String>> filters) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, isContract);
-    parsedFilters.remove(field);
-    StringBuilder addStatementBuilder = new StringBuilder();
-    addStatementBuilder.append(this.getQueryStatementsForTargetFields(iri, Set.of(field), parsedFilters));
-    queryMappings.forEach((fieldKey, statements) -> {
-      if (fieldKey.equals(LifecycleResource.LIFECYCLE_RESOURCE) || field.equals(fieldKey)) {
-        addStatementBuilder.append(statements);
-      } else if (fieldKey.equals(LifecycleResource.DATE_KEY) && parsedFilters.containsKey(fieldKey)) {
-        QueryResource.genFilterStatements(statements, LifecycleResource.NEW_DATE_KEY, parsedFilters.get(fieldKey),
-            addStatementBuilder);
-      } else if (parsedFilters.containsKey(fieldKey)) {
-        QueryResource.genFilterStatements(statements, fieldKey, parsedFilters.get(fieldKey), addStatementBuilder);
-      }
-    });
-    if (queryMappings.containsKey(LifecycleResource.LIFECYCLE_RESOURCE)
-        && (Arrays.stream(SCHEDULE_VARIABLES).anyMatch(field::equals)
-            || Arrays.stream(SCHEDULE_VARIABLES).anyMatch(parsedFilters.keySet()::contains))) {
-      addStatementBuilder.append(queryMappings.getOrDefault(LifecycleResource.SCHEDULE_RESOURCE, ""));
-    }
+    addStatements += this.getQueryStatementsForTargetFields(iri, Set.of(field), filters);
     if (search != null && !search.isBlank()) {
-      addStatementBuilder.append("FILTER(CONTAINS(LCASE(")
-          .append(QueryResource.genVariable(field).getQueryString())
-          .append(") ,\"")
-          .append(search)
-          .append("\"))");
+      addStatements += "FILTER(CONTAINS(LCASE(" + QueryResource.genVariable(field).getQueryString() + ") ,\"" + search
+          + "\"))";
     }
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatementBuilder.toString(),
+    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
         new PaginationState(0, 21, "+" + field, new HashMap<>()), false);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> binding.getFieldValue(field))
@@ -361,7 +316,7 @@ public class GetService {
       PaginationState pagination) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
-    Queue<List<String>> ids = this.getAllIds(resourceID, new HashMap<>(), pagination);
+    Queue<List<String>> ids = this.getAllIds(resourceID, "", pagination);
     if (ids.isEmpty()) {
       return new ArrayDeque<>();
     }

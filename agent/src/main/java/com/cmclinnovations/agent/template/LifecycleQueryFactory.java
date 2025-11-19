@@ -19,6 +19,12 @@ import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 
 public class LifecycleQueryFactory {
+  private static final String CLOSED_QUERY_STATEMENTS = "{?iri fibo-fnd-rel-rel:exemplifies ontoservice:TerminatedServiceEvent .}UNION"
+      + "{?iri fibo-fnd-rel-rel:exemplifies ontoservice:IncidentReportEvent .}UNION"
+      + "{?iri fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent ; cmns-dsg:describes ontoservice:CompletedStatus .}";
+  private static final String UNCLOSED_QUERY_STATEMENTS = "{?iri fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent .}UNION"
+      + "{?iri fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDispatchEvent .}UNION"
+      + "{?iri fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent ; cmns-dsg:describes ontoservice:PendingStatus .}";
   private static final Map<String, String> SCHEDULE_QUERY_MAPPINGS;
   private static final Map<String, String> SCHEDULE_CONTRACT_FILTER_QUERY_MAPPINGS;
 
@@ -92,17 +98,9 @@ public class LifecycleQueryFactory {
     Map<String, String> results = new HashMap<>();
     String targetEventStatements;
     if (isClosed) {
-      targetEventStatements = QueryResource.union(
-          this.genEventClause(QueryResource.IRI_VAR, LifecycleEventType.SERVICE_INCIDENT_REPORT).getQueryString(),
-          this.genEventClause(QueryResource.IRI_VAR, LifecycleEventType.SERVICE_CANCELLATION).getQueryString(),
-          this.genEventClause(QueryResource.IRI_VAR, LifecycleEventType.SERVICE_EXECUTION,
-              LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS).getQueryString());
+      targetEventStatements = CLOSED_QUERY_STATEMENTS;
     } else {
-      targetEventStatements = QueryResource.union(
-          this.genEventClause(QueryResource.IRI_VAR, LifecycleEventType.SERVICE_ORDER_RECEIVED).getQueryString(),
-          this.genEventClause(QueryResource.IRI_VAR, LifecycleEventType.SERVICE_ORDER_DISPATCHED).getQueryString(),
-          this.genEventClause(QueryResource.IRI_VAR, LifecycleEventType.SERVICE_EXECUTION,
-              LifecycleResource.EVENT_PENDING_STATUS).getQueryString());
+      targetEventStatements = UNCLOSED_QUERY_STATEMENTS;
     }
     String filterDateStatement = "";
     // For outstanding tasks, start dates are omitted
@@ -130,35 +128,6 @@ public class LifecycleQueryFactory {
         "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
             + QueryResource.LAST_MODIFIED_VAR.getQueryString() + ShaclResource.FULL_STOP);
     return results;
-  }
-
-  /**
-   * Generates an event clause for the target event type. Overloaded method that
-   * ignores event status.
-   * 
-   * @param subject   The subject variable.
-   * @param eventType Lifecycle event to be generated.
-   */
-  public TriplePattern genEventClause(Variable subject, LifecycleEventType eventType) {
-    return this.genEventClause(subject, eventType, "");
-  }
-
-  /**
-   * Generates an event clause for the target event type.
-   * 
-   * @param subject     The subject variable.
-   * @param eventType   Lifecycle event to be generated.
-   * @param eventStatus Optional IRI to describe the event status.
-   */
-  public TriplePattern genEventClause(Variable subject, LifecycleEventType eventType, String eventStatus) {
-    TriplePattern pattern = subject.has(
-        QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-        Rdf.iri(eventType.getEvent()));
-    if (!eventStatus.isEmpty()) {
-      return pattern.andHas(QueryResource.CMNS_DSG_DESCRIBES,
-          Rdf.iri(eventStatus));
-    }
-    return pattern;
   }
 
   /**
@@ -197,17 +166,11 @@ public class LifecycleQueryFactory {
     if (isClosed == null) {
       eventTargetStatements = "";
     } else if (isClosed) {
-      eventTargetStatements = QueryResource.union(
-          this.genEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_INCIDENT_REPORT).getQueryString(),
-          this.genEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_CANCELLATION).getQueryString(),
-          this.genEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_EXECUTION,
-              LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS).getQueryString());
+      eventTargetStatements = CLOSED_QUERY_STATEMENTS.replace(QueryResource.IRI_KEY,
+          QueryResource.EVENT_ID_VAR.getVarName());
     } else {
-      eventTargetStatements = QueryResource.union(
-          this.genEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_ORDER_RECEIVED).getQueryString(),
-          this.genEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_ORDER_DISPATCHED).getQueryString(),
-          this.genEventClause(QueryResource.EVENT_ID_VAR, LifecycleEventType.SERVICE_EXECUTION,
-              LifecycleResource.EVENT_PENDING_STATUS).getQueryString());
+      eventTargetStatements = UNCLOSED_QUERY_STATEMENTS.replace(QueryResource.IRI_KEY,
+          QueryResource.EVENT_ID_VAR.getVarName());
     }
     results.put(LifecycleResource.LIFECYCLE_RESOURCE,
         "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
@@ -325,21 +288,18 @@ public class LifecycleQueryFactory {
    * @param queryMappings Target mappings containing the existing statements.
    */
   public Map<String, String> insertExtendedScheduleFilters(Map<String, String> queryMappings) {
-    Map<String, String> statementMappings = new HashMap<>(queryMappings);
-    // Replaces all existing mappings with the same key to the extended version
+    Map<String, String> statementMappings = this.insertExtendedLastModifiedFilters(queryMappings);
     statementMappings.putAll(SCHEDULE_CONTRACT_FILTER_QUERY_MAPPINGS);
-    LifecycleResource.convertVarForStrFilter(QueryResource.LAST_MODIFIED_VAR, queryMappings, statementMappings);
     return statementMappings;
   }
 
   /**
-   * Update mappings with the extended task filters for lifecycle queries.
+   * Update mappings with the extended filters for last modified query statements.
    * 
    * @param queryMappings Target mappings containing the existing statements.
    */
-  public Map<String, String> insertExtendedTaskFilters(Map<String, String> queryMappings) {
+  public Map<String, String> insertExtendedLastModifiedFilters(Map<String, String> queryMappings) {
     Map<String, String> statementMappings = new HashMap<>(queryMappings);
-    // Replaces all existing mappings with the same key to the extended version
     LifecycleResource.convertVarForStrFilter(QueryResource.LAST_MODIFIED_VAR, queryMappings, statementMappings);
     return statementMappings;
   }

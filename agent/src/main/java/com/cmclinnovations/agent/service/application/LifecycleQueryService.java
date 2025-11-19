@@ -1,7 +1,11 @@
 package com.cmclinnovations.agent.service.application;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
@@ -19,6 +23,11 @@ public class LifecycleQueryService {
   private final DateTimeService dateTimeService;
   private final GetService getService;
   private final FileService fileService;
+  private static final String[] SCHEDULE_VARIABLES = new String[] {
+      QueryResource.SCHEDULE_START_DATE_VAR.getVarName(), QueryResource.SCHEDULE_END_DATE_VAR.getVarName(),
+      QueryResource.SCHEDULE_START_TIME_VAR.getVarName(), QueryResource.SCHEDULE_END_TIME_VAR.getVarName(),
+      QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName()
+  };
 
   /**
    * Constructs a new service.
@@ -96,5 +105,48 @@ public class LifecycleQueryService {
           .poll()
           .getFieldValue(QueryResource.IRI_KEY);
     });
+  }
+
+  /**
+   * Generates the query statements required for targeting lifecycle. These
+   * statements will be included if they are required via filtering.
+   * 
+   * @param queryMappings All possible lifecycle statements mapped to a variable.
+   * @param sortedFields  Set of fields for sorting that should be included.
+   * @param filters       Filters set by the user.
+   * @param field         Optional target to include statements if required for
+   *                      filtering filters.
+   */
+  public String genLifecycleStatements(Map<String, String> queryMappings, Set<String> sortedFields,
+      Map<String, Set<String>> filters, String field) {
+    StringBuilder addStatementBuilder = new StringBuilder();
+    // Sorted field statements should also be added
+    Map<String, Set<String>> filtersWithSortedFields = new HashMap<>(filters);
+    if (!sortedFields.isEmpty()) {
+      sortedFields.forEach(sortField -> filtersWithSortedFields.putIfAbsent(sortField, new HashSet<>()));
+    }
+    queryMappings.forEach((fieldKey, statements) -> {
+      // Lifecycle statements itself must be included; When the current field requires
+      // to be queried, the statements must also be present
+      if (fieldKey.equals(LifecycleResource.LIFECYCLE_RESOURCE) || field.equals(fieldKey)) {
+        addStatementBuilder.append(statements);
+        // Special filter statement if a date key is required for filtering
+      } else if (fieldKey.equals(LifecycleResource.DATE_KEY) && filtersWithSortedFields.containsKey(fieldKey)) {
+        QueryResource.genFilterStatements(statements, LifecycleResource.NEW_DATE_KEY,
+            filtersWithSortedFields.get(fieldKey),
+            addStatementBuilder);
+        // Generate filter statements if the filters require them
+      } else if (filtersWithSortedFields.containsKey(fieldKey)) {
+        QueryResource.genFilterStatements(statements, fieldKey, filtersWithSortedFields.get(fieldKey),
+            addStatementBuilder);
+      }
+    });
+    // Include main schedule statements if any schedule variables is present
+    if (queryMappings.containsKey(LifecycleResource.LIFECYCLE_RESOURCE)
+        && (Arrays.stream(SCHEDULE_VARIABLES).anyMatch(field::equals)
+            || Arrays.stream(SCHEDULE_VARIABLES).anyMatch(filtersWithSortedFields.keySet()::contains))) {
+      addStatementBuilder.append(queryMappings.getOrDefault(LifecycleResource.SCHEDULE_RESOURCE, ""));
+    }
+    return addStatementBuilder.toString();
   }
 }

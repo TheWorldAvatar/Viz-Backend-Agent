@@ -466,11 +466,10 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> getDraftContractFilters(
       @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve filter options for draft contracts...");
-    String[] filterOptionParams = getFilterOptionParams(allRequestParams);
+    String[] filterOptionParams = this.getFilterOptionParams(allRequestParams);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> options = this.lifecycleContractService.getFilterOptions(filterOptionParams[0],
-          filterOptionParams[1],
-          filterOptionParams[2], LifecycleEventType.APPROVED, allRequestParams);
+          filterOptionParams[1], filterOptionParams[2], LifecycleEventType.APPROVED, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -482,7 +481,7 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> getActiveContractFilters(
       @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve filter options for contracts in progress...");
-    String[] filterOptionParams = getFilterOptionParams(allRequestParams);
+    String[] filterOptionParams = this.getFilterOptionParams(allRequestParams);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> options = this.lifecycleContractService.getFilterOptions(filterOptionParams[0],
           filterOptionParams[1], filterOptionParams[2], LifecycleEventType.ACTIVE_SERVICE, allRequestParams);
@@ -496,7 +495,7 @@ public class LifecycleController {
   @GetMapping("/archive/filter")
   public ResponseEntity<StandardApiResponse<?>> getArchivedContractFilters(
       @RequestParam Map<String, String> allRequestParams) {
-    String[] filterOptionParams = getFilterOptionParams(allRequestParams);
+    String[] filterOptionParams = this.getFilterOptionParams(allRequestParams);
     LOGGER.info("Received request to retrieve filter options for archived contracts...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> options = this.lifecycleContractService.getFilterOptions(filterOptionParams[0],
@@ -581,7 +580,7 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> getAllOutstandingTaskFilters(
       @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve filter options for contracts in progress...");
-    String[] filterOptionParams = getFilterOptionParams(allRequestParams);
+    String[] filterOptionParams = this.getFilterOptionParams(allRequestParams);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> options = this.lifecycleTaskService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
           filterOptionParams[2], null, null, false, allRequestParams);
@@ -669,7 +668,7 @@ public class LifecycleController {
       @PathVariable(name = "task") String taskType,
       @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve filter options for contracts in progress...");
-    String[] filterOptionParams = getFilterOptionParams(allRequestParams);
+    String[] filterOptionParams = this.getFilterOptionParams(allRequestParams);
     String startTimestamp = allRequestParams.remove(StringResource.START_TIMESTAMP_REQUEST_PARAM);
     String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {

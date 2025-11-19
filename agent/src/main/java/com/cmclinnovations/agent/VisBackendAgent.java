@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -162,8 +163,9 @@ public class VisBackendAgent {
     String search = allRequestParams.getOrDefault(StringResource.SEARCH_REQUEST_PARAM, "");
     allRequestParams.remove(StringResource.SEARCH_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      List<String> options = this.getService.getAllFilterOptions(type, field, new HashMap<>(), search,
-          allRequestParams, false);
+      Map<String, Set<String>> parsedFilters = StringResource.parseFilters(allRequestParams, null);
+      parsedFilters.remove(field);
+      List<String> options = this.getService.getAllFilterOptions(type, field, "", search, parsedFilters);
       return this.responseEntityBuilder.success(options);
     });
   }
