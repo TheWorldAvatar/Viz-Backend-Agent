@@ -178,7 +178,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
             int order = Integer.parseInt(binding.getFieldValue(ShaclResource.ORDER_PROPERTY));
             List<Integer> orders = new ArrayList<>();
             if (shGroup != null) {
-              orders = this.varSequence.get(QueryResource.genVariable(shGroup));
+              orders = this.varSequence.getOrDefault(QueryResource.genVariable(shGroup), new ArrayList<>());
             }
             orders.add(order);
             this.varSequence.put(QueryResource.genVariable(property), orders);

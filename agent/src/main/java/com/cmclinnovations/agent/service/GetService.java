@@ -266,7 +266,7 @@ public class GetService {
       String search, Map<String, Set<String>> filters) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    addStatements += this.getQueryStatementsForTargetFields(iri, Set.of(field), filters);
+    addStatements += this.getQueryStatementsForTargetFields(iri, new HashSet<>(Set.of(field)), filters);
     if (search != null && !search.isBlank()) {
       addStatements += "FILTER(CONTAINS(LCASE(" + QueryResource.genVariable(field).getQueryString() + ") ,\"" + search
           + "\"))";
@@ -426,7 +426,9 @@ public class GetService {
           // Add node groups to ensure they are parsed in later iteration
           if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
             String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
-            filterFields.add(QueryResource.genVariable(group).getVarName());
+            group = QueryResource.genVariable(group).getVarName();
+            groupFieldMappings.put(group, fieldName);
+            filterFields.add(group);
           }
         } else if (sortedFields.contains(fieldName)) {
           Queue<SparqlBinding> currentQueue = Optional.ofNullable(
@@ -436,7 +438,9 @@ public class GetService {
           // Add node groups to ensure they are parsed in later iteration
           if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
             String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
-            sortedFields.add(QueryResource.genVariable(group).getVarName());
+            group = QueryResource.genVariable(group).getVarName();
+            groupFieldMappings.put(group, fieldName);
+            sortedFields.add(group);
           }
         }
       }
