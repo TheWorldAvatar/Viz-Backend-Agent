@@ -186,12 +186,10 @@ public class LifecycleTaskService {
     Map<String, String> statementMappings = this.lifecycleQueryFactory.getServiceTasksQuery(null,
         targetStartEndDates[0], targetStartEndDates[1], isClosed);
     Map<String, String> filterExpressions = new HashMap<>();
-    Map<String, Set<String>> serviceEventFilters;
+    Map<String, Set<String>> serviceEventFilters = new HashMap<>(filters);
     if (!field.isEmpty()) {
-      serviceEventFilters = new HashMap<>();
+      // Override the field value for filter options, as it should ignore them
       serviceEventFilters.put(field, new HashSet<>());
-    } else {
-      serviceEventFilters = filters;
     }
     // Get statements for dispatch events that matches any sort/filter criteria
     String addFilterQueries = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
