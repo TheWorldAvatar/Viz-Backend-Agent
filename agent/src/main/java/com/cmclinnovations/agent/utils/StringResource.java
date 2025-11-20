@@ -146,7 +146,7 @@ public class StringResource {
     return filters.entrySet()
         .stream()
         .map(entry -> Map.entry(
-            LocalisationResource.parseTranslationToOriginal(entry.getKey(), isContract),
+            LifecycleResource.revertLifecycleSpecialFields(entry.getKey(), isContract),
             Arrays.stream(entry.getValue().split("\\|"))
                 .map(string -> string.equals(QueryResource.NULL_KEY) ? string
                     : "\"" + string.trim() + "\"")

@@ -12,7 +12,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.OrderCondition;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 
-import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
@@ -81,7 +81,7 @@ public class PaginationState {
                 .map(match -> {
                     String field = match.group(2);
                     if (isContract != null) {
-                        field = LocalisationResource.parseTranslationToOriginal(field, isContract);
+                        field = LifecycleResource.revertLifecycleSpecialFields(field, isContract);
                     }
                     Variable fieldVar = QueryResource.genVariable(field);
                     // First group matches the sign

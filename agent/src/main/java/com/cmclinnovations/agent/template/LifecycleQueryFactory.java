@@ -215,7 +215,7 @@ public class LifecycleQueryFactory {
         String creationEventStatement = creationVar
             .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, QueryResource.ONTOSERVICE.iri("ContractCreation"))
             .andHas(p -> p.pred(QueryResource.CMNS_DSG_DESCRIBES).then(RDFS.LABEL),
-                QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)))
+                QueryResource.genVariable(LifecycleResource.STATUS_KEY))
             .getQueryString();
         coreQueryBuilder.append(creationStatement).append(creationEventStatement);
         this.appendFilterExists(coreQueryBuilder, false, LifecycleResource.EVENT_APPROVAL);

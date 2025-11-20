@@ -1,14 +1,11 @@
 package com.cmclinnovations.agent.utils;
 
-import com.cmclinnovations.agent.component.LocalisationTranslator;
-
 public class LocalisationResource {
   private static final String ERROR_PREFIX = "error.";
   private static final String MESSAGE_PREFIX = "message.";
   private static final String SUCCESS_PREFIX = "success.";
   private static final String SUCCESS_CONTRACT_PREFIX = SUCCESS_PREFIX + "contract.";
   private static final String LABEL_PREFIX = "label.";
-  private static final String VAR_PREFIX = "variable.";
 
   public static final String STATUS_KEY = "status";
   public static final String MESSAGE_NO_ADDRESS_KEY = MESSAGE_PREFIX + "noaddress";
@@ -57,8 +54,6 @@ public class LocalisationResource {
   public static final String LABEL_ALTERNATE_DAY_SERVICE_KEY = LABEL_PREFIX + "alt.day.service";
   public static final String LABEL_PERPETUAL_SERVICE_KEY = LABEL_PREFIX + "perpetual.service";
   public static final String LABEL_REGULAR_SERVICE_KEY = LABEL_PREFIX + "regular.service";
-  public static final String VAR_SCHEDULE_TYPE_KEY = VAR_PREFIX + "schedule.type";
-  public static final String VAR_STATUS_KEY = VAR_PREFIX + STATUS_KEY;
 
   public static final String EVENT_STATUS_ASSIGNED_KEY = "assigned";
   public static final String EVENT_STATUS_CANCELLED_KEY = "cancelled";
@@ -69,25 +64,5 @@ public class LocalisationResource {
   // Private constructor to prevent instantiation
   private LocalisationResource() {
     throw new UnsupportedOperationException("This class cannot be instantiated!");
-  }
-
-  /**
-   * Parses the translated field back to the original.
-   * 
-   * @param field      Translated field name.
-   * @param isContract Indicates if it is a contract or task otherwise.
-   */
-  public static String parseTranslationToOriginal(String field, Boolean isContract) {
-    if (isContract == null) {
-      return field;
-    }
-    String lowerCaseField = field.toLowerCase();
-    if (lowerCaseField.equals(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY))) {
-      return isContract ? LifecycleResource.STATUS_KEY : LifecycleResource.EVENT_KEY;
-    } else if (lowerCaseField.equals(LocalisationTranslator
-        .getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY).toLowerCase())) {
-      return LifecycleResource.SCHEDULE_RECURRENCE_KEY;
-    }
-    return field;
   }
 }

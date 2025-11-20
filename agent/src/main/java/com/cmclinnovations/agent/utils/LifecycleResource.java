@@ -52,7 +52,7 @@ public class LifecycleResource {
   public static final String SCHEDULE_END_TIME_KEY = "end time";
   public static final String SCHEDULE_RECURRENCE_KEY = "recurrence";
   public static final String SCHEDULE_RECURRENCE_PLACEHOLDER_KEY = "recurrences";
-  public static final String SCHEDULE_TYPE_KEY = "schedule type";
+  public static final String SCHEDULE_TYPE_KEY = "scheduleType";
 
   public static final String EXEMPLIFIES_RELATIONS = "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies";
   public static final String IS_ABOUT_RELATIONS = "https://www.omg.org/spec/Commons/Documents/isAbout";
@@ -225,5 +225,25 @@ public class LifecycleResource {
     return eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + Rdf.iri(lifecycleEvent.getEvent()).getQueryString()
         + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event.";
+  }
+
+  /**
+   * Reverts back the special fields for lifecycle back to their original variable
+   * form.
+   * 
+   * @param field      The special field name.
+   * @param isContract Indicates if it is a contract or task otherwise.
+   */
+  public static String revertLifecycleSpecialFields(String field, Boolean isContract) {
+    if (isContract == null) {
+      return field;
+    }
+    String lowerCaseField = field.toLowerCase();
+    if (lowerCaseField.equals(STATUS_KEY)) {
+      return isContract ? STATUS_KEY : EVENT_KEY;
+    } else if (lowerCaseField.equals(SCHEDULE_TYPE_KEY.toLowerCase())) {
+      return SCHEDULE_RECURRENCE_KEY;
+    }
+    return field;
   }
 }

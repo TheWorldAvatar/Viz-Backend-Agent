@@ -112,7 +112,7 @@ public class LifecycleTaskService {
    */
   public List<String> getFilterOptions(String resourceID, String field, String search, String startTimestamp,
       String endTimestamp, boolean isClosed, Map<String, String> filters) {
-    String originalField = LocalisationResource.parseTranslationToOriginal(field, false);
+    String originalField = LifecycleResource.revertLifecycleSpecialFields(field, false);
     Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
     parsedFilters.remove(originalField);
     String[] queryStatement = this.genLifecycleStatements(startTimestamp, endTimestamp, new HashSet<>(), parsedFilters,
@@ -250,7 +250,7 @@ public class LifecycleTaskService {
                   SparqlResponseField recurrence = TypeCastUtils.castToObject(entry.getValue(),
                       SparqlResponseField.class);
                   return new AbstractMap.SimpleEntry<>(
-                      LocalisationTranslator.getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY),
+                      LifecycleResource.SCHEDULE_TYPE_KEY,
                       new SparqlResponseField(recurrence.type(),
                           LocalisationTranslator.getScheduleTypeFromRecurrence(recurrence.value()),
                           recurrence.dataType(), recurrence.lang()));
@@ -263,7 +263,7 @@ public class LifecycleTaskService {
                   // outstanding
                   String eventType = eventField.value();
                   return new AbstractMap.SimpleEntry<>(
-                      LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY),
+                      LifecycleResource.STATUS_KEY,
                       // Add a new response field
                       new SparqlResponseField(eventField.type(),
                           LocalisationTranslator.getEvent(eventType),

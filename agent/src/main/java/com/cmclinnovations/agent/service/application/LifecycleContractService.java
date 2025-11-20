@@ -173,7 +173,7 @@ public class LifecycleContractService {
    */
   public List<String> getFilterOptions(String resourceID, String field, String search, LifecycleEventType eventType,
       Map<String, String> filters) {
-    String originalField = LocalisationResource.parseTranslationToOriginal(field, true);
+    String originalField = LifecycleResource.revertLifecycleSpecialFields(field, true);
     Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
     parsedFilters.remove(originalField);
     // Sorting is irrelevant for specific lifecycle statements
@@ -201,7 +201,7 @@ public class LifecycleContractService {
     Map<Variable, List<Integer>> contractVariables = new HashMap<>(this.lifecycleVarSequence);
     if (eventType.equals(LifecycleEventType.APPROVED)) {
       contractVariables.put(
-          QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)),
+          QueryResource.genVariable(LifecycleResource.STATUS_KEY),
           List.of(1, 1));
     }
     String[] addStatements = this.genLifecycleStatements(eventType, pagination.sortedFields(), pagination.filters(), "",
@@ -218,7 +218,7 @@ public class LifecycleContractService {
                   SparqlResponseField recurrence = TypeCastUtils.castToObject(entry.getValue(),
                       SparqlResponseField.class);
                   return new AbstractMap.SimpleEntry<>(
-                      LocalisationTranslator.getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY),
+                      LifecycleResource.SCHEDULE_TYPE_KEY,
                       new SparqlResponseField(recurrence.type(),
                           LocalisationTranslator.getScheduleTypeFromRecurrence(recurrence.value()),
                           recurrence.dataType(), recurrence.lang()));
@@ -289,7 +289,8 @@ public class LifecycleContractService {
   }
 
   /**
-   * Processes end date only if it is present in the filters. Method will remove this variable from main mappings.
+   * Processes end date only if it is present in the filters. Method will remove
+   * this variable from main mappings.
    * 
    * @param filters           The filters passed through the request.
    * @param statementMappings Stores the current statements being used.
