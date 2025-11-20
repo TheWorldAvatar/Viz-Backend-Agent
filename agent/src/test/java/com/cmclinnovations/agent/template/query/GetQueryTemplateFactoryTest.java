@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,8 @@ public class GetQueryTemplateFactoryTest {
     Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
     String results = this.testFactory
-        .write(new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(List.of(SAMPLE_FILTER)),
+        .write(new QueryTemplateFactoryParameters(nestedBindings,
+            new ArrayDeque<>(List.of(Arrays.asList(SAMPLE_FILTER))),
             null, "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_ID_FILE, results);
@@ -112,7 +114,8 @@ public class GetQueryTemplateFactoryTest {
     // hasParent is true
     IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
       this.testFactory.write(
-          new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(List.of(SAMPLE_FILTER)),
+          new QueryTemplateFactoryParameters(nestedBindings,
+              new ArrayDeque<>(List.of(Arrays.asList(SAMPLE_FILTER))),
               new ParentField(SAMPLE_FILTER, SAMPLE_PARENT_FIELD), "", new HashMap<>()));
     });
     assertEquals("Unable to find matching variable for parent field: " + SAMPLE_PARENT_FIELD, thrown.getMessage());
@@ -131,7 +134,8 @@ public class GetQueryTemplateFactoryTest {
     nestedBindings.offer(bindings);
     // Execute
     String results = this.testFactory.write(
-        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(List.of(SAMPLE_FILTER)),
+        new QueryTemplateFactoryParameters(nestedBindings,
+            new ArrayDeque<>(List.of(Arrays.asList(SAMPLE_FILTER))),
             new ParentField(SAMPLE_FILTER, SAMPLE_PARENT_FIELD), "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_PARENT_FILE, results);
