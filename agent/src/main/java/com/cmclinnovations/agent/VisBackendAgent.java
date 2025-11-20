@@ -248,8 +248,16 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> updateEntity(@PathVariable String type, @PathVariable String id,
       @RequestBody Map<String, Object> updatedEntity) {
     LOGGER.info("Received request to update {}...", type);
+
+    // Extract branch field if present
+    String branchName = updatedEntity.containsKey("branch") ? (String) updatedEntity.get("branch") : null;
+
+    if (branchName != null) {
+      LOGGER.info("Branch specified: {}", branchName);
+    }
+
     return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.updateService.update(id, type, LocalisationResource.SUCCESS_UPDATE_KEY, updatedEntity);
+      return this.updateService.update(id, type, LocalisationResource.SUCCESS_UPDATE_KEY, updatedEntity, branchName);
     });
   }
 }
