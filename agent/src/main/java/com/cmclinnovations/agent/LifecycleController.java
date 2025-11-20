@@ -345,7 +345,7 @@ public class LifecycleController {
                 LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
           }
           return this.lifecycleTaskService.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params,
-              LifecycleEventType.SERVICE_CANCELLATION, "Request has been successfully completed!",
+              LifecycleEventType.SERVICE_CANCELLATION, "Task has been successfully cancelled!",
               LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
         case "report":
           LOGGER.info("Received request to report an unfulfilled service...");
@@ -356,7 +356,7 @@ public class LifecycleController {
                 LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
           }
           return this.lifecycleTaskService.genOccurrence(LifecycleResource.REPORT_RESOURCE, params,
-              LifecycleEventType.SERVICE_CANCELLATION, "Request has been successfully completed!",
+              LifecycleEventType.SERVICE_INCIDENT_REPORT, "Task has been successfully reported!",
               LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
 
         default:
