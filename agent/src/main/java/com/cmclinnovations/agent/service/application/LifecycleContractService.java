@@ -275,13 +275,43 @@ public class LifecycleContractService {
     Map<String, String> statementMappings = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
     Map<String, String> extendedMappings = this.lifecycleQueryFactory
         .insertExtendedScheduleFilters(statementMappings);
+    // Process end date first as it will be removed if not required
+    String endDateFilter = this.processEndDateScheduleForFilter(filters, extendedMappings);
     String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
         filters, field);
+    lifecycleStatements += endDateFilter;
     if (reqOriStatements) {
       return new String[] { lifecycleStatements,
           statementMappings.values().stream().collect(Collectors.joining("\n")) };
     } else {
       return new String[] { lifecycleStatements };
     }
+  }
+
+  /**
+   * Processes end date only if it is present in the filters. Method will remove this variable from main mappings.
+   * 
+   * @param filters           The filters passed through the request.
+   * @param statementMappings Stores the current statements being used.
+   */
+  private String processEndDateScheduleForFilter(
+      Map<String, Set<String>> filters, Map<String, String> statementMappings) {
+    String endDateVar = QueryResource.SCHEDULE_END_DATE_VAR.getVarName();
+    if (filters.containsKey(endDateVar)) {
+      Set<String> endDateFilters = filters.get(endDateVar);
+      String output;
+      if (endDateFilters.contains(QueryResource.NULL_KEY)) {
+        String filterClause = QueryResource.filterOrExpressions(StringResource.ORIGINAL_PREFIX + endDateVar,
+            endDateFilters);
+        output = statementMappings.get(endDateVar) + filterClause;
+      } else {
+        StringBuilder builder = new StringBuilder();
+        QueryResource.genFilterStatements(statementMappings.get(endDateVar), endDateVar, endDateFilters, builder);
+        output = builder.toString();
+      }
+      statementMappings.remove(endDateVar);
+      return output;
+    }
+    return "";
   }
 }

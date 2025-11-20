@@ -346,12 +346,12 @@ public class QueryResource {
 
     /**
      * Generates a FILTER clause for filtering targets based on the filters if
-     * available using the FILTER expression. This is specific for service events
+     * available using the FILTER expression.
      * 
      * @param field   The field of interest.
      * @param filters The list of filter values to target by.
      */
-    public static String genServiceEventsFilterClause(String field, Set<String> filters) {
+    public static String filterOrExpressions(String field, Set<String> filters) {
         StringBuilder builder = new StringBuilder();
         if (!filters.isEmpty()) {
             List<String> expressions = new ArrayList<>();

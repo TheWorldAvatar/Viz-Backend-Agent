@@ -305,7 +305,7 @@ public class LifecycleTaskService {
         queryBuilder.append(value);
         filterExpressions.computeIfAbsent(key, expression -> {
           Set<String> filterValues = filters.get(key);
-          return QueryResource.genServiceEventsFilterClause(key, filterValues);
+          return QueryResource.filterOrExpressions(key, filterValues);
         });
       }
     });
