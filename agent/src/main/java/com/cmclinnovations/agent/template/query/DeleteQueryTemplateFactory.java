@@ -199,6 +199,13 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
             // Create a copy without the @branch key to avoid reprocessing
             ObjectNode branchContentOnly = specificBranch.deepCopy();
             branchContentOnly.remove(ShaclResource.BRANCH_KEY);
+
+            // Inherit the parent node's @id if the branch doesn't have one
+            if (!branchContentOnly.has(ShaclResource.ID_KEY) && currentNode.has(ShaclResource.ID_KEY)) {
+              branchContentOnly.set(ShaclResource.ID_KEY, currentNode.path(ShaclResource.ID_KEY).deepCopy());
+              LOGGER.info("=== Branch inherited parent @id: {}", currentNode.path(ShaclResource.ID_KEY));
+            }
+
             this.recursiveParseNode(deleteTemplate, branchWherePatterns, branchContentOnly);
           }
           break;
