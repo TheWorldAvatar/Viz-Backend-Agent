@@ -48,10 +48,12 @@ public class UpdateService {
    * @param resourceID       The resource identifier ie type for the instance.
    * @param successMessageId Successful message identifier.
    * @param editedParams     Edited parameters to replace the current values.
+   * @param branchName       The branch name to use for filtering (can be null).
    */
   public ResponseEntity<StandardApiResponse<?>> update(String id, String resourceId, String successMessageId,
-      Map<String, Object> editedParams) {
-    ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id);
+      Map<String, Object> editedParams, String branchName) {
+    LOGGER.info("=== UpdateService.update: branchName = {}", branchName);
+    ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id, branchName);
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
       ResponseEntity<StandardApiResponse<?>> addResponse = this.addService.instantiate(resourceId, id, editedParams);
       if (addResponse.getStatusCode() == HttpStatus.OK) {
@@ -64,6 +66,12 @@ public class UpdateService {
     } else {
       return deleteResponse;
     }
+  }
+
+  // Keep the old method for backward compatibility
+  public ResponseEntity<StandardApiResponse<?>> update(String id, String resourceId, String successMessageId,
+      Map<String, Object> editedParams) {
+    return update(id, resourceId, successMessageId, editedParams, null);
   }
 
   /**
