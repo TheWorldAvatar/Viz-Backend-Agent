@@ -228,9 +228,18 @@ public class AddService {
         JsonNode childNode = currentNode.get(fieldName);
         // For any form branch configuration field
         if (fieldName.equals(ShaclResource.BRANCH_KEY)) {
-          ObjectNode matchedOption = this.findMatchingOption(
-              this.jsonLdService.getArrayNode(currentNode.path(ShaclResource.BRANCH_KEY)),
-              replacements.keySet());
+          ArrayNode branches = this.jsonLdService.getArrayNode(currentNode.path(ShaclResource.BRANCH_KEY));
+
+          for (JsonNode branchNode : branches) {
+            if (branchNode.isObject()) {
+              ObjectNode branchObj = (ObjectNode) branchNode;
+              // Remove the @branch key if present (used for DELETE filtering)
+              branchObj.remove(ShaclResource.BRANCH_KEY);
+            }
+          }
+
+          // Now find the best matching option based on available fields
+          ObjectNode matchedOption = this.findMatchingOption(branches, replacements.keySet());
           // Iterate and append each property in the target node to the current node
           Iterator<String> matchedOptionFieldNames = matchedOption.fieldNames();
           while (matchedOptionFieldNames.hasNext()) {

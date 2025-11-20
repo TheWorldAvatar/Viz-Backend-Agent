@@ -34,6 +34,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
   private Queue<Queue<GraphPattern>> whereClauseBranchPatterns;
   private final JsonLdService jsonLdService;
   private static final Logger LOGGER = LogManager.getLogger(DeleteQueryTemplateFactory.class);
+  private String selectedBranchName;
 
   /**
    * Constructs a new query template factory.
@@ -47,12 +48,18 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
   /**
    * Generate a SPARQL query template to delete the target instance.
    * 
-   * @param params An object containing two parameters to write, namely:
-   *               rootNode - The root node of contents to parse into a template
-   *               targetId - The target instance IRI.
+   * @param params     An object containing two parameters to write, namely:
+   *                   rootNode - The root node of contents to parse into a
+   *                   template
+   *                   targetId - The target instance IRI.
+   * @param branchName Optional branch name to filter which branch to process (can
+   *                   be null)
    */
-  public String write(QueryTemplateFactoryParameters params) {
+  public String write(QueryTemplateFactoryParameters params, String branchName) {
     this.reset();
+    this.selectedBranchName = branchName;
+    LOGGER.debug("=== DeleteQueryTemplateFactory.write: selectedBranchName set to = {}", this.selectedBranchName);
+
     ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetId());
     this.recursiveParseNode(deleteTemplate, null, params.rootNode());
     this.addBranches(deleteTemplate);
@@ -60,9 +67,15 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     return deleteTemplate.getQueryString();
   }
 
+  // Keep backward compatibility
+  public String write(QueryTemplateFactoryParameters params) {
+    return write(params, null);
+  }
+
   protected void reset() {
     this.whereClauseBranchPatterns = new ArrayDeque<>();
     this.anonymousVariableMappings = new HashMap<>();
+    this.selectedBranchName = null;
   }
 
   /**
@@ -151,19 +164,42 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
           RdfObject typeTripleObject = objectNode.isObject() ? this.parseVariable((ObjectNode) objectNode)
               : Rdf.iri(((TextNode) objectNode).textValue());
           TriplePattern triplePattern = idTripleSubject.isA(typeTripleObject);
-          deleteTemplate.delete(triplePattern).where(triplePattern);
+          deleteTemplate.delete(triplePattern);
+
+          // Add to branch patterns if we're in a branch, otherwise add to main WHERE
+          if (whereBranchPatterns != null) {
+            whereBranchPatterns.offer(triplePattern);
+          } else {
+            deleteTemplate.where(triplePattern);
+          }
           break;
         case ShaclResource.BRANCH_KEY:
-          // Iterate over all possible branches
+          LOGGER.debug("=== BRANCH CASE: selectedBranchName = {}", this.selectedBranchName);
           ArrayNode branches = this.jsonLdService.getArrayNode(objectNode);
-          for (JsonNode branch : branches) {
-            // Generate the required delete template and store the template
-            // Retain the current ID value
-            ObjectNode branchNode = this.jsonLdService.getObjectNode(branch);
-            branchNode.set(ShaclResource.ID_KEY, currentNode.path(ShaclResource.ID_KEY));
-            Queue<GraphPattern> branchPatterns = new ArrayDeque<>();
-            this.recursiveParseNode(deleteTemplate, branchPatterns, branchNode);
-            this.whereClauseBranchPatterns.offer(branchPatterns);
+
+          for (JsonNode branchNode : branches) {
+            ObjectNode specificBranch = this.jsonLdService.getObjectNode(branchNode);
+            String currentBranchName = specificBranch.path(ShaclResource.BRANCH_KEY).asText();
+
+            LOGGER.debug("=== Checking branch: {}, matches selected? {}",
+                currentBranchName,
+                this.selectedBranchName != null && this.selectedBranchName.equals(currentBranchName));
+
+            // FILTER: Skip branches that don't match selectedBranchName
+            if (this.selectedBranchName != null && !this.selectedBranchName.equals(currentBranchName)) {
+              LOGGER.debug("=== SKIPPING branch: {}", currentBranchName);
+              continue;
+            }
+
+            // Process the matching branch
+            LOGGER.debug("=== PROCESSING branch: {}", currentBranchName);
+            Queue<GraphPattern> branchWherePatterns = new ArrayDeque<>();
+            this.whereClauseBranchPatterns.offer(branchWherePatterns);
+
+            // Create a copy without the @branch key to avoid reprocessing
+            ObjectNode branchContentOnly = specificBranch.deepCopy();
+            branchContentOnly.remove(ShaclResource.BRANCH_KEY);
+            this.recursiveParseNode(deleteTemplate, branchWherePatterns, branchContentOnly);
           }
           break;
         case ShaclResource.REVERSE_KEY:
@@ -346,6 +382,22 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    * @param deleteTemplate The query object holding the delete query.
    */
   private void addBranches(ModifyQuery deleteTemplate) {
+    if (this.whereClauseBranchPatterns.isEmpty()) {
+      return;
+    }
+
+    // If specific branch selected, add directly
+    if (this.selectedBranchName != null && this.whereClauseBranchPatterns.size() == 1) {
+      Queue<GraphPattern> branchPattern = this.whereClauseBranchPatterns.poll();
+      LOGGER.info("Adding branch patterns directly to WHERE clause for branch: {}", this.selectedBranchName);
+      // Add patterns directly to WHERE clause without OPTIONAL
+      for (GraphPattern pattern : branchPattern) {
+        deleteTemplate.where(pattern);
+      }
+      return;
+    }
+
+    // Fallback: Use original logic (wraps each branch in OPTIONAL)
     while (!this.whereClauseBranchPatterns.isEmpty()) {
       Queue<GraphPattern> branchPattern = this.whereClauseBranchPatterns.poll();
       GraphPatternNotTriples branchPatterns = GraphPatterns.optional(
