@@ -7,7 +7,7 @@ PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>
 SELECT DISTINCT ?iri ?status 
 WHERE{
   {SELECT DISTINCT ?iri (MAX(?priority_val) AS ?priority) WHERE {
-    ?iri dc-terms:identifier [target];
+    ?iri dc-terms:identifier "[target]";
       fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/cmns-col:comprises ?event.
     ?event fibo-fnd-rel-rel:exemplifies ?event_type.
     BIND(
