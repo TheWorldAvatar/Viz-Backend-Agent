@@ -71,13 +71,14 @@ public class QueryTemplateService {
    * 
    * @param resourceID The target resource identifier for the instance.
    * @param targetId   The target instance IRI.
+   * @param branchName The branch name to filter (can be null).
    */
-  public String genDeleteQuery(String resourceID, String targetId) {
-    LOGGER.debug("Generating the DELETE query...");
+  public String genDeleteQuery(String resourceID, String targetId, String branchName) {
+    LOGGER.debug("Generating the DELETE query with branchName = {}", branchName);
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.getJsonLDResource(resourceID).deepCopy();
     return this.deleteQueryTemplateFactory
-        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId));
+        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId), branchName);
   }
 
   /**

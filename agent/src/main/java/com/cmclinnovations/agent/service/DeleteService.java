@@ -32,10 +32,17 @@ public class DeleteService {
    * 
    * @param resourceID The target resource identifier for the instance.
    * @param targetId   The target instance IRI.
+   * @param branchName The branch name to filter (can be null).
    */
-  public ResponseEntity<StandardApiResponse<?>> delete(String resourceID, String targetId) {
-    LOGGER.debug("Deleting {} instance of {} ...", resourceID, targetId);
-    String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId);
+  public ResponseEntity<StandardApiResponse<?>> delete(String resourceID, String targetId, String branchName) {
+
+    LOGGER.debug("Deleting {} instance of {} with branch: {}...", resourceID, targetId, branchName);
+    String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId, branchName);
     return this.kgService.delete(query, targetId);
+  }
+
+  // Keep the old method for backward compatibility
+  public ResponseEntity<StandardApiResponse<?>> delete(String resourceID, String targetId) {
+    return delete(resourceID, targetId, null);
   }
 }
