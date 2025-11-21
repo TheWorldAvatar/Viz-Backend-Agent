@@ -204,7 +204,7 @@ public class LifecycleContractService {
           QueryResource.genVariable(LifecycleResource.STATUS_KEY),
           List.of(1, 1));
     }
-    String[] addStatements = this.genLifecycleStatements(eventType, pagination.sortedFields(), pagination.filters(), "",
+    String[] addStatements = this.genLifecycleStatements(eventType, pagination.getSortedFields(), pagination.getFilters(), "",
         true);
     Queue<List<String>> ids = this.getService.getAllIds(resourceID, addStatements[0], pagination);
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,

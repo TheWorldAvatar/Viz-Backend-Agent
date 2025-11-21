@@ -105,15 +105,15 @@ public class QueryTemplateService {
   public String getAllIdsQueryTemplate(String nodeShapeReplacement, String addQueryStatements,
       PaginationState pagination, boolean requireId) {
     // If pagination is not given, no limits and offset should be set
-    SelectQuery query = QueryResource.getSelectQuery(true, pagination.limit())
+    SelectQuery query = QueryResource.getSelectQuery(true, pagination.getLimit())
         .where(QueryResource.IRI_VAR.isA(Rdf.iri(
             nodeShapeReplacement.substring(1, nodeShapeReplacement.length() - 1)))
             .andHas(QueryResource.DC_TERM_ID, QueryResource.ID_VAR))
-        .offset(pagination.offset());
+        .offset(pagination.getOffset());
     if (requireId) {
       query.select(QueryResource.ID_VAR);
     }
-    Queue<SortDirective> sortDirectives = pagination.sortDirectives();
+    Queue<SortDirective> sortDirectives = pagination.getSortDirectives();
     boolean hasNoIdToSort = sortDirectives.stream()
         .allMatch(directive -> !directive.field().getVarName().equals(QueryResource.ID_KEY));
     while (!sortDirectives.isEmpty()) {

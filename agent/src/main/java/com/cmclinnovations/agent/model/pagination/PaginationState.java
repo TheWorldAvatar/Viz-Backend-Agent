@@ -48,23 +48,23 @@ public class PaginationState {
         this.filters = StringResource.parseFilters(filters, isContract);
     }
 
-    public Integer limit() {
+    public Integer getLimit() {
         return this.limit;
     }
 
-    public int offset() {
+    public int getOffset() {
         return this.offset;
     }
 
-    public Set<String> sortedFields() {
+    public Set<String> getSortedFields() {
         return this.sortedFields;
     }
 
-    public Queue<SortDirective> sortDirectives() {
+    public Queue<SortDirective> getSortDirectives() {
         return this.sortedDirectives;
     }
 
-    public Map<String, Set<String>> filters() {
+    public Map<String, Set<String>> getFilters() {
         return this.filters;
     }
 

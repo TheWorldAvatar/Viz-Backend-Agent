@@ -237,8 +237,8 @@ public class GetService {
   public Queue<List<String>> getAllIds(String resourceID, String addStatements, PaginationState pagination) {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    addStatements += this.getQueryStatementsForTargetFields(iri, pagination.sortedFields(),
-        pagination.filters());
+    addStatements += this.getQueryStatementsForTargetFields(iri, pagination.getSortedFields(),
+        pagination.getFilters());
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
         pagination, true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
