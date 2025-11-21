@@ -379,6 +379,14 @@ public class GetService {
         QueryResource.genFilterStatements(value, key, filterValues, queryBuilder);
       }
     });
+    if (filters.containsKey(QueryResource.ID_KEY)) {
+      QueryResource.genFilterStatements("", QueryResource.ID_KEY, filters.get(QueryResource.ID_KEY), queryBuilder);
+    }
+    String eventIdVar = QueryResource.EVENT_ID_VAR.getVarName();
+    if (filters.containsKey(eventIdVar)) {
+      QueryResource.genFilterStatements("?event_id dc-terms:identifier ?ori_event_id.",
+          StringResource.ORIGINAL_PREFIX + eventIdVar, filters.get(eventIdVar), queryBuilder);
+    }
     return queryBuilder.toString();
   }
 
