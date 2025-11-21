@@ -51,11 +51,16 @@ public class UpdateService {
    * @param branchName       The branch name to use for filtering (can be null).
    */
   public ResponseEntity<StandardApiResponse<?>> update(String id, String resourceId, String successMessageId,
-      Map<String, Object> editedParams, String branchName) {
-    LOGGER.info("=== UpdateService.update: branchName = {}", branchName);
-    ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id, branchName);
+      Map<String, Object> editedParams, String branchDelete, String branchAdd) {
+    LOGGER.info("=== UpdateService.update: branchDelete = {}, branchAdd = {}", branchDelete, branchAdd);
+
+    // Step 1: Delete the branchDelete
+    ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id, branchDelete);
+
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
-      ResponseEntity<StandardApiResponse<?>> addResponse = this.addService.instantiate(resourceId, id, editedParams);
+      // Step 2: ADD with branchAdd
+      ResponseEntity<StandardApiResponse<?>> addResponse = this.addService.instantiate(resourceId, id, editedParams,
+          branchAdd);
       if (addResponse.getStatusCode() == HttpStatus.OK) {
         LOGGER.info("{} has been successfully updated for {}", resourceId, id);
         return this.responseEntityBuilder.success(addResponse.getBody().data().id(),
@@ -71,7 +76,7 @@ public class UpdateService {
   // Keep the old method for backward compatibility
   public ResponseEntity<StandardApiResponse<?>> update(String id, String resourceId, String successMessageId,
       Map<String, Object> editedParams) {
-    return update(id, resourceId, successMessageId, editedParams, null);
+    return update(id, resourceId, successMessageId, editedParams, null, null);
   }
 
   /**
