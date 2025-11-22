@@ -1,5 +1,12 @@
 # Change Log
 
+
+## 1.18.1
+
+### Changes
+
+- Allow customised JSON-LD for cancelled job and job with issue to be used
+
 ## 1.18.0
 
 ### Changes

@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.utils;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,22 +11,29 @@ import java.util.regex.Pattern;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
-import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.core.FileService;
 
 public class LifecycleResource {
   public static final String LIFECYCLE_RESOURCE = "lifecycle";
+  public static final String LIFECYCLE_REPORT_RESOURCE = "lifecycle report";
   public static final String SCHEDULE_RESOURCE = "schedule";
   public static final String TASK_RESOURCE = "task";
   public static final String OCCURRENCE_INSTANT_RESOURCE = "occurrence instant";
-  public static final String OCCURRENCE_LINK_RESOURCE = "occurrence link";
+  public static final String CANCEL_RESOURCE = "cancel";
+  public static final String REPORT_RESOURCE = "report";
   public static final String TASK_ID_SORT_BY_PARAMS = ",+event_id";
+  public static final String RECURRENCE_DAILY_TASK = "P1D";
+  public static final String RECURRENCE_ALT_DAY_TASK = "P2D";
+  public static final String EMPTY_STRING = "\"\"";
+  public static final String RECURRENCE_DAILY_TASK_STRING = "\"" + RECURRENCE_DAILY_TASK + "\"";
+  public static final String RECURRENCE_ALT_DAY_TASK_STRING = "\"" + RECURRENCE_ALT_DAY_TASK + "\"";
 
   public static final String INSTANCE_KEY = "id_instance";
   public static final String CONTRACT_KEY = "contract";
   public static final String ORDER_KEY = "order";
   public static final String CURRENT_DATE_KEY = "current date";
+  public static final String NEW_DATE_KEY = "newDate";
   public static final String DATE_KEY = "date";
   public static final String DATE_TIME_KEY = "dateTime";
   public static final String EVENT_KEY = "event";
@@ -44,7 +52,7 @@ public class LifecycleResource {
   public static final String SCHEDULE_END_TIME_KEY = "end time";
   public static final String SCHEDULE_RECURRENCE_KEY = "recurrence";
   public static final String SCHEDULE_RECURRENCE_PLACEHOLDER_KEY = "recurrences";
-  public static final String SCHEDULE_TYPE_KEY = "schedule type";
+  public static final String SCHEDULE_TYPE_KEY = "scheduleType";
 
   public static final String EXEMPLIFIES_RELATIONS = "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies";
   public static final String IS_ABOUT_RELATIONS = "https://www.omg.org/spec/Commons/Documents/isAbout";
@@ -71,10 +79,19 @@ public class LifecycleResource {
   public static final Pattern OCCURRENCE_VARIABLES_PATTERN = Pattern.compile("SELECT\\s+DISTINCT\\s+(.*?)\\s+WHERE",
       Pattern.DOTALL);
   public static final Pattern OCCURRENCE_WHERE_CLAUSE_PATTERN = Pattern.compile("WHERE\\s*\\{(.*)\\}$", Pattern.DOTALL);
+  public static final Map<String, String> NEGATE_RECURRENCE_MAP;
 
   // Private constructor to prevent instantiation
   private LifecycleResource() {
     throw new UnsupportedOperationException("This class cannot be instantiated!");
+  }
+
+  static {
+    Map<String, String> template = new HashMap<>();
+    template.put(RECURRENCE_DAILY_TASK_STRING, "?recurrence!=\"P1D\"");
+    template.put(RECURRENCE_ALT_DAY_TASK, "?recurrence!=\"P2D\"");
+    template.put(EMPTY_STRING, "?recurrence!=\"\"");
+    NEGATE_RECURRENCE_MAP = Collections.unmodifiableMap(template);
   }
 
   /**
@@ -110,20 +127,6 @@ public class LifecycleResource {
   }
 
   /**
-   * Retrieve the schedule type based on the recurrence interval.
-   * 
-   * @param recurrence The recurrence value.
-   */
-  public static String getScheduleTypeFromRecurrence(String recurrence) {
-    return switch (recurrence) {
-      case "" -> LocalisationTranslator.getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY);
-      case "P1D" -> LocalisationTranslator.getMessage(LocalisationResource.LABEL_SINGLE_SERVICE_KEY);
-      case "P2D" -> LocalisationTranslator.getMessage(LocalisationResource.LABEL_ALTERNATE_DAY_SERVICE_KEY);
-      default -> LocalisationTranslator.getMessage(LocalisationResource.LABEL_REGULAR_SERVICE_KEY);
-    };
-  }
-
-  /**
    * Retrieve the lifecycle resource file path associated with the resource ID.
    * 
    * @param resourceID The identifier for the resource.
@@ -132,9 +135,12 @@ public class LifecycleResource {
     switch (resourceID) {
       case LifecycleResource.LIFECYCLE_RESOURCE:
         return FileService.LIFECYCLE_JSON_LD_RESOURCE;
+      case LifecycleResource.LIFECYCLE_REPORT_RESOURCE:
+        return FileService.LIFECYCLE_REPORT_JSON_LD_RESOURCE;
       case LifecycleResource.OCCURRENCE_INSTANT_RESOURCE:
         return FileService.OCCURRENCE_INSTANT_JSON_LD_RESOURCE;
-      case LifecycleResource.OCCURRENCE_LINK_RESOURCE:
+      case LifecycleResource.CANCEL_RESOURCE:
+      case LifecycleResource.REPORT_RESOURCE:
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
       case LifecycleResource.SCHEDULE_RESOURCE:
         return FileService.SCHEDULE_JSON_LD_RESOURCE;
@@ -168,16 +174,20 @@ public class LifecycleResource {
   }
 
   /**
-   * Parses the query statements for sorting by event occurrences.
+   * Converts the current query statement for the target variable into a string
+   * that can be compared to the filter value.
    * 
-   * @param query          Target query for parsing.
-   * @param lifecycleEvent Target event type.
+   * @param variable       The variable of interest.
+   * @param inputMappings  Mappings to retrieve the current statements.
+   * @param outputMappings Mappings to store the updated statements.
    */
-  public static String parseOccurrenceSortQueryStatements(String query, LifecycleEventType lifecycleEvent) {
-    String eventVar = QueryResource.genVariable(lifecycleEvent.getId() + "_event").getQueryString();
-    return query.replace(QueryResource.IRI_VAR.getQueryString(), eventVar)
-        .replaceFirst("OPTIONAL\\{",
-            "OPTIONAL{" + genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent));
+  public static void convertVarForStrFilter(Variable variable, Map<String, String> inputMappings,
+      Map<String, String> outputMappings) {
+    String varName = variable.getVarName();
+    String newVarName = StringResource.ORIGINAL_PREFIX + varName;
+    outputMappings.put(varName,
+        inputMappings.getOrDefault(varName, "").replace(varName, newVarName) + "BIND(STR(?" + newVarName
+            + ") AS " + variable.getQueryString() + ")");
   }
 
   /**
@@ -202,7 +212,7 @@ public class LifecycleResource {
             genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent))
         // Replace iri with event variable
         .replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
-    return "OPTIONAL {" + parsedWhereClause + "}";
+    return QueryResource.optional(parsedWhereClause);
   }
 
   /**
@@ -211,10 +221,29 @@ public class LifecycleResource {
    * @param eventVar       The event variable of interest.
    * @param lifecycleEvent Target event type.
    */
-  private static String genOccurrenceTargetQueryStatement(String eventVar, LifecycleEventType lifecycleEvent) {
-    return "?stage <https://www.omg.org/spec/Commons/Collections/comprises> " + eventVar + "." + eventVar
-        + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+  public static String genOccurrenceTargetQueryStatement(String eventVar, LifecycleEventType lifecycleEvent) {
+    return eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + Rdf.iri(lifecycleEvent.getEvent()).getQueryString()
         + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event.";
+  }
+
+  /**
+   * Reverts back the special fields for lifecycle back to their original variable
+   * form.
+   * 
+   * @param field      The special field name.
+   * @param isContract Indicates if it is a contract or task otherwise.
+   */
+  public static String revertLifecycleSpecialFields(String field, Boolean isContract) {
+    if (isContract == null) {
+      return field;
+    }
+    String lowerCaseField = field.toLowerCase();
+    if (lowerCaseField.equals(STATUS_KEY)) {
+      return isContract ? STATUS_KEY : EVENT_KEY;
+    } else if (lowerCaseField.equals(SCHEDULE_TYPE_KEY.toLowerCase())) {
+      return SCHEDULE_RECURRENCE_KEY;
+    }
+    return field;
   }
 }

@@ -1,0 +1,33 @@
+PREFIX cmns-dt: <https://www.omg.org/spec/Commons/DatesAndTimes/>
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX fibo-fnd-arr-lif: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/>
+PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/>
+
+SELECT DISTINCT * WHERE{
+  ?iri dc-terms:identifier "[target]";
+    fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/fibo-fnd-dt-fd:hasSchedule ?schedule.
+  OPTIONAL{
+    ?schedule ^fibo-fnd-dt-fd:hasSchedule/<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/cmns-dt:hasEndDate/cmns-dt:hasDateValue ?end_date.
+  }
+  OPTIONAL{
+    ?schedule fibo-fnd-dt-fd:hasRecurrenceInterval/cmns-dt:hasDurationValue ?recurrences.
+  }
+  ?schedule cmns-dt:hasTimePeriod/cmns-dt:hasStart/cmns-dt:hasTimeValue ?start_time;
+    cmns-dt:hasTimePeriod/cmns-dt:hasEndTime/cmns-dt:hasTimeValue ?end_time;
+    cmns-dt:hasStartDate/cmns-dt:hasDateValue ?start_date.
+  {
+    SELECT ?iri 
+      (MAX(IF(?day=fibo-fnd-dt-fd:Monday,"Monday","")) AS ?monday) 
+      (MAX(IF(?day=fibo-fnd-dt-fd:Tuesday,"Tuesday","")) AS ?tuesday) 
+      (MAX(IF(?day=fibo-fnd-dt-fd:Wednesday,"Wednesday","")) AS ?wednesday) 
+      (MAX(IF(?day=fibo-fnd-dt-fd:Thursday,"Thursday","")) AS ?thursday) 
+      (MAX(IF(?day=fibo-fnd-dt-fd:Friday,"Friday","")) AS ?friday) 
+      (MAX(IF(?day=fibo-fnd-dt-fd:Saturday,"Saturday","")) AS ?saturday) 
+      (MAX(IF(?day=fibo-fnd-dt-fd:Sunday,"Sunday","")) AS ?sunday) 
+    WHERE{
+      ?iri dc-terms:identifier "[target]";
+        fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/fibo-fnd-dt-fd:hasSchedule/fibo-fnd-dt-fd:hasRecurrenceInterval ?day.
+    }
+    GROUP BY ?iri
+  }
+}

@@ -49,7 +49,7 @@ public class FileServiceTest {
   void testGetContentsWithReplacement() throws IOException {
     // Set up
     String sampleFilePath = SAMPLE_RESOURCE_DIR_PATH + SAMPLE_RESOURCE_FILE;
-    File sampleFile = genSampleFile(sampleFilePath, FileService.REPLACEMENT_TARGET);
+    File sampleFile = genSampleFile(sampleFilePath, "[target]");
     try {
       // Execute
       String result = new FileService(resourceLoader, objectMapper)

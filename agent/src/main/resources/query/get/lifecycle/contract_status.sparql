@@ -1,0 +1,27 @@
+PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX fibo-fnd-arr-lif: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/>
+PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>
+
+SELECT DISTINCT ?iri ?status 
+WHERE{
+  {SELECT DISTINCT ?iri (MAX(?priority_val) AS ?priority) WHERE {
+    ?iri dc-terms:identifier "[target]";
+      fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/cmns-col:comprises ?event.
+    ?event fibo-fnd-rel-rel:exemplifies ?event_type.
+    BIND(
+      IF(?event_type=ontoservice:ContractDischarge||
+        ?event_type=ontoservice:ContractRescission||
+        ?event_type=ontoservice:ContractTermination, 
+          2, IF(?event_type=ontoservice:ContractApproval,
+            1,0)
+        ) AS ?priority_val)
+    }
+    GROUP BY ?iri
+  }
+  BIND(
+    IF(?priority=2,"Archived",
+      IF(?priority=1,"Active","Pending")
+    ) AS ?status)
+}

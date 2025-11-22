@@ -6,6 +6,7 @@ import com.cmclinnovations.agent.utils.LifecycleResource;
 
 public enum LifecycleEventType {
   APPROVED("approve", LifecycleResource.CREATION_STAGE, LifecycleResource.EVENT_APPROVAL),
+  ACTIVE_SERVICE("complete", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_DELIVERY),
   SERVICE_ORDER_RECEIVED("order", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_ORDER_RECEIVED),
   SERVICE_ORDER_DISPATCHED("dispatch", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_DISPATCH),
   SERVICE_EXECUTION("complete", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_DELIVERY),

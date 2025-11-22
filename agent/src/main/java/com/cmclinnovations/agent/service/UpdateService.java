@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.service;
 
+import java.text.MessageFormat;
 import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
@@ -53,14 +54,8 @@ public class UpdateService {
       Map<String, Object> editedParams) {
     ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id);
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
-      ResponseEntity<StandardApiResponse<?>> addResponse = this.addService.instantiate(resourceId, id, editedParams);
-      if (addResponse.getStatusCode() == HttpStatus.OK) {
-        LOGGER.info("{} has been successfully updated for {}", resourceId, id);
-        return this.responseEntityBuilder.success(addResponse.getBody().data().id(),
-            LocalisationTranslator.getMessage(successMessageId));
-      } else {
-        return addResponse;
-      }
+      return this.addService.instantiate(resourceId, id, editedParams,
+          MessageFormat.format("{0} has been successfully updated for {1}", resourceId, id), successMessageId);
     } else {
       return deleteResponse;
     }

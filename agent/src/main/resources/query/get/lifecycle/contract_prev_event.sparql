@@ -1,0 +1,12 @@
+PREFIX cmns-dt: <https://www.omg.org/spec/Commons/DatesAndTimes/>
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT DISTINCT ?iri ?id
+WHERE {
+  ?event dc-terms:identifier "[target]" ;
+    cmns-dt:succeeds* ?iri .
+  ?iri dc-terms:identifier ?id ;
+    fibo-fnd-rel-rel:exemplifies <[target]> .
+}

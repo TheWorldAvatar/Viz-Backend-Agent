@@ -4,8 +4,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -34,6 +36,7 @@ import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
+import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
@@ -67,8 +70,8 @@ public class GetService {
    * @param requireLabel     Indicates if labels should be returned
    */
   public String getQuery(String shaclReplacement, boolean requireLabel) {
-    String query = this.queryTemplateService.getShaclQuery(shaclReplacement, requireLabel);
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
+    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this
+        .getSparqlQueryConstructionParameters(shaclReplacement, requireLabel);
     return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, new ArrayDeque<>(),
         null, "", new HashMap<>());
   }
@@ -82,8 +85,7 @@ public class GetService {
   public ResponseEntity<StandardApiResponse<?>> getMatchingInstances(String resourceID, Map<String, String> criterias) {
     LOGGER.debug("Retrieving the form template for {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
-    String query = this.queryTemplateService.getShaclQuery(iri, false);
-    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService.queryNestedPredicates(query);
+    Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.getSparqlQueryConstructionParameters(iri, false);
     String searchQuery = this.queryTemplateService.genSearchQuery(nestedVariablesAndPropertyPaths, criterias);
     // Query for direct instances
     Queue<SparqlBinding> results = this.kgService.query(searchQuery, SparqlEndpointType.MIXED);
@@ -203,39 +205,78 @@ public class GetService {
    * Retrieves the number of instances belonging to the resource.
    * 
    * @param resourceID Target resource identifier for the instance class.
+   * @param filters    Mappings between filter fields and their values.
    */
-  public int getCount(String resourceID) {
-    return this.getCount(resourceID, "");
+  public int getCount(String resourceID, Map<String, String> filters) {
+    return this.getCount(resourceID, "", "", filters, null);
   }
 
   /**
    * Retrieves the number of instances belonging to the resource.
    * 
-   * @param resourceID         Target resource identifier for the instance class.
-   * @param addQueryStatements Additional query statements to be added.
+   * @param resourceID    Target resource identifier for the instance class.
+   * @param addStatements Additional query statements to be added if any.
+   * @param addSortedBy   Additional sort_by parameters to be added if any.
+   * @param filters       Mappings between filter fields and their values.
+   * @param isContract    Indicates if it is a contract or task otherwise.
    */
-  public int getCount(String resourceID, String addQueryStatements) {
-    Queue<String> ids = this.getAllIds(resourceID, addQueryStatements, null);
+  public int getCount(String resourceID, String addStatements, String addSortedBy, Map<String, String> filters,
+      Boolean isContract) {
+    Queue<List<String>> ids = this.getAllIds(resourceID, addStatements,
+        new PaginationState(0, null, "-id" + addSortedBy, isContract, filters));
     return ids.size();
   }
 
   /**
    * Retrieve all IDs associated with the target replacement.
    * 
-   * @param resourceID         Target resource identifier for the instance class.
-   * @param addQueryStatements Additional query statements to be added if any.
-   * @param pagination         Optional state containing the current page and
-   *                           limit.
+   * @param resourceID    Target resource identifier for the instance class.
+   * @param addStatements Additional query statements to be added if any.
+   * @param pagination    Optional state containing the current page and limit.
    */
-  public Queue<String> getAllIds(String resourceID, String addQueryStatements, PaginationState pagination) {
+  public Queue<List<String>> getAllIds(String resourceID, String addStatements, PaginationState pagination) {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    String additionalStatements = pagination == null ? addQueryStatements
-        : addQueryStatements + this.getQueryStatementsForSorting(iri, pagination.sortFields());
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, additionalStatements, pagination);
+    addStatements += this.getQueryStatementsForTargetFields(iri, pagination.getSortedFields(),
+        pagination.getFilters());
+    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
+        pagination, true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
-        .map(binding -> binding.getFieldValue(QueryResource.ID_KEY))
+        .map(binding -> {
+          String eventIdVar = QueryResource.EVENT_ID_VAR.getVarName();
+          if (binding.containsField(eventIdVar)) {
+            return List.of(binding.getFieldValue(QueryResource.ID_KEY), binding.getFieldValue(eventIdVar));
+          }
+          return List.of(binding.getFieldValue(QueryResource.ID_KEY));
+        })
         .collect(Collectors.toCollection(ArrayDeque::new));
+  }
+
+  /**
+   * Retrieve all filter options associated with the resource and the target
+   * field.
+   * 
+   * @param resourceID    Target resource identifier for the instance class.
+   * @param field         The field of interest.
+   * @param addStatements Additional query statements to be added if any.
+   * @param search        String subset to narrow filter scope.
+   * @param filters       Optional additional filters.
+   */
+  public List<String> getAllFilterOptions(String resourceID, String field, String addStatements,
+      String search, Map<String, Set<String>> filters) {
+    LOGGER.info("Retrieving all filter options...");
+    String iri = this.queryTemplateService.getIri(resourceID);
+    addStatements += this.getQueryStatementsForTargetFields(iri, new HashSet<>(Set.of(field)), filters);
+    if (search != null && !search.isBlank()) {
+      addStatements += "FILTER(CONTAINS(LCASE(" + QueryResource.genVariable(field).getQueryString() + ") ,\""
+          + search.toLowerCase()
+          + "\"))";
+    }
+    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
+        new PaginationState(0, 21, "+" + field, new HashMap<>()), false);
+    return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
+        .map(binding -> binding.getFieldValue(field))
+        .toList();
   }
 
   /**
@@ -252,7 +293,7 @@ public class GetService {
    * @param addVars            Optional additional variables to be included in
    *                           the query, along with their order sequence.
    */
-  public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, Queue<String> ids,
+  public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, Queue<List<String>> ids,
       String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
@@ -277,7 +318,7 @@ public class GetService {
       PaginationState pagination) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
-    Queue<String> ids = this.getAllIds(resourceID, "", pagination);
+    Queue<List<String>> ids = this.getAllIds(resourceID, "", pagination);
     if (ids.isEmpty()) {
       return new ArrayDeque<>();
     }
@@ -296,8 +337,8 @@ public class GetService {
   public ResponseEntity<StandardApiResponse<?>> getInstance(String targetId, String resourceID, boolean requireLabel) {
     LOGGER.debug("Retrieving an instance of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
-    Queue<SparqlBinding> instances = this.execGetInstances(iri, new ArrayDeque<>(List.of(targetId)), requireLabel, null,
-        "", new HashMap<>());
+    Queue<SparqlBinding> instances = this.execGetInstances(iri, new ArrayDeque<>(List.of(Arrays.asList(targetId))),
+        requireLabel, null, "", new HashMap<>());
     return this.getSingleInstanceResponse(instances);
   }
 
@@ -313,49 +354,136 @@ public class GetService {
         QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
         Rdf.iri(eventType.getEvent()));
     Queue<SparqlBinding> instances = this.execGetInstances(eventType.getShaclReplacement(),
-        new ArrayDeque<>(List.of(targetId)), false, null, lifecycleEventPattern.getQueryString(), new HashMap<>());
+        new ArrayDeque<>(List.of(Arrays.asList(targetId))), false, null, lifecycleEventPattern.getQueryString(),
+        new HashMap<>());
     return this.getSingleInstanceResponse(instances);
   }
 
   /**
-   * Gets the query statements required for sorting the fields.
+   * Gets the query statements associated with the fields of interest.
    * 
-   * @param shaclReplacement The replacement value of the SHACL query target
-   * @param sortedFields     Set of fields that should be included sorted.
+   * @param shaclReplacement The replacement value of the SHACL query target.
+   * @param sortedFields     Set of fields for sorting that should be included.
+   * @param filters          Filters with name and values.
    */
-  public String getQueryStatementsForSorting(String shaclReplacement, Set<String> sortedFields) {
+  public String getQueryStatementsForTargetFields(String shaclReplacement, Set<String> sortedFields,
+      Map<String, Set<String>> filters) {
+    StringBuilder queryBuilder = new StringBuilder();
+    Map<String, String> filteredStatementMappings = this.getStatementMappingsForTargetFields(shaclReplacement,
+        sortedFields, filters);
+    filteredStatementMappings.forEach((key, value) -> {
+      if (key.equals(StringResource.SORT_KEY)) {
+        queryBuilder.append(value);
+      } else {
+        Set<String> filterValues = filters.get(key);
+        QueryResource.genFilterStatements(value, key, filterValues, queryBuilder);
+      }
+    });
+    if (filters.containsKey(QueryResource.ID_KEY)) {
+      QueryResource.genFilterStatements("", QueryResource.ID_KEY, filters.get(QueryResource.ID_KEY), queryBuilder);
+    }
+    String eventIdVar = QueryResource.EVENT_ID_VAR.getVarName();
+    if (filters.containsKey(eventIdVar)) {
+      QueryResource.genFilterStatements("?event_id dc-terms:identifier ?ori_event_id.",
+          StringResource.ORIGINAL_PREFIX + eventIdVar, filters.get(eventIdVar), queryBuilder);
+    }
+    return queryBuilder.toString();
+  }
+
+  /**
+   * Gets the query statements associated with the fields of interest.
+   * 
+   * @param shaclReplacement The replacement value of the SHACL query target.
+   * @param sortedFields     Set of fields for sorting that should be included.
+   * @param filters          Filters with name and values.
+   */
+  public Map<String, String> getStatementMappingsForTargetFields(String shaclReplacement, Set<String> sortedFields,
+      Map<String, Set<String>> filters) {
     // First query for all the available query construction params associated with
     // the target replacement
-    String query = this.queryTemplateService.getShaclQuery(shaclReplacement, true);
-    ArrayDeque<Queue<SparqlBinding>> results = (ArrayDeque<Queue<SparqlBinding>>) this.kgService
-        .queryNestedPredicates(query);
-    // Filter out only the required fields for sorting, excluding others
-    ArrayDeque<Queue<SparqlBinding>> queryVarsAndPaths = new ArrayDeque<>();
+    ArrayDeque<Queue<SparqlBinding>> results = (ArrayDeque<Queue<SparqlBinding>>) this
+        .getSparqlQueryConstructionParameters(shaclReplacement, true);
+    // Next, parse and get the query statements for the fields of interest that
+    // requires sorting or filtering
+    Set<String> filterFields = new HashSet<>(filters.keySet());
+    Map<String, ArrayDeque<Queue<SparqlBinding>>> filterQueryPartMappings = new HashMap<>();
+    Map<String, ArrayDeque<Queue<SparqlBinding>>> sortedQueryPartMappings = new HashMap<>();
+    // Stores the node group name to the corresponding field for easier access
+    Map<String, String> groupFieldMappings = new HashMap<>();
     while (!results.isEmpty()) {
-      // Retrieve the last element first, which are not mixed with node groups
+      // Retrieve the last list of parts first, which are not mixed with node groups
       // Queue sorts them by node groups first if available, and we want to reverse
       // this process instead
       Queue<SparqlBinding> currentQueryVarsAndPaths = results.pollLast();
-      Queue<SparqlBinding> tempQueue = new ArrayDeque<>();
+      Map<String, Queue<SparqlBinding>> tempFilterPartsMapping = new HashMap<>();
+      Map<String, Queue<SparqlBinding>> tempSortedPartsMapping = new HashMap<>();
+      // Iterate over the list to find bindings matching the field
       while (!currentQueryVarsAndPaths.isEmpty()) {
         SparqlBinding binding = currentQueryVarsAndPaths.poll();
         String fieldName = binding.getFieldValue(ShaclResource.NAME_PROPERTY);
-        if (sortedFields.contains(fieldName)) {
-          tempQueue.offer(binding);
-          // When there are node groups, add them into the sorted fields so that it will
-          // be picked up in later queues
+        fieldName = QueryResource.genVariable(fieldName).getVarName();
+        // If the field name is a group with a corresponding field, find its original
+        // child field name
+        String fieldKey = groupFieldMappings.getOrDefault(fieldName, fieldName);
+        // Filters are prioritised over sorted fields to prevent duplicating query
+        // statements
+        if (filterFields.contains(fieldName)) {
+          Queue<SparqlBinding> currentQueue = Optional.ofNullable(
+              tempFilterPartsMapping.putIfAbsent(fieldKey, new ArrayDeque<>()))
+              .orElseGet(() -> tempFilterPartsMapping.get(fieldKey));
+          currentQueue.offer(binding);
+          // Add node groups to ensure they are parsed in later iteration
           if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
-            sortedFields.add(binding.getFieldValue(ShaclResource.NODE_GROUP_VAR));
+            String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
+            group = QueryResource.genVariable(group).getVarName();
+            groupFieldMappings.put(group, fieldName);
+            filterFields.add(group);
+          }
+        } else if (sortedFields.contains(fieldName)) {
+          Queue<SparqlBinding> currentQueue = Optional.ofNullable(
+              tempSortedPartsMapping.putIfAbsent(fieldKey, new ArrayDeque<>()))
+              .orElseGet(() -> tempSortedPartsMapping.get(fieldKey));
+          currentQueue.offer(binding);
+          // Add node groups to ensure they are parsed in later iteration
+          if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
+            String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
+            group = QueryResource.genVariable(group).getVarName();
+            groupFieldMappings.put(group, fieldName);
+            sortedFields.add(group);
           }
         }
       }
-      // Ensures only if there are filters meeting the requirements, append to the
-      // final query
-      if (!tempQueue.isEmpty()) {
-        queryVarsAndPaths.offerFirst(tempQueue);
-      }
+      // After iteration at the nested queue level, add them to the respective
+      // mappings
+      tempFilterPartsMapping.forEach((key, value) -> {
+        ArrayDeque<Queue<SparqlBinding>> currentQueryParts = Optional.ofNullable(
+            filterQueryPartMappings.putIfAbsent(key, new ArrayDeque<>()))
+            .orElseGet(() -> filterQueryPartMappings.get(key));
+        currentQueryParts.offerFirst(value);
+      });
+      tempSortedPartsMapping.forEach((key, value) -> {
+        ArrayDeque<Queue<SparqlBinding>> currentQueryParts = Optional.ofNullable(
+            sortedQueryPartMappings.putIfAbsent(key, new ArrayDeque<>()))
+            .orElseGet(() -> sortedQueryPartMappings.get(key));
+        currentQueryParts.offerFirst(value);
+      });
     }
-    return queryVarsAndPaths.isEmpty() ? "" : this.queryTemplateService.genWhereClause(queryVarsAndPaths);
+    // Generate statements for each mappings as individual parts
+    StringBuilder sortStatementBuilder = new StringBuilder();
+    sortedQueryPartMappings.forEach((key, queryParts) -> {
+      sortStatementBuilder.append(QueryResource.optional(this.queryTemplateService.genWhereClause(queryParts)));
+    });
+    Map<String, String> outputMappings = new HashMap<>();
+    if (!sortStatementBuilder.isEmpty()) {
+      outputMappings.put(StringResource.SORT_KEY, sortStatementBuilder.toString());
+    }
+    filterQueryPartMappings.forEach((key, queryParts) -> {
+      // Generate the query statements for this filter
+      String clause = this.queryTemplateService.genWhereClause(queryParts)
+          .replaceAll("\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
+      outputMappings.put(key, clause);
+    });
+    return outputMappings;
   }
 
   /**
@@ -371,14 +499,14 @@ public class GetService {
    * @param addVars              Optional additional variables to be included in
    *                             the query, along with their order sequence
    */
-  private Queue<SparqlBinding> execGetInstances(String nodeShapeReplacement, Queue<String> targetIds,
+  private Queue<SparqlBinding> execGetInstances(String nodeShapeReplacement, Queue<List<String>> targetIds,
       boolean requireLabel, ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     if (requireLabel) {
       // Parent related parameters should be disabled
       parentField = null;
     }
-    String query = this.queryTemplateService.getShaclQuery(nodeShapeReplacement, requireLabel);
-    Queue<Queue<SparqlBinding>> queryVarsAndPaths = this.kgService.queryNestedPredicates(query);
+    Queue<Queue<SparqlBinding>> queryVarsAndPaths = this.getSparqlQueryConstructionParameters(nodeShapeReplacement,
+        requireLabel);
     String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetIds,
         parentField, addQueryStatements, addVars);
     LOGGER.debug("Querying the knowledge graph for the instances...");
@@ -391,6 +519,20 @@ public class GetService {
       instances.forEach(instance -> instance.addSequence(varSequence));
     }
     return instances;
+  }
+
+  /**
+   * Retrieve the parameters defined by the user in SHACL to generate the SPARQL
+   * query required.
+   * 
+   * @param shaclReplacement The replacement value of the SHACL query target
+   * @param requireLabel     Indicates if labels should be returned for all the
+   *                         fields that are IRIs.
+   */
+  private Queue<Queue<SparqlBinding>> getSparqlQueryConstructionParameters(String shaclReplacement,
+      boolean requireLabel) {
+    String query = this.queryTemplateService.getShaclQuery(shaclReplacement, requireLabel);
+    return this.kgService.queryNestedPredicates(query);
   }
 
   /**
