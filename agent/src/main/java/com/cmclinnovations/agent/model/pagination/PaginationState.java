@@ -82,6 +82,10 @@ public class PaginationState {
                     String field = match.group(2);
                     if (isContract != null) {
                         field = LifecycleResource.revertLifecycleSpecialFields(field, isContract);
+                        // Last modified should always be the original non-string version for sorting
+                        if (field.equals(LifecycleResource.LAST_MODIFIED_KEY)) {
+                            field = StringResource.ORIGINAL_PREFIX + LifecycleResource.LAST_MODIFIED_KEY;
+                        }
                     }
                     Variable fieldVar = QueryResource.genVariable(field);
                     // First group matches the sign
