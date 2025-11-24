@@ -142,8 +142,8 @@ public class LifecycleQueryFactory {
     results.put(LifecycleResource.EVENT_KEY,
         eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> ?temp_event."
             + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar
-            + "} BIND(CONCAT(STR(?temp_event),IF(BOUND(?event_status),STR(?event_status),\"\")) AS " + eventVar
-            + ")");
+            + "} BIND(CONCAT(STR(?temp_event),IF(BOUND(?event_status),CONCAT(\";\",STR(?event_status)),\"\")) AS "
+            + eventVar + ")");
     results.put(LifecycleResource.LAST_MODIFIED_KEY, eventIdVar
         + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
         + lastModifiedVar + ShaclResource.FULL_STOP);

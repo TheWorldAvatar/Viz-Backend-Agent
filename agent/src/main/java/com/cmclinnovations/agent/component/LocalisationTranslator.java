@@ -44,28 +44,21 @@ public class LocalisationTranslator {
    * @param event The event of interest.
    */
   public static String getEvent(String event) {
-    String eventStatusLocalisedKey;
-    switch (event) {
+    return switch (event) {
       case LifecycleResource.EVENT_INCIDENT_REPORT:
-        eventStatusLocalisedKey = LocalisationResource.EVENT_STATUS_ISSUE_KEY;
-        break;
+        yield LocalisationResource.EVENT_STATUS_ISSUE_KEY;
       case LifecycleResource.EVENT_CANCELLATION:
-        eventStatusLocalisedKey = LocalisationResource.EVENT_STATUS_CANCELLED_KEY;
-        break;
-      case LifecycleResource.EVENT_DELIVERY + LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS:
-        eventStatusLocalisedKey = LocalisationResource.EVENT_STATUS_COMPLETED_KEY;
-        break;
+        yield LocalisationResource.EVENT_STATUS_CANCELLED_KEY;
+      case LifecycleResource.EVENT_DELIVERY + ";" + LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS:
+        yield LocalisationResource.EVENT_STATUS_COMPLETED_KEY;
       case LifecycleResource.EVENT_DISPATCH:
-      case LifecycleResource.EVENT_DELIVERY + LifecycleResource.EVENT_PENDING_STATUS:
-        eventStatusLocalisedKey = LocalisationResource.EVENT_STATUS_ASSIGNED_KEY;
-        break;
+      case LifecycleResource.EVENT_DELIVERY + ";" + LifecycleResource.EVENT_PENDING_STATUS:
+        yield LocalisationResource.EVENT_STATUS_ASSIGNED_KEY;
       case LifecycleResource.EVENT_ORDER_RECEIVED:
-        eventStatusLocalisedKey = LocalisationResource.EVENT_STATUS_NEW_KEY;
-        break;
+        yield LocalisationResource.EVENT_STATUS_NEW_KEY;
       default:
         throw new IllegalArgumentException("Unknown event: " + event);
-    }
-    return eventStatusLocalisedKey;
+    };
   }
 
   /**
@@ -80,11 +73,14 @@ public class LocalisationTranslator {
       case LocalisationResource.EVENT_STATUS_CANCELLED_KEY:
         yield Rdf.literalOf(LifecycleResource.EVENT_CANCELLATION).getQueryString();
       case LocalisationResource.EVENT_STATUS_COMPLETED_KEY:
-        yield Rdf.literalOf(LifecycleResource.EVENT_DELIVERY + LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS)
+        yield Rdf.literalOf(
+            LifecycleResource.EVENT_DELIVERY + ";" + LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS)
             .getQueryString();
       case LocalisationResource.EVENT_STATUS_ASSIGNED_KEY:
-        yield Rdf.literalOf(LifecycleResource.EVENT_DELIVERY + LifecycleResource.EVENT_PENDING_STATUS).getQueryString()
-            + " " + Rdf.literalOf(LifecycleResource.EVENT_DISPATCH).getQueryString();
+        // The white space below is NOT a delimiter and is intended to separate the
+        // potential assigned key values
+        yield Rdf.literalOf(LifecycleResource.EVENT_DELIVERY + ";" + LifecycleResource.EVENT_PENDING_STATUS)
+            .getQueryString() + " " + Rdf.literalOf(LifecycleResource.EVENT_DISPATCH).getQueryString();
       case LocalisationResource.EVENT_STATUS_NEW_KEY:
         yield Rdf.literalOf(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString();
       default:
