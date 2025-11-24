@@ -159,8 +159,8 @@ public class LifecycleTaskService {
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String startTimestamp, String endTimestamp,
       String entityType, boolean isClosed, PaginationState pagination) {
-    String[] lifecycleStatements = this.genLifecycleStatements(startTimestamp, endTimestamp, pagination.getSortedFields(),
-        pagination.getFilters(), "", isClosed, true);
+    String[] lifecycleStatements = this.genLifecycleStatements(startTimestamp, endTimestamp,
+        pagination.getSortedFields(), pagination.getFilters(), "", isClosed, true);
     List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, lifecycleStatements,
         isClosed, pagination);
     LOGGER.info("Successfuly retrieved tasks!");
@@ -273,7 +273,7 @@ public class LifecycleTaskService {
               })
               .collect(Collectors.toMap(
                   Map.Entry::getKey,
-                  (entry -> TypeCastUtils.castToObject(entry.getValue(), Object.class)),
+                  (entry -> entry.getValue() == null ? "" : TypeCastUtils.castToObject(entry.getValue(), Object.class)),
                   (oldVal, newVal) -> oldVal,
                   LinkedHashMap::new));
         })

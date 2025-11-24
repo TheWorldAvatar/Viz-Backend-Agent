@@ -204,8 +204,8 @@ public class LifecycleContractService {
           QueryResource.genVariable(LifecycleResource.STATUS_KEY),
           List.of(1, 1));
     }
-    String[] addStatements = this.genLifecycleStatements(eventType, pagination.getSortedFields(), pagination.getFilters(), "",
-        true);
+    String[] addStatements = this.genLifecycleStatements(eventType, pagination.getSortedFields(),
+        pagination.getFilters(), "", true);
     Queue<List<String>> ids = this.getService.getAllIds(resourceID, addStatements[0], pagination);
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,
         addStatements[1], contractVariables);
@@ -227,7 +227,7 @@ public class LifecycleContractService {
               })
               .collect(Collectors.toMap(
                   Map.Entry::getKey,
-                  (entry -> TypeCastUtils.castToObject(entry.getValue(), Object.class)),
+                  (entry -> entry.getValue() == null ? "" : TypeCastUtils.castToObject(entry.getValue(), Object.class)),
                   (oldVal, newVal) -> oldVal,
                   LinkedHashMap::new));
         })

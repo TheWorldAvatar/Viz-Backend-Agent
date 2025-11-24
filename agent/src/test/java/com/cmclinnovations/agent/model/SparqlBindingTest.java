@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,7 @@ public class SparqlBindingTest {
     sampleInput.set(FIELD_ONE, genResponseField(FIELD_TYPE_LITERAL, FIELD_VALUE_ONE, null, null));
     sampleInput.set(FIELD_TWO, genResponseField(FIELD_TYPE_URI, FIELD_VALUE_TWO, FIELD_TWO_DATA_TYPE, null));
     sampleInput.set(FIELD_THREE, genResponseField(FIELD_TYPE_LITERAL, FIELD_VALUE_THREE, null, FIELD_THREE_LANGUAGE));
-    this.sampleBinding = new SparqlBinding(sampleInput);
+    this.sampleBinding = new SparqlBinding(sampleInput, new ArrayList<>());
   }
 
   @Test
@@ -83,7 +84,7 @@ public class SparqlBindingTest {
     // Generate a secondary binding
     ObjectNode sampleInput = OBJECT_MAPPER.createObjectNode();
     sampleInput.set(FIELD_ONE, genResponseField(FIELD_TYPE_LITERAL, FIELD_VALUE_TWO, null, null));
-    SparqlBinding secBinding = new SparqlBinding(sampleInput);
+    SparqlBinding secBinding = new SparqlBinding(sampleInput, new ArrayList<>());
     // Generate an array variable mapping
     Map<String, Set<String>> sampleArrayVars = new HashMap<>();
     sampleArrayVars.put("random", Set.of(FIELD_ONE));
@@ -99,7 +100,8 @@ public class SparqlBindingTest {
         FIELD_DEFAULT_DATA_TYPE, FIELD_THREE_LANGUAGE);
 
     // Validate array field has been added
-    List<@Nonnull SparqlResponseField> fieldOneResults = TypeCastUtils.castToListObject(bindings.get(FIELD_ONE),SparqlResponseField.class);
+    List<@Nonnull SparqlResponseField> fieldOneResults = TypeCastUtils.castToListObject(bindings.get(FIELD_ONE),
+        SparqlResponseField.class);
     assertEquals(2, fieldOneResults.size());
     validateResponseField(fieldOneResults.get(0), FIELD_TYPE_LITERAL, FIELD_VALUE_ONE,
         FIELD_DEFAULT_DATA_TYPE, FIELD_DEFAULT_LANGUAGE);
