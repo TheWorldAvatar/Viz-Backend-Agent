@@ -228,7 +228,7 @@ public class LifecycleContractService {
               .collect(Collectors.toMap(
                   Map.Entry::getKey,
                   (entry -> entry.getValue() == null ? "" : TypeCastUtils.castToObject(entry.getValue(), Object.class)),
-                  (oldVal, newVal) -> oldVal,
+                  (oldVal, newVal) -> newVal,
                   LinkedHashMap::new));
         })
         .toList());
