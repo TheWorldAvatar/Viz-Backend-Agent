@@ -8,18 +8,22 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 
 @Service
@@ -258,5 +262,34 @@ public class DateTimeService {
       }
     }
     return daysOfWeek;
+  }
+
+  /**
+   * Retrieves a list of lowercase day keys (e.g., "monday") from the provided
+   * schedule
+   * map that satisfy a specific validation criteria.
+   * The criteria is: the map must contain a key matching the lowercase day name,
+   * and the value of that SparqlResponseField must exactly match the proper-cased
+   * display name of the day (e.g., "Monday").
+   *
+   * @param schedule The map containing lowercase day keys and their
+   *                 SparqlResponseField values.
+   * @return A list of matching lowercase day keys (Strings).
+   */
+
+  public List<String> getRecurringWeekday(Map<String, SparqlResponseField> schedule) {
+
+    // Check for null/empty map input defensively
+    if (schedule == null || schedule.isEmpty()) {
+      return List.of();
+    }
+
+    return Arrays.stream(DayOfWeek.values()).filter(day -> {
+      String properCaseName = day.getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+      String lowercaseKey = properCaseName.toLowerCase();
+
+      SparqlResponseField field = schedule.get(lowercaseKey);
+      return field != null && field.value() != null && field.value().equals(properCaseName);
+    }).map(day -> day.getDisplayName(TextStyle.FULL, Locale.ENGLISH).toLowerCase()).collect(Collectors.toList());
   }
 }
