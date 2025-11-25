@@ -295,32 +295,8 @@ public class VisBackendAgent {
       @RequestBody Map<String, Object> updatedEntity) {
     LOGGER.info("Received request to update {}...", type);
 
-    // Extract branch parameters
-    String branchDeleteTemp = updatedEntity.containsKey("branch_delete")
-        ? (String) updatedEntity.get("branch_delete")
-        : null;
-
-    String branchAddTemp = updatedEntity.containsKey("branch_add")
-        ? (String) updatedEntity.get("branch_add")
-        : null;
-
-    final String branchDelete;
-    final String branchAdd;
-
-    if (branchDeleteTemp == null && branchAddTemp == null && updatedEntity.containsKey("branch")) {
-      String branch = (String) updatedEntity.get("branch");
-      branchDelete = branch;
-      branchAdd = branch;
-    } else {
-      branchDelete = branchDeleteTemp;
-      branchAdd = branchAddTemp;
-    }
-
-    LOGGER.info("Branch delete: {}, Branch add: {}", branchDelete, branchAdd);
-
     return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.updateService.update(id, type, LocalisationResource.SUCCESS_UPDATE_KEY, updatedEntity, branchDelete,
-          branchAdd);
+      return this.updateService.update(id, type, LocalisationResource.SUCCESS_UPDATE_KEY, updatedEntity);
     });
   }
 }

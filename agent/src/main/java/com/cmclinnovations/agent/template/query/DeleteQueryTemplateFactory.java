@@ -55,21 +55,21 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    * @param branchName Optional branch name to filter which branch to process (can
    *                   be null)
    */
+  @Override
+  public String write(QueryTemplateFactoryParameters params) {
+    return write(params, null);
+  }
+
   public String write(QueryTemplateFactoryParameters params, String branchName) {
     this.reset();
     this.selectedBranchName = branchName;
     LOGGER.debug("=== DeleteQueryTemplateFactory.write: selectedBranchName set to = {}", this.selectedBranchName);
 
-    ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetId());
+    ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetIds().poll().get(0));
     this.recursiveParseNode(deleteTemplate, null, params.rootNode());
     this.addBranches(deleteTemplate);
 
     return deleteTemplate.getQueryString();
-  }
-
-  // Keep backward compatibility
-  public String write(QueryTemplateFactoryParameters params) {
-    return write(params, null);
   }
 
   protected void reset() {

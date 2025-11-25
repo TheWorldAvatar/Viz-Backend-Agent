@@ -52,32 +52,22 @@ public class UpdateService {
    * @param branchName       The branch name to use for filtering (can be null).
    */
   public ResponseEntity<StandardApiResponse<?>> update(String id, String resourceId, String successMessageId,
-      Map<String, Object> editedParams, String branchDelete, String branchAdd) {
+      Map<String, Object> editedParams) {
+
+    String branchDelete = extractBranchParameter(editedParams, "branch_delete", "branch");
+    String branchAdd = extractBranchParameter(editedParams, "branch_add", "branch");
     LOGGER.info("=== UpdateService.update: branchDelete = {}, branchAdd = {}", branchDelete, branchAdd);
 
     // Step 1: Delete the branchDelete
     ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id, branchDelete);
 
+    // Step 2: ADD with branchAdd
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
-      // Step 2: ADD with branchAdd
-      ResponseEntity<StandardApiResponse<?>> addResponse = this.addService.instantiate(resourceId, id, editedParams,
-          branchAdd);
-      if (addResponse.getStatusCode() == HttpStatus.OK) {
-        LOGGER.info("{} has been successfully updated for {}", resourceId, id);
-        return this.responseEntityBuilder.success(addResponse.getBody().data().id(),
-            LocalisationTranslator.getMessage(successMessageId));
-      } else {
-        return addResponse;
-      }
+      return this.addService.instantiate(resourceId, id, editedParams,
+          MessageFormat.format("{0} has been successfully updated for {1}", resourceId, id), successMessageId);
     } else {
       return deleteResponse;
     }
-  }
-
-  // Keep the old method for backward compatibility
-  public ResponseEntity<StandardApiResponse<?>> update(String id, String resourceId, String successMessageId,
-      Map<String, Object> editedParams) {
-    return update(id, resourceId, successMessageId, editedParams, null, null);
   }
 
   /**
@@ -95,5 +85,15 @@ public class UpdateService {
     return this.responseEntityBuilder.error(
         LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_SERVER_KEY),
         HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
+  private String extractBranchParameter(Map<String, Object> entity, String key, String fallbackKey) {
+    if (entity.containsKey(key)) {
+      return (String) entity.get(key);
+    }
+    if (fallbackKey != null && entity.containsKey(fallbackKey)) {
+      return (String) entity.get(fallbackKey);
+    }
+    return null;
   }
 }

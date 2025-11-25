@@ -102,18 +102,19 @@ public class AddService {
    * @param param      Request parameters.
    */
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, String targetId,
-      Map<String, Object> param, String branchName) {
+      Map<String, Object> param, String successLogMessage, String messageResource) {
 
-    LOGGER.info("Instantiating an instance of {} with branch: {}", resourceID, branchName);
+    String branchAdd = extractBranchParameter(param, "branch_add", "branch");
+    LOGGER.info("Instantiating an instance of {} with branch: {}", resourceID, branchAdd);
 
     // Update ID value to target ID
     param.put(QueryResource.ID_KEY, targetId);
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
     // Filter to only the specified branch
-    if (branchName != null && !branchName.isEmpty()) {
-      addJsonSchema = filterBranchForAdd(addJsonSchema, branchName);
-      LOGGER.info("Filtered JSON-LD template to branch: {}", branchName);
+    if (branchAdd != null && !branchAdd.isEmpty()) {
+      addJsonSchema = filterBranchForAdd(addJsonSchema, branchAdd);
+      LOGGER.info("Filtered JSON-LD template to branch: {}", branchAdd);
     }
 
     // Attempt to replace all placeholders in the JSON schema
@@ -121,13 +122,6 @@ public class AddService {
     // Add the static ID reference
     this.jsonLdService.appendId(addJsonSchema, targetId);
     return this.instantiateJsonLd(addJsonSchema, resourceID, successLogMessage, messageResource);
-  }
-
-  @Deprecated
-  public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, String targetId,
-      Map<String, Object> param) {
-    // No branch filtering (processes all branches)
-    return instantiate(resourceID, targetId, param, null);
   }
 
   /**
@@ -601,5 +595,15 @@ public class AddService {
       }
     }
     return String.join(", ", names);
+  }
+
+  private String extractBranchParameter(Map<String, Object> entity, String key, String fallbackKey) {
+    if (entity.containsKey(key)) {
+      return (String) entity.get(key);
+    }
+    if (fallbackKey != null && entity.containsKey(fallbackKey)) {
+      return (String) entity.get(fallbackKey);
+    }
+    return null;
   }
 }
