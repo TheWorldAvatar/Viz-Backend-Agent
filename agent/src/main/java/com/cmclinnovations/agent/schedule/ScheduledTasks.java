@@ -6,23 +6,23 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.cmclinnovations.agent.service.application.LifecycleService;
+import com.cmclinnovations.agent.service.application.LifecycleContractService;
 
 @Component
 @ConditionalOnProperty(name = "tasks.enabled", havingValue = "true", matchIfMissing = false)
 public class ScheduledTasks {
-  private final LifecycleService lifecycleService;
+  private final LifecycleContractService lifecycleContractService;
 
   private static final Logger LOGGER = LogManager.getLogger(ScheduledTasks.class);
 
-  public ScheduledTasks(LifecycleService lifecycleService) {
-    this.lifecycleService = lifecycleService;
+  public ScheduledTasks(LifecycleContractService lifecycleService) {
+    this.lifecycleContractService = lifecycleService;
   }
 
   @Scheduled(cron = "0 0 6 * * *")
   public void dischargeExpiredContracts() {
     LOGGER.info("Discharging the active contracts that have expired today...");
-    this.lifecycleService.dischargeExpiredContracts();
+    this.lifecycleContractService.dischargeExpiredContracts();
     LOGGER.info("Scheduled task for service discharge has been completed successfully!");
   }
 }

@@ -32,17 +32,17 @@
 	</properties>
 
 	<repositories>
-        <repository>
-            <id>github</id>
-            <name>The World Avatar Maven Repository</name>
-            <url>https://maven.pkg.github.com/TheWorldAvatar/*</url>
-        </repository>
-    </repositories>
+		<repository>
+			<id>github</id>
+			<name>The World Avatar Maven Repository</name>
+			<url>https://maven.pkg.github.com/TheWorldAvatar/*</url>
+		</repository>
+	</repositories>
 	<dependencies>
 		<dependency>
 			<groupId>com.cmclinnovations</groupId>
 			<artifactId>stack-clients</artifactId>
-            <version>1.50.3</version>
+			<version>1.50.3</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents.client5</groupId>

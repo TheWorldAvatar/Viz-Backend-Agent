@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.19.0
+
+### Changes
+
+- Implemented server-side pagination and filters
+- Added routes for retrieving count and filter options
+
 
 ## 1.18.1
 

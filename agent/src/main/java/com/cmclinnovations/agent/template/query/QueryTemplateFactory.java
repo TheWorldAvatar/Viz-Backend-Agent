@@ -113,7 +113,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    * 
    * @param shaclNodeShapeBindings Target node shape inputs.
    */
-  private Map<String, Map<String, ShaclPropertyBinding>> parseNodeShapes(
+  protected Map<String, Map<String, ShaclPropertyBinding>> parseNodeShapes(
       Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
     Map<String, Map<String, ShaclPropertyBinding>> shaclPropertyShapesMap = new HashMap<>();
     Set<String> referencedGroupIdentifiers = new HashSet<>();
@@ -178,7 +178,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
             int order = Integer.parseInt(binding.getFieldValue(ShaclResource.ORDER_PROPERTY));
             List<Integer> orders = new ArrayList<>();
             if (shGroup != null) {
-              orders = this.varSequence.get(QueryResource.genVariable(shGroup));
+              orders = this.varSequence.getOrDefault(QueryResource.genVariable(shGroup), new ArrayList<>());
             }
             orders.add(order);
             this.varSequence.put(QueryResource.genVariable(property), orders);
@@ -207,7 +207,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    * @param selectTemplate   SELECT query template to build the query
    * @param propertyShapeMap The sorted mappings for the SHACL property shapes.
    */
-  private SelectQuery write(SelectQuery selectTemplate,
+  protected SelectQuery write(SelectQuery selectTemplate,
       Map<String, Map<String, ShaclPropertyBinding>> propertyShapeMap) {
     Map<String, List<GraphPattern>> accumulatedStatementsByGroup = new HashMap<>();
     Map<String, List<GraphPattern>> branchStatementMap = new HashMap<>();

@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +40,7 @@ public class FileService {
   private static final String QUERY_DIR = CLASS_PATH_DIR + "query/";
   private static final String QUERY_CONSTR_DIR = QUERY_DIR + "construct/";
   private static final String QUERY_GET_DIR = QUERY_DIR + "get/";
+  private static final String QUERY_GET_LIFECYCLE_DIR = QUERY_GET_DIR + "lifecycle/";
   public static final String FORM_QUERY_RESOURCE = QUERY_CONSTR_DIR + "form.sparql";
   public static final String SHACL_RULE_QUERY_RESOURCE = QUERY_CONSTR_DIR + "shacl_rule.sparql";
   public static final String ENDPOINT_QUERY_RESOURCE = QUERY_GET_DIR + "endpoint.sparql";
@@ -45,11 +48,20 @@ public class FileService {
   public static final String SHACL_PATH_QUERY_RESOURCE = QUERY_GET_DIR + "property_path.sparql";
   public static final String SHACL_PATH_LABEL_QUERY_RESOURCE = QUERY_GET_DIR + "property_path_label.sparql";
   public static final String LIFECYCLE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/lifecycle.jsonld";
+  public static final String LIFECYCLE_REPORT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/report.jsonld";
   public static final String OCCURRENCE_INSTANT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_instant.jsonld";
   public static final String OCCURRENCE_LINK_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_link.jsonld";
   public static final String SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/schedule.jsonld";
 
-  public static final String REPLACEMENT_TARGET = "[target]";
+  public static final String CONTRACT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract.sparql";
+  public static final String CONTRACT_STATUS_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_status.sparql";
+  public static final String CONTRACT_STAGE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_stage.sparql";
+  public static final String CONTRACT_EVENT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_event.sparql";
+  public static final String CONTRACT_PREV_EVENT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR
+      + "contract_prev_event.sparql";
+  public static final String CONTRACT_SCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "schedule.sparql";
+
+  public static final String REPLACEMENT_TARGET = "\\[target\\]";
   public static final String REPLACEMENT_SHAPE = "[shape]";
   public static final String REPLACEMENT_PATH = "[path]";
   public static final String REPLACEMENT_FILTER = "[filter]";
@@ -71,14 +83,16 @@ public class FileService {
    * Retrieve the target file contents with replacement for [target].
    * 
    * @param resourceFilePath File path to resource.
-   * @param replacement      The value to replace [target] with.
+   * @param replacements     A variable list values to replace [target] with.
    */
-  public String getContentsWithReplacement(String resourceFilePath, String replacement) {
+  public String getContentsWithReplacement(String resourceFilePath, String... replacements) {
     LOGGER.debug("Retrieving the contents at {}...", resourceFilePath);
     String contents = "";
     try (InputStream inputStream = this.resourceLoader.getResource(resourceFilePath).getInputStream()) {
       contents = this.parseSparqlFile(inputStream);
-      contents = contents.replace(REPLACEMENT_TARGET, replacement);
+      for (String replacement : replacements) {
+        contents = contents.replaceFirst(REPLACEMENT_TARGET, replacement);
+      }
     } catch (FileNotFoundException e) {
       throw new FileSystemNotFoundException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FILE_KEY, resourceFilePath));
@@ -134,8 +148,11 @@ public class FileService {
    * 
    * @param resourceID The target resource identifier for the instance class.
    */
-  public String getTargetIri(String resourceID) {
+  public Iri getTargetIri(String resourceID) {
     LOGGER.debug("Retrieving the target class associated with the resource identifier: {} ...", resourceID);
+    if (resourceID.equals(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE)) {
+      return Rdf.iri(LifecycleResource.EVENT_OCCURRENCE_IRI);
+    }
     String targetClass = this.getResourceTarget(resourceID,
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_FORM_RESOURCE);
     // Handle invalid target type
@@ -144,7 +161,7 @@ public class FileService {
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, resourceID));
     }
     // For valid target type, return the associated target class
-    return Rdf.iri(targetClass).getQueryString();
+    return Rdf.iri(targetClass);
   }
 
   /**

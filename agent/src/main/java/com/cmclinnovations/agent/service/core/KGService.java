@@ -3,6 +3,7 @@ package com.cmclinnovations.agent.service.core;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
@@ -159,16 +160,9 @@ public class KGService {
         .body(query)
         .retrieve()
         .body(String.class);
-    // Returns an array
-    JsonNode jsonResults;
-    try {
-      jsonResults = this.objectMapper.readValue(results, ObjectNode.class).path("results").path("bindings");
-    } catch (JsonProcessingException e) {
-      LOGGER.error(e);
-      throw new IllegalArgumentException(e);
-    }
-    if (jsonResults.isArray()) {
-      return this.parseResults((ArrayNode) jsonResults);
+    JsonNode[] sparqlResponse = this.readSparqlResponse(results);
+    if (sparqlResponse[0].isArray()) {
+      return this.readResultsAsSparqlBinding((ArrayNode) sparqlResponse[0], (ArrayNode) sparqlResponse[1]);
     }
     return new ArrayDeque<>();
   }
@@ -195,17 +189,12 @@ public class KGService {
         tq.setMaxExecutionTime(600);
         SPARQLResultsJSONWriter jsonWriter = new SPARQLResultsJSONWriter(stringWriter);
         tq.evaluate(jsonWriter);
-        JsonNode bindings = this.objectMapper.readValue(stringWriter.toString(), ObjectNode.class)
-            .path("results")
-            .path("bindings");
-        if (bindings.isArray()) {
-          return this.parseResults((ArrayNode) bindings);
+        JsonNode[] sparqlResponse = this.readSparqlResponse(stringWriter.toString());
+        if (sparqlResponse[0].isArray()) {
+          return this.readResultsAsSparqlBinding((ArrayNode) sparqlResponse[0], (ArrayNode) sparqlResponse[1]);
         }
       } catch (RepositoryException e) {
         LOGGER.error(e);
-      } catch (JsonProcessingException e) {
-        LOGGER.error(e);
-        throw new IllegalArgumentException(e);
       }
     } catch (Exception e) {
       LOGGER.error(e);
@@ -254,7 +243,7 @@ public class KGService {
     LOGGER.debug("Retrieving SHACL rules for resource: {}", resourceId);
     String target;
     try {
-      target = this.fileService.getTargetIri(resourceId);
+      target = this.fileService.getTargetIri(resourceId).getQueryString();
     } catch (InvalidRouteException e) {
       LifecycleEventType eventType = LifecycleEventType.fromId(resourceId);
       if (eventType != null) {
@@ -265,8 +254,7 @@ public class KGService {
         return ModelFactory.createDefaultModel();
       }
     }
-    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target);
-    query = query.replace(FileService.REPLACEMENT_SHAPE,
+    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target,
         isSparqlConstructRules ? ";a <http://www.w3.org/ns/shacl#SPARQLRule>."
             : ".MINUS{?ruleShape a <http://www.w3.org/ns/shacl#SPARQLRule>}");
     List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
@@ -478,15 +466,40 @@ public class KGService {
   }
 
   /**
+   * Reads the SPARQL query response into object nodes.
+   * 
+   * @param response Response string from the knowledge graph.
+   */
+  private JsonNode[] readSparqlResponse(String response) {
+    try {
+      ObjectNode sparqlResponse = this.objectMapper.readValue(response, ObjectNode.class);
+      JsonNode bindings = sparqlResponse.path("results")
+          .path("bindings");
+      JsonNode variables = sparqlResponse.path("head")
+          .path("vars");
+      return new JsonNode[] { bindings, variables };
+    } catch (JsonProcessingException e) {
+      LOGGER.error(e);
+      throw new IllegalArgumentException(e);
+    }
+  }
+
+  /**
    * Parses the results into the required data model.
    * 
-   * @param results Results retrieved from the knowledge graph.
+   * @param results   Results retrieved from the knowledge graph.
+   * @param variables Expected variables to find.
    */
-  private Queue<SparqlBinding> parseResults(ArrayNode results) {
+  private Queue<SparqlBinding> readResultsAsSparqlBinding(ArrayNode results, ArrayNode variables) {
     LOGGER.debug("Parsing the results...");
-    return StreamSupport.stream(results.spliterator(), false)
-        .filter(JsonNode::isObject) // Ensure they are object node so that we can type cast
-        .map(row -> new SparqlBinding((ObjectNode) row))
-        .collect(Collectors.toCollection(ArrayDeque::new));
+    try {
+      List<String> variableSet = this.objectMapper.readerForListOf(String.class).readValue(variables);
+      return StreamSupport.stream(results.spliterator(), false)
+          .filter(JsonNode::isObject) // Ensure they are object node so that we can type cast
+          .map(row -> new SparqlBinding((ObjectNode) row, variableSet))
+          .collect(Collectors.toCollection(ArrayDeque::new));
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 }

@@ -1,0 +1,10 @@
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX fibo-fnd-arr-lif: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/>
+PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+
+SELECT DISTINCT ?iri WHERE {
+  ?contract fibo-fnd-arr-lif:hasLifecycle ?lifecycle;
+    dc-terms:identifier "[target]".
+  ?lifecycle fibo-fnd-arr-lif:hasStage ?iri .
+  ?iri fibo-fnd-rel-rel:exemplifies <[target]> .
+}

@@ -50,6 +50,7 @@ public class GeocodingService {
   private static final Variable COUNTRY_VAR = SparqlBuilder.var(COUNTRY_VARNAME);
   private static final String STREET_VARNAME = "street";
   private static final Variable STREET_VAR = SparqlBuilder.var(STREET_VARNAME);
+  private static final Pattern GEOPOINT_PATTERN = Pattern.compile("POINT\\((\\d+\\.\\d+),? ?(\\d+\\.\\d+)\\)");
   private static final Logger LOGGER = LogManager.getLogger(GeocodingService.class);
 
   /**
@@ -248,8 +249,7 @@ public class GeocodingService {
    */
   private double[] parseCoordinates(String geoPoint) {
     // REGEX for `POINT(Longitude Latitude)` format
-    Pattern pattern = Pattern.compile("POINT\\((\\d+\\.\\d+),? ?(\\d+\\.\\d+)\\)");
-    Matcher matcher = pattern.matcher(geoPoint);
+    Matcher matcher = GEOPOINT_PATTERN.matcher(geoPoint);
 
     if (matcher.matches()) {
       double longitude = Double.parseDouble(matcher.group(1));
