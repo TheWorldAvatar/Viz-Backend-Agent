@@ -1,8 +1,10 @@
 package com.cmclinnovations.agent;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,6 +22,7 @@ import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
@@ -28,6 +31,7 @@ import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.application.GeocodingService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.StringResource;
 
 @RestController
 public class VisBackendAgent {
@@ -98,11 +102,26 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", false, new HashMap<>());
+      Queue<SparqlBinding> instances = this.getService.getInstances(type, false, null,
+          new PaginationState(0, null, "", new HashMap<>()));
       return this.responseEntityBuilder.success(null,
           instances.stream()
               .map(SparqlBinding::get)
               .toList());
+    });
+  }
+
+  /**
+   * Retrieves the count of all instances belonging to the specified type in the
+   * knowledge graph.
+   */
+  @GetMapping("/{type}/count")
+  public ResponseEntity<StandardApiResponse<?>> getInstancesCount(
+      @PathVariable(name = "type") String type,
+      @RequestParam Map<String, String> allRequestParams) {
+    LOGGER.info("Received request to get all instances for {}...", type);
+    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
+      return this.responseEntityBuilder.success(null, String.valueOf(this.getService.getCount(type, allRequestParams)));
     });
   }
 
@@ -112,15 +131,42 @@ public class VisBackendAgent {
    */
   @GetMapping("/{type}/label")
   public ResponseEntity<StandardApiResponse<?>> getAllInstancesWithLabel(
-      @PathVariable(name = "type") String type) {
+      @PathVariable(name = "type") String type,
+      @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to get all instances with labels for {}...", type);
+    Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
+    Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
+    String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
+    allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, null, "", "", true, new HashMap<>());
+      Queue<SparqlBinding> instances = this.getService.getInstances(type, true, null,
+          new PaginationState(page, limit, sortBy, allRequestParams));
       return this.responseEntityBuilder.success(null,
           instances.stream()
               .map(SparqlBinding::get)
               .toList());
+    });
+  }
+
+  /**
+   * Retrieves all distinct filter options for the specified type.
+   */
+  @GetMapping("/{type}/filter")
+  public ResponseEntity<StandardApiResponse<?>> getDistinctFilterOptions(
+      @PathVariable(name = "type") String type,
+      @RequestParam Map<String, String> allRequestParams) {
+    LOGGER.info("Received request to get all distinct filter options for {}...", type);
+    // Extract non-filter related request parameters directly, and remove them so
+    // that the mappings only contain filters
+    String field = allRequestParams.remove(StringResource.FIELD_REQUEST_PARAM);
+    String search = allRequestParams.getOrDefault(StringResource.SEARCH_REQUEST_PARAM, "");
+    allRequestParams.remove(StringResource.SEARCH_REQUEST_PARAM);
+    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
+      Map<String, Set<String>> parsedFilters = StringResource.parseFilters(allRequestParams, null);
+      parsedFilters.remove(field);
+      List<String> options = this.getService.getAllFilterOptions(type, field, "", search, parsedFilters);
+      return this.responseEntityBuilder.success(options);
     });
   }
 
@@ -136,8 +182,8 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances of target {} associated with the parent type {}...", type,
         parent);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, new ParentField(id, parent), "", "", false,
-          new HashMap<>());
+      Queue<SparqlBinding> instances = this.getService.getInstances(type, false, new ParentField(id, parent),
+          new PaginationState(0, null, "", new HashMap<>()));
       return this.responseEntityBuilder.success(null,
           instances.stream()
               .map(SparqlBinding::get)

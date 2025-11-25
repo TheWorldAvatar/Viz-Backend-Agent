@@ -25,7 +25,7 @@ class AgentApplicationTests {
   @Autowired
   private MockMvc mockMvc;
 
-  private static final String API_VERSION = "1.18.0";
+  private static final String API_VERSION = "1.19.0";
   private static final String STATUS_MESSAGE_EN = "Agent is ready to receive requests.";
   private static final String STATUS_MESSAGE_DE = "Agent ist bereit, Anfragen zu empfangen.";
   private static final String INVALID_GEOCODING_MESSAGE_EN = "Invalid geocoding parameters! Detected a block number but no street is provided!";
@@ -71,7 +71,7 @@ class AgentApplicationTests {
   @ParameterizedTest
   @ValueSource(strings = {
       "/missing", // getAllInstances
-      "/missing/label", // getAllInstancesWithLabel
+      "/missing/label?page=0&limit=10&sort_by=-id", // getAllInstancesWithLabel
       "/parent/id/missing", // getAllInstancesWithParent
       "/missing/id", // getInstance
       "/missing/label/id", // getInstanceWithLabels
@@ -89,7 +89,7 @@ class AgentApplicationTests {
   private static Stream<Arguments> provideParametersForInvalidRoutes() {
     return Stream.of(
         Arguments.of("en-US", "/invalid", INVALID_ROUTE_MESSAGE_EN), // getAllInstances
-        Arguments.of("en-GB", "/invalid/label", INVALID_ROUTE_MESSAGE_EN), // getAllInstancesWithLabel
+        Arguments.of("en-GB", "/invalid/label?page=0&limit=10&sort_by=-id", INVALID_ROUTE_MESSAGE_EN), // getAllInstancesWithLabel
         Arguments.of("en-GB", "/parent/id/invalid", INVALID_ROUTE_MESSAGE_EN), // getAllInstancesWithParent
         Arguments.of("en-GB", "/invalid/id", INVALID_ROUTE_MESSAGE_EN), // getInstance
         Arguments.of("en-GB", "/invalid/label/id", INVALID_ROUTE_MESSAGE_EN), // getInstanceWithLabels

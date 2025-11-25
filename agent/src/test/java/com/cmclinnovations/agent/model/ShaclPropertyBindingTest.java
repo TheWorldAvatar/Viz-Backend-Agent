@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -120,7 +121,8 @@ public class ShaclPropertyBindingTest {
                 if (resultSize == 1) {
                         assertEquals(TestUtils.getSparqlQuery(expectedFileOutput), results.get(0).getQueryString());
                 } else if (resultSize == 2) {
-                        assertEquals(TestUtils.getSparqlQuery(expectedFileOutput), results.get(0).getQueryString() + results.get(1).getQueryString());
+                        assertEquals(TestUtils.getSparqlQuery(expectedFileOutput),
+                                        results.get(0).getQueryString() + results.get(1).getQueryString());
                 } else {
                         assertTrue(false);
                 }
@@ -138,7 +140,7 @@ public class ShaclPropertyBindingTest {
                                                 null, false, false, false, false));
                 sample.appendPred(sampleWithSecondPred);
                 List<GraphPattern> results = sample.write(false);
-                assertEquals(1,results.size());
+                assertEquals(1, results.size());
                 assertEquals(TestUtils.getSparqlQuery(EXPECTED_SIMPLE_APPEND_FILE), results.get(0).getQueryString());
         }
 
@@ -189,6 +191,6 @@ public class ShaclPropertyBindingTest {
                 SparqlBindingTest.addResponseField(jsonBinding, ShaclResource.IS_OPTIONAL_VAR,
                                 String.valueOf(params.isOptional));
 
-                return new SparqlBinding(jsonBinding);
+                return new SparqlBinding(jsonBinding, new ArrayList<>());
         }
 }

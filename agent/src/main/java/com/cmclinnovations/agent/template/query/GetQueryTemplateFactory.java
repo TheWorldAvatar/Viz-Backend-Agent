@@ -3,11 +3,14 @@ package com.cmclinnovations.agent.template.query;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfLiteral.StringLiteral;
@@ -15,6 +18,8 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfObject;
 
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
+import com.cmclinnovations.agent.model.ShaclPropertyBinding;
+import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
@@ -72,21 +77,42 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       super.setSequence(sortedSequence);
     }
 
-    this.appendOptionalIdFilters(selectTemplate, params.targetId(), params.parent());
-    return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements());
+    String valuesClause = this.appendOptionalIdFilters(selectTemplate, params.targetIds(), params.parent());
+    return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause);
+  }
+
+  /**
+   * Generate the WHERE clause of a query:
+   * 
+   * @param queryVarsAndPaths The query construction requirements.
+   */
+  public String genWhereClause(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
+    LOGGER.info("Generating the WHERE clause...");
+    super.reset();
+    // Extract out select and where, test what we get
+    Map<String, Map<String, ShaclPropertyBinding>> propertyBindingMap = super.parseNodeShapes(queryVarsAndPaths);
+    return super.write(Queries.SELECT(), propertyBindingMap)
+        .getQueryString()
+        // SparqlBuilder concats OPTIONAL and UNION instead of wrapping them as nested,
+        // code is an adjustment
+        .replaceAll("OPTIONAL\\s*(\\{.*})\\s*UNION\\s*OPTIONAL\\s*(\\{.*\\})", "$1 UNION $2")
+        // Extract only the WHERE clause content
+        .replaceAll("(?s)SELECT\\s*\\*\\s*\\nWHERE\\s*\\{(.*)\\}\\n$", "$1");
   }
 
   /**
    * Appends optional filters related to IDs to the query if required.
    * 
    * @param selectTemplate Target select query template.
-   * @param filterId       An optional field to target the query at a specific
-   *                       instance.
+   * @param filterIds      Optional param for target instances.
    * @param parentField    An optional parent field to target the query with
    *                       specific parents.
+   * @return A string representing the VALUES clause if multiple IDs are given
    */
-  private void appendOptionalIdFilters(SelectQuery selectTemplate, String filterId, ParentField parentField) {
+  private String appendOptionalIdFilters(SelectQuery selectTemplate, Queue<List<String>> filterIds,
+      ParentField parentField) {
     RdfObject object = QueryResource.ID_VAR;
+    String valuesClause = "";
     // Add filter clause for a parent field instead if available
     if (parentField != null) {
       Variable parsedField = null;
@@ -103,11 +129,32 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
             MessageFormat.format("Unable to find matching variable for parent field: {0}", parentField.name()));
       }
       selectTemplate.where(parsedField.has(QueryResource.DC_TERM_ID, Rdf.literalOf(parentField.id())));
-    } else if (!filterId.isEmpty()) {
-      StringLiteral filter = Rdf.literalOf(filterId);
+    } else if (filterIds.size() == 1) {
+      List<String> currentIds = filterIds.poll();
+      StringLiteral filter = Rdf.literalOf(currentIds.get(0));
       object = filter;
       selectTemplate.where(Expressions.bind(Expressions.str(filter), QueryResource.ID_VAR));
+      if (currentIds.size() > 1) {
+        valuesClause += QueryResource.values(QueryResource.EVENT_ID_VAR.getVarName(),
+            List.of(Rdf.iri(currentIds.get(1)).getQueryString()));
+      }
+    } else if (filterIds.size() > 1) {
+      List<String> idValues = new ArrayList<>();
+      List<String> eventIdValues = new ArrayList<>();
+      while (!filterIds.isEmpty()) {
+        List<String> currentIds = filterIds.poll();
+        String currentId = Rdf.literalOf(currentIds.get(0)).getQueryString();
+        idValues.add(currentId);
+        if (currentIds.size() > 1) {
+          eventIdValues.add(Rdf.iri(currentIds.get(1)).getQueryString());
+        }
+      }
+      valuesClause += QueryResource.values(QueryResource.ID_KEY, idValues);
+      if (!eventIdValues.isEmpty()) {
+        valuesClause += QueryResource.values(QueryResource.EVENT_ID_VAR.getVarName(), eventIdValues);
+      }
     }
     selectTemplate.where(QueryResource.IRI_VAR.has(QueryResource.DC_TERM_ID, object));
+    return valuesClause;
   }
 }
