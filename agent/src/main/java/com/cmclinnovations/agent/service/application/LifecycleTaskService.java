@@ -3,6 +3,7 @@ package com.cmclinnovations.agent.service.application;
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
+import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
@@ -36,190 +38,93 @@ import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @Service
-public class LifecycleService {
+public class LifecycleTaskService {
   private final AddService addService;
-  private final DateTimeService dateTimeService;
+  final DateTimeService dateTimeService;
   private final GetService getService;
   private final UpdateService updateService;
+  public final LifecycleQueryService lifecycleQueryService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private final LifecycleQueryFactory lifecycleQueryFactory;
-  private final Map<Variable, List<Integer>> lifecycleVarSequence = new HashMap<>();
   private final Map<Variable, List<Integer>> taskVarSequence = new HashMap<>();
 
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
   private static final String ORDER_COMPLETE_MESSAGE = "Order has been completed successfully.";
-  private static final String SERVICE_DISCHARGE_MESSAGE = "Service has been completed successfully.";
-  private static final Logger LOGGER = LogManager.getLogger(LifecycleService.class);
+  static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
   /**
    * Constructs a new service with the following dependencies.
    * 
    */
-  public LifecycleService(AddService addService, DateTimeService dateTimeService, GetService getService,
-      UpdateService updateService, ResponseEntityBuilder responseEntityBuilder) {
+  public LifecycleTaskService(AddService addService, DateTimeService dateTimeService, GetService getService,
+      UpdateService updateService, LifecycleQueryService lifecycleQueryService,
+      ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
     this.getService = getService;
     this.updateService = updateService;
+    this.lifecycleQueryService = lifecycleQueryService;
     this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
 
-    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY), List.of(-3, 2));
-    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY), List.of(2, 0));
-    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY), List.of(2, 1));
-    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY), List.of(2, 2));
-    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY), List.of(2, 3));
-    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY), List.of(2, 4));
-    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY),
-        List.of(2, 5));
+    Integer MIN_INDEX = -5;
 
-    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.DATE_KEY), List.of(-3, 1));
-    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY), List.of(-3, 2));
-    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_KEY), List.of(-3, 3));
+    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.DATE_KEY), List.of(MIN_INDEX, 1));
+    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY), List.of(MIN_INDEX, 2));
+    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_KEY), List.of(MIN_INDEX, 3));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY), List.of(1000, 999));
     this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY), List.of(1000, 1000));
-    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY), List.of(1000, 1001));
-  }
-
-  /**
-   * Add the required stage instance into the request parameters.
-   * 
-   * @param params    The target parameters to update.
-   * @param eventType The target event type to retrieve.
-   */
-  public void addStageInstanceToParams(Map<String, Object> params, LifecycleEventType eventType) {
-    String contractId = params.get(QueryResource.ID_KEY).toString();
-    LOGGER.debug("Adding stage parameters for contract...");
-    String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
-    String stage = this.getService.getInstance(query).getFieldValue(QueryResource.IRI_KEY);
-    params.put(LifecycleResource.STAGE_KEY, stage);
-  }
-
-  /**
-   * Populate the remaining occurrence parameters into the request parameters.
-   * 
-   * @param params    The target parameters to update.
-   * @param eventType The target event type to retrieve.
-   */
-  public void addOccurrenceParams(Map<String, Object> params, LifecycleEventType eventType) {
-    String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
-    LOGGER.debug("Adding occurrence parameters for {}...", contractId);
-    String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
-    String stage = this.getService.getInstance(query).getFieldValue(QueryResource.IRI_KEY);
-    LifecycleResource.genIdAndInstanceParameters(StringResource.getPrefix(stage), eventType, params);
-    params.put(LifecycleResource.STAGE_KEY, stage);
-    params.put(LifecycleResource.EVENT_KEY, eventType.getEvent());
-    params.putIfAbsent(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
-    // Update the order enum with the specific event instance if it exist
-    params.computeIfPresent(LifecycleResource.ORDER_KEY, (key, value) -> {
-      String orderEnum = value.toString();
-      return this.getPreviousOccurrence(QueryResource.IRI_KEY,
-          LifecycleResource.getEventClassFromOrderEnum(orderEnum), params);
-    });
-  }
-
-  /**
-   * Retrieve the status of the contract.
-   * 
-   * @param contract The target contract id.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getContractStatus(String contract) {
-    LOGGER.debug("Retrieving the status of the contract...");
-    String query = this.lifecycleQueryFactory.getServiceStatusQuery(contract);
-    SparqlBinding result = this.getService.getInstance(query);
-    LOGGER.info("Successfuly retrieved contract status!");
-    return this.responseEntityBuilder.success(result.getFieldValue(QueryResource.IRI_KEY),
-        result.getFieldValue(LifecycleResource.STATUS_KEY));
-  }
-
-  /**
-   * Retrieve the schedule details of the contract.
-   * 
-   * @param contract The target contract id.
-   */
-  public ResponseEntity<Map<String, Object>> getSchedule(String contract) {
-    LOGGER.debug("Retrieving the schedule details of the contract...");
-    String query = this.lifecycleQueryFactory.getServiceScheduleQuery(contract);
-    SparqlBinding result = this.getService.getInstance(query);
-    LOGGER.info("Successfuly retrieved schedule!");
-    return new ResponseEntity<>(result.get(), HttpStatus.OK);
-  }
-
-  /**
-   * Retrieve the number of contract instances in the specific stage.
-   * 
-   * @param resourceID The target resource identifier for the instance class.
-   * @param eventType  The target event type to retrieve.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getContractCount(String resourceID, LifecycleEventType eventType) {
-    String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
-    return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(resourceID, additionalQueryStatement)));
-  }
-
-  /**
-   * Retrieve all the contract instances and their information based on the
-   * resource ID.
-   * 
-   * @param resourceID The target resource identifier for the instance class.
-   * @param eventType  The target event type to retrieve.
-   * @param pagination Pagination state to filter results.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getContracts(String resourceID, boolean requireLabel,
-      LifecycleEventType eventType, PaginationState pagination) {
-    LOGGER.debug("Retrieving all contracts...");
-    String additionalQueryStatement = this.lifecycleQueryFactory.genLifecycleFilterStatements(eventType);
-    Map<Variable, List<Integer>> contractVariables = new HashMap<>(this.lifecycleVarSequence);
-    if (eventType.equals(LifecycleEventType.APPROVED)) {
-      contractVariables.put(
-          QueryResource.genVariable(LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY)),
-          List.of(1, 1));
-    }
-    Queue<String> ids = this.getService.getAllIds(resourceID, additionalQueryStatement, pagination);
-    Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,
-        additionalQueryStatement, contractVariables);
-    return this.responseEntityBuilder.success(null, instances.stream()
-        .map(binding -> {
-          return (Map<String, Object>) binding.get().entrySet().stream()
-              .map(entry -> {
-                // Replace recurrence with schedule type
-                if (entry.getKey().equals(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY)) {
-                  SparqlResponseField recurrence = TypeCastUtils.castToObject(entry.getValue(),
-                      SparqlResponseField.class);
-                  return new AbstractMap.SimpleEntry<>(
-                      LocalisationTranslator.getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY),
-                      new SparqlResponseField(recurrence.type(),
-                          LifecycleResource.getScheduleTypeFromRecurrence(recurrence.value()),
-                          recurrence.dataType(), recurrence.lang()));
-                }
-                return entry;
-              })
-              .collect(Collectors.toMap(
-                  Map.Entry::getKey,
-                  (entry -> TypeCastUtils.castToObject(entry.getValue(), Object.class)),
-                  (oldVal, newVal) -> oldVal,
-                  LinkedHashMap::new));
-        })
-        .toList());
+    this.taskVarSequence.put(QueryResource.SCHEDULE_RECURRENCE_VAR, List.of(1000, 1001));
   }
 
   /**
    * Retrieve the number of task in the specific stage and status.
    * 
+   * @param resourceID     The target resource identifier for the instance class.
    * @param startTimestamp Start timestamp in UNIX format.
    * @param endTimestamp   End timestamp in UNIX format.
    * @param isClosed       Indicates whether to retrieve closed tasks.
+   * @param filters        Mappings between filter fields and their values.
    */
-  public ResponseEntity<StandardApiResponse<?>> getOccurrenceCount(String startTimestamp,
-      String endTimestamp, boolean isClosed) {
-    String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
-
-    String additionalFilters = this.lifecycleQueryFactory.getServiceTasksFilter(targetStartEndDates[0],
-        targetStartEndDates[1], isClosed);
+  public ResponseEntity<StandardApiResponse<?>> getOccurrenceCount(String resourceID, String startTimestamp,
+      String endTimestamp, boolean isClosed, Map<String, String> filters) {
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    String[] queryStatement = this.genLifecycleStatements(startTimestamp, endTimestamp, new HashSet<>(), parsedFilters,
+        "", isClosed, false);
     return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, additionalFilters)));
+        String.valueOf(
+            this.getService.getCount(resourceID, queryStatement[0], LifecycleResource.TASK_ID_SORT_BY_PARAMS, filters,
+                false)));
+  }
+
+  /**
+   * Retrieve filter options at the task level.
+   * 
+   * @param resourceID     The target resource identifier for the instance class.
+   * @param field          The field of filtering.
+   * @param search         String subset to narrow filter scope.
+   * @param startTimestamp Start timestamp in UNIX format.
+   * @param endTimestamp   End timestamp in UNIX format.
+   * @param isClosed       Indicates whether to retrieve closed tasks.
+   * @param filters        Optional additional filters.
+   */
+  public List<String> getFilterOptions(String resourceID, String field, String search, String startTimestamp,
+      String endTimestamp, boolean isClosed, Map<String, String> filters) {
+    String originalField = LifecycleResource.revertLifecycleSpecialFields(field, false);
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    parsedFilters.remove(originalField);
+    String[] queryStatement = this.genLifecycleStatements(startTimestamp, endTimestamp, new HashSet<>(), parsedFilters,
+        originalField, isClosed, false);
+    List<String> options = this.getService.getAllFilterOptions(resourceID, originalField, queryStatement[0], search,
+        parsedFilters);
+    if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
+      return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();
+    } else if (originalField.equals(LifecycleResource.EVENT_KEY)) {
+      return options.stream().map(option -> LocalisationTranslator.getEvent(option)).toList();
+    }
+    return options;
   }
 
   /**
@@ -232,11 +137,14 @@ public class LifecycleService {
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String contract, String entityType,
       PaginationState pagination) {
-    String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(contract, null, null);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, null,
-        pagination);
+    // Map<String, String> lifecycleStatements =
+    // this.lifecycleQueryFactory.getServiceTasksQuery(contract, null, null,
+    // null);
+    // List<Map<String, Object>> occurrences =
+    // this.executeOccurrenceQuery(entityType, lifecycleStatements, null,
+    // pagination);
     LOGGER.info("Successfuly retrieved all associated services!");
-    return this.responseEntityBuilder.success(null, occurrences);
+    return this.responseEntityBuilder.success(null, "Under construction");
   }
 
   /**
@@ -251,63 +159,89 @@ public class LifecycleService {
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String startTimestamp, String endTimestamp,
       String entityType, boolean isClosed, PaginationState pagination) {
-    String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
-    String activeServiceQuery = this.lifecycleQueryFactory.getServiceTasksQuery(null, targetStartEndDates[0],
-        targetStartEndDates[1]);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, activeServiceQuery, isClosed,
-        pagination);
+    String[] lifecycleStatements = this.genLifecycleStatements(startTimestamp, endTimestamp,
+        pagination.getSortedFields(), pagination.getFilters(), "", isClosed, true);
+    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, lifecycleStatements,
+        isClosed, pagination);
     LOGGER.info("Successfuly retrieved tasks!");
     return this.responseEntityBuilder.success(null, occurrences);
   }
 
   /**
+   * Generates additional query statements for the active service stage during the
+   * lifecycle.
+   * 
+   * @param startTimestamp   Start timestamp in UNIX format.
+   * @param endTimestamp     End timestamp in UNIX format.
+   * @param sortedFields     Set of fields for sorting that should be included.
+   * @param filters          Filters set by the user.
+   * @param field            Optional target to include the corresponding filter
+   *                         statements.
+   * @param isClosed         Indicates whether to retrieve closed tasks.
+   * @param reqOriStatements Requires that the original statements are present.
+   */
+  private String[] genLifecycleStatements(String startTimestamp, String endTimestamp, Set<String> sortedFields,
+      Map<String, Set<String>> filters, String field, boolean isClosed, boolean reqOriStatements) {
+    String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
+    Map<String, String> statementMappings = this.lifecycleQueryFactory.getServiceTasksQuery(null,
+        targetStartEndDates[0], targetStartEndDates[1], isClosed);
+    Map<String, String> filterExpressions = new HashMap<>();
+    Map<String, Set<String>> serviceEventFilters = new HashMap<>(filters);
+    if (!field.isEmpty()) {
+      // Override the field value for filter options, as it should ignore them
+      serviceEventFilters.put(field, new HashSet<>());
+    }
+    // Get statements for dispatch events that matches any sort/filter criteria
+    String addFilterQueries = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+        sortedFields, serviceEventFilters, filterExpressions);
+    // Non-closed tasks should not have the closed related statements
+    if (isClosed) {
+      addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
+          sortedFields, serviceEventFilters, filterExpressions);
+      addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,
+          sortedFields, serviceEventFilters, filterExpressions);
+      addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
+          sortedFields, serviceEventFilters, filterExpressions);
+    }
+    statementMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
+        statementMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + addFilterQueries);
+
+    Map<String, String> extendedMappings = this.lifecycleQueryFactory
+        .insertExtendedLastModifiedFilters(statementMappings);
+    String extendedDateStatement = "BIND(STR(?date) as ?" + LifecycleResource.NEW_DATE_KEY + ")";
+    extendedMappings.put(LifecycleResource.DATE_KEY, extendedDateStatement);
+    String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
+        filters, field) + filterExpressions.values().stream().collect(Collectors.joining("\n"));
+    if (reqOriStatements) {
+      return new String[] { lifecycleStatements,
+          statementMappings.values().stream().collect(Collectors.joining("\n")) };
+    } else {
+      return new String[] { lifecycleStatements };
+    }
+  }
+
+  /**
    * Executes the occurrence query and group them by the specified group variable.
    * 
-   * @param entityType      Target resource ID.
-   * @param additionalQuery Additional query to append to the main query.
-   * @param isClosed        Indicates whether to retrieve closed tasks.
-   * @param pagination      Pagination state to filter results.
+   * @param entityType    Target resource ID.
+   * @param queryMappings Additional query statements to be added if any.
+   * @param isClosed      Indicates whether to retrieve closed tasks.
+   * @param pagination    Pagination state to filter results.
    */
-  private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String additionalQuery,
+  private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String[] lifecycleStatements,
       Boolean isClosed, PaginationState pagination) {
-    String addSortQueries = additionalQuery;
-    addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-        pagination.sortFields());
-    addSortQueries += this.genEventOccurrenceSortQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
-        pagination.sortFields());
-    Queue<String> ids = this.getService.getAllIds(entityType, addSortQueries, pagination);
+    Queue<List<String>> ids = this.getService.getAllIds(entityType, lifecycleStatements[0], pagination);
     Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
-    String addQuery = "";
-    addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
-    addQuery += this.parseEventOccurrenceQuery(-1, LifecycleEventType.SERVICE_EXECUTION, varSequences);
-    addQuery += additionalQuery;
+    String addQuery = lifecycleStatements[1];
+    addQuery += this.parseEventOccurrenceQuery(-4, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
+    if (isClosed) {
+      addQuery += this.parseEventOccurrenceQuery(-3, LifecycleEventType.SERVICE_EXECUTION, varSequences);
+      addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_CANCELLATION, varSequences);
+      addQuery += this.parseEventOccurrenceQuery(-1, LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
+    }
     Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, ids, addQuery, varSequences);
     return results.stream()
-        .filter(binding -> {
-          // If filter is not required, break early
-          if (isClosed == null) {
-            return false;
-          }
-          String eventType = binding.getFieldValue(LifecycleResource.EVENT_KEY);
-          String eventStatus = binding.getFieldValue(LifecycleResource.EVENT_STATUS_KEY);
-          // Verify if event matches closed or open state
-          if (isClosed) {
-            // When event is delivery and has completed status, it is closed
-            return (eventType.equals(LifecycleResource.EVENT_DELIVERY)
-                && LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS.equals(eventStatus)) ||
-                eventType.equals(LifecycleResource.EVENT_CANCELLATION) ||
-                eventType.equals(LifecycleResource.EVENT_INCIDENT_REPORT);
-          } else {
-            // When event is delivery and has pending status, it is still open for changes
-            return (eventType.equals(LifecycleResource.EVENT_DELIVERY)
-                && LifecycleResource.EVENT_PENDING_STATUS.equals(eventStatus)) ||
-                eventType.equals(LifecycleResource.EVENT_DISPATCH) ||
-                eventType.equals(LifecycleResource.EVENT_ORDER_RECEIVED);
-          }
-        })
         .map(binding -> {
-          String eventStatus = binding.getFieldValue(LifecycleResource.EVENT_STATUS_KEY);
-
           return (Map<String, Object>) binding.get().entrySet().stream()
               .filter(entry -> !entry.getKey()
                   .equals(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY).getVarName()))
@@ -316,9 +250,9 @@ public class LifecycleService {
                   SparqlResponseField recurrence = TypeCastUtils.castToObject(entry.getValue(),
                       SparqlResponseField.class);
                   return new AbstractMap.SimpleEntry<>(
-                      LocalisationTranslator.getMessage(LocalisationResource.VAR_SCHEDULE_TYPE_KEY),
+                      LifecycleResource.SCHEDULE_TYPE_KEY,
                       new SparqlResponseField(recurrence.type(),
-                          LifecycleResource.getScheduleTypeFromRecurrence(recurrence.value()),
+                          LocalisationTranslator.getScheduleTypeFromRecurrence(recurrence.value()),
                           recurrence.dataType(), recurrence.lang()));
                 }
                 if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
@@ -328,12 +262,8 @@ public class LifecycleService {
                   // status as they are incomplete or in a saved state, and should still be
                   // outstanding
                   String eventType = eventField.value();
-                  if (eventType.equals(LifecycleResource.EVENT_DELIVERY)
-                      && LifecycleResource.EVENT_PENDING_STATUS.equals(eventStatus)) {
-                    eventType = LifecycleResource.EVENT_DISPATCH;
-                  }
                   return new AbstractMap.SimpleEntry<>(
-                      LocalisationTranslator.getMessage(LocalisationResource.VAR_STATUS_KEY),
+                      LifecycleResource.STATUS_KEY,
                       // Add a new response field
                       new SparqlResponseField(eventField.type(),
                           LocalisationTranslator.getEvent(eventType),
@@ -343,26 +273,46 @@ public class LifecycleService {
               })
               .collect(Collectors.toMap(
                   Map.Entry::getKey,
-                  (entry -> TypeCastUtils.castToObject(entry.getValue(), Object.class)),
-                  (oldVal, newVal) -> oldVal,
+                  (entry -> entry.getValue() == null ? "" : TypeCastUtils.castToObject(entry.getValue(), Object.class)),
+                  (oldVal, newVal) -> newVal,
                   LinkedHashMap::new));
         })
         .toList();
   }
 
   /**
-   * Generates the query statements to sort by event occurrences.
+   * Generates the query statements for service events such as dispatch, complete,
+   * cancel, and report if required.
    * 
-   * @param lifecycleEvent Target event type.
-   * @param sortedFields   Set of fields that should be included for sorting.
+   * @param lifecycleEvent    Target event type.
+   * @param sortedFields      Set of fields for sorting that should be included.
+   * @param filters           Filters with name and values.
+   * @param filterExpressions Mappings to store the current filter expressions
+   *                          when added.
    */
-  private String genEventOccurrenceSortQueryStatements(LifecycleEventType lifecycleEvent, Set<String> sortedFields) {
-    String sortQueryStatements = this.getService.getQueryStatementsForSorting(lifecycleEvent.getShaclReplacement(),
-        sortedFields);
-    if (sortQueryStatements.isEmpty()) {
-      return sortQueryStatements;
+  private String genServiceEventsQueryStatements(LifecycleEventType lifecycleEvent, Set<String> sortedFields,
+      Map<String, Set<String>> filters, Map<String, String> filterExpressions) {
+    Map<String, String> filteredStatementMappings = this.getService.getStatementMappingsForTargetFields(
+        lifecycleEvent.getShaclReplacement(), sortedFields, filters);
+    if (filteredStatementMappings.isEmpty()) {
+      return "";
     }
-    return LifecycleResource.parseOccurrenceSortQueryStatements(sortQueryStatements, lifecycleEvent);
+    StringBuilder queryBuilder = new StringBuilder();
+    filteredStatementMappings.forEach((key, value) -> {
+      if (key.equals(StringResource.SORT_KEY)) {
+        queryBuilder.append(value);
+      } else {
+        queryBuilder.append(value);
+        filterExpressions.computeIfAbsent(key, expression -> {
+          Set<String> filterValues = filters.get(key);
+          return QueryResource.filterOrExpressions(key, filterValues);
+        });
+      }
+    });
+    String eventVar = QueryResource.genVariable(lifecycleEvent.getId() + "_event").getQueryString();
+    return QueryResource.optional(
+        LifecycleResource.genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent)
+            + queryBuilder.toString().replace(QueryResource.IRI_VAR.getQueryString(), eventVar));
   }
 
   /**
@@ -384,6 +334,39 @@ public class LifecycleService {
   }
 
   /**
+   * Generate a default occurrence instance.
+   * 
+   * @param params            Existing configurable parameters that will be
+   *                          amended to instantiate the occurrence.
+   * @param eventType         Target event type.
+   * @param successLogMessage Optional log message on success.
+   * @param messageResource   Optional resource id of the message to be displayed
+   *                          when successful.
+   */
+  public ResponseEntity<StandardApiResponse<?>> genOccurrence(Map<String, Object> params,
+      LifecycleEventType eventType, String successLogMessage, String messageResource) {
+    return this.genOccurrence(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, eventType, successLogMessage,
+        messageResource);
+  }
+
+  /**
+   * Generate an occurrence for the specified resource.
+   * 
+   * @param resourceId        The target lifecycle resource for instantiation.
+   * @param params            Existing configurable parameters that will be
+   *                          amended to instantiate the occurrence.
+   * @param eventType         Target event type.
+   * @param successLogMessage Optional log message on success.
+   * @param messageResource   Optional resource id of the message to be displayed
+   *                          when successful.
+   */
+  public ResponseEntity<StandardApiResponse<?>> genOccurrence(String resourceId, Map<String, Object> params,
+      LifecycleEventType eventType, String successLogMessage, String messageResource) {
+    this.lifecycleQueryService.addOccurrenceParams(params, eventType);
+    return this.addService.instantiate(resourceId, params, successLogMessage, messageResource);
+  }
+
+  /**
    * Generate occurrences for the order received event of a specified contract.
    * 
    * @param contract Target contract.
@@ -393,21 +376,21 @@ public class LifecycleService {
   public boolean genOrderReceivedOccurrences(String contract) {
     LOGGER.info("Generating all orders for the active contract {}...", contract);
     // Retrieve schedule information for the specific contract
-    String query = this.lifecycleQueryFactory.getServiceScheduleQuery(contract);
-    SparqlBinding bindings = this.getService.getInstance(query);
+    SparqlBinding bindings = this.lifecycleQueryService.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,
+        contract, contract);
     // Extract specific schedule info
     String startDate = bindings
-        .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY).getVarName());
+        .getFieldValue(QueryResource.SCHEDULE_START_DATE_VAR.getVarName());
     String endDate = bindings
-        .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY).getVarName());
+        .getFieldValue(QueryResource.SCHEDULE_END_DATE_VAR.getVarName());
     String recurrence = bindings
-        .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY).getVarName());
+        .getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY);
     Queue<String> occurrences = new ArrayDeque<>();
     // Extract date of occurrences based on the schedule information
     // For perpetual and single time schedules, simply add the start date
-    if (recurrence == null || recurrence.equals("P1D")) {
+    if (recurrence == null || recurrence.equals(LifecycleResource.RECURRENCE_DAILY_TASK)) {
       occurrences.offer(this.dateTimeService.getDateTimeFromDate(startDate));
-    } else if (recurrence.equals("P2D")) {
+    } else if (recurrence.equals(LifecycleResource.RECURRENCE_ALT_DAY_TASK)) {
       // Alternate day recurrence should have dual interval
       occurrences = this.dateTimeService.getOccurrenceDates(startDate, endDate, 2);
     } else {
@@ -421,7 +404,7 @@ public class LifecycleService {
     Map<String, Object> params = new HashMap<>();
     params.put(LifecycleResource.CONTRACT_KEY, contract);
     params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
-    this.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
     String orderPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
     // Instantiate each occurrence
     boolean hasError = false;
@@ -454,10 +437,9 @@ public class LifecycleService {
   public ResponseEntity<StandardApiResponse<?>> continueTaskOnNextWorkingDay(String taskId, String contractId) {
     LOGGER.info("Generating the task for the next working day...");
     String nextWorkingDateTime = this.dateTimeService.getNextWorkingDate();
-    String nextEventQuery = this.lifecycleQueryFactory.getContractEventQuery(contractId,
+    Queue<SparqlBinding> nextEvents = this.lifecycleQueryService.getContractEventQuery(contractId,
         this.dateTimeService.getDateFromDateTime(nextWorkingDateTime),
         LifecycleEventType.SERVICE_ORDER_RECEIVED);
-    Queue<SparqlBinding> nextEvents = this.getService.getInstances(nextEventQuery);
     if (!nextEvents.isEmpty()) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_TASK_KEY),
@@ -469,7 +451,7 @@ public class LifecycleService {
     params.put(LifecycleResource.CONTRACT_KEY, contractId);
     params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
     params.put(LifecycleResource.DATE_TIME_KEY, nextWorkingDateTime);
-    this.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
     // Generate a new unique ID for the occurrence by retrieving the prefix from the
     // stage instance
     String defaultPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
@@ -505,31 +487,6 @@ public class LifecycleService {
   }
 
   /**
-   * Discharges any active contracts that should have expired today.
-   */
-  public void dischargeExpiredContracts() {
-    LOGGER.info("Retrieving all active contracts that are expiring...");
-    String query = this.lifecycleQueryFactory.getExpiredActiveContractQuery();
-    Queue<SparqlBinding> results = this.getService.getInstances(query);
-    Map<String, Object> paramTemplate = new HashMap<>();
-    paramTemplate.put(LifecycleResource.REMARKS_KEY, SERVICE_DISCHARGE_MESSAGE);
-    LOGGER.debug("Instanting completed occurrences for these contracts...");
-    while (!results.isEmpty()) {
-      Map<String, Object> params = new HashMap<>(paramTemplate);
-      String currentContract = results.poll().getFieldValue(QueryResource.IRI_KEY);
-      params.put(LifecycleResource.CONTRACT_KEY, currentContract);
-      this.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_COMPLETION);
-      ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
-          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
-      // Error logs for any specified occurrence
-      if (response.getStatusCode() != HttpStatus.OK) {
-        LOGGER.error("Error encountered while discharging the contract for {}! Read error logs for more details.",
-            currentContract);
-      }
-    }
-  }
-
-  /**
    * Generate an occurrence for the order dispatch or delivery event of a
    * specified contract.
    * 
@@ -560,8 +517,8 @@ public class LifecycleService {
     }
 
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
-    String query = this.lifecycleQueryFactory.getStageQuery(contractId, eventType);
-    String stage = this.getService.getInstance(query).getFieldValue(QueryResource.IRI_KEY);
+    String stage = this.lifecycleQueryService.getInstance(FileService.CONTRACT_STAGE_QUERY_RESOURCE, contractId,
+        eventType.getStage()).getFieldValue(QueryResource.IRI_KEY);
     params.put(LifecycleResource.STAGE_KEY, stage);
     params.put(LifecycleResource.REMARKS_KEY, remarksMsg);
     String occurrenceId = params.get(QueryResource.ID_KEY).toString();
@@ -580,16 +537,6 @@ public class LifecycleService {
   }
 
   /**
-   * Updates the contract status to Pending from its current status.
-   * 
-   * @param id The contract identifier.
-   */
-  public ResponseEntity<StandardApiResponse<?>> updateContractStatus(String id) {
-    String updateQuery = this.lifecycleQueryFactory.genContractEventStatusUpdateQuery(id);
-    return this.updateService.update(updateQuery);
-  }
-
-  /**
    * Retrieves the previous occurrence instance based on its event type and latest
    * event id.
    * 
@@ -598,8 +545,9 @@ public class LifecycleService {
    * @param eventType     Target event type to query for.
    */
   public String getPreviousOccurrence(String latestEventId, LifecycleEventType eventType) {
-    String query = this.lifecycleQueryFactory.getContractEventQuery(latestEventId, eventType);
-    return this.getService.getInstance(query).getFieldValue(QueryResource.ID_KEY);
+    return this.lifecycleQueryService
+        .getInstance(FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, latestEventId, eventType.getEvent())
+        .getFieldValue(QueryResource.ID_KEY);
   }
 
   /**
@@ -611,10 +559,9 @@ public class LifecycleService {
    *                  query.
    */
   private String getPreviousOccurrence(String field, LifecycleEventType eventType, Map<String, Object> params) {
-    String eventQuery = this.lifecycleQueryFactory.getContractEventQuery(
-        params.get(LifecycleResource.CONTRACT_KEY).toString(),
-        params.get(LifecycleResource.DATE_KEY).toString(),
-        eventType);
-    return this.getService.getInstance(eventQuery).getFieldValue(field);
+    return this.lifecycleQueryService
+        .getContractEventQuery(params.get(LifecycleResource.CONTRACT_KEY).toString(),
+            params.get(LifecycleResource.DATE_KEY).toString(), eventType)
+        .poll().getFieldValue(field);
   }
 }

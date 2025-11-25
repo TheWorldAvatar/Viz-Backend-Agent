@@ -32,6 +32,7 @@ import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
@@ -67,14 +68,27 @@ public class AddService {
   /**
    * Overloaded method to instantiate the target instance following the input
    * parameters. ID field will default to a random UUID if no id parameter is
-   * sent.
+   * sent. Ignores any custom message and defaults to default messages.
    * 
    * @param resourceID The target resource identifier for the instance.
    * @param param      Request parameters.
    */
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, Map<String, Object> param) {
+    return instantiate(resourceID, param, null, null);
+  }
+
+  /**
+   * Overloaded method to instantiate the target instance following the input
+   * parameters. ID field will default to a random UUID if no id parameter is
+   * sent.
+   * 
+   * @param resourceID The target resource identifier for the instance.
+   * @param param      Request parameters.
+   */
+  public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, Map<String, Object> param,
+      String successLogMessage, String messageResource) {
     String id = param.getOrDefault(QueryResource.ID_KEY, UUID.randomUUID()).toString();
-    return instantiate(resourceID, id, param);
+    return instantiate(resourceID, id, param, successLogMessage, messageResource);
   }
 
   /**
@@ -86,7 +100,7 @@ public class AddService {
    * @param param      Request parameters.
    */
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, String targetId,
-      Map<String, Object> param) {
+      Map<String, Object> param, String successLogMessage, String messageResource) {
     LOGGER.info("Instantiating an instance of {} ...", resourceID);
     // Update ID value to target ID
     param.put(QueryResource.ID_KEY, targetId);
@@ -96,19 +110,20 @@ public class AddService {
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
     // Add the static ID reference
     this.jsonLdService.appendId(addJsonSchema, targetId);
-    return this.instantiateJsonLd(addJsonSchema, resourceID, LocalisationResource.SUCCESS_ADD_KEY);
+    return this.instantiateJsonLd(addJsonSchema, resourceID, successLogMessage, messageResource);
   }
 
   /**
    * Instantiate an instance based on a jsonLD object.
    * 
-   * @param jsonLdSchema    The target json LD object to instantiate.
-   * @param resourceID      The target resource identifier for the instance.
-   * @param messageResource The resource id of the message to be displayed when
-   *                        successful.
+   * @param jsonLdSchema      The target json LD object to instantiate.
+   * @param resourceID        The target resource identifier for the instance.
+   * @param successLogMessage Optional log message on success.
+   * @param messageResource   Optional resource id of the message to be displayed
+   *                          when successful.
    */
-  public ResponseEntity<StandardApiResponse<?>> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID,
-      String messageResource) {
+  private ResponseEntity<StandardApiResponse<?>> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID,
+      String successLogMessage, String messageResource) {
     LOGGER.info("Adding instance to endpoint...");
     String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();
     String jsonString = jsonLdSchema.toString();
@@ -136,9 +151,10 @@ public class AddService {
     }
 
     if (response.getStatusCode() == HttpStatus.OK) {
-      LOGGER.info("Instantiation is successful!");
+      LOGGER.info(successLogMessage == null ? "Instantiation is successful!" : successLogMessage);
       return this.responseEntityBuilder.success(instanceIri,
-          LocalisationTranslator.getMessage(messageResource));
+          LocalisationTranslator
+              .getMessage(messageResource == null ? LocalisationResource.SUCCESS_ADD_KEY : messageResource));
     }
     LOGGER.warn(response.getBody());
     throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ADD_KEY));
@@ -177,7 +193,7 @@ public class AddService {
     if (currentNode.has(ShaclResource.REPLACE_KEY)) {
       if (parentNode != null) {
         // Add a different interaction for schedule types
-        if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals("schedule")) {
+        if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(LifecycleResource.SCHEDULE_RESOURCE)) {
           this.replaceDayOfWeekSchedule(parentNode, parentField, replacements);
           // When parsing an array for an object node
         } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)) {

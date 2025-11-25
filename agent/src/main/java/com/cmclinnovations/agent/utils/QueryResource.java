@@ -1,5 +1,13 @@
 package com.cmclinnovations.agent.utils;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expression;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
@@ -16,6 +24,8 @@ import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+
+import com.cmclinnovations.agent.component.LocalisationTranslator;
 
 public class QueryResource {
     public static final Prefix CMNS_COL = genPrefix("cmns-col", "https://www.omg.org/spec/Commons/Collections/");
@@ -66,11 +76,25 @@ public class QueryResource {
     public static final Iri FIBO_FND_DT_OC_HAS_EVENT_DATE = FIBO_FND_DT_OC.iri("hasEventDate");
     public static final Iri FIBO_FND_REL_REL_EXEMPLIFIES = FIBO_FND_REL_REL.iri("exemplifies");
 
+    public static final String NULL_KEY = "null";
     public static final String IRI_KEY = "iri";
     public static final Variable IRI_VAR = SparqlBuilder.var(IRI_KEY);
     public static final String ID_KEY = "id";
     public static final Variable ID_VAR = SparqlBuilder.var(ID_KEY);
+    public static final Variable DATE_VAR = QueryResource.genVariable(LifecycleResource.DATE_KEY);
     public static final Variable EVENT_ID_VAR = QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY);
+    public static final Variable EVENT_STATUS_VAR = QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY);
+    public static final Variable LAST_MODIFIED_VAR = QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY);
+    public static final Variable SCHEDULE_START_DATE_VAR = QueryResource
+            .genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY);
+    public static final Variable SCHEDULE_END_DATE_VAR = QueryResource
+            .genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY);
+    public static final Variable SCHEDULE_START_TIME_VAR = QueryResource
+            .genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY);
+    public static final Variable SCHEDULE_END_TIME_VAR = QueryResource
+            .genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY);
+    public static final Variable SCHEDULE_RECURRENCE_VAR = QueryResource
+            .genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY);
 
     // Private constructor to prevent instantiation
     private QueryResource() {
@@ -105,8 +129,7 @@ public class QueryResource {
     }
 
     /**
-     * Generates an empty SELECT query template with no DISTINCT or LIMIT modifiers
-     * .
+     * Generates an empty SELECT query template with no DISTINCT or LIMIT modifiers.
      */
     public static SelectQuery getSelectQuery() {
         return getSelectQuery(false, null);
@@ -162,6 +185,200 @@ public class QueryResource {
     public static Expression<?> genLowercaseExpression(Variable variable, String literalValue) {
         return Expressions.equals(
                 Expressions.function(SparqlFunction.LCASE, variable), Rdf.literalOf(literalValue));
+    }
+
+    /**
+     * Wraps the query statements into a MINUS clause.
+     * 
+     * @param queryStatements Query statements to be added to minus.
+     */
+    public static String minus(String queryStatements) {
+        return "MINUS{" + queryStatements + "}";
+
+    }
+
+    /**
+     * Wraps the query statements into an OPTIONAL clause. Clause will not be
+     * appended if no statements are given.
+     * 
+     * @param queryStatements Query statements to be added.
+     */
+    public static String optional(String queryStatements) {
+        if (queryStatements.isEmpty()) {
+            return queryStatements;
+        }
+        return "OPTIONAL{" + queryStatements + "}";
+    }
+
+    /**
+     * Generate a FILTER clause with multiple expressions separated by OR.
+     * 
+     * @param firstExpression The first expression.
+     * @param expressions     The subsequent set of expressions.
+     */
+    public static String filter(String firstExpression, String... expressions) {
+        StringBuilder filterBuilder = new StringBuilder("FILTER(");
+        filterBuilder.append(firstExpression);
+        for (String currentExpression : expressions) {
+            filterBuilder.append("||").append(currentExpression);
+        }
+        filterBuilder.append(")");
+        return filterBuilder.toString();
+    }
+
+    /**
+     * Generate an UNION clause between several set of query statements
+     * 
+     * @param firstStatements The first set of statements.
+     * @param statements      The subsequent set of statements to be placed into
+     *                        separate UNION clauses.
+     */
+    public static String union(String firstStatements, String... statements) {
+        StringBuilder unionBuilder = new StringBuilder();
+        unionBuilder.append("{").append(firstStatements).append("}");
+        for (String currentStatements : statements) {
+            unionBuilder.append("UNION{").append(currentStatements).append("}");
+        }
+        return unionBuilder.toString();
+    }
+
+    /**
+     * Generate a VALUES clause for the specific field and values
+     * 
+     * @param field  The field of interest.
+     * @param values The values to be inserted into the VALUES clause.
+     */
+    public static String values(String field, Collection<String> values) {
+        StringBuilder valuesBuilder = new StringBuilder();
+        valuesBuilder.append("VALUES ?")
+                .append(field)
+                .append(" {");
+        values.forEach(value -> {
+            valuesBuilder.append(ShaclResource.WHITE_SPACE)
+                    .append(value);
+        });
+        valuesBuilder.append("}");
+        return valuesBuilder.toString();
+    }
+
+    /**
+     * Generates query statements for filtering targets based on the filters if
+     * available using VALUES clause.
+     * 
+     * @param query   The query to be added.
+     * @param field   The field of interest.
+     * @param filters The list of filter values to target by.
+     * @param builder Stores the output.
+     */
+    public static void genFilterStatements(String query, String field, Set<String> filters, StringBuilder builder) {
+        // Special parsing for recurrence/schedule type
+        if (field.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
+            builder.append(query); // Append general query
+            boolean hasRegularService = filters.stream()
+                    .anyMatch(scheduleType -> scheduleType.substring(1, scheduleType.length() - 1).equals(
+                            LocalisationTranslator.getMessage(LocalisationResource.LABEL_REGULAR_SERVICE_KEY)));
+            Set<String> parsedFilters = filters.stream()
+                    // Filter out regular service
+                    .filter(scheduleType -> !scheduleType.substring(1, scheduleType.length() - 1).equals(
+                            LocalisationTranslator.getMessage(LocalisationResource.LABEL_REGULAR_SERVICE_KEY)))
+                    .map(scheduleType -> {
+                        String scheduleTypeContent = scheduleType.substring(1, scheduleType.length() - 1);
+                        if (scheduleTypeContent.equals(
+                                LocalisationTranslator.getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY))) {
+                            return LifecycleResource.EMPTY_STRING;
+                        } else if (scheduleTypeContent
+                                .equals(LocalisationTranslator
+                                        .getMessage(LocalisationResource.LABEL_SINGLE_SERVICE_KEY))) {
+                            return LifecycleResource.RECURRENCE_DAILY_TASK_STRING;
+                        } else if (scheduleTypeContent.equals(
+                                LocalisationTranslator
+                                        .getMessage(LocalisationResource.LABEL_ALTERNATE_DAY_SERVICE_KEY))) {
+                            return LifecycleResource.RECURRENCE_ALT_DAY_TASK_STRING;
+                        }
+                        return scheduleType;
+                    }).collect(Collectors.toSet());
+            if (hasRegularService) {
+                // Remove the negation if the filter is present
+                Map<String, String> negationMappings = new HashMap<>(LifecycleResource.NEGATE_RECURRENCE_MAP);
+                parsedFilters.forEach(filter -> negationMappings.remove(filter));
+                builder.append("FILTER(").append(negationMappings.values().stream().collect(Collectors.joining("&&")))
+                        .append(")");
+            } else {
+                String valuesClause = QueryResource.values(field, parsedFilters);
+                builder.append(valuesClause);
+            }
+            // Special parsing for events at task level
+        } else if (field.equals(LifecycleResource.EVENT_KEY)) {
+            builder.append(query);
+            Set<String> parsedFilters = filters.stream()
+                    .map(eventStatus -> {
+                        String eventStatusContent = eventStatus.substring(1, eventStatus.length() - 1);
+                        return LocalisationTranslator.getEventFromLocalisedEventKey(eventStatusContent);
+                    }).collect(Collectors.toSet());
+            String valuesClause = QueryResource.values(field, parsedFilters);
+            builder.append(valuesClause);
+        } else {
+            // When there are null filter values, the user has requested for blank values,
+            // and this should be excluded from the query via a MINUS clause
+            if (filters.contains(QueryResource.NULL_KEY)) {
+                String minusStatement = QueryResource.minus(query);
+                // If there is only one null filter, this should merely be a MINUS clause
+                if (filters.size() == 1) {
+                    builder.append(minusStatement);
+                } else {
+                    // When there are multiple filters, MINUS and default clause with values should
+                    // be provided; Remove the null key before generating the VALUES clause
+                    filters.remove(QueryResource.NULL_KEY);
+                    String valuesClause = QueryResource.values(field, filters);
+                    builder.append(QueryResource.union(minusStatement, query + valuesClause));
+                }
+            } else {
+                // For default filters, add clause to restrict them
+                // But only add VALUES if they are available
+                builder.append(query);
+                if (!filters.isEmpty()) {
+                    String valuesClause = QueryResource.values(field, filters);
+                    builder.append(valuesClause);
+                }
+            }
+        }
+    }
+
+    /**
+     * Generates a FILTER clause for filtering targets based on the filters if
+     * available using the FILTER expression.
+     * 
+     * @param field   The field of interest.
+     * @param filters The list of filter values to target by.
+     */
+    public static String filterOrExpressions(String field, Set<String> filters) {
+        StringBuilder builder = new StringBuilder();
+        if (!filters.isEmpty()) {
+            List<String> expressions = new ArrayList<>();
+            if (filters.contains(QueryResource.NULL_KEY)) {
+                filters.remove(QueryResource.NULL_KEY);
+                expressions.add("!BOUND(?" + field + ")");
+            }
+            // On removing null, verify if there are still other filters
+            if (!filters.isEmpty()) {
+                filters.forEach(filter -> {
+                    if (!filter.isEmpty()) {
+                        expressions.add("?" + field + "=" + filter);
+                    }
+                });
+            }
+            String filterClause;
+            if (expressions.size() == 1) {
+                filterClause = QueryResource.filter(expressions.get(0));
+            } else {
+                filterClause = QueryResource.filter(expressions.get(0),
+                        expressions.stream()
+                                .skip(1)
+                                .toArray(String[]::new));
+            }
+            builder.append(filterClause);
+        }
+        return builder.toString();
     }
 
     /**

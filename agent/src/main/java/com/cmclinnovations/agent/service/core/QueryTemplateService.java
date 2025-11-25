@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.service.core;
 
+import java.nio.file.FileSystemNotFoundException;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.List;
@@ -102,31 +103,29 @@ public class QueryTemplateService {
    *                             limit.
    */
   public String getAllIdsQueryTemplate(String nodeShapeReplacement, String addQueryStatements,
-      PaginationState pagination) {
+      PaginationState pagination, boolean requireId) {
     // If pagination is not given, no limits and offset should be set
-    SelectQuery query = QueryResource.getSelectQuery(true, pagination == null ? null : pagination.limit())
-        .select(QueryResource.ID_VAR)
+    SelectQuery query = QueryResource.getSelectQuery(true, pagination.getLimit())
         .where(QueryResource.IRI_VAR.isA(Rdf.iri(
             nodeShapeReplacement.substring(1, nodeShapeReplacement.length() - 1)))
             .andHas(QueryResource.DC_TERM_ID, QueryResource.ID_VAR))
-        .offset(pagination == null ? 0 : pagination.offset());
-    if (pagination == null || pagination.sortFields().isEmpty()) {
+        .offset(pagination.getOffset());
+    if (requireId) {
+      query.select(QueryResource.ID_VAR);
+    }
+    Queue<SortDirective> sortDirectives = pagination.getSortDirectives();
+    boolean hasNoIdToSort = sortDirectives.stream()
+        .allMatch(directive -> !directive.field().getVarName().equals(QueryResource.ID_KEY));
+    while (!sortDirectives.isEmpty()) {
+      SortDirective directive = sortDirectives.poll();
+      if (!directive.field().getVarName().equals(QueryResource.ID_KEY)) {
+        query.select(directive.field());
+      }
+      query.orderBy(directive.order());
+    }
+    // ID is an index and has to be included even if not specified by the user
+    if (hasNoIdToSort) {
       query.orderBy(QueryResource.ID_VAR);
-    } else {
-      Queue<SortDirective> sortDirectives = pagination.sortDirectives();
-      boolean hasNoIdToSort = sortDirectives.stream()
-          .allMatch(directive -> !directive.field().getVarName().equals(QueryResource.ID_KEY));
-      while (!sortDirectives.isEmpty()) {
-        SortDirective directive = sortDirectives.poll();
-        if (!directive.field().getVarName().equals(QueryResource.ID_KEY)) {
-          query.select(directive.field());
-        }
-        query.orderBy(directive.order());
-      }
-      // ID is an index and has to be included even if not specified by the user
-      if (hasNoIdToSort) {
-        query.orderBy(QueryResource.ID_VAR);
-      }
     }
     return query
         .getQueryString()
@@ -206,7 +205,7 @@ public class QueryTemplateService {
    * @param addVars            Optional additional variables to be included in the
    *                           query, along with their order sequence
    */
-  public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, Queue<String> targetIds,
+  public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, Queue<List<String>> targetIds,
       ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Generating the SELECT query to get instances...");
     return this.getQueryTemplateFactory
@@ -256,13 +255,22 @@ public class QueryTemplateService {
    * @param resourceID The target resource identifier for the instance.
    */
   private JsonNode getJsonLDResource(String resourceID) {
+    // Retrieve the default lifecycle resources if available
     String filePath = LifecycleResource.getLifecycleResourceFilePath(resourceID);
-    // Default to the file name in application-service if it is not a lifecycle
-    // route
-    if (filePath == null) {
+    try {
+      // Attempt to retrieve any custom JSON-LD if they exist
       String fileName = this.fileService.getTargetFileName(resourceID);
+      // Overwrite the custom JSON-LD for non-lifecycle and lifecycle resources
       filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.JSON_LD_DIR + fileName + ".jsonld";
+    } catch (FileSystemNotFoundException e) {
+      // Non-lifecycle resources will always have a custom JSON-LD, else, its an
+      // invalid file that should throw an error
+      if (filePath == null) {
+        throw e;
+      }
+      // No error will be thrown for lifecycle resources which has default resources
     }
+
     // Retrieve the instantiation JSON schema
     JsonNode contents = this.fileService.getJsonContents(filePath);
     if (!contents.isObject()) {
