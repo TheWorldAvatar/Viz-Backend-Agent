@@ -190,18 +190,26 @@ public class LifecycleController {
       String entityType = TypeCastUtils.castToObject(params.get("type"), String.class);
       // get contract details for each contract
       Map<String, StandardApiResponse<?>> responseMap = new HashMap<>();
+      Map<String, Map<String, SparqlResponseField>> scheduleMap = new HashMap<>();
       for (String contractId : contractIds) {
           // Call the service to get the response for the current contractId
           StandardApiResponse<?> response = this.getService.getInstance(contractId, entityType, false).getBody();
           
           // Put the contractId and its response into the map
           responseMap.put(contractId, response);
+
+          // get schedule detail
+          Map<String, Object> rawSchedule = getSchedule(contractId).getBody();
+          Map<String, SparqlResponseField> schedule = rawSchedule.entrySet().stream().collect(Collectors.toMap(
+            Map.Entry::getKey, entry -> (SparqlResponseField) entry.getValue()
+          ));
+          scheduleMap.put(contractId, schedule);
       }
       Integer reqCopies = TypeCastUtils.castToObject(params.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY),
           Integer.class);
       ContractOperation operation = (contractId) -> {
         for (int i = 0; i < reqCopies; i++) {
-          this.cloneDraftContract(contractId, entityType, responseMap);
+          this.cloneDraftContract(contractId, entityType, responseMap, scheduleMap);
         }
         return null;
       };
@@ -212,7 +220,8 @@ public class LifecycleController {
     });
   }
 
-  private void cloneDraftContract(String contractId, String entityType, Map<String, StandardApiResponse<?>> responseMap) {
+  private void cloneDraftContract(String contractId, String entityType, Map<String, StandardApiResponse<?>> responseMap,
+      Map<String, Map<String, SparqlResponseField>> scheduleMap) {
     // Retrieve current contract details for the target instance
     StandardApiResponse<?> response = responseMap.get(contractId);
     // Generate new contract details from existing contract
@@ -238,11 +247,13 @@ public class LifecycleController {
     // New ID should be added as a side effect of instantiate
     draftDetails.put(QueryResource.ID_KEY, contractDetails.get(QueryResource.ID_KEY));
     draftDetails.put(LifecycleResource.CONTRACT_KEY, response.data().id());
+    // Keep recurrence details
+    Map<String, SparqlResponseField> schedule = scheduleMap.get(contractId);
     draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, LifecycleResource.RECURRENCE_DAILY_TASK);
     draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, this.dateTimeService.getCurrentDate());
     draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, this.dateTimeService.getCurrentDate());
-    draftDetails.put("time slot start", "00:00");
-    draftDetails.put("time slot end", "23:59");
+    draftDetails.put("time slot start", schedule.get("start_time").value());
+    draftDetails.put("time slot end", schedule.get("end_time").value());
     draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
     this.execGenContractLifecycle(draftDetails);
   }
