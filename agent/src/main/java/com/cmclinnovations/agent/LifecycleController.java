@@ -1,8 +1,11 @@
 package com.cmclinnovations.agent;
 
 import java.text.MessageFormat;
+import java.time.DayOfWeek;
+import java.time.format.TextStyle;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -201,7 +204,19 @@ public class LifecycleController {
           // get schedule detail
           Map<String, Object> rawSchedule = getSchedule(contractId).getBody();
           Map<String, SparqlResponseField> schedule = rawSchedule.entrySet().stream().collect(Collectors.toMap(
-            Map.Entry::getKey, entry -> (SparqlResponseField) entry.getValue()
+            Map.Entry::getKey, entry -> {
+              Object value = entry.getValue();
+              if (value == null) {
+                return new SparqlResponseField("","","","");
+              }
+              if (value instanceof SparqlResponseField) {
+                  return (SparqlResponseField) value;
+              }
+              throw new ClassCastException(
+                  "Value for key '" + entry.getKey() + 
+                  "' is not null or SparqlResponseField, but: " + value.getClass().getName()
+              );
+            }
           ));
           scheduleMap.put(contractId, schedule);
       }
@@ -249,12 +264,31 @@ public class LifecycleController {
     draftDetails.put(LifecycleResource.CONTRACT_KEY, response.data().id());
     // Keep recurrence details
     Map<String, SparqlResponseField> schedule = scheduleMap.get(contractId);
-    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, LifecycleResource.RECURRENCE_DAILY_TASK);
     draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, this.dateTimeService.getCurrentDate());
-    draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, this.dateTimeService.getCurrentDate());
     draftDetails.put("time slot start", schedule.get("start_time").value());
     draftDetails.put("time slot end", schedule.get("end_time").value());
-    draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
+    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, schedule.get("recurrences").value());
+    // schedule type specific handling
+    if (schedule.get("recurrences").value()=="") {
+      // Perpetual service has no end date
+      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, "");
+    } else {
+      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, this.dateTimeService.getCurrentDate());
+    }
+    if (schedule.get("recurrences").value()==LifecycleResource.RECURRENCE_DAILY_TASK) {
+      draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
+    } else {
+      for (DayOfWeek day : DayOfWeek.values()) {
+        String uppercaseDay = day.getDisplayName(TextStyle.FULL, Locale.getDefault()); 
+        String lowercaseDayKey = uppercaseDay.toLowerCase();
+        SparqlResponseField field = schedule.get(lowercaseDayKey);
+        if (field != null) {
+            if (field.value() != null && field.value().equals(uppercaseDay)) {
+                draftDetails.put(lowercaseDayKey, true);
+            }
+        }
+      }
+    }
     this.execGenContractLifecycle(draftDetails);
   }
 
