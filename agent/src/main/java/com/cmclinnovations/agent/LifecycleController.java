@@ -134,11 +134,20 @@ public class LifecycleController {
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> contractIds = TypeCastUtils.castToListObject(params.get(QueryResource.ID_KEY), String.class);
       String entityType = TypeCastUtils.castToObject(params.get("type"), String.class);
+      // get contract details for each contract
+      Map<String, StandardApiResponse<?>> responseMap = new HashMap<>();
+      for (String contractId : contractIds) {
+          // Call the service to get the response for the current contractId
+          StandardApiResponse<?> response = this.getService.getInstance(contractId, entityType, false).getBody();
+          
+          // Put the contractId and its response into the map
+          responseMap.put(contractId, response);
+      }
       Integer reqCopies = TypeCastUtils.castToObject(params.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY),
           Integer.class);
       ContractOperation operation = (contractId) -> {
         for (int i = 0; i < reqCopies; i++) {
-          this.cloneDraftContract(contractId, entityType);
+          this.cloneDraftContract(contractId, entityType, responseMap);
         }
         return null;
       };
@@ -149,9 +158,9 @@ public class LifecycleController {
     });
   }
 
-  private void cloneDraftContract(String contractId, String entityType) {
+  private void cloneDraftContract(String contractId, String entityType, Map<String, StandardApiResponse<?>> responseMap) {
     // Retrieve current contract details for the target instance
-    StandardApiResponse<?> response = this.getService.getInstance(contractId, entityType, false).getBody();
+    StandardApiResponse<?> response = responseMap.get(contractId);
     // Generate new contract details from existing contract
     Map<String, Object> contractDetails = ((Map<String, Object>) response.data().items().get(0))
         .entrySet().stream()
