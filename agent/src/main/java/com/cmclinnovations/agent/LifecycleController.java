@@ -222,6 +222,9 @@ public class LifecycleController {
         .collect(Collectors.toMap(
             Map.Entry::getKey,
             entry -> {
+              if (entry.getValue() == null) {
+                return "";
+              }
               List<SparqlResponseField> values = TypeCastUtils.castToListObject(entry.getValue(),
                   SparqlResponseField.class);
               if (values.size() == 1) {
