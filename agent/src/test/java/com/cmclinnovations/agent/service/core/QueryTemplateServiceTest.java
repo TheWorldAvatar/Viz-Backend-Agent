@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +93,8 @@ class QueryTemplateServiceTest {
     @Test
     void testGenGetQuery_WithFilter() throws IOException {
         Queue<Queue<SparqlBinding>> testBindings = GetQueryTemplateFactoryTest.initTestBindings();
-        String results = testService.genGetQuery(testBindings, GetQueryTemplateFactoryTest.SAMPLE_FILTER, null,
+        String results = testService.genGetQuery(testBindings,
+                new ArrayDeque<>(List.of(Arrays.asList(GetQueryTemplateFactoryTest.SAMPLE_FILTER))), null,
                 "", new HashMap<>());
         TestUtils.validateGeneratedQueryOutput(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_ID_FILE, results);
     }

@@ -1,7 +1,7 @@
 package com.cmclinnovations.agent.service.core;
 
-import java.io.File;
 import java.nio.file.FileSystemNotFoundException;
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,17 +11,21 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.pagination.PaginationState;
+import com.cmclinnovations.agent.model.pagination.SortDirective;
 import com.cmclinnovations.agent.template.FormTemplateFactory;
 import com.cmclinnovations.agent.template.query.DeleteQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.SearchQueryTemplateFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -82,25 +86,61 @@ public class QueryTemplateService {
   }
 
   /**
-   * Retrieves the SHACL path query for a target IRI in `application-form.yml`.
+   * Retrieves the target IRI in `application-form.yml`.
    * 
-   * @param resourceID   The target resource identifier.
-   * @param requireLabel Indicates if labels should be returned for all the
-   *                     fields that are IRIs.
+   * @param resourceID The target resource identifier.
    */
-  public String getShaclQuery(String resourceID, boolean requireLabel) {
-    String iri = this.fileService.getTargetIri(resourceID);
-    return this.getShaclQuery(requireLabel, iri);
+  public String getIri(String resourceID) {
+    return this.fileService.getTargetIri(resourceID).getQueryString();
+  }
+
+  /**
+   * Retrieves the query template to get all IDs associated with instances. A
+   * placeholder class is used and MUST be replaced to get the right ids.
+   * 
+   * @param nodeShapeReplacement The statement to target the node shape.
+   * @param addQueryStatements   Additional query statements to be added.
+   * @param pagination           Optional state containing the current page and
+   *                             limit.
+   */
+  public String getAllIdsQueryTemplate(String nodeShapeReplacement, String addQueryStatements,
+      PaginationState pagination, boolean requireId) {
+    // If pagination is not given, no limits and offset should be set
+    SelectQuery query = QueryResource.getSelectQuery(true, pagination.getLimit())
+        .where(QueryResource.IRI_VAR.isA(Rdf.iri(
+            nodeShapeReplacement.substring(1, nodeShapeReplacement.length() - 1)))
+            .andHas(QueryResource.DC_TERM_ID, QueryResource.ID_VAR))
+        .offset(pagination.getOffset());
+    if (requireId) {
+      query.select(QueryResource.ID_VAR);
+    }
+    Queue<SortDirective> sortDirectives = pagination.getSortDirectives();
+    boolean hasNoIdToSort = sortDirectives.stream()
+        .allMatch(directive -> !directive.field().getVarName().equals(QueryResource.ID_KEY));
+    while (!sortDirectives.isEmpty()) {
+      SortDirective directive = sortDirectives.poll();
+      if (!directive.field().getVarName().equals(QueryResource.ID_KEY)) {
+        query.select(directive.field());
+      }
+      query.orderBy(directive.order());
+    }
+    // ID is an index and has to be included even if not specified by the user
+    if (hasNoIdToSort) {
+      query.orderBy(QueryResource.ID_VAR);
+    }
+    return query
+        .getQueryString()
+        .replace("?id .", "?id ." + addQueryStatements);
   }
 
   /**
    * Retrieves the required SHACL path query.
    * 
+   * @param replacement  The replacement string for [target].
    * @param requireLabel Indicates if labels should be returned for all the
    *                     fields that are IRIs.
-   * @param replacement  The replacement string for [target].
    */
-  public String getShaclQuery(boolean requireLabel, String replacement) {
+  public String getShaclQuery(String replacement, boolean requireLabel) {
     LOGGER.debug("Retrieving the required SHACL query...");
     String queryPath = FileService.SHACL_PATH_QUERY_RESOURCE;
     if (requireLabel) {
@@ -130,7 +170,7 @@ public class QueryTemplateService {
    */
   public String getFormQuery(String resourceID, boolean isReplacement) {
     if (!isReplacement) {
-      resourceID = this.fileService.getTargetIri(resourceID);
+      resourceID = this.fileService.getTargetIri(resourceID).getQueryString();
     }
     return this.fileService.getContentsWithReplacement(FileService.FORM_QUERY_RESOURCE, resourceID);
   }
@@ -153,25 +193,35 @@ public class QueryTemplateService {
    * @param queryVarsAndPaths The query construction requirements.
    */
   public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
-    return this.genGetQuery(queryVarsAndPaths, "", null, "", new HashMap<>());
+    return this.genGetQuery(queryVarsAndPaths, new ArrayDeque<>(), null, "", new HashMap<>());
   }
 
   /**
    * Generates a SELECT SPARQL query to retrieve instances from the inputs.
    * 
    * @param queryVarsAndPaths  The query construction requirements.
-   * @param targetId           An optional field to target at a specific instance.
+   * @param targetIds          An optional field with the specific IDs to target.
    * @param parentField        Optional parent field.
    * @param addQueryStatements Additional query statements to be added
    * @param addVars            Optional additional variables to be included in the
    *                           query, along with their order sequence
    */
-  public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, String targetId,
+  public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, Queue<List<String>> targetIds,
       ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Generating the SELECT query to get instances...");
     return this.getQueryTemplateFactory
         .write(
-            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetId, parentField, addQueryStatements, addVars));
+            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetIds, parentField, addQueryStatements, addVars));
+  }
+
+  /**
+   * Generates a WHERE SPARQL query to retrieve instances from the inputs.
+   * 
+   * @param queryVarsAndPaths The query construction requirements.
+   */
+  public String genWhereClause(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
+    LOGGER.debug("Generating the SELECT query to get instances...");
+    return this.getQueryTemplateFactory.genWhereClause(queryVarsAndPaths);
   }
 
   /**

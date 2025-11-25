@@ -1,0 +1,8 @@
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX fibo-fnd-arr-lif: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/>
+
+SELECT DISTINCT ?iri  
+WHERE {
+  ?iri dc-terms:identifier "[target]";
+    fibo-fnd-arr-lif:hasLifecycle ?lifecycle.
+}

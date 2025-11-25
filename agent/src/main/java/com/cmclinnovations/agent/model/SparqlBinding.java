@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,11 +39,13 @@ public class SparqlBinding {
   /**
    * Constructs a new model.
    */
-  public SparqlBinding(ObjectNode sparqlRow) {
+  public SparqlBinding(ObjectNode sparqlRow, List<String> variables) {
     this.bindings = new HashMap<>();
     this.bindingList = new HashMap<>();
     this.sequence = new ArrayList<>();
     Iterator<Map.Entry<String, JsonNode>> iterator = sparqlRow.fields();
+    Set<String> missingVariables = new HashSet<>();
+    missingVariables.addAll(variables);
     while (iterator.hasNext()) {
       Map.Entry<String, JsonNode> sparqlCol = iterator.next();
       JsonNode sparqlField = sparqlCol.getValue();
@@ -54,7 +57,12 @@ public class SparqlBinding {
           StringResource.getNodeString(sparqlField, "value"),
           StringResource.optNodeString(sparqlField, "datatype", dataTypeDefaultOption),
           StringResource.optNodeString(sparqlField, "xml:lang", null)));
+      // Removes the variable from the missing list if available
+      missingVariables.remove(sparqlCol.getKey());
     }
+    missingVariables.forEach(var -> {
+      this.bindings.put(var, null);
+    });
   }
 
   /**
@@ -85,9 +93,7 @@ public class SparqlBinding {
     Map<String, Object> sortedBindings = new LinkedHashMap<>();
     this.sequence.forEach(variable -> {
       String field = variable.getVarName();
-      if (resultBindings.get(field) != null) {
-        sortedBindings.put(field, resultBindings.get(field));
-      }
+      sortedBindings.put(field, resultBindings.get(field));
     });
     return sortedBindings;
   }
@@ -170,7 +176,7 @@ public class SparqlBinding {
    * @param field Field of interest
    */
   public boolean containsField(String field) {
-    return this.bindings.containsKey(field);
+    return this.bindings.containsKey(field) && this.bindings.get(field) != null;
   }
 
   @Override

@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.utils;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -10,7 +11,19 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class StringResource {
+  public static final String FIELD_REQUEST_PARAM = "field";
+  public static final String LABEL_REQUEST_PARAM = "label";
+  public static final String LIMIT_REQUEST_PARAM = "limit";
+  public static final String PAGE_REQUEST_PARAM = "page";
+  public static final String SEARCH_REQUEST_PARAM = "search";
+  public static final String SORT_BY_REQUEST_PARAM = "sort_by";
+  public static final String START_TIMESTAMP_REQUEST_PARAM = "startTimestamp";
+  public static final String END_TIMESTAMP_REQUEST_PARAM = "endTimestamp";
+  public static final String TYPE_REQUEST_PARAM = "type";
+  public static final String DEFAULT_SORT_BY = "-id";
   public static final String CLAZZ_VAR = "clazz";
+  public static final String ORIGINAL_PREFIX = "ori_";
+  public static final String SORT_KEY = "@sort";
 
   // Private constructor to prevent instantiation
   private StringResource() {
@@ -121,5 +134,23 @@ public class StringResource {
     }
     return Arrays.stream(roles.split(";")).map(String::trim)
         .collect(Collectors.toSet());
+  }
+
+  /**
+   * Parses the filters given in request parameters to readable format.
+   * 
+   * @param filters    Filters provided in the request parameters.
+   * @param isContract Indicates if it is a contract or task otherwise.
+   */
+  public static Map<String, Set<String>> parseFilters(Map<String, String> filters, Boolean isContract) {
+    return filters.entrySet()
+        .stream()
+        .map(entry -> Map.entry(
+            LifecycleResource.revertLifecycleSpecialFields(entry.getKey(), isContract),
+            Arrays.stream(entry.getValue().split("\\|"))
+                .map(string -> string.equals(QueryResource.NULL_KEY) ? string
+                    : "\"" + string.trim() + "\"")
+                .collect(Collectors.toSet())))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 }
