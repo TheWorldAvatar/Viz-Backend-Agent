@@ -102,6 +102,8 @@ public class KGService {
    * @param contents the contents to add
    */
   public ResponseEntity<String> add(String contents) {
+    LOGGER.info("Executing INSERT with JSON-LD:\n{}", contents);
+
     return this.client.post()
         .uri(BlazegraphClient.getInstance().getRemoteStoreClient(this.namespace).getQueryEndpoint())
         .accept(MediaType.valueOf(LD_JSON_MEDIA_TYPE))
