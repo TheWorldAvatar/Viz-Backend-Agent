@@ -265,7 +265,7 @@ public class LifecycleController {
       return this.responseEntityBuilder.success(contractId,
           LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_APPROVAL_KEY));
     }
-    boolean hasError = this.lifecycleTaskService.genOrderReceivedOccurrences(contractId);
+    boolean hasError = this.lifecycleTaskService.genOrderReceivedOccurrences(contractId, null);
     if (hasError) {
       LOGGER.warn(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));
       return this.responseEntityBuilder.error(

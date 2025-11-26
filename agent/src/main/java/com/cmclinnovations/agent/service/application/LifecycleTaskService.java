@@ -366,6 +366,21 @@ public class LifecycleTaskService {
     return this.addService.instantiate(resourceId, params, successLogMessage, messageResource);
   }
 
+  public void genOrderActiveContracts() {
+    String todayString = this.dateTimeService.getCurrentDate();
+    String dateLimitString = this.dateTimeService.getFutureDate(todayString, 30);
+    LOGGER.info("Retrieving all active contracts that need orders to be generated...");
+    String query = this.lifecycleQueryFactory.getLatestOrderQuery(dateLimitString);
+    Queue<SparqlBinding> results = this.getService.getInstances(query);
+    while (!results.isEmpty()) {
+      String currentContract = results.poll().getFieldValue(QueryResource.ID_KEY);
+      String latestDateString = results.poll().getFieldValue("latestDate"); // the latest task of this contract
+      String trueStartDate = this.dateTimeService.getFutureDate(latestDateString, 1); // add 1 day to latest day
+      LOGGER.info("Generating orders for contract {}, starting from {}", currentContract, trueStartDate);
+      this.genOrderReceivedOccurrences(currentContract, trueStartDate);
+    }
+  }
+
   /**
    * Generate occurrences for the order received event of a specified contract.
    * 
@@ -373,14 +388,19 @@ public class LifecycleTaskService {
    * @return boolean indicating if the occurrences have been generated
    *         successfully.
    */
-  public boolean genOrderReceivedOccurrences(String contract) {
+  public boolean genOrderReceivedOccurrences(String contract, String trueStartDate) {
     LOGGER.info("Generating all orders for the active contract {}...", contract);
     // Retrieve schedule information for the specific contract
     SparqlBinding bindings = this.lifecycleQueryService.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,
         contract, contract);
     // Extract specific schedule info
-    String startDate = bindings
-        .getFieldValue(QueryResource.SCHEDULE_START_DATE_VAR.getVarName());
+    String startDate;
+    if (trueStartDate != null) {
+      startDate = trueStartDate;
+    } else {
+      startDate = bindings
+          .getFieldValue(QueryResource.SCHEDULE_START_DATE_VAR.getVarName());
+    }
     String endDate = bindings
         .getFieldValue(QueryResource.SCHEDULE_END_DATE_VAR.getVarName());
     String limitDate = null;
