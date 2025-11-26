@@ -383,6 +383,10 @@ public class LifecycleTaskService {
         .getFieldValue(QueryResource.SCHEDULE_START_DATE_VAR.getVarName());
     String endDate = bindings
         .getFieldValue(QueryResource.SCHEDULE_END_DATE_VAR.getVarName());
+    String limitDate = null;
+    if (endDate != null) { // does not exist for perpetual schedule
+      limitDate = this.dateTimeService.getLimitDate(startDate, endDate, 30); // only generate orders up to 30 days in future
+    }
     String recurrence = bindings
         .getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY);
     Queue<String> occurrences = new ArrayDeque<>();
@@ -392,13 +396,13 @@ public class LifecycleTaskService {
       occurrences.offer(this.dateTimeService.getDateTimeFromDate(startDate));
     } else if (recurrence.equals(LifecycleResource.RECURRENCE_ALT_DAY_TASK)) {
       // Alternate day recurrence should have dual interval
-      occurrences = this.dateTimeService.getOccurrenceDates(startDate, endDate, 2);
+      occurrences = this.dateTimeService.getOccurrenceDates(startDate, limitDate, 2);
     } else {
       // Note that this may run for other intervals like P3D but
       // an error will be thrown in the following method unless the recurrence is in
       // intervals of 7
       int weeklyInterval = this.dateTimeService.getWeeklyInterval(recurrence);
-      occurrences = this.dateTimeService.getOccurrenceDates(startDate, endDate, bindings, weeklyInterval);
+      occurrences = this.dateTimeService.getOccurrenceDates(startDate, limitDate, bindings, weeklyInterval);
     }
     // Add parameter template
     Map<String, Object> params = new HashMap<>();

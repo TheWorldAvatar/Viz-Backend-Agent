@@ -136,6 +136,38 @@ public class DateTimeService {
   }
 
   /**
+   * 
+   * Determine the date where orders should be generated.
+   * 
+   * @param endDateString the actual end date of the service agreement.
+   * @param daysToAdd     number of days from today to be allowed for order
+   *                      generation.
+   * @return
+   */
+  public String getLimitDate(String startDateString, String endDateString, int daysToAdd) {
+
+    LocalDate today = this.parseDate(this.getCurrentDate());
+    LocalDate startDate = this.parseDate(startDateString);
+    LocalDate endDate = this.parseDate(endDateString);
+
+    // start from the earlier date between actual start date and today
+    LocalDate effectiveStart;
+    if (startDate.isBefore(today)) {
+      effectiveStart = today;
+    } else {
+      effectiveStart = startDate;
+    }
+    LocalDate calculatedDate = effectiveStart.plusDays(daysToAdd);
+
+    // return the earlier date between actual end date and calculated end date
+    if (calculatedDate.isBefore(endDate)) {
+      return calculatedDate.format(this.formatter);
+    } else {
+      return endDate.format(this.formatter);
+    }
+  }
+
+  /**
    * Retrieve the weekly interval from the recurrence input.
    * 
    * @param recurrence The recurrence interval in P*D format, eg P7D, P14D.
