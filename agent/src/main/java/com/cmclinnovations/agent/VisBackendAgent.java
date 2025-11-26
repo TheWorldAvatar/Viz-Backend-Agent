@@ -278,12 +278,21 @@ public class VisBackendAgent {
 
   /**
    * Removes the specified instance from the knowledge graph.
+   * Supports optional branch-specific deletion via the branch_delete query
+   * parameter.
+   * 
+   * @param type         The resource type
+   * @param id           The identifier of the instance to delete
+   * @param branchDelete Optional branch name to filter deletion
    */
+
   @DeleteMapping("/{type}/{id}")
-  public ResponseEntity<StandardApiResponse<?>> removeEntity(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<StandardApiResponse<?>> removeEntity(@PathVariable String type, @PathVariable String id,
+      @RequestParam(name = "branch_delete", required = false) String branchDelete) {
     LOGGER.info("Received request to delete {}...", type);
+    LOGGER.info("Identifier: {}, Branch delete: {}", id, branchDelete);
     return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.deleteService.delete(type, id);
+      return this.deleteService.delete(type, id, branchDelete);
     });
   }
 
