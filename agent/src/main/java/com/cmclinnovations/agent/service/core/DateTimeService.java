@@ -135,6 +135,10 @@ public class DateTimeService {
         .format(this.formatter);
   }
 
+  public String getFutureDate(String dateString, int daysToAdd) {
+    return this.parseDate(dateString).plusDays(daysToAdd).format(this.formatter);
+  }
+
   /**
    * 
    * Determine the date where orders should be generated.
