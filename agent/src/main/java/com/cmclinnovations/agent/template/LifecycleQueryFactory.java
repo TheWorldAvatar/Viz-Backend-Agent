@@ -82,6 +82,29 @@ public class LifecycleQueryFactory {
         + "}";
   }
 
+  public String getLatestOrderQuery(String dateLimitString) {
+    StringBuilder activeFilter = new StringBuilder();
+    this.appendFilterExists(activeFilter, true, LifecycleResource.EVENT_APPROVAL);
+    this.appendArchivedFilterExists(activeFilter, false);
+    return QueryResource.PREFIX_TEMPLATE
+        + "SELECT DISTINCT ?id (MAX(?date) AS ?latestDate) WHERE{"
+        + "?iri fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage;"
+        + "dc-terms:identifier ?id."
+        // Nested query for all days
+        + "?stage fibo-fnd-rel-rel:exemplifies <"
+        + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
+        + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
+  
+        + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+        + Rdf.iri(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString()
+        + ";<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?event_date . "
+        + "BIND(xsd:date(?event_date) AS ?date)"
+        + activeFilter
+        + "}"
+        + "GROUP BY ?id\n"
+        + "HAVING (?latestDate < \"" + dateLimitString + "\"^^xsd:date)";
+  }
+
   /**
    * Retrieves the SPARQL query to get the service tasks for the specified
    * date and/or contract.
