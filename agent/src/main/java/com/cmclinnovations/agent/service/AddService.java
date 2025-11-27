@@ -112,11 +112,10 @@ public class AddService {
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
 
-    LOGGER.info("Filtered JSON-LD template to branch: {}", addJsonSchema);
+    LOGGER.info("Original template before filtering: {}", addJsonSchema);
     // Filter to only the specified branch
     if (branchAdd != null && !branchAdd.isEmpty()) {
       addJsonSchema = filterBranchForAdd(addJsonSchema, branchAdd);
-      LOGGER.info("Filtered JSON-LD template to branch: {}", branchAdd);
     }
 
     // Attempt to replace all placeholders in the JSON schema
@@ -504,7 +503,7 @@ public class AddService {
     boolean branchFiltered = recursivelyFilterBranch(filteredTemplate, targetBranch);
 
     if (branchFiltered) {
-      LOGGER.info("Successfully filtered template to branch: {}", targetBranch);
+      LOGGER.info("Successfully filtered template to branch: {}", filteredTemplate);
     } else {
       LOGGER.info("No @branch array found in template - proceeding without branch filtering");
     }
