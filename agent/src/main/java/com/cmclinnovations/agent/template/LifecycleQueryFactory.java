@@ -82,6 +82,10 @@ public class LifecycleQueryFactory {
         + "}";
   }
 
+  /**
+   * Retrieves the SPARQL query to get the date of the last order generated for active contracts.
+   * @param dateLimitString date to filter order. should be some time in the future.
+   */
   public String getLatestOrderQuery(String dateLimitString) {
     StringBuilder activeFilter = new StringBuilder();
     this.appendFilterExists(activeFilter, true, LifecycleResource.EVENT_APPROVAL);
@@ -94,7 +98,6 @@ public class LifecycleQueryFactory {
         + "?stage fibo-fnd-rel-rel:exemplifies <"
         + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
-  
         + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + Rdf.iri(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString()
         + ";<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?event_date . "

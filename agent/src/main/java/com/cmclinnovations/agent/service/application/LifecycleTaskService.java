@@ -52,6 +52,7 @@ public class LifecycleTaskService {
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
   private static final String ORDER_COMPLETE_MESSAGE = "Order has been completed successfully.";
+  private static final int NUM_DAY_ORDER_GEN = 30;
   static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
   /**
@@ -368,7 +369,7 @@ public class LifecycleTaskService {
 
   public void genOrderActiveContracts() {
     String todayString = this.dateTimeService.getCurrentDate();
-    String dateLimitString = this.dateTimeService.getFutureDate(todayString, 30);
+    String dateLimitString = this.dateTimeService.getFutureDate(todayString, NUM_DAY_ORDER_GEN);
     LOGGER.info("Retrieving all active contracts that need orders to be generated...");
     String query = this.lifecycleQueryFactory.getLatestOrderQuery(dateLimitString);
     Queue<SparqlBinding> results = this.getService.getInstances(query);
@@ -385,6 +386,7 @@ public class LifecycleTaskService {
    * Generate occurrences for the order received event of a specified contract.
    * 
    * @param contract Target contract.
+   * @param trueStartDate if this is provided, this will overwrite the contract start date.
    * @return boolean indicating if the occurrences have been generated
    *         successfully.
    */
@@ -398,17 +400,15 @@ public class LifecycleTaskService {
     if (trueStartDate != null) {
       startDate = trueStartDate;
     } else {
-      startDate = bindings
-          .getFieldValue(QueryResource.SCHEDULE_START_DATE_VAR.getVarName());
+      startDate = bindings.getFieldValue(QueryResource.SCHEDULE_START_DATE_VAR.getVarName());
     }
-    String endDate = bindings
-        .getFieldValue(QueryResource.SCHEDULE_END_DATE_VAR.getVarName());
+    String endDate = bindings.getFieldValue(QueryResource.SCHEDULE_END_DATE_VAR.getVarName());
     String limitDate = null;
     if (endDate != null) { // does not exist for perpetual schedule
-      limitDate = this.dateTimeService.getLimitDate(startDate, endDate, 30); // only generate orders up to 30 days in future
+      // only generate orders up to NUM_DAY_ORDER_GEN days in future
+      limitDate = this.dateTimeService.getLimitDate(startDate, endDate, NUM_DAY_ORDER_GEN);
     }
-    String recurrence = bindings
-        .getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY);
+    String recurrence = bindings.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY);
     Queue<String> occurrences = new ArrayDeque<>();
     // Extract date of occurrences based on the schedule information
     // For perpetual and single time schedules, simply add the start date
