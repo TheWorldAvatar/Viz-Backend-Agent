@@ -91,21 +91,25 @@ public class LifecycleQueryFactory {
     this.appendFilterExists(activeFilter, true, LifecycleResource.EVENT_APPROVAL);
     this.appendArchivedFilterExists(activeFilter, false);
     return QueryResource.PREFIX_TEMPLATE
-        + "SELECT DISTINCT ?id (MAX(?date) AS ?latestDate) WHERE{"
+        + "SELECT DISTINCT ?id (MAX(?date) AS ?latest_date) WHERE{"
         + "?iri fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage;"
         + "dc-terms:identifier ?id."
         // Nested query for all days
         + "?stage fibo-fnd-rel-rel:exemplifies <"
         + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
+        + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule> ?schedule;"
         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
+        + "?schedule ^<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/"
+        + "<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndDate>/"
+        + "<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> ?end_date." // not optional, so it would ignore perpetual service
         + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + Rdf.iri(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString()
         + ";<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?event_date . "
         + "BIND(xsd:date(?event_date) AS ?date)"
         + activeFilter
         + "}"
-        + "GROUP BY ?id\n"
-        + "HAVING (?latestDate < \"" + dateLimitString + "\"^^xsd:date)";
+        + "GROUP BY ?id ?end_date\n"
+        + "HAVING (?latest_date < \"" + dateLimitString + "\"^^xsd:date && ?end_date > ?latest_date)";
   }
 
   /**
