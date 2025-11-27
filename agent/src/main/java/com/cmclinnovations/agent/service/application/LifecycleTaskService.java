@@ -367,6 +367,9 @@ public class LifecycleTaskService {
     return this.addService.instantiate(resourceId, params, successLogMessage, messageResource);
   }
 
+  /**
+   * Check for active contract and generate orders up to the limit date.
+   */
   public void genOrderActiveContracts() {
     String todayString = this.dateTimeService.getCurrentDate();
     String dateLimitString = this.dateTimeService.getFutureDate(todayString, NUM_DAY_ORDER_GEN);
