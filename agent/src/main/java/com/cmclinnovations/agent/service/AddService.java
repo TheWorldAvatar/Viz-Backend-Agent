@@ -111,6 +111,8 @@ public class AddService {
     param.put(QueryResource.ID_KEY, targetId);
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
+
+    LOGGER.info("Filtered JSON-LD template to branch: {}", addJsonSchema);
     // Filter to only the specified branch
     if (branchAdd != null && !branchAdd.isEmpty()) {
       addJsonSchema = filterBranchForAdd(addJsonSchema, branchAdd);
@@ -504,8 +506,7 @@ public class AddService {
     if (branchFiltered) {
       LOGGER.info("Successfully filtered template to branch: {}", targetBranch);
     } else {
-      LOGGER.warn("Could not find @branch array in template");
-      throw new IllegalArgumentException("Branch '" + targetBranch + "' not found in template");
+      LOGGER.info("No @branch array found in template - proceeding without branch filtering");
     }
 
     return filteredTemplate;
@@ -559,6 +560,7 @@ public class AddService {
           node.set("@branch", filteredBranches);
           foundAndFiltered = true;
         } else {
+          // Branch array exists but target branch not found
           String errorMsg = String.format("Branch '%s' not found. Available: %s",
               targetBranch, getBranchNames(branches));
           LOGGER.error(errorMsg);
