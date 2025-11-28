@@ -2,6 +2,8 @@ package com.cmclinnovations.agent.config;
 
 import java.time.Duration;
 
+import javax.annotation.Nonnull;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -22,10 +24,11 @@ public class RedisCacheConfig {
         om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         // Transform type information during serialisation
         om.activateDefaultTyping(om.getPolymorphicTypeValidator(), ObjectMapper.DefaultTyping.NON_FINAL);
-        Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(om,
+        @Nonnull
+        Jackson2JsonRedisSerializer<@Nonnull Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(om,
                 Object.class);
         return RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofDays(30))
+                .entryTtl(Duration.ofDays(7))
                 .disableCachingNullValues()
                 // String Serializer for keys
                 .serializeKeysWith(
