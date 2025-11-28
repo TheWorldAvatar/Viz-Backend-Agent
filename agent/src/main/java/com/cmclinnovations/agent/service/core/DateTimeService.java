@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -274,22 +275,34 @@ public class DateTimeService {
    *
    * @param schedule The map containing lowercase day keys and their
    *                 SparqlResponseField values.
-   * @return A list of matching lowercase day keys (Strings).
+   * @return A map of weekday name as keys and Boolean as values.
    */
 
-  public List<String> getRecurringWeekday(Map<String, SparqlResponseField> schedule) {
+  public Map<String, Boolean> getRecurringWeekday(Map<String, SparqlResponseField> schedule) {
 
     // Check for null/empty map input defensively
     if (schedule == null || schedule.isEmpty()) {
-      return List.of();
+      return Collections.emptyMap(); // Return an empty map instead of an empty list
     }
 
-    return Arrays.stream(DayOfWeek.values()).filter(day -> {
-      String properCaseName = day.getDisplayName(TextStyle.FULL, Locale.ENGLISH);
-      String lowercaseKey = properCaseName.toLowerCase();
+    return Arrays.stream(DayOfWeek.values())
+        // 2. Collect the results into a Map<String, Boolean>
+        .collect(Collectors.toMap(
+            // Key Mapper: The weekday's lowercase name (e.g., "monday")
+            day -> day.getDisplayName(TextStyle.FULL, Locale.ENGLISH).toLowerCase(),
+            // Value Mapper: The boolean true
+            day -> {
+              // Get the full proper case name (e.g., "Monday")
+              String properCaseName = day.getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+              // Get the lowercase key expected in the input map (e.g., "monday")
+              String lowercaseKey = properCaseName.toLowerCase();
 
-      SparqlResponseField field = schedule.get(lowercaseKey);
-      return field != null && field.value() != null && field.value().equals(properCaseName);
-    }).map(day -> day.getDisplayName(TextStyle.FULL, Locale.ENGLISH).toLowerCase()).collect(Collectors.toList());
+              // Look up the value in the schedule map
+              SparqlResponseField field = schedule.get(lowercaseKey);
+
+              // Check if the key exists AND the value of the field matches the proper case
+              // name
+              return field != null && field.value() != null && field.value().equals(properCaseName);
+            }));
   }
 }

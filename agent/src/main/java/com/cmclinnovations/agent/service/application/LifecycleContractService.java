@@ -205,10 +205,8 @@ public class LifecycleContractService {
     if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == LifecycleResource.RECURRENCE_DAILY_TASK) {
       draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
     } else {
-      List<String> weekdays = this.dateTimeService.getRecurringWeekday(schedule);
-      for (String weekday : weekdays) {
-        draftDetails.put(weekday, true);
-      }
+      Map<String, Boolean> weekdays = this.dateTimeService.getRecurringWeekday(schedule);
+      draftDetails.putAll(weekdays);
     }
     return draftDetails;
   }
