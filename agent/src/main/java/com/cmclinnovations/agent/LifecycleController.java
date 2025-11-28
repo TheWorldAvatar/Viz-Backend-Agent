@@ -194,7 +194,7 @@ public class LifecycleController {
         // query for contract details
         Map<String, Object> contractDetails = this.getContractDetails(contractId, entityType);
         // query for contract schedule details
-        Map<String, SparqlResponseField> schedule = this.getContractSchedule(contractId);
+        Map<String, Object> schedule = this.getContractSchedule(contractId);
         for (int i = 0; i < reqCopies; i++) {
           Map<String, Object> contractDetailsCopy = new HashMap<>(contractDetails); // need new copy because there are side effects
           this.cloneDraftContract(entityType, contractDetailsCopy, schedule);
@@ -229,7 +229,7 @@ public class LifecycleController {
     return contractDetails;
   }
 
-  private Map<String, SparqlResponseField> getContractSchedule(String contractId) {
+  private Map<String, Object> getContractSchedule(String contractId) {
     Map<String, Object> rawSchedule = getSchedule(contractId).getBody();
     Map<String, SparqlResponseField> schedule = rawSchedule.entrySet().stream().collect(Collectors.toMap(
         Map.Entry::getKey, entry -> {
@@ -244,18 +244,8 @@ public class LifecycleController {
               "Value for key '" + entry.getKey() +
                   "' is not null or SparqlResponseField, but: " + value.getClass().getName());
         }));
-    return schedule;
-  }
-
-  private void cloneDraftContract(String entityType, Map<String, Object> contractDetails,
-      Map<String, SparqlResponseField> schedule) {
-    // Generate new contract details from existing contract
-    StandardApiResponse<?> response = this.addService.instantiate(entityType, contractDetails).getBody();
-    // Generate the params to be sent to the draft route
+    // convert to draft schedule details
     Map<String, Object> draftDetails = new HashMap<>();
-    // New ID should be added as a side effect of instantiate
-    draftDetails.put(QueryResource.ID_KEY, contractDetails.get(QueryResource.ID_KEY));
-    draftDetails.put(LifecycleResource.CONTRACT_KEY, response.data().id());
     String today = this.dateTimeService.getCurrentDate();
     // Keep recurrence details
     draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
@@ -263,12 +253,13 @@ public class LifecycleController {
     draftDetails.put("time slot end", schedule.get("end_time").value());
     draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value());
     // schedule type specific handling
+    // perpetual service has no end date
     if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == "") {
-      // Perpetual service has no end date
       draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, "");
     } else {
       draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, today);
     }
+    // single service will have weekday of today
     if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == LifecycleResource.RECURRENCE_DAILY_TASK) {
       draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
     } else {
@@ -277,6 +268,17 @@ public class LifecycleController {
         draftDetails.put(weekday, true);
       }
     }
+    return draftDetails;
+  }
+
+  private void cloneDraftContract(String entityType, Map<String, Object> contractDetails,
+      Map<String, Object> draftDetails) {
+    // Generate new contract details from existing contract
+    StandardApiResponse<?> response = this.addService.instantiate(entityType, contractDetails).getBody();
+    // Generate the params to be sent to the draft route
+    // ID should be side effect of instantiate
+    draftDetails.put(QueryResource.ID_KEY, contractDetails.get(QueryResource.ID_KEY));
+    draftDetails.put(LifecycleResource.CONTRACT_KEY, response.data().id());
     this.execGenContractLifecycle(draftDetails);
   }
 
