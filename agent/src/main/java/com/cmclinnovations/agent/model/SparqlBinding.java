@@ -81,7 +81,6 @@ public class SparqlBinding {
    * @return a map containing either SparqlResponseField or
    *         List<SparqlResponseField> as its values.
    */
-  @JsonIgnore
   public Map<String, Object> get() {
     Map<String, Object> resultBindings = new HashMap<>();
     // When there are array results,
@@ -155,7 +154,6 @@ public class SparqlBinding {
    * 
    * @param field Field of interest
    */
-  @JsonIgnore
   public SparqlResponseField getFieldResponse(String field) {
     return this.bindings.get(QueryResource.genVariable(field).getVarName());
   }
@@ -165,7 +163,6 @@ public class SparqlBinding {
    * 
    * @param field Field of interest
    */
-  @JsonIgnore
   public String getFieldValue(String field) {
     return this.getFieldValue(field, null);
   }
@@ -176,7 +173,6 @@ public class SparqlBinding {
    * @param field        Field of interest
    * @param defaultValue Fall back value.
    */
-  @JsonIgnore
   public String getFieldValue(String field, String defaultValue) {
     SparqlResponseField fieldBinding = this.bindings.get(QueryResource.genVariable(field).getVarName());
     if (fieldBinding == null) {

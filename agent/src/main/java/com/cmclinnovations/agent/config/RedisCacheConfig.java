@@ -19,7 +19,7 @@ public class RedisCacheConfig {
     public RedisCacheConfiguration cacheConfiguration() {
         ObjectMapper om = new ObjectMapper();
         // Makes all public and private fields visible for serialisation/deserialisation
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         // Transform type information during serialisation
         om.activateDefaultTyping(om.getPolymorphicTypeValidator(), ObjectMapper.DefaultTyping.NON_FINAL);
         Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(om,
