@@ -48,21 +48,14 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
   /**
    * Generate a SPARQL query template to delete the target instance.
    * 
-   * @param params     An object containing two parameters to write, namely:
-   *                   rootNode - The root node of contents to parse into a
-   *                   template
-   *                   targetId - The target instance IRI.
-   * @param branchName Optional branch name to filter which branch to process (can
-   *                   be null)
+   * @param params An object containing two parameters to write, namely:
+   *               rootNode - The root node of contents to parse into a
+   *               template
+   *               targetId - The target instance IRI.
    */
-  @Override
   public String write(QueryTemplateFactoryParameters params) {
-    return write(params, null);
-  }
-
-  public String write(QueryTemplateFactoryParameters params, String branchName) {
     this.reset();
-    this.selectedBranchName = branchName;
+    this.selectedBranchName = params.branchName();
     LOGGER.debug("=== DeleteQueryTemplateFactory.write: selectedBranchName set to = {}", this.selectedBranchName);
 
     ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetIds().poll().get(0));

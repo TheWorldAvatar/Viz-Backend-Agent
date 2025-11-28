@@ -82,7 +82,7 @@ public class QueryTemplateService {
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.getJsonLDResource(resourceID).deepCopy();
     return this.deleteQueryTemplateFactory
-        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId), branchName);
+        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId, branchName));
   }
 
   /**
