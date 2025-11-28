@@ -135,33 +135,35 @@ public class DateTimeService {
         .format(this.formatter);
   }
 
+  /**
+   * Returns a future date string by adding a specified number of days to a base
+   * date.
+   * The resulting date is returned as a formatted string.
+   *
+   * @param dateString The base date string from which to start the calculation.
+   * @param daysToAdd  The number of days to add to the base date.
+   */
   public String getFutureDate(String dateString, int daysToAdd) {
     return this.parseDate(dateString).plusDays(daysToAdd).format(this.formatter);
   }
 
   /**
    * 
-   * Determine the date where orders should be generated.
+   * Determines the order generation limit date by comparing the service
+   * agreement's
+   * end date with a calculated date offset from today, and returning the earlier
+   * of the two.
    * 
    * @param endDateString the actual end date of the service agreement.
    * @param daysToAdd     number of days from today to be allowed for order
    *                      generation.
    * @return
    */
-  public String getLimitDate(String startDateString, String endDateString, int daysToAdd) {
+  public String getLimitDate(String endDateString, int daysToAdd) {
 
-    LocalDate today = this.parseDate(this.getCurrentDate());
-    LocalDate startDate = this.parseDate(startDateString);
+    LocalDate today = LocalDate.now();
     LocalDate endDate = this.parseDate(endDateString);
-
-    // start from the earlier date between actual start date and today
-    LocalDate effectiveStart;
-    if (startDate.isBefore(today)) {
-      effectiveStart = today;
-    } else {
-      effectiveStart = startDate;
-    }
-    LocalDate calculatedDate = effectiveStart.plusDays(daysToAdd);
+    LocalDate calculatedDate = today.plusDays(daysToAdd);
 
     // return the earlier date between actual end date and calculated end date
     if (calculatedDate.isBefore(endDate)) {

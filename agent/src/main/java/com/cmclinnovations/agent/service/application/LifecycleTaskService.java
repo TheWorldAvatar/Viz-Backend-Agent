@@ -409,7 +409,7 @@ public class LifecycleTaskService {
     String endDate = bindings.getFieldValue(QueryResource.SCHEDULE_END_DATE_VAR.getVarName());
     if (endDate != null) { // does not exist for perpetual schedule
       // only generate orders up to NUM_DAY_ORDER_GEN days in future
-      endDate = this.dateTimeService.getLimitDate(startDate, endDate, NUM_DAY_ORDER_GEN);
+      endDate = this.dateTimeService.getLimitDate(endDate, NUM_DAY_ORDER_GEN);
     }
     String recurrence = bindings.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY);
     Queue<String> occurrences = new ArrayDeque<>();
