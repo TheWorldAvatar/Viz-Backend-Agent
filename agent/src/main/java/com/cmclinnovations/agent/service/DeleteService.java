@@ -40,9 +40,4 @@ public class DeleteService {
     String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId, branchName);
     return this.kgService.delete(query, targetId);
   }
-
-  // Keep the old method for backward compatibility
-  public ResponseEntity<StandardApiResponse<?>> delete(String resourceID, String targetId) {
-    return delete(resourceID, targetId, null);
-  }
 }
