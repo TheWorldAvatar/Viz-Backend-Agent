@@ -49,10 +49,17 @@ public class UpdateService {
    * @param resourceID       The resource identifier ie type for the instance.
    * @param successMessageId Successful message identifier.
    * @param editedParams     Edited parameters to replace the current values.
+   * @param branchName       The branch name to use for filtering (can be null).
    */
   public ResponseEntity<StandardApiResponse<?>> update(String id, String resourceId, String successMessageId,
       Map<String, Object> editedParams) {
-    ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id);
+
+    String branchDelete = extractBranchParameter(editedParams, "branch_delete", "branch");
+
+    // Step 1: Delete the branchDelete
+    ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id, branchDelete);
+
+    // Step 2: ADD with branchAdd
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
       return this.addService.instantiate(resourceId, id, editedParams,
           MessageFormat.format("{0} has been successfully updated for {1}", resourceId, id), successMessageId);
@@ -76,5 +83,15 @@ public class UpdateService {
     return this.responseEntityBuilder.error(
         LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_SERVER_KEY),
         HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
+  private String extractBranchParameter(Map<String, Object> entity, String key, String fallbackKey) {
+    if (entity.containsKey(key)) {
+      return (String) entity.get(key);
+    }
+    if (fallbackKey != null && entity.containsKey(fallbackKey)) {
+      return (String) entity.get(fallbackKey);
+    }
+    return null;
   }
 }
