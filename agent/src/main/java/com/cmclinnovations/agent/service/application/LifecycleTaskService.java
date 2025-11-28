@@ -379,7 +379,7 @@ public class LifecycleTaskService {
     while (!results.isEmpty()) {
       SparqlBinding resultRow = results.poll();
       String currentContract = resultRow.getFieldValue(QueryResource.ID_KEY);
-      String latestDateString = resultRow.getFieldValue("latest_date"); // the latest task of this contract
+      String latestDateString = resultRow.getFieldValue(QueryResource.LATEST_DATE_KEY); // the latest task of this contract
       String trueStartDate = this.dateTimeService.getFutureDate(latestDateString, 1); // add 1 day to latest day
       LOGGER.info("Generating orders for contract {}, starting from {}", currentContract, trueStartDate);
       this.genOrderReceivedOccurrences(currentContract, trueStartDate);

@@ -95,6 +95,8 @@ public class QueryResource {
             .genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY);
     public static final Variable SCHEDULE_RECURRENCE_VAR = QueryResource
             .genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY);
+    
+    public static final String LATEST_DATE_KEY = "latest_date";
 
     // Private constructor to prevent instantiation
     private QueryResource() {
