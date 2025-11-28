@@ -55,7 +55,8 @@ public class LifecycleContractService {
    * 
    */
   public LifecycleContractService(AddService addService, GetService getService, UpdateService updateService,
-      DateTimeService dateTimeService, LifecycleQueryService lifecycleQueryService, ResponseEntityBuilder responseEntityBuilder) {
+      DateTimeService dateTimeService, LifecycleQueryService lifecycleQueryService,
+      ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.getService = getService;
     this.updateService = updateService;
@@ -191,9 +192,10 @@ public class LifecycleContractService {
     String today = this.dateTimeService.getCurrentDate();
     // Keep recurrence details
     draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
-    draftDetails.put("time slot start", schedule.get("start_time").value());
-    draftDetails.put("time slot end", schedule.get("end_time").value());
-    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value());
+    draftDetails.put("time slot start", schedule.get(QueryResource.SCHEDULE_START_TIME_VAR.getVarName()).value());
+    draftDetails.put("time slot end", schedule.get(QueryResource.SCHEDULE_END_TIME_VAR.getVarName()).value());
+    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY,
+        schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value());
     // schedule type specific handling
     // perpetual service has no end date
     if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == "") {
@@ -201,11 +203,12 @@ public class LifecycleContractService {
     } else {
       draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, today);
     }
-    // single service will have weekday of today
-    if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == LifecycleResource.RECURRENCE_DAILY_TASK) {
+    // The day of week for daily tasks will follow today
+    if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY)
+        .value() == LifecycleResource.RECURRENCE_DAILY_TASK) {
       draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
     } else {
-      Map<String, Boolean> weekdays = this.dateTimeService.getRecurringWeekday(schedule);
+      Map<String, Boolean> weekdays = this.dateTimeService.getRecurringDayOfWeek(schedule);
       draftDetails.putAll(weekdays);
     }
     return draftDetails;
