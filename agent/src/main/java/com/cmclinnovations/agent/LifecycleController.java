@@ -196,8 +196,10 @@ public class LifecycleController {
         // query for contract schedule details
         Map<String, Object> schedule = this.getContractSchedule(contractId);
         for (int i = 0; i < reqCopies; i++) {
-          Map<String, Object> contractDetailsCopy = new HashMap<>(contractDetails); // need new copy because there are side effects
-          this.cloneDraftContract(entityType, contractDetailsCopy, schedule);
+          // need new copy because there are side effects
+          Map<String, Object> contractDetailsCopy = new HashMap<>(contractDetails);
+          Map<String, Object> scheduleCopy = new HashMap<>(schedule);
+          this.cloneDraftContract(entityType, contractDetailsCopy, scheduleCopy);
         }
         return null;
       };
