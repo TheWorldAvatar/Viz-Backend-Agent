@@ -15,6 +15,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -37,12 +38,21 @@ public class SparqlBinding {
   private List<Variable> sequence;
 
   /**
-   * Constructs a new model.
+   * This constructor is added solely for the purpose of deserialisation and
+   * should not be executed within the code base. JsonIgnore is also used in
+   * several GET methods to support Jackson deserialisation without setters.
    */
-  public SparqlBinding(ObjectNode sparqlRow, List<String> variables) {
+  public SparqlBinding() {
     this.bindings = new HashMap<>();
     this.bindingList = new HashMap<>();
     this.sequence = new ArrayList<>();
+  }
+
+  /**
+   * Constructs a new model.
+   */
+  public SparqlBinding(ObjectNode sparqlRow, List<String> variables) {
+    this();
     Iterator<Map.Entry<String, JsonNode>> iterator = sparqlRow.fields();
     Set<String> missingVariables = new HashSet<>();
     missingVariables.addAll(variables);
@@ -71,6 +81,7 @@ public class SparqlBinding {
    * @return a map containing either SparqlResponseField or
    *         List<SparqlResponseField> as its values.
    */
+  @JsonIgnore
   public Map<String, Object> get() {
     Map<String, Object> resultBindings = new HashMap<>();
     // When there are array results,
@@ -101,6 +112,7 @@ public class SparqlBinding {
   /**
    * Retrieve the field names.
    */
+  @JsonIgnore
   public Set<String> getFields() {
     return this.bindings.keySet();
   }
@@ -143,6 +155,7 @@ public class SparqlBinding {
    * 
    * @param field Field of interest
    */
+  @JsonIgnore
   public SparqlResponseField getFieldResponse(String field) {
     return this.bindings.get(QueryResource.genVariable(field).getVarName());
   }
@@ -152,6 +165,7 @@ public class SparqlBinding {
    * 
    * @param field Field of interest
    */
+  @JsonIgnore
   public String getFieldValue(String field) {
     return this.getFieldValue(field, null);
   }
@@ -162,6 +176,7 @@ public class SparqlBinding {
    * @param field        Field of interest
    * @param defaultValue Fall back value.
    */
+  @JsonIgnore
   public String getFieldValue(String field, String defaultValue) {
     SparqlResponseField fieldBinding = this.bindings.get(QueryResource.genVariable(field).getVarName());
     if (fieldBinding == null) {
