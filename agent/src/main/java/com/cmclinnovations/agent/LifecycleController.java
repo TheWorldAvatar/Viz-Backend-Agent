@@ -4,7 +4,6 @@ import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
-import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.function.ContractOperation;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
@@ -191,10 +189,11 @@ public class LifecycleController {
       Integer reqCopies = TypeCastUtils.castToObject(params.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY),
           Integer.class);
       ContractOperation operation = (contractId) -> {
-        // query for contract details
         Map<String, Object> contractDetails = this.lifecycleContractService.getContractDetails(contractId, entityType);
-        // query for contract schedule details
         Map<String, Object> schedule = this.lifecycleContractService.getContractSchedule(contractId);
+        // Include schedule details into contract as some custom contract may require
+        // the details
+        contractDetails.putAll(schedule);
         for (int i = 0; i < reqCopies; i++) {
           // need new copy because there are side effects
           Map<String, Object> contractDetailsCopy = new HashMap<>(contractDetails);
