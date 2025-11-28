@@ -8,18 +8,24 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 
 @Service
@@ -258,5 +264,31 @@ public class DateTimeService {
       }
     }
     return daysOfWeek;
+  }
+
+  /**
+   * Retrieves a mapping denoting the recurrence on a day of week. Return true for
+   * recurrence if the schedule does include this day of week.
+   *
+   * @param schedule The current schedule mappings.
+   */
+
+  public Map<String, Boolean> getRecurringDayOfWeek(Map<String, SparqlResponseField> schedule) {
+    if (schedule == null || schedule.isEmpty()) {
+      return new HashMap<>();
+    }
+
+    return Arrays.stream(DayOfWeek.values())
+        .collect(Collectors.toMap(
+            day -> day.getDisplayName(TextStyle.FULL, Locale.ENGLISH).toLowerCase(),
+            day -> {
+              // Get the full proper case name (e.g., "Monday")
+              String properCaseName = day.getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+              // Lookup uses the lowercase
+              SparqlResponseField field = schedule.get(properCaseName.toLowerCase());
+              // Check if the key exists AND the value of the field matches the proper case
+              // name
+              return field != null && field.value() != null && field.value().equals(properCaseName);
+            }));
   }
 }
