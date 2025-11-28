@@ -142,6 +142,44 @@ public class DateTimeService {
   }
 
   /**
+   * Returns a future date string by adding a specified number of days to a base
+   * date.
+   * The resulting date is returned as a formatted string.
+   *
+   * @param dateString The base date string from which to start the calculation.
+   * @param daysToAdd  The number of days to add to the base date.
+   */
+  public String getFutureDate(String dateString, int daysToAdd) {
+    return this.parseDate(dateString).plusDays(daysToAdd).format(this.formatter);
+  }
+
+  /**
+   * 
+   * Determines the order generation limit date by comparing the service
+   * agreement's
+   * end date with a calculated date offset from today, and returning the earlier
+   * of the two.
+   * 
+   * @param endDateString the actual end date of the service agreement.
+   * @param daysToAdd     number of days from today to be allowed for order
+   *                      generation.
+   * @return
+   */
+  public String getLimitDate(String endDateString, int daysToAdd) {
+
+    LocalDate today = LocalDate.now();
+    LocalDate endDate = this.parseDate(endDateString);
+    LocalDate calculatedDate = today.plusDays(daysToAdd);
+
+    // return the earlier date between actual end date and calculated end date
+    if (calculatedDate.isBefore(endDate)) {
+      return calculatedDate.format(this.formatter);
+    } else {
+      return endDate.format(this.formatter);
+    }
+  }
+
+  /**
    * Retrieve the weekly interval from the recurrence input.
    * 
    * @param recurrence The recurrence interval in P*D format, eg P7D, P14D.
