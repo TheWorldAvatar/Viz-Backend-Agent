@@ -196,7 +196,8 @@ public class LifecycleController {
         // query for contract schedule details
         Map<String, SparqlResponseField> schedule = this.getContractSchedule(contractId);
         for (int i = 0; i < reqCopies; i++) {
-          this.cloneDraftContract(entityType, contractDetails, schedule);
+          Map<String, Object> contractDetailsCopy = new HashMap<>(contractDetails); // need new copy because there are side effects
+          this.cloneDraftContract(entityType, contractDetailsCopy, schedule);
         }
         return null;
       };
@@ -255,19 +256,20 @@ public class LifecycleController {
     // New ID should be added as a side effect of instantiate
     draftDetails.put(QueryResource.ID_KEY, contractDetails.get(QueryResource.ID_KEY));
     draftDetails.put(LifecycleResource.CONTRACT_KEY, response.data().id());
+    String today = this.dateTimeService.getCurrentDate();
     // Keep recurrence details
-    draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, this.dateTimeService.getCurrentDate());
+    draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
     draftDetails.put("time slot start", schedule.get("start_time").value());
     draftDetails.put("time slot end", schedule.get("end_time").value());
-    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, schedule.get("recurrences").value());
+    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value());
     // schedule type specific handling
-    if (schedule.get("recurrences").value() == "") {
+    if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == "") {
       // Perpetual service has no end date
       draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, "");
     } else {
-      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, this.dateTimeService.getCurrentDate());
+      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, today);
     }
-    if (schedule.get("recurrences").value() == LifecycleResource.RECURRENCE_DAILY_TASK) {
+    if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == LifecycleResource.RECURRENCE_DAILY_TASK) {
       draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
     } else {
       List<String> weekdays = this.dateTimeService.getRecurringWeekday(schedule);
