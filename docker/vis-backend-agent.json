@@ -5,6 +5,7 @@
       "ContainerSpec": {
         "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.19.1-clone-contract-SNAPSHOT",
         "Env": [
+          "REDIS=redis://<STACK>-redis:6379",
           "KEYCLOAK_ISSUER_URI=http://<DOMAIN>/realms/<REALM>",
           "NAMESPACE=kb",
           "TASKS_ENABLED=false"
