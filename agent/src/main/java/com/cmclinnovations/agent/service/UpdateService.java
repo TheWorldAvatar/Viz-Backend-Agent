@@ -56,7 +56,6 @@ public class UpdateService {
 
     String branchDelete = extractBranchParameter(editedParams, "branch_delete", "branch");
     String branchAdd = extractBranchParameter(editedParams, "branch_add", "branch");
-    LOGGER.info("=== UpdateService.update: branchDelete = {}, branchAdd = {}", branchDelete, branchAdd);
 
     // Step 1: Delete the branchDelete
     ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id, branchDelete);

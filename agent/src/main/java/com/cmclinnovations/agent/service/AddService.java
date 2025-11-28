@@ -105,14 +105,13 @@ public class AddService {
       Map<String, Object> param, String successLogMessage, String messageResource) {
 
     String branchAdd = extractBranchParameter(param, "branch_add", "branch");
-    LOGGER.info("Instantiating an instance of {} with branch: {}", resourceID, branchAdd);
+    LOGGER.info("Instantiating an instance of {} ...", resourceID);
 
     // Update ID value to target ID
     param.put(QueryResource.ID_KEY, targetId);
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
 
-    LOGGER.info("Original template before filtering: {}", addJsonSchema);
     // Filter to only the specified branch
     if (branchAdd != null && !branchAdd.isEmpty()) {
       addJsonSchema = filterBranchForAdd(addJsonSchema, branchAdd);
