@@ -24,10 +24,16 @@ import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+import org.springframework.http.MediaType;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 
 public class QueryResource {
+    public static final MediaType JSON_MEDIA_TYPE = MediaType.valueOf("application/json");
+    public static final MediaType LD_JSON_MEDIA_TYPE = MediaType.valueOf("application/ld+json");
+    public static final MediaType SPARQL_MEDIA_TYPE = MediaType.valueOf("application/sparql-query");
+    public static final MediaType TTL_MEDIA_TYPE = MediaType.valueOf("text/turtle");
+
     public static final Prefix CMNS_COL = genPrefix("cmns-col", "https://www.omg.org/spec/Commons/Collections/");
     public static final Prefix CMNS_DT = genPrefix("cmns-dt", "https://www.omg.org/spec/Commons/DatesAndTimes/");
     public static final Prefix CMNS_DSG = genPrefix("cmns-dsg", "https://www.omg.org/spec/Commons/Designators/");
