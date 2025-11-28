@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.19.1
+
+### Changes
+
+- Implemented caching to support performance improvements
+
 ## 1.19.0
 
 ### Changes
