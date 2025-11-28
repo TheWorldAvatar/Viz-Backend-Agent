@@ -54,7 +54,7 @@ public class UpdateService {
   public ResponseEntity<StandardApiResponse<?>> update(String id, String resourceId, String successMessageId,
       Map<String, Object> editedParams) {
 
-    String branchDelete = extractBranchParameter(editedParams, "branch_delete", "branch");
+    String branchDelete = (String) editedParams.get("branch_delete");
 
     // Step 1: Delete the branchDelete
     ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id, branchDelete);
@@ -85,13 +85,4 @@ public class UpdateService {
         HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
-  private String extractBranchParameter(Map<String, Object> entity, String key, String fallbackKey) {
-    if (entity.containsKey(key)) {
-      return (String) entity.get(key);
-    }
-    if (fallbackKey != null && entity.containsKey(fallbackKey)) {
-      return (String) entity.get(fallbackKey);
-    }
-    return null;
-  }
 }

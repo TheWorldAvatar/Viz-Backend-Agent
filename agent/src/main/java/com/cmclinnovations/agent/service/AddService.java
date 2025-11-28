@@ -104,7 +104,7 @@ public class AddService {
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, String targetId,
       Map<String, Object> param, String successLogMessage, String messageResource) {
 
-    String branchAdd = extractBranchParameter(param, "branch_add", "branch");
+    String branchAdd = (String) param.get("branch_add");
     LOGGER.info("Instantiating an instance of {} ...", resourceID);
 
     // Update ID value to target ID
@@ -597,13 +597,4 @@ public class AddService {
     return String.join(", ", names);
   }
 
-  private String extractBranchParameter(Map<String, Object> entity, String key, String fallbackKey) {
-    if (entity.containsKey(key)) {
-      return (String) entity.get(key);
-    }
-    if (fallbackKey != null && entity.containsKey(fallbackKey)) {
-      return (String) entity.get(fallbackKey);
-    }
-    return null;
-  }
 }
