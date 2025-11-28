@@ -4,7 +4,6 @@ import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
-import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.function.ContractOperation;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
@@ -191,8 +189,16 @@ public class LifecycleController {
       Integer reqCopies = TypeCastUtils.castToObject(params.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY),
           Integer.class);
       ContractOperation operation = (contractId) -> {
+        Map<String, Object> contractDetails = this.lifecycleContractService.getContractDetails(contractId, entityType);
+        Map<String, Object> schedule = this.lifecycleContractService.getContractSchedule(contractId);
+        // Include schedule details into contract as some custom contract may require
+        // the details
+        contractDetails.putAll(schedule);
         for (int i = 0; i < reqCopies; i++) {
-          this.cloneDraftContract(contractId, entityType);
+          // need new copy because there are side effects
+          Map<String, Object> contractDetailsCopy = new HashMap<>(contractDetails);
+          Map<String, Object> scheduleCopy = new HashMap<>(schedule);
+          this.cloneDraftContract(entityType, contractDetailsCopy, scheduleCopy);
         }
         return null;
       };
@@ -203,35 +209,14 @@ public class LifecycleController {
     });
   }
 
-  private void cloneDraftContract(String contractId, String entityType) {
-    // Retrieve current contract details for the target instance
-    StandardApiResponse<?> response = this.getService.getInstance(contractId, entityType, false).getBody();
+  private void cloneDraftContract(String entityType, Map<String, Object> contractDetails,
+      Map<String, Object> draftDetails) {
     // Generate new contract details from existing contract
-    Map<String, Object> contractDetails = ((Map<String, Object>) response.data().items().get(0))
-        .entrySet().stream()
-        .filter((entry) -> entry.getKey() != QueryResource.ID_KEY && entry.getKey() != QueryResource.IRI_KEY)
-        .collect(Collectors.toMap(
-            Map.Entry::getKey,
-            entry -> {
-              List<SparqlResponseField> values = TypeCastUtils.castToListObject(entry.getValue(),
-                  SparqlResponseField.class);
-              if (values.size() == 1) {
-                return values.get(0).value();
-              }
-              return values.stream().map(value -> value.value()).toList();
-            }));
-    response = this.addService.instantiate(entityType, contractDetails).getBody();
+    StandardApiResponse<?> response = this.addService.instantiate(entityType, contractDetails).getBody();
     // Generate the params to be sent to the draft route
-    Map<String, Object> draftDetails = new HashMap<>();
-    // New ID should be added as a side effect of instantiate
+    // ID should be side effect of instantiate
     draftDetails.put(QueryResource.ID_KEY, contractDetails.get(QueryResource.ID_KEY));
     draftDetails.put(LifecycleResource.CONTRACT_KEY, response.data().id());
-    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, LifecycleResource.RECURRENCE_DAILY_TASK);
-    draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, this.dateTimeService.getCurrentDate());
-    draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, this.dateTimeService.getCurrentDate());
-    draftDetails.put("time slot start", "00:00");
-    draftDetails.put("time slot end", "23:59");
-    draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
     this.execGenContractLifecycle(draftDetails);
   }
 

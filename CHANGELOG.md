@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.20.0
+
+### Changes
+
+- Extended contract cloning to keep schedule details
+- Improved cloning performance
+
 ## 1.19.1
 
 ### Changes
