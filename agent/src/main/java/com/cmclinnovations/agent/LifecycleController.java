@@ -192,9 +192,9 @@ public class LifecycleController {
           Integer.class);
       ContractOperation operation = (contractId) -> {
         // query for contract details
-        Map<String, Object> contractDetails = this.getContractDetails(contractId, entityType);
+        Map<String, Object> contractDetails = this.lifecycleContractService.getContractDetails(contractId, entityType);
         // query for contract schedule details
-        Map<String, Object> schedule = this.getContractSchedule(contractId);
+        Map<String, Object> schedule = this.lifecycleContractService.getContractSchedule(contractId);
         for (int i = 0; i < reqCopies; i++) {
           // need new copy because there are side effects
           Map<String, Object> contractDetailsCopy = new HashMap<>(contractDetails);
@@ -208,69 +208,6 @@ public class LifecycleController {
           LocalisationResource.ERROR_COPY_DRAFT_PARTIAL_KEY,
           LocalisationResource.SUCCESS_CONTRACT_DRAFT_COPY_KEY);
     });
-  }
-
-  private Map<String, Object> getContractDetails(String contractId, String entityType) {
-    StandardApiResponse<?> response = this.getService.getInstance(contractId, entityType, false).getBody();
-    Map<String, Object> contractDetails = ((Map<String, Object>) response.data().items().get(0))
-        .entrySet().stream()
-        .filter((entry) -> entry.getKey() != QueryResource.ID_KEY && entry.getKey() != QueryResource.IRI_KEY)
-        .collect(Collectors.toMap(
-            Map.Entry::getKey,
-            entry -> {
-              if (entry.getValue() == null) {
-                return "";
-              }
-              List<SparqlResponseField> values = TypeCastUtils.castToListObject(entry.getValue(),
-                  SparqlResponseField.class);
-              if (values.size() == 1) {
-                return values.get(0).value();
-              }
-              return values.stream().map(value -> value.value()).toList();
-            }));
-    return contractDetails;
-  }
-
-  private Map<String, Object> getContractSchedule(String contractId) {
-    Map<String, Object> rawSchedule = getSchedule(contractId).getBody();
-    Map<String, SparqlResponseField> schedule = rawSchedule.entrySet().stream().collect(Collectors.toMap(
-        Map.Entry::getKey, entry -> {
-          Object value = entry.getValue();
-          if (value == null) {
-            return new SparqlResponseField("", "", "", "");
-          }
-          if (value instanceof SparqlResponseField) {
-            return (SparqlResponseField) value;
-          }
-          throw new ClassCastException(
-              "Value for key '" + entry.getKey() +
-                  "' is not null or SparqlResponseField, but: " + value.getClass().getName());
-        }));
-    // convert to draft schedule details
-    Map<String, Object> draftDetails = new HashMap<>();
-    String today = this.dateTimeService.getCurrentDate();
-    // Keep recurrence details
-    draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
-    draftDetails.put("time slot start", schedule.get("start_time").value());
-    draftDetails.put("time slot end", schedule.get("end_time").value());
-    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value());
-    // schedule type specific handling
-    // perpetual service has no end date
-    if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == "") {
-      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, "");
-    } else {
-      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, today);
-    }
-    // single service will have weekday of today
-    if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == LifecycleResource.RECURRENCE_DAILY_TASK) {
-      draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
-    } else {
-      List<String> weekdays = this.dateTimeService.getRecurringWeekday(schedule);
-      for (String weekday : weekdays) {
-        draftDetails.put(weekday, true);
-      }
-    }
-    return draftDetails;
   }
 
   private void cloneDraftContract(String entityType, Map<String, Object> contractDetails,

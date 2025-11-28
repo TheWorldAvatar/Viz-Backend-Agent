@@ -28,6 +28,7 @@ import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.FileService;
+import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
@@ -40,6 +41,7 @@ public class LifecycleContractService {
   private final AddService addService;
   private final GetService getService;
   private final UpdateService updateService;
+  private final DateTimeService dateTimeService;
   private final LifecycleQueryService lifecycleQueryService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
@@ -53,10 +55,11 @@ public class LifecycleContractService {
    * 
    */
   public LifecycleContractService(AddService addService, GetService getService, UpdateService updateService,
-      LifecycleQueryService lifecycleQueryService, ResponseEntityBuilder responseEntityBuilder) {
+      DateTimeService dateTimeService, LifecycleQueryService lifecycleQueryService, ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.getService = getService;
     this.updateService = updateService;
+    this.dateTimeService = dateTimeService;
     this.lifecycleQueryService = lifecycleQueryService;
     this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
@@ -125,10 +128,89 @@ public class LifecycleContractService {
    */
   public ResponseEntity<Map<String, Object>> getSchedule(String contract) {
     LOGGER.debug("Retrieving the schedule details of the contract...");
-    SparqlBinding result = this.lifecycleQueryService.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,
-        contract, contract);
+    SparqlBinding result = this.querySchedule(contract);
     LOGGER.info("Successfuly retrieved schedule!");
     return new ResponseEntity<>(result.get(), HttpStatus.OK);
+  }
+
+  private SparqlBinding querySchedule(String contract) {
+    return this.lifecycleQueryService.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,
+        contract, contract);
+  }
+
+  /**
+   * Retrieve contract details and return a map.
+   * 
+   * @param contractId The target contract id.
+   * @param entityType The entity type.
+   */
+  public Map<String, Object> getContractDetails(String contractId, String entityType) {
+    StandardApiResponse<?> response = this.getService.getInstance(contractId, entityType, false).getBody();
+    Map<String, Object> contractDetails = ((Map<String, Object>) response.data().items().get(0))
+        .entrySet().stream()
+        .filter((entry) -> entry.getKey() != QueryResource.ID_KEY && entry.getKey() != QueryResource.IRI_KEY)
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            entry -> {
+              if (entry.getValue() == null) {
+                return "";
+              }
+              List<SparqlResponseField> values = TypeCastUtils.castToListObject(entry.getValue(),
+                  SparqlResponseField.class);
+              if (values.size() == 1) {
+                return values.get(0).value();
+              }
+              return values.stream().map(value -> value.value()).toList();
+            }));
+    return contractDetails;
+  }
+
+  /**
+   * Retrieve contract details and return a map.
+   * 
+   * @param contractId The target contract id.
+   * @param entityType The entity type.
+   */
+  public Map<String, Object> getContractSchedule(String contractId) {
+    Map<String, Object> rawSchedule = this.querySchedule(contractId).get();
+    Map<String, SparqlResponseField> schedule = rawSchedule.entrySet().stream().collect(Collectors.toMap(
+        Map.Entry::getKey, entry -> {
+          Object value = entry.getValue();
+          if (value == null) {
+            return new SparqlResponseField("", "", "", "");
+          }
+          if (value instanceof SparqlResponseField) {
+            return (SparqlResponseField) value;
+          }
+          throw new ClassCastException(
+              "Value for key '" + entry.getKey() +
+                  "' is not null or SparqlResponseField, but: " + value.getClass().getName());
+        }));
+    // convert to draft schedule details
+    Map<String, Object> draftDetails = new HashMap<>();
+    String today = this.dateTimeService.getCurrentDate();
+    // Keep recurrence details
+    draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
+    draftDetails.put("time slot start", schedule.get("start_time").value());
+    draftDetails.put("time slot end", schedule.get("end_time").value());
+    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value());
+    // schedule type specific handling
+    // perpetual service has no end date
+    if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == "") {
+      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, "");
+    } else {
+      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, today);
+    }
+    // single service will have weekday of today
+    if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == LifecycleResource.RECURRENCE_DAILY_TASK) {
+      draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
+    } else {
+      List<String> weekdays = this.dateTimeService.getRecurringWeekday(schedule);
+      for (String weekday : weekdays) {
+        draftDetails.put(weekday, true);
+      }
+    }
+    return draftDetails;
   }
 
   /**
