@@ -112,9 +112,25 @@ public class AddService {
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
 
-    // Filter to only the specified branch
-    if (branchAdd != null && !branchAdd.isEmpty()) {
+    // Check if template has branches
+    boolean templateHasBranches = hasBranches(addJsonSchema);
+
+    // If template has branches, branch_add is REQUIRED
+    if (templateHasBranches) {
+      if (branchAdd == null || branchAdd.isEmpty()) {
+        String errorMsg = String.format(
+            "Template for '%s' contains branches but no 'branch_add' parameter provided.", resourceID);
+        LOGGER.error(errorMsg);
+        throw new IllegalArgumentException(errorMsg);
+      }
+      // Filter to the specified branch
+      LOGGER.info("Filtering template to branch: {}", branchAdd);
       addJsonSchema = filterBranchForAdd(addJsonSchema, branchAdd);
+    } else {
+      // No branches in template - branchAdd should be ignored if provided
+      if (branchAdd != null && !branchAdd.isEmpty()) {
+        LOGGER.warn("branch_add '{}' provided but template has no branches - ignoring", branchAdd);
+      }
     }
 
     // Attempt to replace all placeholders in the JSON schema
@@ -597,4 +613,40 @@ public class AddService {
     return String.join(", ", names);
   }
 
+  /**
+   * Check if the JSON-LD template contains any @branch arrays
+   */
+  private boolean hasBranches(ObjectNode template) {
+    return recursivelyCheckForBranches(template);
+  }
+
+  /**
+   * Recursively search for @branch fields in the template
+   */
+  private boolean recursivelyCheckForBranches(JsonNode node) {
+    if (node.isObject()) {
+      ObjectNode objNode = (ObjectNode) node;
+
+      // Check if this node has @branch
+      if (objNode.has("@branch") && objNode.get("@branch").isArray()) {
+        return true;
+      }
+
+      // Recurse into all fields
+      Iterator<Map.Entry<String, JsonNode>> fields = objNode.fields();
+      while (fields.hasNext()) {
+        if (recursivelyCheckForBranches(fields.next().getValue())) {
+          return true;
+        }
+      }
+    } else if (node.isArray()) {
+      // Recurse into array elements
+      for (JsonNode element : node) {
+        if (recursivelyCheckForBranches(element)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 }
