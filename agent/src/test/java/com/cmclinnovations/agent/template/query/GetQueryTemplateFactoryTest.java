@@ -81,7 +81,7 @@ public class GetQueryTemplateFactoryTest {
     Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
     String results = this.testFactory.write(
-        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "", new HashMap<>()));
+        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "", "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_FILE, results);
   }
@@ -94,7 +94,7 @@ public class GetQueryTemplateFactoryTest {
     String results = this.testFactory
         .write(new QueryTemplateFactoryParameters(nestedBindings,
             new ArrayDeque<>(List.of(Arrays.asList(SAMPLE_FILTER))),
-            null, "", new HashMap<>()));
+            null, "ORDER BY  ?id", "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_ID_FILE, results);
   }
@@ -116,7 +116,7 @@ public class GetQueryTemplateFactoryTest {
       this.testFactory.write(
           new QueryTemplateFactoryParameters(nestedBindings,
               new ArrayDeque<>(List.of(Arrays.asList(SAMPLE_FILTER))),
-              new ParentField(SAMPLE_FILTER, SAMPLE_PARENT_FIELD), "", new HashMap<>()));
+              new ParentField(SAMPLE_FILTER, SAMPLE_PARENT_FIELD), "", "", new HashMap<>()));
     });
     assertEquals("Unable to find matching variable for parent field: " + SAMPLE_PARENT_FIELD, thrown.getMessage());
   }
@@ -136,7 +136,7 @@ public class GetQueryTemplateFactoryTest {
     String results = this.testFactory.write(
         new QueryTemplateFactoryParameters(nestedBindings,
             new ArrayDeque<>(List.of(Arrays.asList(SAMPLE_FILTER))),
-            new ParentField(SAMPLE_FILTER, SAMPLE_PARENT_FIELD), "", new HashMap<>()));
+            new ParentField(SAMPLE_FILTER, SAMPLE_PARENT_FIELD), "", "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_PARENT_FILE, results);
   }
@@ -154,7 +154,7 @@ public class GetQueryTemplateFactoryTest {
     nestedBindings.offer(bindings);
     // Execute
     String results = this.testFactory.write(
-        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "", new HashMap<>()));
+        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "", "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_OPTIONAL_FILE, results);
   }
@@ -182,7 +182,7 @@ public class GetQueryTemplateFactoryTest {
     nestedBindings.offer(bindings);
     // Execute
     String results = this.testFactory.write(
-        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "", new HashMap<>()));
+        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "", "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_BRANCH_FILE, results);
   }
@@ -212,7 +212,7 @@ public class GetQueryTemplateFactoryTest {
     nestedBindings.offer(bindings);
     // Execute
     String results = this.testFactory.write(
-        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "", new HashMap<>()));
+        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "", "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_ARRAY_FILE, results);
     Map<String, Set<String>> arrayVarsMapping = this.testFactory.getArrayVariables();
@@ -253,7 +253,7 @@ public class GetQueryTemplateFactoryTest {
     nestedBindings.offer(bindings);
     // Execute
     String results = this.testFactory.write(
-        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "", new HashMap<>()));
+        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "", "", new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_COMPLEX_ARRAY_FILE, results);
     Map<String, Set<String>> arrayVarsMapping = this.testFactory.getArrayVariables();
@@ -268,9 +268,8 @@ public class GetQueryTemplateFactoryTest {
     Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
     String results = this.testFactory.write(
-        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null,
-            SAMPLE_ADDITIONAL_STATEMENT,
-            new HashMap<>()));
+        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "",
+            SAMPLE_ADDITIONAL_STATEMENT, new HashMap<>()));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_SIMPLE_ADDITIONAL_STATEMENT_FILE, results);
   }
@@ -280,9 +279,8 @@ public class GetQueryTemplateFactoryTest {
     Queue<Queue<SparqlBinding>> nestedBindings = initTestBindings();
     // Execute
     String results = this.testFactory.write(
-        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null,
-            SAMPLE_ADDITIONAL_STATEMENT,
-            SAMPLE_ADD_VARS));
+        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "",
+            SAMPLE_ADDITIONAL_STATEMENT, SAMPLE_ADD_VARS));
     // Assert
     TestUtils.validateGeneratedQueryOutput(EXPECTED_COMPLEX_ADDITIONAL_FILE, results);
   }
@@ -316,7 +314,7 @@ public class GetQueryTemplateFactoryTest {
     nestedBindings.offer(bindings);
     // Execute
     this.testFactory.write(
-        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "", new HashMap<>()));
+        new QueryTemplateFactoryParameters(nestedBindings, new ArrayDeque<>(), null, "", "", new HashMap<>()));
     // Assert
     List<Variable> sequence = this.testFactory.getSequence();
     assertEquals(4, sequence.size());
