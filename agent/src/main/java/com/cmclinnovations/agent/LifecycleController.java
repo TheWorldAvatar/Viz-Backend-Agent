@@ -686,6 +686,17 @@ public class LifecycleController {
   }
 
   /**
+   * Retrieve the details for the specific task.
+   */
+  @GetMapping("/task/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getTask(@PathVariable String id) {
+    LOGGER.info("Received request to retrieve outstanding tasks...");
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.lifecycleTaskService.getTask(id));
+
+  }
+
+  /**
    * Retrieves the form template for the specific occurrence type from the
    * knowledge graph. Valid types include:
    * 1) service stage - dispatch: Assign dispatch details to the service order

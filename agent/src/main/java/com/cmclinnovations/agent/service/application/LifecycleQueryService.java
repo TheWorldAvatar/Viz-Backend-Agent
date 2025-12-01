@@ -1,15 +1,20 @@
 package com.cmclinnovations.agent.service.application;
 
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
@@ -17,6 +22,7 @@ import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
+import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @Service
 public class LifecycleQueryService {
@@ -148,5 +154,47 @@ public class LifecycleQueryService {
       addStatementBuilder.append(queryMappings.getOrDefault(LifecycleResource.SCHEDULE_RESOURCE, ""));
     }
     return addStatementBuilder.toString();
+  }
+
+  /**
+   * Parses the binding to transform certain fields accordingly.
+   * 
+   * @param binding binding.
+   */
+  public Map<String, Object> parseLifecycleBinding(Map<String, Object> binding) {
+    return (Map<String, Object>) binding.entrySet().stream()
+        .filter(entry -> !entry.getKey()
+            .equals(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY).getVarName()))
+        .map(entry -> {
+          if (entry.getKey().equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
+            SparqlResponseField recurrence = TypeCastUtils.castToObject(entry.getValue(),
+                SparqlResponseField.class);
+            return new AbstractMap.SimpleEntry<>(
+                LifecycleResource.SCHEDULE_TYPE_KEY,
+                new SparqlResponseField(recurrence.type(),
+                    LocalisationTranslator.getScheduleTypeFromRecurrence(recurrence.value()),
+                    recurrence.dataType(), recurrence.lang()));
+          }
+          if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
+            SparqlResponseField eventField = TypeCastUtils.castToObject(entry.getValue(),
+                SparqlResponseField.class);
+            // For any pending completion events, simply reset it to the previous event
+            // status as they are incomplete or in a saved state, and should still be
+            // outstanding
+            String eventType = eventField.value();
+            return new AbstractMap.SimpleEntry<>(
+                LifecycleResource.STATUS_KEY,
+                // Add a new response field
+                new SparqlResponseField(eventField.type(),
+                    LocalisationTranslator.getEvent(eventType),
+                    eventField.dataType(), eventField.lang()));
+          }
+          return entry;
+        })
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            (entry -> entry.getValue() == null ? "" : TypeCastUtils.castToObject(entry.getValue(), Object.class)),
+            (oldVal, newVal) -> newVal,
+            LinkedHashMap::new));
   }
 }
