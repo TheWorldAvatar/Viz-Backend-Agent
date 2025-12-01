@@ -92,17 +92,16 @@ public class QueryResource {
     public static final Variable EVENT_STATUS_VAR = QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY);
     public static final Variable LAST_MODIFIED_VAR = QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY);
     public static final Variable SCHEDULE_START_DATE_VAR = QueryResource
-            .genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY);
+    .genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY);
     public static final Variable SCHEDULE_END_DATE_VAR = QueryResource
-            .genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY);
+    .genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY);
     public static final Variable SCHEDULE_START_TIME_VAR = QueryResource
-            .genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY);
+    .genVariable(LifecycleResource.SCHEDULE_START_TIME_KEY);
     public static final Variable SCHEDULE_END_TIME_VAR = QueryResource
-            .genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY);
+    .genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY);
     public static final Variable SCHEDULE_RECURRENCE_VAR = QueryResource
-            .genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY);
-    
-    public static final String LATEST_DATE_KEY = "latest_date";
+    .genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY);
+    public static final Variable LATEST_DATE_VAR = QueryResource.genVariable("latest_date");
 
     // Private constructor to prevent instantiation
     private QueryResource() {

@@ -372,44 +372,44 @@ public class LifecycleTaskService {
    */
   public void genOrderActiveContracts() {
     String todayString = this.dateTimeService.getCurrentDate();
-    String dateLimitString = this.dateTimeService.getFutureDate(todayString, NUM_DAY_ORDER_GEN);
+    String taskGenerationCutoffDate = this.dateTimeService.getFutureDate(todayString, NUM_DAY_ORDER_GEN);
     LOGGER.info("Retrieving all active contracts that need orders to be generated...");
-    String query = this.lifecycleQueryFactory.getLatestOrderQuery(dateLimitString);
+    String query = this.lifecycleQueryFactory.getLatestOrderQuery(taskGenerationCutoffDate);
     Queue<SparqlBinding> results = this.getService.getInstances(query);
     while (!results.isEmpty()) {
       SparqlBinding resultRow = results.poll();
       String currentContract = resultRow.getFieldValue(QueryResource.ID_KEY);
-      String latestDateString = resultRow.getFieldValue(QueryResource.LATEST_DATE_KEY); // the latest task of this contract
-      String trueStartDate = this.dateTimeService.getFutureDate(latestDateString, 1); // add 1 day to latest day
-      LOGGER.info("Generating orders for contract {}, starting from {}", currentContract, trueStartDate);
-      this.genOrderReceivedOccurrences(currentContract, trueStartDate);
+      // Latest task date for the contract
+      String latestTaskDate = resultRow.getFieldValue(QueryResource.LATEST_DATE_VAR.getVarName());
+      String nextTaskStartDate = this.dateTimeService.getFutureDate(latestTaskDate, 1);
+      LOGGER.info("Generating orders for contract {}, starting from {}", currentContract, nextTaskStartDate);
+      this.genOrderReceivedOccurrences(currentContract, nextTaskStartDate);
     }
   }
 
   /**
    * Generate occurrences for the order received event of a specified contract.
    * 
-   * @param contract Target contract.
-   * @param trueStartDate if this is provided, this will overwrite the contract start date.
+   * @param contract          Target contract.
+   * @param nextTaskStartDate Optional parameter that indicates the next task
+   *                          start date. If provided, this will overwrite the
+   *                          contract start date.
    * @return boolean indicating if the occurrences have been generated
    *         successfully.
    */
-  public boolean genOrderReceivedOccurrences(String contract, String trueStartDate) {
+  public boolean genOrderReceivedOccurrences(String contract, String nextTaskStartDate) {
     LOGGER.info("Generating all orders for the active contract {}...", contract);
     // Retrieve schedule information for the specific contract
     SparqlBinding bindings = this.lifecycleQueryService.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,
         contract, contract);
     // Extract specific schedule info
-    String startDate;
-    if (trueStartDate != null) {
-      startDate = trueStartDate;
-    } else {
-      startDate = bindings.getFieldValue(QueryResource.SCHEDULE_START_DATE_VAR.getVarName());
-    }
-    String endDate = bindings.getFieldValue(QueryResource.SCHEDULE_END_DATE_VAR.getVarName());
-    if (endDate != null) { // does not exist for perpetual schedule
-      // only generate orders up to NUM_DAY_ORDER_GEN days in future
-      endDate = this.dateTimeService.getLimitDate(endDate, NUM_DAY_ORDER_GEN);
+    String startDate = nextTaskStartDate != null ? nextTaskStartDate
+        : bindings.getFieldValue(QueryResource.SCHEDULE_START_DATE_VAR.getVarName());
+    // For non-perpetual schedules, get earliest date cutoff or contract end date
+    String endDate = null;
+    if (bindings.containsField(QueryResource.SCHEDULE_END_DATE_VAR.getVarName())) {
+      String endDateVal = bindings.getFieldValue(QueryResource.SCHEDULE_END_DATE_VAR.getVarName());
+      endDate = this.dateTimeService.getEarliestDateOrContractEnd(endDateVal, NUM_DAY_ORDER_GEN);
     }
     String recurrence = bindings.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY);
     Queue<String> occurrences = new ArrayDeque<>();

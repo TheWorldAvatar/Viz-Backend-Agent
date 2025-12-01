@@ -83,14 +83,16 @@ public class LifecycleQueryFactory {
   }
 
   /**
-   * Retrieves the SPARQL query to get the date of the last order generated for active contracts.
-   * @param dateLimitString date to filter order. should be some time in the future.
+   * Retrieves the SPARQL query to get the date of the last order generated for
+   * active contracts.
+   * 
+   * @param taskGenerationCutoffDate The cutoff date for generating further tasks.
    */
-  public String getLatestOrderQuery(String dateLimitString) {
+  public String getLatestOrderQuery(String taskGenerationCutoffDate) {
     StringBuilder activeFilter = new StringBuilder();
     this.appendFilterExists(activeFilter, true, LifecycleResource.EVENT_APPROVAL);
     this.appendArchivedFilterExists(activeFilter, false);
-    String latestDateVar = "?" + QueryResource.LATEST_DATE_KEY;
+    String latestDateVar = QueryResource.LATEST_DATE_VAR.getQueryString();
     return QueryResource.PREFIX_TEMPLATE
         + "SELECT DISTINCT ?id (MAX(?date) AS " + latestDateVar + ") WHERE{"
         + "?iri fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage;"
@@ -98,7 +100,8 @@ public class LifecycleQueryFactory {
         // Nested query for all days
         + "?stage fibo-fnd-rel-rel:exemplifies <"
         + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
-        + "<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/cmns-dt:hasEndDate/cmns-dt:hasDateValue ?end_date;" // not optional, so it would ignore perpetual service
+        // not optional, so it would ignore perpetual service
+        + "<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/cmns-dt:hasEndDate/cmns-dt:hasDateValue ?end_date;"
         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
         + "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + Rdf.iri(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString()
@@ -106,8 +109,9 @@ public class LifecycleQueryFactory {
         + "BIND(xsd:date(?event_date) AS ?date)"
         + activeFilter
         + "}"
-        + "GROUP BY ?id ?end_date\n"
-        + "HAVING (" + latestDateVar + " < \"" + dateLimitString + "\"^^xsd:date && ?end_date > " + latestDateVar + ")";
+        + "GROUP BY ?id ?end_date"
+        + "HAVING (" + latestDateVar + " < \"" + taskGenerationCutoffDate + "\"^^xsd:date && ?end_date > "
+        + latestDateVar + ")";
   }
 
   /**

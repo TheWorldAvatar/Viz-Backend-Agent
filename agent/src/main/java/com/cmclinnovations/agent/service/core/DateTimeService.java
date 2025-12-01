@@ -9,10 +9,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
@@ -154,24 +152,17 @@ public class DateTimeService {
   }
 
   /**
+   * Gets the earliest date between the contract's end date, and the calculated
+   * date offset from today.
    * 
-   * Determines the order generation limit date by comparing the service
-   * agreement's
-   * end date with a calculated date offset from today, and returning the earlier
-   * of the two.
-   * 
-   * @param endDateString the actual end date of the service agreement.
-   * @param daysToAdd     number of days from today to be allowed for order
-   *                      generation.
-   * @return
+   * @param contractEndDate the end date of the contract.
+   * @param offsetDays      number of days from today to be offset.
    */
-  public String getLimitDate(String endDateString, int daysToAdd) {
-
+  public String getEarliestDateOrContractEnd(String contractEndDate, int offsetDays) {
     LocalDate today = LocalDate.now();
-    LocalDate endDate = this.parseDate(endDateString);
-    LocalDate calculatedDate = today.plusDays(daysToAdd);
+    LocalDate endDate = this.parseDate(contractEndDate);
+    LocalDate calculatedDate = today.plusDays(offsetDays);
 
-    // return the earlier date between actual end date and calculated end date
     if (calculatedDate.isBefore(endDate)) {
       return calculatedDate.format(this.formatter);
     } else {
