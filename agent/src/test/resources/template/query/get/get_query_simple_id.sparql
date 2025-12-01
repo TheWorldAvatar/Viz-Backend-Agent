@@ -3,3 +3,4 @@ WHERE { ?iri a <http://example.com/Concept> .
     ?iri <http://example.com/propPath1> / <http://example.com/propPath2> ?field .
     BIND( STR( "01j82" ) AS ?id )
     ?iri dc-terms:identifier "01j82" . }
+    ORDER BY  ?id

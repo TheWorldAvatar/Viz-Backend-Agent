@@ -28,6 +28,7 @@ import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
+import com.cmclinnovations.agent.model.pagination.SortDirective;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
@@ -73,7 +74,7 @@ public class GetService {
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService
         .getSparqlQueryConstructionParameters(shaclReplacement, requireLabel);
     return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, new ArrayDeque<>(),
-        null, "", new HashMap<>());
+        new ArrayDeque<>(), null, "", new HashMap<>());
   }
 
   /**
@@ -290,18 +291,19 @@ public class GetService {
    * @param requireLabel       Indicates if labels should be returned for all
    *                           the fields that are IRIs.
    * @param ids                List of IDs to retrieve.
+   * @param sortDirectives     Sort directives to order the results.
    * @param addQueryStatements Additional query statements to be added.
    * @param addVars            Optional additional variables to be included in
    *                           the query, along with their order sequence.
    */
   public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, Queue<List<String>> ids,
-      String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+      Queue<SortDirective> sortDirectives, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
     if (ids.isEmpty()) {
       return new ArrayDeque<>();
     }
-    return this.execGetInstances(iri, ids, requireLabel, null, addQueryStatements, addVars);
+    return this.execGetInstances(iri, ids, sortDirectives, requireLabel, null, addQueryStatements, addVars);
   }
 
   /**
@@ -323,7 +325,8 @@ public class GetService {
     if (ids.isEmpty()) {
       return new ArrayDeque<>();
     }
-    return this.execGetInstances(iri, ids, requireLabel, parentField, "", new HashMap<>());
+    return this.execGetInstances(iri, ids, pagination.getSortDirectives(), requireLabel, parentField, "",
+        new HashMap<>());
   }
 
   /**
@@ -339,7 +342,7 @@ public class GetService {
     LOGGER.debug("Retrieving an instance of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
     Queue<SparqlBinding> instances = this.execGetInstances(iri, new ArrayDeque<>(List.of(Arrays.asList(targetId))),
-        requireLabel, null, "", new HashMap<>());
+        new ArrayDeque<>(), requireLabel, null, "", new HashMap<>());
     return this.getSingleInstanceResponse(instances);
   }
 
@@ -355,8 +358,8 @@ public class GetService {
         QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
         Rdf.iri(eventType.getEvent()));
     Queue<SparqlBinding> instances = this.execGetInstances(eventType.getShaclReplacement(),
-        new ArrayDeque<>(List.of(Arrays.asList(targetId))), false, null, lifecycleEventPattern.getQueryString(),
-        new HashMap<>());
+        new ArrayDeque<>(List.of(Arrays.asList(targetId))), new ArrayDeque<>(), false, null,
+        lifecycleEventPattern.getQueryString(), new HashMap<>());
     return this.getSingleInstanceResponse(instances);
   }
 
@@ -493,6 +496,7 @@ public class GetService {
    * 
    * @param nodeShapeReplacement The statement to target the node shape.
    * @param targetIds            An optional field with specific IDs to target.
+   * @param sortDirectives       Sort directives to order the results.
    * @param requireLabel         Indicates if labels should be returned for all
    *                             the fields that are IRIs.
    * @param parentField          Optional parent field.
@@ -501,14 +505,15 @@ public class GetService {
    *                             the query, along with their order sequence
    */
   private Queue<SparqlBinding> execGetInstances(String nodeShapeReplacement, Queue<List<String>> targetIds,
-      boolean requireLabel, ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+      Queue<SortDirective> sortDirectives, boolean requireLabel, ParentField parentField, String addQueryStatements,
+      Map<Variable, List<Integer>> addVars) {
     if (requireLabel) {
       // Parent related parameters should be disabled
       parentField = null;
     }
     Queue<Queue<SparqlBinding>> queryVarsAndPaths = this.kgService.getSparqlQueryConstructionParameters(
         nodeShapeReplacement, requireLabel);
-    String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetIds,
+    String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetIds, sortDirectives,
         parentField, addQueryStatements, addVars);
     LOGGER.debug("Querying the knowledge graph for the instances...");
     List<Variable> varSequence = this.queryTemplateService.getFieldSequence();

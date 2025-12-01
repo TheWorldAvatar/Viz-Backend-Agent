@@ -78,7 +78,8 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
     }
 
     String valuesClause = this.appendOptionalIdFilters(selectTemplate, params.targetIds(), params.parent());
-    return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause);
+    return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause) +
+        params.sortDirectives();
   }
 
   /**

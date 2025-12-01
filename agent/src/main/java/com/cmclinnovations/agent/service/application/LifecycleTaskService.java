@@ -240,7 +240,8 @@ public class LifecycleTaskService {
       addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_CANCELLATION, varSequences);
       addQuery += this.parseEventOccurrenceQuery(-1, LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
     }
-    Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, ids, addQuery, varSequences);
+    Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, ids, pagination.getSortDirectives(),
+        addQuery, varSequences);
     return results.stream()
         .map(binding -> {
           return (Map<String, Object>) binding.get().entrySet().stream()

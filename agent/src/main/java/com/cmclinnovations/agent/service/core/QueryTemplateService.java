@@ -2,7 +2,6 @@ package com.cmclinnovations.agent.service.core;
 
 import java.nio.file.FileSystemNotFoundException;
 import java.util.ArrayDeque;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -26,6 +25,8 @@ import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.SearchQueryTemplateFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
+import com.cmclinnovations.agent.utils.StringResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -113,7 +114,7 @@ public class QueryTemplateService {
     if (requireId) {
       query.select(QueryResource.ID_VAR);
     }
-    Queue<SortDirective> sortDirectives = pagination.getSortDirectives();
+    Queue<SortDirective> sortDirectives = new ArrayDeque<>(pagination.getSortDirectives());
     boolean hasNoIdToSort = sortDirectives.stream()
         .allMatch(directive -> !directive.field().getVarName().equals(QueryResource.ID_KEY));
     while (!sortDirectives.isEmpty()) {
@@ -189,28 +190,23 @@ public class QueryTemplateService {
   /**
    * Generates a SELECT SPARQL query to retrieve instances from the inputs.
    * 
-   * @param queryVarsAndPaths The query construction requirements.
-   */
-  public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
-    return this.genGetQuery(queryVarsAndPaths, new ArrayDeque<>(), null, "", new HashMap<>());
-  }
-
-  /**
-   * Generates a SELECT SPARQL query to retrieve instances from the inputs.
-   * 
    * @param queryVarsAndPaths  The query construction requirements.
    * @param targetIds          An optional field with the specific IDs to target.
+   * @param sortDirectives     Sort directives to order the results.
    * @param parentField        Optional parent field.
    * @param addQueryStatements Additional query statements to be added
    * @param addVars            Optional additional variables to be included in the
    *                           query, along with their order sequence
    */
   public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, Queue<List<String>> targetIds,
-      ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+      Queue<SortDirective> sortDirectives, ParentField parentField, String addQueryStatements,
+      Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Generating the SELECT query to get instances...");
+    String orderByClause = this.genOrderByClause(sortDirectives);
     return this.getQueryTemplateFactory
         .write(
-            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetIds, parentField, addQueryStatements, addVars));
+            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetIds, parentField, orderByClause,
+                addQueryStatements, addVars));
   }
 
   /**
@@ -277,5 +273,36 @@ public class QueryTemplateService {
       throw new IllegalArgumentException("Invalid JSON-LD format! Please ensure the file starts with an JSON object.");
     }
     return contents;
+  }
+
+  /**
+   * Generate order by clause from the sort directives.
+   * 
+   * @param sortDirectives Sort directives to order the results.
+   */
+  private String genOrderByClause(Queue<SortDirective> sortDirectives) {
+    boolean hasNoIdToSort = sortDirectives.stream()
+        .allMatch(directive -> !directive.field().getVarName().equals(QueryResource.ID_KEY));
+    StringBuilder orderByBuilder = new StringBuilder();
+    while (!sortDirectives.isEmpty()) {
+      SortDirective directive = sortDirectives.poll();
+      String orderConditionField = directive.order().getQueryString();
+      // Overwrite last modified field to use original for sorting
+      if (directive.field().getVarName()
+          .equals(StringResource.ORIGINAL_PREFIX + LifecycleResource.LAST_MODIFIED_KEY)) {
+        orderConditionField = orderConditionField.replace(
+            StringResource.ORIGINAL_PREFIX + LifecycleResource.LAST_MODIFIED_KEY,
+            LifecycleResource.LAST_MODIFIED_KEY);
+      }
+      orderByBuilder.append(ShaclResource.WHITE_SPACE).append(orderConditionField);
+    }
+    // ID is an index and has to be included even if not specified by the user
+    if (hasNoIdToSort) {
+      orderByBuilder.append(ShaclResource.WHITE_SPACE).append(QueryResource.ID_VAR.getQueryString());
+    }
+    if (orderByBuilder.isEmpty()) {
+      return "";
+    }
+    return "ORDER BY " + orderByBuilder.toString();
   }
 }

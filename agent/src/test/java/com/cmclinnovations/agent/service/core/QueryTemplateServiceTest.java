@@ -84,18 +84,11 @@ class QueryTemplateServiceTest {
     }
 
     @Test
-    void testGenGetQuery() throws IOException {
-        Queue<Queue<SparqlBinding>> testBindings = GetQueryTemplateFactoryTest.initTestBindings();
-        String results = testService.genGetQuery(testBindings);
-        TestUtils.validateGeneratedQueryOutput(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE, results);
-    }
-
-    @Test
     void testGenGetQuery_WithFilter() throws IOException {
         Queue<Queue<SparqlBinding>> testBindings = GetQueryTemplateFactoryTest.initTestBindings();
         String results = testService.genGetQuery(testBindings,
-                new ArrayDeque<>(List.of(Arrays.asList(GetQueryTemplateFactoryTest.SAMPLE_FILTER))), null,
-                "", new HashMap<>());
+                new ArrayDeque<>(List.of(Arrays.asList(GetQueryTemplateFactoryTest.SAMPLE_FILTER))), new ArrayDeque<>(),
+                null, "", new HashMap<>());
         TestUtils.validateGeneratedQueryOutput(GetQueryTemplateFactoryTest.EXPECTED_SIMPLE_ID_FILE, results);
     }
 
