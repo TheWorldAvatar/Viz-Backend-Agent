@@ -25,6 +25,8 @@ public class StringResource {
   public static final String ORIGINAL_PREFIX = "ori_";
   public static final String SORT_KEY = "@sort";
 
+  public static final String INVALID_SHACL_ERROR_MSG = "Invalid knowledge model! SHACL restrictions have not been defined/instantiated in the knowledge graph.";
+
   // Private constructor to prevent instantiation
   private StringResource() {
     throw new UnsupportedOperationException("This class cannot be instantiated!");

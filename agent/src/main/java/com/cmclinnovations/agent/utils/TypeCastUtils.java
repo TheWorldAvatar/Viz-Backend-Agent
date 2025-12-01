@@ -1,7 +1,9 @@
 package com.cmclinnovations.agent.utils;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 
 public class TypeCastUtils {
 
@@ -46,5 +48,16 @@ public class TypeCastUtils {
     } else {
       throw new ClassCastException("Object cannot be cast to " + targetType.getName());
     }
+  }
+
+  /**
+   * Cast a list to their corresponding queue.
+   * 
+   * @param inputs Target list input.
+   */
+  public static <T> Queue<T> castListToQueue(List<T> inputs) {
+    Queue<T> output = new ArrayDeque<>();
+    output.addAll(inputs);
+    return output;
   }
 }

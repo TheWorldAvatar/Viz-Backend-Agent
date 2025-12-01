@@ -2,15 +2,12 @@ package com.cmclinnovations.agent.service.core;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.UncheckedIOException;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.jena.graph.Triple;
@@ -20,14 +17,7 @@ import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.federated.FedXFactory;
-import org.eclipse.rdf4j.federated.repository.FedXRepository;
-import org.eclipse.rdf4j.federated.repository.FedXRepositoryConnection;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
-import org.eclipse.rdf4j.repository.RepositoryException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -35,6 +25,7 @@ import org.springframework.web.client.RestClient;
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.component.ShaclRuleProcesser;
+import com.cmclinnovations.agent.component.repository.KGRepository;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
@@ -43,13 +34,11 @@ import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
-import com.cmclinnovations.agent.utils.ShaclResource;
+import com.cmclinnovations.agent.utils.TypeCastUtils;
 import com.cmclinnovations.stack.clients.blazegraph.BlazegraphClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import uk.ac.cam.cares.jps.base.query.RemoteStoreClient;
 
@@ -58,24 +47,13 @@ public class KGService {
   @Value("${NAMESPACE}")
   String namespace;
 
+  private final KGRepository kgRepository;
   private final RestClient client;
   private final ObjectMapper objectMapper;
   private final FileService fileService;
   private final LoggingService loggingService;
   private final ResponseEntityBuilder responseEntityBuilder;
   private final ShaclRuleProcesser shaclRuleProcesser;
-
-  private static final String DEFAULT_NAMESPACE = "kb";
-  private static final String JSON_MEDIA_TYPE = "application/json";
-  private static final String LD_JSON_MEDIA_TYPE = "application/ld+json";
-  private static final String SPARQL_MEDIA_TYPE = "application/sparql-query";
-  private static final String TTL_MEDIA_TYPE = "text/turtle";
-
-  public static final String INVALID_SHACL_ERROR_MSG = "Invalid knowledge model! SHACL restrictions have not been defined/instantiated in the knowledge graph.";
-
-  private static final String RDF_LIST_PATH_PREFIX = "/rdf:rest";
-  private static final String SUB_SHAPE_PATH = "sh:node/sh:property";
-  private static final String FILTER_BOUNDED_PROPERTIES = "FILTER(BOUND(?name))";
 
   private static final Logger LOGGER = LogManager.getLogger(KGService.class);
 
@@ -87,12 +65,13 @@ public class KGService {
    * @param responseEntityBuilder A component to build the response entity.
    * @param shaclRuleProcesser    A component to process SHACL rules.
    */
-  public KGService(FileService fileService, LoggingService loggingService,
+  public KGService(FileService fileService, LoggingService loggingService, KGRepository kgRepository,
       ResponseEntityBuilder responseEntityBuilder, ShaclRuleProcesser shaclRuleProcesser) {
     this.client = RestClient.create();
     this.objectMapper = new ObjectMapper();
     this.fileService = fileService;
     this.loggingService = loggingService;
+    this.kgRepository = kgRepository;
     this.responseEntityBuilder = responseEntityBuilder;
     this.shaclRuleProcesser = shaclRuleProcesser;
   }
@@ -105,8 +84,8 @@ public class KGService {
   public ResponseEntity<String> add(String contents) {
     return this.client.post()
         .uri(BlazegraphClient.getInstance().getRemoteStoreClient(this.namespace).getQueryEndpoint())
-        .accept(MediaType.valueOf(LD_JSON_MEDIA_TYPE))
-        .contentType(MediaType.valueOf(LD_JSON_MEDIA_TYPE))
+        .accept(QueryResource.LD_JSON_MEDIA_TYPE)
+        .contentType(QueryResource.LD_JSON_MEDIA_TYPE)
         .body(contents)
         .retrieve()
         .toEntity(String.class);
@@ -130,21 +109,9 @@ public class KGService {
   }
 
   /**
-   * Executes the query at the default endpoint `kb` to retrieve the
-   * original-format results.
-   * 
-   * @param query the query for execution.
-   * 
-   * @return the query results.
-   */
-  public Queue<SparqlBinding> query(String query) {
-    return this.query(query,
-        BlazegraphClient.getInstance().getRemoteStoreClient(DEFAULT_NAMESPACE).getQueryEndpoint());
-  }
-
-  /**
    * A method that executes a query at the specified endpoint to retrieve the
-   * original-format results.
+   * SPARQL results. This method does not cache the results, as it is intended to
+   * retrieve dynamic data.
    * 
    * @param query    the query for execution.
    * @param endpoint the endpoint for execution.
@@ -152,24 +119,14 @@ public class KGService {
    * @return the query results.
    */
   public Queue<SparqlBinding> query(String query, String endpoint) {
-    this.loggingService.logQuery(query, LOGGER);
-    String results = this.client.post()
-        .uri(endpoint)
-        .accept(MediaType.valueOf(JSON_MEDIA_TYPE))
-        .contentType(MediaType.valueOf(SPARQL_MEDIA_TYPE))
-        .body(query)
-        .retrieve()
-        .body(String.class);
-    JsonNode[] sparqlResponse = this.readSparqlResponse(results);
-    if (sparqlResponse[0].isArray()) {
-      return this.readResultsAsSparqlBinding((ArrayNode) sparqlResponse[0], (ArrayNode) sparqlResponse[1]);
-    }
-    return new ArrayDeque<>();
+    List<SparqlBinding> results = this.kgRepository.query(query, endpoint);
+    return TypeCastUtils.castListToQueue(results);
   }
 
   /**
    * A method that executes a federated query across available endpoints to
-   * retrieve results in JSONArray.
+   * retrieve SPARQL results. This method does not cache the results, as it is
+   * intended to retrieve dynamic data.
    * 
    * @param query        the query for execution.
    * @param endpointType the type of endpoint. Options include Mixed, Blazegraph,
@@ -179,27 +136,21 @@ public class KGService {
    */
   public Queue<SparqlBinding> query(String query, SparqlEndpointType endpointType) {
     List<String> endpoints = this.getEndpoints(endpointType);
-    try {
-      StringWriter stringWriter = new StringWriter();
-      FedXRepository repository = FedXFactory.createSparqlFederation(endpoints);
-      try (FedXRepositoryConnection conn = repository.getConnection()) {
-        this.loggingService.logQuery(query, LOGGER);
-        TupleQuery tq = conn.prepareTupleQuery(query);
-        // Extend execution time as required
-        tq.setMaxExecutionTime(600);
-        SPARQLResultsJSONWriter jsonWriter = new SPARQLResultsJSONWriter(stringWriter);
-        tq.evaluate(jsonWriter);
-        JsonNode[] sparqlResponse = this.readSparqlResponse(stringWriter.toString());
-        if (sparqlResponse[0].isArray()) {
-          return this.readResultsAsSparqlBinding((ArrayNode) sparqlResponse[0], (ArrayNode) sparqlResponse[1]);
-        }
-      } catch (RepositoryException e) {
-        LOGGER.error(e);
-      }
-    } catch (Exception e) {
-      LOGGER.error(e);
-    }
-    return new ArrayDeque<>();
+    List<SparqlBinding> results = this.kgRepository.query(query, endpoints);
+    return TypeCastUtils.castListToQueue(results);
+  }
+
+  /**
+   * Gets all available SPARQL endpoints (of the specified type) containing data.
+   * 
+   * @param endpointType The required endpoint type. Can be either mixed,
+   *                     blazegraph, or ontop.
+   * @return List of endpoints
+   */
+  public List<String> getEndpoints(SparqlEndpointType endpointType) {
+    return this.kgRepository.getEndpoints(endpointType).stream()
+        .map(binding -> binding.getFieldValue("endpoint"))
+        .toList();
   }
 
   /**
@@ -216,19 +167,33 @@ public class KGService {
         // will always be executed on the blazegraph namespace (storing the SHACL
         // restrictions)
         .uri(endpoint)
-        .accept(MediaType.valueOf(LD_JSON_MEDIA_TYPE))
-        .contentType(MediaType.valueOf(SPARQL_MEDIA_TYPE))
+        .accept(QueryResource.LD_JSON_MEDIA_TYPE)
+        .contentType(QueryResource.SPARQL_MEDIA_TYPE)
         .body(query)
         .retrieve()
         .body(String.class);
-    ArrayNode parsedResults = null;
     try {
-      parsedResults = this.objectMapper.readValue(results, ArrayNode.class);
+      return this.objectMapper.readValue(results, ArrayNode.class);
     } catch (JsonProcessingException e) {
       LOGGER.error(e);
       throw new IllegalArgumentException(e);
     }
-    return parsedResults;
+  }
+
+  /**
+   * Retrieve the parameters defined by the user in SHACL to generate the SPARQL
+   * query required.
+   * 
+   * @param shaclReplacement The replacement value of the SHACL query target
+   * @param requireLabel     Indicates if labels should be returned for all the
+   *                         fields that are IRIs.
+   */
+  public Queue<Queue<SparqlBinding>> getSparqlQueryConstructionParameters(String shaclReplacement,
+      boolean requireLabel) {
+    List<List<SparqlBinding>> results = this.kgRepository.execParamsConstructorQuery(shaclReplacement, requireLabel);
+    return results.stream()
+        .map(innerList -> new ArrayDeque<>(innerList))
+        .collect(Collectors.toCollection(ArrayDeque::new));
   }
 
   /**
@@ -263,8 +228,8 @@ public class KGService {
       LOGGER.debug("Querying at the endpoint {}...", endpoint);
       String results = this.client.post()
           .uri(endpoint)
-          .accept(MediaType.valueOf(TTL_MEDIA_TYPE))
-          .contentType(MediaType.valueOf(SPARQL_MEDIA_TYPE))
+          .accept(QueryResource.TTL_MEDIA_TYPE)
+          .contentType(QueryResource.SPARQL_MEDIA_TYPE)
           .body(query)
           .retrieve()
           .body(String.class);
@@ -310,100 +275,6 @@ public class KGService {
     Model dataModel = ModelFactory.createDefaultModel();
     RDFDataMgr.read(dataModel, new ByteArrayInputStream(input.getBytes()), rdfType);
     return dataModel;
-  }
-
-  /**
-   * Gets all available internal SPARQL endpoints within the stack of the
-   * specified type.
-   * 
-   * @param endpointType The required endpoint type. Can be either mixed,
-   *                     blazegraph, or ontop.
-   * @return List of endpoints of type `endpointType`
-   */
-  public List<String> getEndpoints(SparqlEndpointType endpointType) {
-    LOGGER.debug("Retrieving available endpoints...");
-    String query = this.fileService.getContentsWithReplacement(FileService.ENDPOINT_QUERY_RESOURCE,
-        endpointType.getIri());
-    Queue<SparqlBinding> results = this.query(query);
-    return results.stream()
-        .map(binding -> binding.getFieldValue("endpoint"))
-        .toList();
-  }
-
-  /**
-   * Queries for the nested predicates as a queue of responses based on their
-   * current nested level.
-   * 
-   * @param shaclPathQuery The query to retrieve the required predicate paths in
-   *                       the SHACL restrictions.
-   */
-  public Queue<Queue<SparqlBinding>> queryNestedPredicates(String shaclPathQuery) {
-    LOGGER.debug("Querying the knowledge graph for predicate paths and variables...");
-    // Retrieve all endpoints once
-    List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
-    // Initialise a queue to store all values
-    Queue<Queue<SparqlBinding>> results = new ArrayDeque<>();
-    String replacementShapePath = ""; // Initial replacement string
-    String replacementFilterPath = ""; // Initial replacement string
-    boolean continueLoop = true; // Initialise a continue indicator
-    // Iterate to get predicates at the hierarchy of shapes enforced via sh:node
-    while (continueLoop) {
-      boolean isFirstIteration = true;
-      boolean hasResults = false;
-      String replacementPath = "";
-      Queue<SparqlBinding> variablesAndPropertyPaths = new ArrayDeque<>();
-      // Iterate through the depth to retrieve all associated predicate paths for this
-      // property in this shape
-      while (isFirstIteration || hasResults) {
-        hasResults = false; // Reset and verify if there are results for this iteration
-        // Replace the [subproperty] and [path] with the respective values
-        String executableQuery = shaclPathQuery
-            .replace(FileService.REPLACEMENT_SHAPE, replacementShapePath)
-            .replace(FileService.REPLACEMENT_PATH, replacementPath)
-            .replace(FileService.REPLACEMENT_FILTER, replacementFilterPath);
-        // SHACL restrictions are only found within one Blazegraph endpoint, and can be
-        // queried without using FedX
-        for (String endpoint : endpoints) {
-          LOGGER.debug("Querying at the endpoint {}...", endpoint);
-          Queue<SparqlBinding> queryResults = this.query(executableQuery, endpoint);
-          if (!queryResults.isEmpty()) {
-            LOGGER.debug("Found data at the endpoint {}...", endpoint);
-            variablesAndPropertyPaths.addAll(queryResults);
-            // Indicator should be marked if results are found
-            hasResults = true;
-          }
-        }
-
-        if (hasResults) {
-          // Extend replacement path based on the current level
-          replacementPath = replacementPath.isEmpty() ? RDF_LIST_PATH_PREFIX + "/rdf:first" // first level
-              : RDF_LIST_PATH_PREFIX + replacementPath; // for the second level onwards
-        }
-        if (isFirstIteration) {
-          // If there are results in the first iteration of the retrieval for this shape,
-          // iterate to check if there are any nested shapes with predicates
-          continueLoop = hasResults;
-          isFirstIteration = false;
-          // Filter should be updated to no longer present empty branches after the first
-          // iteration ever
-          replacementFilterPath = FILTER_BOUNDED_PROPERTIES;
-        }
-      }
-      if (!variablesAndPropertyPaths.isEmpty()) {
-        results.offer(variablesAndPropertyPaths);
-      }
-      // Extend to get the next level of shape if any
-      replacementShapePath = replacementShapePath.isEmpty() ? " ?nestedshape." +
-          "OPTIONAL{?nestedshape twa:role ?nestedrole.}" +
-          "OPTIONAL{?nestedshape sh:node/sh:targetClass ?" + ShaclResource.NESTED_CLASS_VAR +
-          ".}?nestedshape sh:name ?" + ShaclResource.NODE_GROUP_VAR + ";" + SUB_SHAPE_PATH
-          : "/" + SUB_SHAPE_PATH + replacementShapePath;
-    }
-    if (results.isEmpty()) {
-      LOGGER.error(INVALID_SHACL_ERROR_MSG);
-      throw new IllegalStateException(INVALID_SHACL_ERROR_MSG);
-    }
-    return results;
   }
 
   /**
@@ -463,43 +334,5 @@ public class KGService {
       LOGGER.error(e);
     }
     return 500;
-  }
-
-  /**
-   * Reads the SPARQL query response into object nodes.
-   * 
-   * @param response Response string from the knowledge graph.
-   */
-  private JsonNode[] readSparqlResponse(String response) {
-    try {
-      ObjectNode sparqlResponse = this.objectMapper.readValue(response, ObjectNode.class);
-      JsonNode bindings = sparqlResponse.path("results")
-          .path("bindings");
-      JsonNode variables = sparqlResponse.path("head")
-          .path("vars");
-      return new JsonNode[] { bindings, variables };
-    } catch (JsonProcessingException e) {
-      LOGGER.error(e);
-      throw new IllegalArgumentException(e);
-    }
-  }
-
-  /**
-   * Parses the results into the required data model.
-   * 
-   * @param results   Results retrieved from the knowledge graph.
-   * @param variables Expected variables to find.
-   */
-  private Queue<SparqlBinding> readResultsAsSparqlBinding(ArrayNode results, ArrayNode variables) {
-    LOGGER.debug("Parsing the results...");
-    try {
-      List<String> variableSet = this.objectMapper.readerForListOf(String.class).readValue(variables);
-      return StreamSupport.stream(results.spliterator(), false)
-          .filter(JsonNode::isObject) // Ensure they are object node so that we can type cast
-          .map(row -> new SparqlBinding((ObjectNode) row, variableSet))
-          .collect(Collectors.toCollection(ArrayDeque::new));
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 }
