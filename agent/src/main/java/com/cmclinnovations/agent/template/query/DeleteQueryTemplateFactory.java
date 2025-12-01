@@ -170,27 +170,29 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
           LOGGER.debug("=== BRANCH CASE: selectedBranchName = {}", this.selectedBranchName);
           ArrayNode branches = this.jsonLdService.getArrayNode(objectNode);
 
+          // Find the matching branch
+          ObjectNode matchingBranch = null;
+          String matchingBranchName = null;
+
           for (JsonNode branchNode : branches) {
             ObjectNode specificBranch = this.jsonLdService.getObjectNode(branchNode);
             String currentBranchName = specificBranch.path(ShaclResource.BRANCH_KEY).asText();
 
-            LOGGER.debug("=== Checking branch: {}, matches selected? {}",
-                currentBranchName,
-                this.selectedBranchName != null && this.selectedBranchName.equals(currentBranchName));
-
-            // FILTER: Skip branches that don't match selectedBranchName
-            if (this.selectedBranchName != null && !this.selectedBranchName.equals(currentBranchName)) {
-              LOGGER.debug("=== SKIPPING branch: {}", currentBranchName);
-              continue;
+            if (this.selectedBranchName == null || this.selectedBranchName.equals(currentBranchName)) {
+              matchingBranch = specificBranch;
+              matchingBranchName = currentBranchName;
+              LOGGER.debug("=== Found matching branch: {}", currentBranchName);
+              break; // Stop searching once found
             }
-
-            // Process the matching branch
-            LOGGER.debug("=== PROCESSING branch: {}", currentBranchName);
+          }
+          // Process the matching branch (if found)
+          if (matchingBranch != null) {
+            LOGGER.debug("=== PROCESSING branch: {}", matchingBranchName);
             Queue<GraphPattern> branchWherePatterns = new ArrayDeque<>();
             this.whereClauseBranchPatterns.offer(branchWherePatterns);
 
-            // Create a copy without the @branch key to avoid reprocessing
-            ObjectNode branchContentOnly = specificBranch.deepCopy();
+            // Create a copy without the @branch key
+            ObjectNode branchContentOnly = matchingBranch.deepCopy();
             branchContentOnly.remove(ShaclResource.BRANCH_KEY);
 
             // Inherit the parent node's @id if the branch doesn't have one
@@ -200,6 +202,11 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
             }
 
             this.recursiveParseNode(deleteTemplate, branchWherePatterns, branchContentOnly);
+          } else if (this.selectedBranchName != null) {
+            // Error: requested branch not found
+            LOGGER.error("=== Branch '{}' not found in available branches", this.selectedBranchName);
+            throw new IllegalArgumentException(
+                String.format("Branch '%s' not found", this.selectedBranchName));
           }
           break;
         case ShaclResource.REVERSE_KEY:
