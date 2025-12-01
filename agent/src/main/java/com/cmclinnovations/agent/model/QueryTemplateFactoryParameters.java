@@ -16,19 +16,21 @@ public record QueryTemplateFactoryParameters(
     Queue<List<String>> targetIds,
     ParentField parent,
     Map<String, String> criterias,
+    String sortDirectives,
     String addQueryStatements,
     Map<Variable, List<Integer>> addVars) {
 
   public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId) {
-    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null);
+    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null,
+        null);
   }
 
   public QueryTemplateFactoryParameters(Queue<Queue<SparqlBinding>> bindings, Map<String, String> criterias) {
-    this(bindings, null, new ArrayDeque<>(), null, criterias, null, null);
+    this(bindings, null, new ArrayDeque<>(), null, criterias, null, null, null);
   }
 
   public QueryTemplateFactoryParameters(Queue<Queue<SparqlBinding>> bindings, Queue<List<String>> targetIds,
-      ParentField parent, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
-    this(bindings, null, targetIds, parent, null, addQueryStatements, addVars);
+      ParentField parent, String sortDirectives, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+    this(bindings, null, targetIds, parent, null, sortDirectives, addQueryStatements, addVars);
   }
 }

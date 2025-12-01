@@ -291,7 +291,7 @@ public class LifecycleContractService {
         pagination.getFilters(), "", true);
     Queue<List<String>> ids = this.getService.getAllIds(resourceID, addStatements[0], pagination);
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,
-        addStatements[1], contractVariables);
+        pagination.getSortDirectives(), addStatements[1], contractVariables);
     return this.responseEntityBuilder.success(null, instances.stream()
         .map(binding -> {
           return (Map<String, Object>) binding.get().entrySet().stream()
