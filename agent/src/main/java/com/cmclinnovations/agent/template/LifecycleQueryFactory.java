@@ -183,10 +183,14 @@ public class LifecycleQueryFactory {
     results.put(LifecycleResource.LAST_MODIFIED_KEY, eventIdVar
         + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
         + lastModifiedVar + ShaclResource.FULL_STOP);
-    results.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, "OPTIONAL{?iri "
+    results.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, "OPTIONAL{ {?iri "
         + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
         "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?recurrences.}"
-        + "BIND(IF(BOUND(?recurrences),?recurrences,\"\") AS "
+        + "UNION {?iri "
+        + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
+        "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/a ?schedule_class. BIND(IF(?schedule_class=<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>,\""
+        + LifecycleResource.RECURRENCE_AD_HOC_TASK + "\",\"\") AS ?recurrences)}"
+        + "}BIND(IF(BOUND(?recurrences),?recurrences,\"\") AS "
         + QueryResource.SCHEDULE_RECURRENCE_VAR.getQueryString()
         + ")");
     return results;
