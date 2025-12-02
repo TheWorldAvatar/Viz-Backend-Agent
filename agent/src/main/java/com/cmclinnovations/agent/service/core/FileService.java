@@ -52,6 +52,7 @@ public class FileService {
   public static final String OCCURRENCE_INSTANT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_instant.jsonld";
   public static final String OCCURRENCE_LINK_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_link.jsonld";
   public static final String SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/schedule.jsonld";
+  public static final String AD_HOC_SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/ad_hoc_schedule.jsonld";
 
   public static final String CONTRACT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract.sparql";
   public static final String CONTRACT_STATUS_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_status.sparql";

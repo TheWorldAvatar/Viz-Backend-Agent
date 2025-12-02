@@ -18,6 +18,7 @@ public class LifecycleResource {
   public static final String LIFECYCLE_RESOURCE = "lifecycle";
   public static final String LIFECYCLE_REPORT_RESOURCE = "lifecycle report";
   public static final String SCHEDULE_RESOURCE = "schedule";
+  public static final String AD_HOC_SCHEDULE_RESOURCE = "ad_hoc_schedule";
   public static final String TASK_RESOURCE = "task";
   public static final String OCCURRENCE_INSTANT_RESOURCE = "occurrence instant";
   public static final String CANCEL_RESOURCE = "cancel";
@@ -144,6 +145,8 @@ public class LifecycleResource {
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
       case LifecycleResource.SCHEDULE_RESOURCE:
         return FileService.SCHEDULE_JSON_LD_RESOURCE;
+      case LifecycleResource.AD_HOC_SCHEDULE_RESOURCE:
+        return FileService.AD_HOC_SCHEDULE_JSON_LD_RESOURCE;
       default:
         return null;
     }
