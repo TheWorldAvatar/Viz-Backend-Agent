@@ -170,6 +170,15 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
           LOGGER.debug("=== BRANCH CASE: selectedBranchName = {}", this.selectedBranchName);
           ArrayNode branches = this.jsonLdService.getArrayNode(objectNode);
 
+          // Validation process: If the selected template has branches
+          // branchName is a MUST
+          if (this.selectedBranchName == null || this.selectedBranchName.isEmpty()) {
+            String errorMsg = String.format(
+                "Template contains branches but no branch name provided. ");
+            LOGGER.error(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
+          }
+
           // Find the matching branch
           ObjectNode matchingBranch = null;
           String matchingBranchName = null;
@@ -178,35 +187,36 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
             ObjectNode specificBranch = this.jsonLdService.getObjectNode(branchNode);
             String currentBranchName = specificBranch.path(ShaclResource.BRANCH_KEY).asText();
 
-            if (this.selectedBranchName == null || this.selectedBranchName.equals(currentBranchName)) {
+            if (this.selectedBranchName.equals(currentBranchName)) {
               matchingBranch = specificBranch;
               matchingBranchName = currentBranchName;
               LOGGER.debug("=== Found matching branch: {}", currentBranchName);
               break; // Stop searching once found
             }
           }
+
           // Process the matching branch (if found)
           if (matchingBranch != null) {
             LOGGER.debug("=== PROCESSING branch: {}", matchingBranchName);
             Queue<GraphPattern> branchWherePatterns = new ArrayDeque<>();
             this.whereClauseBranchPatterns.offer(branchWherePatterns);
 
-            // Create a copy without the @branch key
             ObjectNode branchContentOnly = matchingBranch.deepCopy();
             branchContentOnly.remove(ShaclResource.BRANCH_KEY);
 
-            // Inherit the parent node's @id if the branch doesn't have one
             if (!branchContentOnly.has(ShaclResource.ID_KEY) && currentNode.has(ShaclResource.ID_KEY)) {
               branchContentOnly.set(ShaclResource.ID_KEY, currentNode.path(ShaclResource.ID_KEY).deepCopy());
               LOGGER.info("=== Branch inherited parent @id: {}", currentNode.path(ShaclResource.ID_KEY));
             }
 
             this.recursiveParseNode(deleteTemplate, branchWherePatterns, branchContentOnly);
-          } else if (this.selectedBranchName != null) {
-            // Error: requested branch not found
-            LOGGER.error("=== Branch '{}' not found in available branches", this.selectedBranchName);
-            throw new IllegalArgumentException(
-                String.format("Branch '%s' not found", this.selectedBranchName));
+          } else {
+            // Specified branch not found
+            String errorMsg = String.format(
+                "Branch '%s' not found. Available branches: %s",
+                this.selectedBranchName);
+            LOGGER.error(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
           }
           break;
         case ShaclResource.REVERSE_KEY:
