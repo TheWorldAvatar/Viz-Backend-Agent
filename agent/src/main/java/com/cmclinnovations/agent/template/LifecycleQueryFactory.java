@@ -50,8 +50,12 @@ public class LifecycleQueryFactory {
         "OPTIONAL{?schedule ^<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasEndDate>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue> "
             + QueryResource.SCHEDULE_END_DATE_VAR.getQueryString() + ".}");
     template.put(QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName(),
-        "OPTIONAL{?schedule <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?"
-            + LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY + ".}");
+        "OPTIONAL{"
+            + "{?schedule <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?"
+            + LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY + ".} UNION "
+            + "{?schedule a ?schedule_class. BIND(IF(?schedule_class=<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>,\""
+            + LifecycleResource.RECURRENCE_AD_HOC_TASK + "\",\"\") AS ?recurrences)}"
+            + "}");
     SCHEDULE_QUERY_MAPPINGS = Collections.unmodifiableMap(template);
     // Add extended statements to the right mappings with a full reset
     Map<String, String> filterTemplate = new HashMap<>();

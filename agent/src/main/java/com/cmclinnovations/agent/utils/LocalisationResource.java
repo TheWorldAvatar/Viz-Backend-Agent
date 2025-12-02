@@ -54,6 +54,7 @@ public class LocalisationResource {
   public static final String LABEL_ALTERNATE_DAY_SERVICE_KEY = LABEL_PREFIX + "alt.day.service";
   public static final String LABEL_PERPETUAL_SERVICE_KEY = LABEL_PREFIX + "perpetual.service";
   public static final String LABEL_REGULAR_SERVICE_KEY = LABEL_PREFIX + "regular.service";
+  public static final String LABEL_AD_HOC_SERVICE_KEY = LABEL_PREFIX + "ad.hoc.service";
 
   public static final String EVENT_STATUS_ASSIGNED_KEY = "assigned";
   public static final String EVENT_STATUS_CANCELLED_KEY = "cancelled";

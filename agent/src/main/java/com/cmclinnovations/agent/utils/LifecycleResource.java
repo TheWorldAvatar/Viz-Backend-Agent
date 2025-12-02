@@ -26,6 +26,7 @@ public class LifecycleResource {
   public static final String TASK_ID_SORT_BY_PARAMS = ",+event_id";
   public static final String RECURRENCE_DAILY_TASK = "P1D";
   public static final String RECURRENCE_ALT_DAY_TASK = "P2D";
+  public static final String RECURRENCE_AD_HOC_TASK = "adhoc";
   public static final String EMPTY_STRING = "\"\"";
   public static final String RECURRENCE_DAILY_TASK_STRING = "\"" + RECURRENCE_DAILY_TASK + "\"";
   public static final String RECURRENCE_ALT_DAY_TASK_STRING = "\"" + RECURRENCE_ALT_DAY_TASK + "\"";
