@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.20.1
+
+- Only generate orders up to 30 days in future
+- Added scheduled task to generate orders of active contracts to be up-to-date to 30 days in future
+
 ## 1.20.0
 
 ### Changes
