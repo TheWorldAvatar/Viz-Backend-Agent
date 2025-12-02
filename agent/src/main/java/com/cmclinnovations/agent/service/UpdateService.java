@@ -14,6 +14,7 @@ import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 
 @Service
 public class UpdateService {
@@ -53,13 +54,9 @@ public class UpdateService {
    */
   public ResponseEntity<StandardApiResponse<?>> update(String id, String resourceId, String successMessageId,
       Map<String, Object> editedParams) {
-
-    String branchDelete = (String) editedParams.get("branch_delete");
-
-    // Step 1: Delete the branchDelete
+    String branchDelete = (String) editedParams.get(QueryResource.DELETE_BRANCH_KEY);
     ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id, branchDelete);
 
-    // Step 2: ADD with branchAdd
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
       return this.addService.instantiate(resourceId, id, editedParams,
           MessageFormat.format("{0} has been successfully updated for {1}", resourceId, id), successMessageId);

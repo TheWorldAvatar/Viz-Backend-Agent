@@ -104,6 +104,7 @@ public class QueryResource {
     public static final Variable LATEST_DATE_VAR = QueryResource.genVariable("latest_date");
 
     public static final String ADD_BRANCH_KEY = "branch_add";
+    public static final String DELETE_BRANCH_KEY = "branch_delete";
 
     // Private constructor to prevent instantiation
     private QueryResource() {

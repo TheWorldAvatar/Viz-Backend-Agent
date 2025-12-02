@@ -40,8 +40,7 @@ public class DeleteService {
    * @param branchName The branch name to filter (can be null).
    */
   public ResponseEntity<StandardApiResponse<?>> delete(String resourceID, String targetId, String branchName) {
-    LOGGER.debug("Deleting {} instance of {} with branch = {}", resourceID, targetId, branchName);
-
+    LOGGER.debug("Deleting {} instance of {}", resourceID, targetId);
     // Generate query with branch validation
     String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId, branchName);
     return this.kgService.delete(query, targetId);
