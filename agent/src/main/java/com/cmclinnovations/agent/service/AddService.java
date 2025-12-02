@@ -5,22 +5,17 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiPredicate;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFFormat;
 import org.apache.jena.riot.RDFWriter;
-import org.apache.jena.sparql.pfunction.library.alt;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -40,7 +35,6 @@ import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
@@ -91,7 +85,7 @@ public class AddService {
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, Map<String, Object> param,
       String successLogMessage, String messageResource) {
     String id = param.getOrDefault(QueryResource.ID_KEY, UUID.randomUUID()).toString();
-    return instantiate(resourceID, id, param, successLogMessage, messageResource);
+    return this.instantiate(resourceID, id, param, successLogMessage, messageResource);
   }
 
   /**
@@ -104,18 +98,11 @@ public class AddService {
    */
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, String targetId,
       Map<String, Object> param, String successLogMessage, String messageResource) {
-
-    String branchAdd = (String) param.get("branch_add");
     LOGGER.info("Instantiating an instance of {} ...", resourceID);
-
     // Update ID value to target ID
     param.put(QueryResource.ID_KEY, targetId);
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
-
-    // Filter to the specified branch
-    LOGGER.info("Filtering template to branch: {}", branchAdd);
-    addJsonSchema = filterBranchForAdd(addJsonSchema, branchAdd);
 
     // Attempt to replace all placeholders in the JSON schema
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
@@ -253,20 +240,25 @@ public class AddService {
       while (!fieldNames.isEmpty()) {
         String fieldName = fieldNames.poll();
         JsonNode childNode = currentNode.get(fieldName);
+
         // For any form branch configuration field
         if (fieldName.equals(ShaclResource.BRANCH_KEY)) {
+          String branchAdd = (String) replacements.get(QueryResource.ADD_BRANCH_KEY);
+          if (branchAdd == null || branchAdd.isEmpty()) {
+            throw new IllegalArgumentException("No branch specified for branch addition!");
+          }
           ArrayNode branches = this.jsonLdService.getArrayNode(currentNode.path(ShaclResource.BRANCH_KEY));
-
+          // Extract the matched option with the specific branch name
+          ObjectNode matchedOption = this.jsonLdService.genObjectNode();
           for (JsonNode branchNode : branches) {
-            if (branchNode.isObject()) {
+            if (branchNode.get(ShaclResource.BRANCH_KEY).asText().equals(branchAdd)) {
               ObjectNode branchObj = (ObjectNode) branchNode;
-              // Remove the @branch key if present (used for DELETE filtering)
+              // Remove branch key as it should not be reused
               branchObj.remove(ShaclResource.BRANCH_KEY);
+              matchedOption = branchObj;
             }
           }
 
-          // Now find the best matching option based on available fields
-          ObjectNode matchedOption = this.findMatchingOption(branches, replacements.keySet());
           // Iterate and append each property in the target node to the current node
           Iterator<String> matchedOptionFieldNames = matchedOption.fieldNames();
           while (matchedOptionFieldNames.hasNext()) {
@@ -315,93 +307,6 @@ public class AddService {
               childrenNodes.add(additionalNodes.poll());
             }
           }
-        }
-      }
-    }
-  }
-
-  /**
-   * Search for the option that matches most of the replacement fields in the
-   * array.
-   * 
-   * @param options        List of options to filter.
-   * @param matchingFields A list containing the fields for matching.
-   */
-  private ObjectNode findMatchingOption(ArrayNode options, Set<String> matchingFields) {
-    // Remove irrelevant parameters
-    matchingFields.remove("entity");
-    ObjectNode bestMatchNode = this.jsonLdService.genObjectNode();
-    int maxMatches = -1;
-    for (JsonNode currentOption : options) {
-      Set<String> availableFields = new HashSet<>();
-      this.recursiveFindReplaceFields(currentOption, availableFields);
-      // Only continue parsing when there are less fields than matching fields
-      // When there are more available fields than matching fields, multiple
-      // options may matched and cannot be discerned
-      if (availableFields.size() <= matchingFields.size()) {
-        // Verify if there are more matched fields than the current maximum
-        Set<String> intersection = this.findCustomMatchingFields(availableFields, matchingFields,
-            (availableField, targetField) -> availableField.equals(targetField)
-                // Target field will be unlikely to match unless when copying contracts where
-                // group names are excluded
-                || availableField.contains(targetField.replaceAll("\\_+", " ")));
-        if (intersection.size() > maxMatches) {
-          maxMatches = intersection.size();
-          bestMatchNode = this.jsonLdService.getObjectNode(currentOption);
-        }
-      }
-    }
-    return bestMatchNode;
-  }
-
-  /**
-   * Finds fields that match between two sets based on a custom matching logic.
-   *
-   * @param availableFields The complete set of fields that may or may not be
-   *                        irrelevant.
-   * @param targetFields    The set of fields to match.
-   * @param matcher         Custom matching logic.
-   */
-  private Set<String> findCustomMatchingFields(
-      Set<String> availableFields,
-      Set<String> targetFields,
-      BiPredicate<String, String> matcher) {
-    Set<String> result = new HashSet<>();
-    for (String target : targetFields) {
-      for (String availableField : availableFields) {
-        if (matcher.test(availableField, target)) {
-          result.add(target);
-          break;
-        }
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Recursively iterate through the current node to find all replacement fields.
-   * 
-   * @param currentNode The current object node for iteration.
-   * @param foundFields A list storing the fields that have already been found.
-   */
-  private void recursiveFindReplaceFields(JsonNode currentNode, Set<String> foundFields) {
-    // For an replacement object
-    if (currentNode.has(ShaclResource.REPLACE_KEY)) {
-      String replaceValue = currentNode.path(ShaclResource.REPLACE_KEY).asText();
-      // Add the replace value if it has yet to be found
-      if (!foundFields.contains(replaceValue)) {
-        foundFields.add(replaceValue);
-      }
-    } else {
-      Iterator<String> fields = currentNode.fieldNames();
-      while (fields.hasNext()) {
-        JsonNode currentField = currentNode.path(fields.next());
-        if (currentField.isArray()) {
-          for (JsonNode arrayItemNode : currentField) {
-            this.recursiveFindReplaceFields(arrayItemNode, foundFields);
-          }
-        } else {
-          this.recursiveFindReplaceFields(currentField, foundFields);
         }
       }
     }
@@ -480,136 +385,4 @@ public class AddService {
     }
     parentNode.set(parentField, results);
   }
-
-  /**
-   * Filter JSON-LD template to only include the specified branch.
-   * This prevents instantiating multiple branching models when only one is
-   * selected.
-   * 
-   * @param template     The full JSON-LD template with @branch array
-   * @param targetBranch The specific branch to instantiate (e.g.,
-   *                     "PerTripPricingModel")
-   * @return Filtered template containing only the target branch
-   */
-  private ObjectNode filterBranchForAdd(ObjectNode template, String targetBranch) {
-
-    LOGGER.info("Filtering template for branch: {}", targetBranch);
-
-    // Make a deep copy to avoid modifying original
-    ObjectNode filteredTemplate = template.deepCopy();
-
-    // Recursively search for @branch field and filter
-    boolean hasBranches = recursivelyFilterBranch(filteredTemplate, targetBranch);
-
-    if (hasBranches) {
-      // Template has branches
-      if (targetBranch == null || targetBranch.isEmpty()) {
-        // ERROR: Template has branches but no branch specified
-        String errorMsg = String.format(
-            "Template contains branches but no 'branch_add' parameter provided. ");
-        LOGGER.error(errorMsg);
-        throw new IllegalArgumentException(errorMsg);
-      }
-      LOGGER.info("Successfully filtered template to branch: {}", filteredTemplate);
-    } else {
-      // Template has NO branches
-      if (targetBranch != null && !targetBranch.isEmpty()) {
-        LOGGER.warn("branch_add '{}' provided but template has no branches - ignoring", targetBranch);
-      }
-    }
-
-    return filteredTemplate;
-  }
-
-  /**
-   * Recursively search for @branch arrays and filter to target branch.
-   * Modifies the node in-place.
-   * 
-   * @param node         The current node to search
-   * @param targetBranch The branch to filter to
-   * @return true if ANY @branch was found in the template, false otherwise
-   */
-  private boolean recursivelyFilterBranch(ObjectNode node, String targetBranch) {
-
-    boolean foundAnyBranch = false;
-
-    Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-    List<Map.Entry<String, JsonNode>> fieldsList = new ArrayList<>();
-    fields.forEachRemaining(fieldsList::add);
-
-    for (Map.Entry<String, JsonNode> field : fieldsList) {
-      String fieldName = field.getKey();
-      JsonNode fieldValue = field.getValue();
-
-      // Check if this field is @branch
-      if (fieldName.equals("@branch") && fieldValue.isArray()) {
-        foundAnyBranch = true; // Mark that we found a branch array
-
-        if (targetBranch != null && !targetBranch.isEmpty()) {
-          // Filter to specific branch
-          ArrayNode branches = (ArrayNode) fieldValue;
-          ArrayNode filteredBranches = JsonNodeFactory.instance.arrayNode();
-
-          boolean branchFound = false;
-
-          // Find the target branch
-          for (JsonNode branch : branches) {
-            if (branch.has("@branch")) {
-              String branchType = branch.get("@branch").asText();
-
-              if (branchType.equals(targetBranch)) {
-                ObjectNode branchCopy = (ObjectNode) branch.deepCopy();
-                branchCopy.remove("@branch");
-                filteredBranches.add(branchCopy);
-                branchFound = true;
-                LOGGER.info("Found and selected branch: {} at path: {}", targetBranch, fieldName);
-                break;
-              }
-            }
-          }
-          if (branchFound) {
-            // Replace the @branch array with filtered branch
-            node.set("@branch", filteredBranches);
-          } else {
-            // Branch array exists but target branch not found
-            String errorMsg = String.format("Branch '%s' not found. Available: %s",
-                targetBranch, getBranchNames(branches));
-            LOGGER.error(errorMsg);
-            throw new IllegalArgumentException(errorMsg);
-          }
-        }
-        // If targetBranch is null, leave all branches as-is
-
-      } else if (fieldValue.isObject()) {
-        // Recurse into nested objects
-        boolean nestedHasBranches = recursivelyFilterBranch((ObjectNode) fieldValue, targetBranch);
-        foundAnyBranch = foundAnyBranch || nestedHasBranches;
-
-      } else if (fieldValue.isArray()) {
-        // Recurse into array elements that are objects
-        for (JsonNode arrayElement : fieldValue) {
-          if (arrayElement.isObject()) {
-            boolean nestedHasBranches = recursivelyFilterBranch((ObjectNode) arrayElement, targetBranch);
-            foundAnyBranch = foundAnyBranch || nestedHasBranches;
-          }
-        }
-      }
-    }
-
-    return foundAnyBranch;
-  }
-
-  /**
-   * Helper method to get all branch names for error messages
-   */
-  private String getBranchNames(ArrayNode branches) {
-    List<String> names = new ArrayList<>();
-    for (JsonNode branch : branches) {
-      if (branch.has("@branch")) {
-        names.add(branch.get("@branch").asText());
-      }
-    }
-    return String.join(", ", names);
-  }
-
 }
