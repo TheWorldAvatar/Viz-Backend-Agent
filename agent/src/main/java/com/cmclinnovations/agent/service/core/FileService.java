@@ -40,6 +40,7 @@ public class FileService {
   private static final String QUERY_DIR = CLASS_PATH_DIR + "query/";
   private static final String QUERY_CONSTR_DIR = QUERY_DIR + "construct/";
   private static final String QUERY_GET_DIR = QUERY_DIR + "get/";
+  private static final String QUERY_GET_BILLING_DIR = QUERY_GET_DIR + "billing/";
   private static final String QUERY_GET_LIFECYCLE_DIR = QUERY_GET_DIR + "lifecycle/";
   public static final String FORM_QUERY_RESOURCE = QUERY_CONSTR_DIR + "form.sparql";
   public static final String SHACL_RULE_QUERY_RESOURCE = QUERY_CONSTR_DIR + "shacl_rule.sparql";
@@ -60,6 +61,7 @@ public class FileService {
   public static final String CONTRACT_PREV_EVENT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR
       + "contract_prev_event.sparql";
   public static final String CONTRACT_SCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "schedule.sparql";
+  public static final String BILLING_PRICING_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "pricing.sparql";
 
   public static final String REPLACEMENT_TARGET = "\\[target\\]";
   public static final String REPLACEMENT_SHAPE = "[shape]";

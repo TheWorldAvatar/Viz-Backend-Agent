@@ -37,6 +37,17 @@ public class ReportingController {
   }
 
   /**
+   * Retrieve the current pricing model (if any) and contract for the specified task.
+   */
+  @GetMapping("/status/price/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getPricingStatus(@PathVariable String id) {
+    LOGGER.info("Received request to check if there is an existing pricing model for the task: {}...", id);
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
+      return this.lifecycleTaskService.getHasPricing(id);
+    });
+  }
+
+  /**
    * Retrieve the count of all closed tasks for the specified date range in UNIX
    * timestamp.
    */
