@@ -49,7 +49,6 @@ public class LifecycleContractService {
   private final Map<Variable, List<Integer>> lifecycleVarSequence = new HashMap<>();
   private static final String SERVICE_DISCHARGE_MESSAGE = "Service has been completed successfully.";
   private static final Logger LOGGER = LogManager.getLogger(LifecycleContractService.class);
-  private static final Map<String, Set<String>> AD_HOC_SCHEDULE_ARRAY_VARS = new HashMap<>();
 
   /**
    * Constructs a new service with the following dependencies.
@@ -73,8 +72,6 @@ public class LifecycleContractService {
     this.lifecycleVarSequence.put(QueryResource.SCHEDULE_END_TIME_VAR, List.of(2, 3));
     this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY), List.of(2, 4));
     this.lifecycleVarSequence.put(QueryResource.SCHEDULE_RECURRENCE_VAR, List.of(2, 5));
-
-    AD_HOC_SCHEDULE_ARRAY_VARS.put("entry_date", Set.of("entry_date"));
   }
 
   /**
@@ -132,29 +129,9 @@ public class LifecycleContractService {
    */
   public ResponseEntity<Map<String, Object>> getSchedule(String contract) {
     LOGGER.debug("Retrieving the schedule details of the contract...");
-    SparqlBinding result = this.querySchedule(contract);
-    if (result==null) {
-      // try query as ad hoc schedule
-      Queue<SparqlBinding> results = this.queryAdHocSchedule(contract);
-      SparqlBinding temp = results.poll();
-      // Iterate over results to get entry dates as an array
-      results.stream().forEach(binding -> {
-        temp.addFieldArray(binding, AD_HOC_SCHEDULE_ARRAY_VARS);
-      });
-      result = temp;
-    }
+    SparqlBinding result = this.lifecycleQueryService.querySchedule(contract);
     LOGGER.info("Successfuly retrieved schedule!");
     return new ResponseEntity<>(result.get(), HttpStatus.OK);
-  }
-
-  private SparqlBinding querySchedule(String contract) {
-    return this.lifecycleQueryService.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,
-        contract, contract);
-  }
-
-  private Queue<SparqlBinding> queryAdHocSchedule(String contract) {
-    return this.lifecycleQueryService.getInstances(FileService.AD_HOC_CONTRACT_SCHEDULE_QUERY_RESOURCE,
-        contract, contract);
   }
 
   /**
@@ -191,7 +168,7 @@ public class LifecycleContractService {
    * @param entityType The entity type.
    */
   public Map<String, Object> getContractSchedule(String contractId) {
-    Map<String, Object> rawSchedule = this.querySchedule(contractId).get();
+    Map<String, Object> rawSchedule = this.lifecycleQueryService.querySchedule(contractId).get();
     Map<String, SparqlResponseField> schedule = rawSchedule.entrySet().stream().collect(Collectors.toMap(
         Map.Entry::getKey, entry -> {
           Object value = entry.getValue();

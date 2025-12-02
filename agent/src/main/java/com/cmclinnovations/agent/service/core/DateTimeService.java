@@ -11,6 +11,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
@@ -270,6 +271,18 @@ public class DateTimeService {
       currentDate = currentDate.plusWeeks(weekInterval); // Increment by the interval
     }
     return occurrenceDates;
+  }
+
+  public Queue<String> getOccurrenceDates(List<String> entryDates, String endDateInput) {
+    LocalDate endDate = this.parseDate(endDateInput);
+    return entryDates.stream().filter(dateString -> {
+      try {
+        LocalDate entryDate = this.parseDate(dateString);
+        return !entryDate.isAfter(endDate);
+      } catch (Exception e) {
+        return false;
+      }
+    }).collect(Collectors.toCollection(ArrayDeque::new));
   }
 
   /**
