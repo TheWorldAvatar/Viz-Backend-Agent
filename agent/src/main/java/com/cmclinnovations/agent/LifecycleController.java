@@ -27,6 +27,7 @@ import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
+import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.application.LifecycleContractService;
 import com.cmclinnovations.agent.service.application.LifecycleTaskService;
@@ -44,6 +45,7 @@ public class LifecycleController {
   private final ConcurrencyService concurrencyService;
   private final AddService addService;
   private final GetService getService;
+  private final DeleteService deleteService;
   private final UpdateService updateService;
   private final DateTimeService dateTimeService;
   private final LifecycleContractService lifecycleContractService;
@@ -53,11 +55,13 @@ public class LifecycleController {
   private static final Logger LOGGER = LogManager.getLogger(LifecycleController.class);
 
   public LifecycleController(ConcurrencyService concurrencyService, AddService addService, GetService getService,
+      DeleteService deleteService,
       UpdateService updateService, DateTimeService dateTimeService, LifecycleContractService lifecycleContractService,
       LifecycleTaskService lifecycleTaskService, ResponseEntityBuilder responseEntityBuilder) {
     this.concurrencyService = concurrencyService;
     this.addService = addService;
     this.getService = getService;
+    this.deleteService = deleteService;
     this.updateService = updateService;
     this.dateTimeService = dateTimeService;
     this.lifecycleContractService = lifecycleContractService;
@@ -157,7 +161,12 @@ public class LifecycleController {
     return this.concurrencyService.executeInWriteLock(LifecycleResource.SCHEDULE_RESOURCE, () -> {
       LOGGER.info("Received request to generate the schedule details for contract...");
       this.lifecycleContractService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
-      return this.addService.instantiate(LifecycleResource.SCHEDULE_RESOURCE,
+      // use regular schedule or ad hoc schedule
+      String scheduleResource = LifecycleResource.SCHEDULE_RESOURCE;
+      if (params.containsKey("schedule entry")) {
+        scheduleResource = LifecycleResource.AD_HOC_SCHEDULE_RESOURCE;
+      }
+      return this.addService.instantiate(scheduleResource,
           params, "Schedule has been successfully drafted for contract!",
           LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY);
     });
@@ -172,8 +181,25 @@ public class LifecycleController {
     return this.concurrencyService.executeInWriteLock(LifecycleResource.SCHEDULE_RESOURCE, () -> {
       this.lifecycleContractService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
       String targetId = params.get(QueryResource.ID_KEY).toString();
-      return this.updateService.update(targetId, LifecycleResource.SCHEDULE_RESOURCE,
-          LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY, params);
+      // delete the existing schedule assuming it is regular schedule
+      ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService
+          .delete(LifecycleResource.SCHEDULE_RESOURCE, targetId);
+      if (!deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return deleteResponse;
+      }
+      // delete the existing schedule assuming it is ad hoc schedule
+      deleteResponse = this.deleteService.delete(LifecycleResource.AD_HOC_SCHEDULE_RESOURCE, targetId);
+      if (!deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return deleteResponse;
+      }
+      // use regular schedule or ad hoc schedule
+      String scheduleResource = LifecycleResource.SCHEDULE_RESOURCE;
+      if (params.containsKey("schedule entry")) {
+        scheduleResource = LifecycleResource.AD_HOC_SCHEDULE_RESOURCE;
+      }
+      return this.addService.instantiate(scheduleResource, targetId,
+          params, "Schedule has been successfully updated for contract!",
+          LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY);
     });
   }
 
