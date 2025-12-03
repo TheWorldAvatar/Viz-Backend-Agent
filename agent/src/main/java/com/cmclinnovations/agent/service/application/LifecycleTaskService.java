@@ -79,16 +79,6 @@ public class LifecycleTaskService {
   }
 
   /**
-   * Checks if there is an existing pricing model.
-   * 
-   * @param task The target contract id.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getHasPricing(String taskId) {
-    SparqlBinding result = this.lifecycleQueryService.getInstance(FileService.BILLING_PRICING_QUERY_RESOURCE, taskId);
-    return this.responseEntityBuilder.success("", result.get());
-  }
-
-  /**
    * Retrieve the number of task in the specific stage and status.
    * 
    * @param resourceID     The target resource identifier for the instance class.

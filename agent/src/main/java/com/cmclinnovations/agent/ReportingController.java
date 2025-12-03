@@ -8,7 +8,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,12 +17,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
-import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
+import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.application.LifecycleTaskService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 @RestController
@@ -30,17 +32,17 @@ import com.cmclinnovations.agent.utils.StringResource;
 public class ReportingController {
   private final ConcurrencyService concurrencyService;
   private final ResponseEntityBuilder responseEntityBuilder;
-  private final AddService addService;
   private final GetService getService;
+  private final UpdateService updateService;
   private final LifecycleTaskService lifecycleTaskService;
 
   private static final Logger LOGGER = LogManager.getLogger(ReportingController.class);
 
   public ReportingController(ConcurrencyService concurrencyService, ResponseEntityBuilder responseEntityBuilder,
-      AddService addService, GetService getService, LifecycleTaskService lifecycleTaskService) {
+      GetService getService, UpdateService updateService, LifecycleTaskService lifecycleTaskService) {
     this.concurrencyService = concurrencyService;
     this.responseEntityBuilder = responseEntityBuilder;
-    this.addService = addService;
+    this.updateService = updateService;
     this.getService = getService;
     this.lifecycleTaskService = lifecycleTaskService;
   }
@@ -49,7 +51,7 @@ public class ReportingController {
    * Retrieve the count of all closed tasks for the specified date range in UNIX
    * timestamp.
    */
-  @GetMapping("/task/count")
+  @GetMapping("/bill/count")
   public ResponseEntity<StandardApiResponse<?>> getClosedTaskCount(
       @RequestParam Map<String, String> allRequestParams) {
     String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
@@ -66,7 +68,7 @@ public class ReportingController {
   /**
    * Retrieve all closed tasks for the specified date range in UNIX timestamp.
    */
-  @GetMapping("/task")
+  @GetMapping("/bill")
   public ResponseEntity<StandardApiResponse<?>> getAllClosedTasks(
       @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve closed tasks for the specified dates...");
@@ -87,7 +89,7 @@ public class ReportingController {
    * Retrieve the filter options for the completed or problematic tasks on the
    * specified date(s).
    */
-  @GetMapping("/task/filter")
+  @GetMapping("/bill/filter")
   public ResponseEntity<StandardApiResponse<?>> getClosedTaskFilters(
       @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve filter options for contracts in progress...");
@@ -105,18 +107,6 @@ public class ReportingController {
   }
 
   /**
-   * Retrieve the current pricing model (if any) and contract for the specified
-   * task.
-   */
-  @GetMapping("/price/status/{id}")
-  public ResponseEntity<StandardApiResponse<?>> getPricingStatus(@PathVariable String id) {
-    LOGGER.info("Received request to check if there is an existing pricing model for the task: {}...", id);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getHasPricing(id);
-    });
-  }
-
-  /**
    * Retrieves the form template for the pricing model for the target task if
    * available.
    */
@@ -129,13 +119,14 @@ public class ReportingController {
   }
 
   /**
-   * Adds a new pricing model to the specified contract.
+   * Updates the pricing model for the specified contract.
    */
-  @PostMapping("/price")
-  public ResponseEntity<StandardApiResponse<?>> addPricing(@RequestBody Map<String, Object> instance) {
-    LOGGER.info("Received request to add new pricing model...");
+  @PutMapping("/price")
+  public ResponseEntity<StandardApiResponse<?>> updatePricing(@RequestBody Map<String, Object> instance) {
+    LOGGER.info("Received request to update pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
-      return this.addService.instantiate(BillingResource.PAYMENT_OBLIGATION, instance);
+      return this.updateService.update(instance.get(QueryResource.ID_KEY).toString(),
+          BillingResource.PAYMENT_OBLIGATION, LocalisationResource.SUCCESS_UPDATE_KEY, instance);
     });
   }
 }
