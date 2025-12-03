@@ -327,6 +327,10 @@ To add a new instance, users must send a POST request with their corresponding p
 
 where `{type}` is the requested identifier that must correspond to a target file name in`./resources/application-service.json`. The request parameters will depend on the `JSON-LD` file defined. More information on the required schema can be found in [this section](./resources/README.md#21-instantiation).
 
+> [!IMPORTANT]
+> **Conditional Branching:**
+> If the target `JSON-LD` template utilises the @branch directive, the request body MUST include the `branch_add` key to specify which branch to instantiate.
+
 [`SHACL rules`](https://www.w3.org/TR/shacl-af/#rules) can be implemented to derive additional triples. For an example, see the [`./resources` directory](./resources/README.md#13-shacl-derivation). Currently, only the [`SparqlRule`](https://www.w3.org/TR/shacl-af/#SPARQLRule) is fully supported, while [`TripleRule`](https://www.w3.org/TR/shacl-af/#TripleRule) functionality is limited, as nested conditions are not supported.".
 
 A successful request will return:
@@ -340,11 +344,6 @@ A successful request will return:
   }
 }
 ```
-> [!IMPORTANT]
-> **Conditional Branching:**
-> If the target `JSON-LD` template utilises the `@branch` directive, the request body **MUST** include the following keys to manage state transitions:
-> * `branch_add`: The identifier of the branch to be instantiated.
-> * `branch_delete`: The identifier of the branch to be removed.
 
 #### 2.5.2 Delete route
 
@@ -355,6 +354,13 @@ To delete an instance, users must send a DELETE request to
 ```
 
 where `{type}` is the requested identifier that must correspond to a target file name in`./resources/application-service.json`, and `{id}` is the specific instance's identifier. The instance representation will be deleted according to the `JSON-LD` file defined for adding a new instance. More information on the required schema can be found in [this section](./resources/README.md#21-instantiation).
+
+> [!IMPORTANT]
+> **Conditional Branching:**
+> If the target instance involves branching, you MUST append the `branch_delete` query parameter to specify the branch to be removed.
+> Format: `<baseURL>/vis-backend-agent/{type}/{id}?branch_delete=[branch_name]`.
+> 
+> Note on URL Encoding: If the branch name contains spaces, they must be URL-encoded.
 
 A successful request will return:
 
@@ -400,6 +406,11 @@ When updating an instance that involves branches, the payload must explicitly sp
   "branch_add": "branch_2"
 }
 ```
+> [!IMPORTANT]
+> **Conditional Branching:**
+> If the target `JSON-LD` template utilises the `@branch` directive, the request body **MUST** include the following keys to manage state transitions:
+> * `branch_add`: The identifier of the branch to be instantiated.
+> * `branch_delete`: The identifier of the branch to be removed.
 
 #### 2.5.4 Get route
 
@@ -554,7 +565,9 @@ Note that this route will interact with the [schedule route](#263-schedule-route
   "thursday": "A boolean indicating if the service should occur on a thursday",
   "friday": "A boolean indicating if the service should occur on a friday",
   "saturday": "A boolean indicating if the service should occur on a saturday",
-  "sunday": "A boolean indicating if the service should occur on a sunday"
+  "sunday": "A boolean indicating if the service should occur on a sunday",
+  "branch_add": "Optional parameter for branch to add when there is a form branching",
+  "branch_delete": "Optional parameter for branch to delete when there is a form branching"
 }
 ```
 
