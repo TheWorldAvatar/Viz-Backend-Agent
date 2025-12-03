@@ -6,14 +6,11 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiPredicate;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.Lang;
@@ -88,7 +85,7 @@ public class AddService {
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, Map<String, Object> param,
       String successLogMessage, String messageResource) {
     String id = param.getOrDefault(QueryResource.ID_KEY, UUID.randomUUID()).toString();
-    return instantiate(resourceID, id, param, successLogMessage, messageResource);
+    return this.instantiate(resourceID, id, param, successLogMessage, messageResource);
   }
 
   /**
@@ -106,6 +103,7 @@ public class AddService {
     param.put(QueryResource.ID_KEY, targetId);
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
+
     // Attempt to replace all placeholders in the JSON schema
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
     // Add the static ID reference
@@ -242,11 +240,25 @@ public class AddService {
       while (!fieldNames.isEmpty()) {
         String fieldName = fieldNames.poll();
         JsonNode childNode = currentNode.get(fieldName);
+
         // For any form branch configuration field
         if (fieldName.equals(ShaclResource.BRANCH_KEY)) {
-          ObjectNode matchedOption = this.findMatchingOption(
-              this.jsonLdService.getArrayNode(currentNode.path(ShaclResource.BRANCH_KEY)),
-              replacements.keySet());
+          String branchAdd = (String) replacements.get(QueryResource.ADD_BRANCH_KEY);
+          if (branchAdd == null || branchAdd.isEmpty()) {
+            throw new IllegalArgumentException("No branch specified for branch addition!");
+          }
+          ArrayNode branches = this.jsonLdService.getArrayNode(currentNode.path(ShaclResource.BRANCH_KEY));
+          // Extract the matched option with the specific branch name
+          ObjectNode matchedOption = this.jsonLdService.genObjectNode();
+          for (JsonNode branchNode : branches) {
+            if (branchNode.get(ShaclResource.BRANCH_KEY).asText().equals(branchAdd)) {
+              ObjectNode branchObj = (ObjectNode) branchNode;
+              // Remove branch key as it should not be reused
+              branchObj.remove(ShaclResource.BRANCH_KEY);
+              matchedOption = branchObj;
+            }
+          }
+
           // Iterate and append each property in the target node to the current node
           Iterator<String> matchedOptionFieldNames = matchedOption.fieldNames();
           while (matchedOptionFieldNames.hasNext()) {
@@ -295,93 +307,6 @@ public class AddService {
               childrenNodes.add(additionalNodes.poll());
             }
           }
-        }
-      }
-    }
-  }
-
-  /**
-   * Search for the option that matches most of the replacement fields in the
-   * array.
-   * 
-   * @param options        List of options to filter.
-   * @param matchingFields A list containing the fields for matching.
-   */
-  private ObjectNode findMatchingOption(ArrayNode options, Set<String> matchingFields) {
-    // Remove irrelevant parameters
-    matchingFields.remove("entity");
-    ObjectNode bestMatchNode = this.jsonLdService.genObjectNode();
-    int maxMatches = -1;
-    for (JsonNode currentOption : options) {
-      Set<String> availableFields = new HashSet<>();
-      this.recursiveFindReplaceFields(currentOption, availableFields);
-      // Only continue parsing when there are less fields than matching fields
-      // When there are more available fields than matching fields, multiple
-      // options may matched and cannot be discerned
-      if (availableFields.size() <= matchingFields.size()) {
-        // Verify if there are more matched fields than the current maximum
-        Set<String> intersection = this.findCustomMatchingFields(availableFields, matchingFields,
-            (availableField, targetField) -> availableField.equals(targetField)
-                // Target field will be unlikely to match unless when copying contracts where
-                // group names are excluded
-                || availableField.contains(targetField.replaceAll("\\_+", " ")));
-        if (intersection.size() > maxMatches) {
-          maxMatches = intersection.size();
-          bestMatchNode = this.jsonLdService.getObjectNode(currentOption);
-        }
-      }
-    }
-    return bestMatchNode;
-  }
-
-  /**
-   * Finds fields that match between two sets based on a custom matching logic.
-   *
-   * @param availableFields The complete set of fields that may or may not be
-   *                        irrelevant.
-   * @param targetFields    The set of fields to match.
-   * @param matcher         Custom matching logic.
-   */
-  private Set<String> findCustomMatchingFields(
-      Set<String> availableFields,
-      Set<String> targetFields,
-      BiPredicate<String, String> matcher) {
-    Set<String> result = new HashSet<>();
-    for (String target : targetFields) {
-      for (String availableField : availableFields) {
-        if (matcher.test(availableField, target)) {
-          result.add(target);
-          break;
-        }
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Recursively iterate through the current node to find all replacement fields.
-   * 
-   * @param currentNode The current object node for iteration.
-   * @param foundFields A list storing the fields that have already been found.
-   */
-  private void recursiveFindReplaceFields(JsonNode currentNode, Set<String> foundFields) {
-    // For an replacement object
-    if (currentNode.has(ShaclResource.REPLACE_KEY)) {
-      String replaceValue = currentNode.path(ShaclResource.REPLACE_KEY).asText();
-      // Add the replace value if it has yet to be found
-      if (!foundFields.contains(replaceValue)) {
-        foundFields.add(replaceValue);
-      }
-    } else {
-      Iterator<String> fields = currentNode.fieldNames();
-      while (fields.hasNext()) {
-        JsonNode currentField = currentNode.path(fields.next());
-        if (currentField.isArray()) {
-          for (JsonNode arrayItemNode : currentField) {
-            this.recursiveFindReplaceFields(arrayItemNode, foundFields);
-          }
-        } else {
-          this.recursiveFindReplaceFields(currentField, foundFields);
         }
       }
     }

@@ -252,42 +252,7 @@ public class LifecycleTaskService {
     }
     Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, ids, addQuery, varSequences);
     return results.stream()
-        .map(binding -> {
-          return (Map<String, Object>) binding.get().entrySet().stream()
-              .filter(entry -> !entry.getKey()
-                  .equals(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY).getVarName()))
-              .map(entry -> {
-                if (entry.getKey().equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
-                  SparqlResponseField recurrence = TypeCastUtils.castToObject(entry.getValue(),
-                      SparqlResponseField.class);
-                  return new AbstractMap.SimpleEntry<>(
-                      LifecycleResource.SCHEDULE_TYPE_KEY,
-                      new SparqlResponseField(recurrence.type(),
-                          LocalisationTranslator.getScheduleTypeFromRecurrence(recurrence.value()),
-                          recurrence.dataType(), recurrence.lang()));
-                }
-                if (entry.getKey().equals(LifecycleResource.EVENT_KEY)) {
-                  SparqlResponseField eventField = TypeCastUtils.castToObject(entry.getValue(),
-                      SparqlResponseField.class);
-                  // For any pending completion events, simply reset it to the previous event
-                  // status as they are incomplete or in a saved state, and should still be
-                  // outstanding
-                  String eventType = eventField.value();
-                  return new AbstractMap.SimpleEntry<>(
-                      LifecycleResource.STATUS_KEY,
-                      // Add a new response field
-                      new SparqlResponseField(eventField.type(),
-                          LocalisationTranslator.getEvent(eventType),
-                          eventField.dataType(), eventField.lang()));
-                }
-                return entry;
-              })
-              .collect(Collectors.toMap(
-                  Map.Entry::getKey,
-                  (entry -> entry.getValue() == null ? "" : TypeCastUtils.castToObject(entry.getValue(), Object.class)),
-                  (oldVal, newVal) -> newVal,
-                  LinkedHashMap::new));
-        })
+        .map(binding -> this.lifecycleQueryService.parseLifecycleBinding(binding.get()))
         .toList();
   }
 
@@ -342,6 +307,16 @@ public class LifecycleTaskService {
         groupIndex);
     varSequences.putAll(dispatchVars);
     return LifecycleResource.extractOccurrenceQuery(occurrenceQuery, lifecycleEvent);
+  }
+
+  /**
+   * Get the task details for the specified task ID.
+   * 
+   * @param taskId The identifier of the task.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getTask(String taskId) {
+    SparqlBinding task = this.lifecycleQueryService.getInstance(FileService.TASK_QUERY_RESOURCE, taskId);
+    return this.responseEntityBuilder.success(null, this.lifecycleQueryService.parseLifecycleBinding(task.get()));
   }
 
   /**

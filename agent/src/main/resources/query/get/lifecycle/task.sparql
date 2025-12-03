@@ -1,0 +1,33 @@
+PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>
+PREFIX cmns-dt: <https://www.omg.org/spec/Commons/DatesAndTimes/>
+PREFIX cmns-dsg: <https://www.omg.org/spec/Commons/Designators/>
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX fibo-fbc-pas-fpas: <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/>
+PREFIX fibo-fnd-arr-lif: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/>
+PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/>
+PREFIX fibo-fnd-dt-oc: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/>
+PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>
+
+SELECT DISTINCT ?contract ?event ?recurrence ?date
+WHERE { 
+  ?iri a fibo-fbc-pas-fpas:ContractLifecycleEventOccurrence;
+    dc-terms:identifier "[target]";
+    ^cmns-col:comprises ?stage;
+    fibo-fnd-rel-rel:exemplifies ?temp_event;
+    cmns-dt:succeeds* ?order_event.
+  OPTIONAL{?iri cmns-dsg:describes ?event_status}
+  BIND(CONCAT(STR(?temp_event),IF(BOUND(?event_status),CONCAT(";",STR(?event_status)),"")) AS ?event)
+  BIND(xsd:date(?event_date) AS ?date)
+
+  ?stage fibo-fnd-rel-rel:exemplifies ontoservice:ServiceExecutionStage;
+  	^fibo-fnd-arr-lif:hasStage/^fibo-fnd-arr-lif:hasLifecycle/dc-terms:identifier ?contract.
+  OPTIONAL{
+    ?stage fibo-fnd-dt-fd:hasSchedule/fibo-fnd-dt-fd:hasRecurrenceInterval/cmns-dt:hasDurationValue ?recurrences.
+  }
+  BIND(IF(BOUND(?recurrences),?recurrences,"") AS ?recurrence)
+
+  ?order_event fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent;
+    fibo-fnd-dt-oc:hasEventDate	?event_date.
+  MINUS{?iri ^cmns-dt:succeeds ?any_event}
+}

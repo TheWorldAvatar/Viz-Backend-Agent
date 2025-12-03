@@ -64,6 +64,7 @@ public class FileService {
       + "contract_prev_event.sparql";
   public static final String CONTRACT_SCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "schedule.sparql";
   public static final String BILLING_PRICING_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "pricing.sparql";
+  public static final String TASK_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "task.sparql";
 
   public static final String REPLACEMENT_TARGET = "\\[target\\]";
   public static final String REPLACEMENT_SHAPE = "[shape]";

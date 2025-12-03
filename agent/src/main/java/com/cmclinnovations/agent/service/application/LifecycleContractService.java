@@ -293,27 +293,7 @@ public class LifecycleContractService {
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,
         addStatements[1], contractVariables);
     return this.responseEntityBuilder.success(null, instances.stream()
-        .map(binding -> {
-          return (Map<String, Object>) binding.get().entrySet().stream()
-              .map(entry -> {
-                // Replace recurrence with schedule type
-                if (entry.getKey().equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
-                  SparqlResponseField recurrence = TypeCastUtils.castToObject(entry.getValue(),
-                      SparqlResponseField.class);
-                  return new AbstractMap.SimpleEntry<>(
-                      LifecycleResource.SCHEDULE_TYPE_KEY,
-                      new SparqlResponseField(recurrence.type(),
-                          LocalisationTranslator.getScheduleTypeFromRecurrence(recurrence.value()),
-                          recurrence.dataType(), recurrence.lang()));
-                }
-                return entry;
-              })
-              .collect(Collectors.toMap(
-                  Map.Entry::getKey,
-                  (entry -> entry.getValue() == null ? "" : TypeCastUtils.castToObject(entry.getValue(), Object.class)),
-                  (oldVal, newVal) -> newVal,
-                  LinkedHashMap::new));
-        })
+        .map(binding -> this.lifecycleQueryService.parseLifecycleBinding(binding.get()))
         .toList());
   }
 
