@@ -30,6 +30,7 @@ public class LifecycleResource {
   public static final String EMPTY_STRING = "\"\"";
   public static final String RECURRENCE_DAILY_TASK_STRING = "\"" + RECURRENCE_DAILY_TASK + "\"";
   public static final String RECURRENCE_ALT_DAY_TASK_STRING = "\"" + RECURRENCE_ALT_DAY_TASK + "\"";
+  public static final String RECURRENCE_AD_HOC_TASK_STRING = "\"" + RECURRENCE_AD_HOC_TASK + "\"";
 
   public static final String INSTANCE_KEY = "id_instance";
   public static final String CONTRACT_KEY = "contract";

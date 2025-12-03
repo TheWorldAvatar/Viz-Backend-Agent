@@ -301,6 +301,10 @@ public class QueryResource {
                                 LocalisationTranslator
                                         .getMessage(LocalisationResource.LABEL_ALTERNATE_DAY_SERVICE_KEY))) {
                             return LifecycleResource.RECURRENCE_ALT_DAY_TASK_STRING;
+                        } else if (scheduleTypeContent.equals(
+                                LocalisationTranslator
+                                        .getMessage(LocalisationResource.LABEL_AD_HOC_SERVICE_KEY))) {
+                            return LifecycleResource.RECURRENCE_AD_HOC_TASK_STRING;
                         }
                         return scheduleType;
                     }).collect(Collectors.toSet());
