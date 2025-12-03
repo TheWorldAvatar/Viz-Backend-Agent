@@ -27,7 +27,7 @@ WHERE {
     UNION
     {?stage fibo-fnd-dt-fd:hasSchedule/a ?schedule_class.
     BIND(IF(?schedule_class=<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>,
-            "adhoc","invalid") AS ?recurrences)}
+            "fixed_date","invalid") AS ?recurrences)}
   }
   BIND(IF(BOUND(?recurrences),?recurrences,"") AS ?recurrence)
 

@@ -105,9 +105,9 @@ public class QueryResource {
 
     public static final String ADD_BRANCH_KEY = "branch_add";
     public static final String DELETE_BRANCH_KEY = "branch_delete";
-    public static final String AD_HOC_DATE_KEY = "entry_date";
-    public static final String AD_HOC_SCHEDULE_KEY = "schedule entry";
-    public static final String AD_HOC_SCHEDULE_DATE_KEY = "schedule entry date";
+    public static final String FIXED_DATE_DATE_KEY = "entry_date";
+    public static final String FIXED_DATE_SCHEDULE_KEY = "schedule entry";
+    public static final String FIXED_DATE_SCHEDULE_DATE_KEY = "schedule entry date";
 
     // Private constructor to prevent instantiation
     private QueryResource() {
@@ -309,8 +309,8 @@ public class QueryResource {
                             return LifecycleResource.RECURRENCE_ALT_DAY_TASK_STRING;
                         } else if (scheduleTypeContent.equals(
                                 LocalisationTranslator
-                                        .getMessage(LocalisationResource.LABEL_AD_HOC_SERVICE_KEY))) {
-                            return LifecycleResource.RECURRENCE_AD_HOC_TASK_STRING;
+                                        .getMessage(LocalisationResource.LABEL_FIXED_DATE_SERVICE_KEY))) {
+                            return LifecycleResource.RECURRENCE_FIXED_DATE_TASK_STRING;
                         }
                         return scheduleType;
                     }).collect(Collectors.toSet());

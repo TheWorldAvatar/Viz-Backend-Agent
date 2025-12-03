@@ -168,7 +168,7 @@ public class LifecycleContractService {
    */
   public Map<String, Object> getContractSchedule(String contractId) {
     Map<String, Object> rawSchedule = this.lifecycleQueryService.querySchedule(contractId).get();
-    boolean isAdHoc = rawSchedule.containsKey(QueryResource.AD_HOC_DATE_KEY);
+    boolean isFixedDate = rawSchedule.containsKey(QueryResource.FIXED_DATE_DATE_KEY);
     Map<String, SparqlResponseField> schedule = rawSchedule.entrySet().stream()
         .filter(entry -> !(entry.getValue() instanceof ArrayList))
         .collect(Collectors.toMap(
@@ -190,9 +190,9 @@ public class LifecycleContractService {
     // Keep time window
     draftDetails.put("time slot start", schedule.get(QueryResource.SCHEDULE_START_TIME_VAR.getVarName()).value());
     draftDetails.put("time slot end", schedule.get(QueryResource.SCHEDULE_END_TIME_VAR.getVarName()).value());
-    // handle ad hoc schedule separately
-    if (isAdHoc) {
-      List<SparqlResponseField> dateFields = (List<SparqlResponseField>) rawSchedule.get(QueryResource.AD_HOC_DATE_KEY);
+    // handle fixed date schedule separately
+    if (isFixedDate) {
+      List<SparqlResponseField> dateFields = (List<SparqlResponseField>) rawSchedule.get(QueryResource.FIXED_DATE_DATE_KEY);
       List<String> entryDateList = dateFields.stream().map(SparqlResponseField::value).collect(Collectors.toList());
       // start date should be the first order date on/after today
       draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY,
@@ -202,11 +202,11 @@ public class LifecycleContractService {
       List<Map<String, String>> entryDateStrings = dateFields.stream()
           .map(field -> {
             Map<String, String> dateMap = new HashMap<>();
-            dateMap.put(QueryResource.AD_HOC_SCHEDULE_DATE_KEY, field.value());
+            dateMap.put(QueryResource.FIXED_DATE_SCHEDULE_DATE_KEY, field.value());
             return dateMap;
           })
           .collect(Collectors.toList());
-      draftDetails.put(QueryResource.AD_HOC_SCHEDULE_KEY, entryDateStrings);
+      draftDetails.put(QueryResource.FIXED_DATE_SCHEDULE_KEY, entryDateStrings);
     } else {
       draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
       // perpetual service has no end date

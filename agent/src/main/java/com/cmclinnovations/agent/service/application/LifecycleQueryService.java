@@ -34,7 +34,7 @@ public class LifecycleQueryService {
       QueryResource.SCHEDULE_START_TIME_VAR.getVarName(), QueryResource.SCHEDULE_END_TIME_VAR.getVarName(),
       QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName()
   };
-  private static final Map<String, Set<String>> AD_HOC_SCHEDULE_ARRAY_VARS = new HashMap<>();
+  private static final Map<String, Set<String>> FIXED_DATE_SCHEDULE_ARRAY_VARS = new HashMap<>();
 
   /**
    * Constructs a new service.
@@ -47,7 +47,7 @@ public class LifecycleQueryService {
     this.dateTimeService = dateTimeService;
     this.getService = getService;
     this.fileService = fileService;
-    AD_HOC_SCHEDULE_ARRAY_VARS.put(QueryResource.AD_HOC_DATE_KEY, Set.of(QueryResource.AD_HOC_DATE_KEY));
+    FIXED_DATE_SCHEDULE_ARRAY_VARS.put(QueryResource.FIXED_DATE_DATE_KEY, Set.of(QueryResource.FIXED_DATE_DATE_KEY));
   }
 
   /**
@@ -207,14 +207,15 @@ public class LifecycleQueryService {
    * @param contract identifier of contract.
    */
   public SparqlBinding querySchedule(String contract) {
+    // try query as regular schedule
     SparqlBinding result = this.queryRegularSchedule(contract);
     if (result==null) {
-      // try query as ad hoc schedule
-      Queue<SparqlBinding> results = this.queryAdHocSchedule(contract);
+      // try query as fixed date schedule
+      Queue<SparqlBinding> results = this.queryFixedDateSchedule(contract);
       SparqlBinding temp = results.poll();
       // Iterate over results to get entry dates as an array
       results.stream().forEach(binding -> {
-        temp.addFieldArray(binding, AD_HOC_SCHEDULE_ARRAY_VARS);
+        temp.addFieldArray(binding, FIXED_DATE_SCHEDULE_ARRAY_VARS);
       });
       result = temp;
     }
@@ -232,12 +233,12 @@ public class LifecycleQueryService {
   }
 
   /**
-   * Query for ad hoc schedule of a contract.
+   * Query for fixed date schedule of a contract.
    * 
    * @param contract identifier of contract.
    */
-  private Queue<SparqlBinding> queryAdHocSchedule(String contract) {
-    return this.getInstances(FileService.AD_HOC_CONTRACT_SCHEDULE_QUERY_RESOURCE,
+  private Queue<SparqlBinding> queryFixedDateSchedule(String contract) {
+    return this.getInstances(FileService.FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE,
         contract, contract);
   }
 }

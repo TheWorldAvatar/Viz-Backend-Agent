@@ -161,10 +161,10 @@ public class LifecycleController {
     return this.concurrencyService.executeInWriteLock(LifecycleResource.SCHEDULE_RESOURCE, () -> {
       LOGGER.info("Received request to generate the schedule details for contract...");
       this.lifecycleContractService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
-      // use regular schedule or ad hoc schedule
+      // use regular schedule or fixed date schedule
       String scheduleResource = LifecycleResource.SCHEDULE_RESOURCE;
-      if (params.containsKey(QueryResource.AD_HOC_SCHEDULE_KEY)) {
-        scheduleResource = LifecycleResource.AD_HOC_SCHEDULE_RESOURCE;
+      if (params.containsKey(QueryResource.FIXED_DATE_SCHEDULE_KEY)) {
+        scheduleResource = LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE;
       }
       return this.addService.instantiate(scheduleResource,
           params, "Schedule has been successfully drafted for contract!",
@@ -187,15 +187,15 @@ public class LifecycleController {
       if (!deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
         return deleteResponse;
       }
-      // delete the existing schedule assuming it is ad hoc schedule
-      deleteResponse = this.deleteService.delete(LifecycleResource.AD_HOC_SCHEDULE_RESOURCE, targetId, null);
+      // delete the existing schedule assuming it is fixed date schedule
+      deleteResponse = this.deleteService.delete(LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE, targetId, null);
       if (!deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
         return deleteResponse;
       }
-      // use regular schedule or ad hoc schedule
+      // use regular schedule or fixed date schedule
       String scheduleResource = LifecycleResource.SCHEDULE_RESOURCE;
-      if (params.containsKey(QueryResource.AD_HOC_SCHEDULE_KEY)) {
-        scheduleResource = LifecycleResource.AD_HOC_SCHEDULE_RESOURCE;
+      if (params.containsKey(QueryResource.FIXED_DATE_SCHEDULE_KEY)) {
+        scheduleResource = LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE;
       }
       return this.addService.instantiate(scheduleResource, targetId,
           params, "Schedule has been successfully updated for contract!",

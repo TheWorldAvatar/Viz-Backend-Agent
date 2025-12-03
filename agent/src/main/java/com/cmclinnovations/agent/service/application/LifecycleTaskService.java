@@ -387,10 +387,10 @@ public class LifecycleTaskService {
     }
     String recurrence = bindings.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY);
     Queue<String> occurrences = new ArrayDeque<>();
-    // Ad hoc schedule first
+    // Handle as fixed date schedule first
     Map<String, Object> schedule = bindings.get();
-    if (schedule.containsKey(QueryResource.AD_HOC_DATE_KEY)) {
-      List<SparqlResponseField> entryDates = (List<SparqlResponseField>) schedule.get(QueryResource.AD_HOC_DATE_KEY);
+    if (schedule.containsKey(QueryResource.FIXED_DATE_DATE_KEY)) {
+      List<SparqlResponseField> entryDates = (List<SparqlResponseField>) schedule.get(QueryResource.FIXED_DATE_DATE_KEY);
       List<String> entryDateStrings = entryDates.stream()
           .map(SparqlResponseField::value)
           .collect(Collectors.toList());
