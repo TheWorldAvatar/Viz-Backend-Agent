@@ -1,10 +1,8 @@
 package com.cmclinnovations.agent.service.application;
 
-import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -87,7 +85,7 @@ public class LifecycleTaskService {
    */
   public ResponseEntity<StandardApiResponse<?>> getHasPricing(String taskId) {
     SparqlBinding result = this.lifecycleQueryService.getInstance(FileService.BILLING_PRICING_QUERY_RESOURCE, taskId);
-    return this.responseEntityBuilder.success("",result.get());
+    return this.responseEntityBuilder.success("", result.get());
   }
 
   /**
