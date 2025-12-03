@@ -727,6 +727,10 @@ There is also an additional optional parameter `label` to retrieve in progress c
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all active contracts, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. Users can also include an optional `search` parameter as well as any active filters.
 
+> A record of one service task
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/task/{id}` endpoint to get the specific task based on its id, where `id` is the task's identifier.
+
 > Records of service tasks
 
 For tasks associated with a contract, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/{contract}?type={contractType}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all tasks for the target contract, where `contract` is the contract's identifier and `contractType` is the resource ID of the contract type, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.

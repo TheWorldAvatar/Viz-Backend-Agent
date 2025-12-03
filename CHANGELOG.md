@@ -1,9 +1,13 @@
 # Change Log
 
+## 1.21.1
+ 
+ - Added a route to get current task details
+
 ## 1.21.0
  
- - Enhanced branch template support across all CRUD operations
- - Improved contract cloning reliability
+ - Enforced `branch_add` and `branch_delete` parameters to support add, delete, and edit operations.
+ - Support branch usage when cloning contract with new parameters
 
 ## 1.20.1
 
