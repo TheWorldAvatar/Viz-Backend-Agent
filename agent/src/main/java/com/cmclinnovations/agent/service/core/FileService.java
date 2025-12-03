@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
+import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -48,6 +49,7 @@ public class FileService {
   public static final String INSTANCE_QUERY_RESOURCE = QUERY_GET_DIR + "instance.sparql";
   public static final String SHACL_PATH_QUERY_RESOURCE = QUERY_GET_DIR + "property_path.sparql";
   public static final String SHACL_PATH_LABEL_QUERY_RESOURCE = QUERY_GET_DIR + "property_path_label.sparql";
+  public static final String PAYMENT_OBLIGATION_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/payment_obligation.jsonld";
   public static final String LIFECYCLE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/lifecycle.jsonld";
   public static final String LIFECYCLE_REPORT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/report.jsonld";
   public static final String OCCURRENCE_INSTANT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_instant.jsonld";
@@ -154,7 +156,9 @@ public class FileService {
     LOGGER.debug("Retrieving the target class associated with the resource identifier: {} ...", resourceID);
     if (resourceID.equals(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE)) {
       return Rdf.iri(LifecycleResource.EVENT_OCCURRENCE_IRI);
-    }
+    } else  if (resourceID.equals(BillingResource.PAYMENT_OBLIGATION)) {
+      return BillingResource.PAYMENT_OBLIGATION_IRI;
+    } 
     String targetClass = this.getResourceTarget(resourceID,
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_FORM_RESOURCE);
     // Handle invalid target type

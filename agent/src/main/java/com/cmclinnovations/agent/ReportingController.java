@@ -8,6 +8,8 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,8 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.service.AddService;
+import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.LifecycleTaskService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
+import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
@@ -24,27 +29,20 @@ import com.cmclinnovations.agent.utils.StringResource;
 @RequestMapping("/report")
 public class ReportingController {
   private final ConcurrencyService concurrencyService;
-  private final LifecycleTaskService lifecycleTaskService;
   private final ResponseEntityBuilder responseEntityBuilder;
+  private final AddService addService;
+  private final GetService getService;
+  private final LifecycleTaskService lifecycleTaskService;
 
   private static final Logger LOGGER = LogManager.getLogger(ReportingController.class);
 
-  public ReportingController(ConcurrencyService concurrencyService, LifecycleTaskService lifecycleTaskService,
-      ResponseEntityBuilder responseEntityBuilder) {
+  public ReportingController(ConcurrencyService concurrencyService, ResponseEntityBuilder responseEntityBuilder,
+      AddService addService, GetService getService, LifecycleTaskService lifecycleTaskService) {
     this.concurrencyService = concurrencyService;
-    this.lifecycleTaskService = lifecycleTaskService;
     this.responseEntityBuilder = responseEntityBuilder;
-  }
-
-  /**
-   * Retrieve the current pricing model (if any) and contract for the specified task.
-   */
-  @GetMapping("/status/price/{id}")
-  public ResponseEntity<StandardApiResponse<?>> getPricingStatus(@PathVariable String id) {
-    LOGGER.info("Received request to check if there is an existing pricing model for the task: {}...", id);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getHasPricing(id);
-    });
+    this.addService = addService;
+    this.getService = getService;
+    this.lifecycleTaskService = lifecycleTaskService;
   }
 
   /**
@@ -103,6 +101,41 @@ public class ReportingController {
       List<String> options = this.lifecycleTaskService.getFilterOptions(type, field,
           search, startTimestamp, endTimestamp, true, allRequestParams);
       return this.responseEntityBuilder.success(options);
+    });
+  }
+
+  /**
+   * Retrieve the current pricing model (if any) and contract for the specified
+   * task.
+   */
+  @GetMapping("/price/status/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getPricingStatus(@PathVariable String id) {
+    LOGGER.info("Received request to check if there is an existing pricing model for the task: {}...", id);
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
+      return this.lifecycleTaskService.getHasPricing(id);
+    });
+  }
+
+  /**
+   * Retrieves the form template for the pricing model for the target task if
+   * available.
+   */
+  @GetMapping("/price/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getPricingForm(@PathVariable String id) {
+    LOGGER.info("Received request to get the form template for pricing model...");
+    return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
+      return this.getService.getForm(id, BillingResource.PAYMENT_OBLIGATION, false, null);
+    });
+  }
+
+  /**
+   * Adds a new pricing model to the specified contract.
+   */
+  @PostMapping("/price")
+  public ResponseEntity<StandardApiResponse<?>> addPricing(@RequestBody Map<String, Object> instance) {
+    LOGGER.info("Received request to add new pricing model...");
+    return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
+      return this.addService.instantiate(BillingResource.PAYMENT_OBLIGATION, instance);
     });
   }
 }
