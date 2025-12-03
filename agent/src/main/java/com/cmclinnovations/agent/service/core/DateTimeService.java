@@ -335,6 +335,13 @@ public class DateTimeService {
             }));
   }
 
+  /**
+   * Finds the earliest date in the provided list of date strings that is today or
+   * in the future (i.e., not before today).
+   *
+   * @param dateStrings A list of date strings to be checked.
+   * 
+   */
   public String getFirstDateByToday(List<String> dateStrings) {
     LocalDate today = LocalDate.now();
     // Use a stream to process the list efficiently
@@ -345,6 +352,11 @@ public class DateTimeService {
     return earliestFutureDate.map(date -> date.format(this.formatter)).orElse(null);
   }
 
+  /**
+   * Finds the last date in the provided list of date strings.
+   *
+   * @param dateStrings A list of date strings to be checked.
+   */
   public String getLastDate(List<String> dateStrings) {
     Optional<LocalDate> latestDate = dateStrings.stream()
         .map(dateString -> this.parseDate(dateString))

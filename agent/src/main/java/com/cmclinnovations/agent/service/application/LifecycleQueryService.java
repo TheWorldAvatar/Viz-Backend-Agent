@@ -200,6 +200,12 @@ public class LifecycleQueryService {
             LinkedHashMap::new));
   }
 
+  
+  /**
+   * Query for schedule of a contract.
+   * 
+   * @param contract identifier of contract.
+   */
   public SparqlBinding querySchedule(String contract) {
     SparqlBinding result = this.queryRegularSchedule(contract);
     if (result==null) {
@@ -215,11 +221,21 @@ public class LifecycleQueryService {
     return result;
   }
 
+  /**
+   * Query for regular schedule of a contract.
+   * 
+   * @param contract identifier of contract.
+   */
   private SparqlBinding queryRegularSchedule(String contract) {
     return this.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,
         contract, contract);
   }
 
+  /**
+   * Query for ad hoc schedule of a contract.
+   * 
+   * @param contract identifier of contract.
+   */
   private Queue<SparqlBinding> queryAdHocSchedule(String contract) {
     return this.getInstances(FileService.AD_HOC_CONTRACT_SCHEDULE_QUERY_RESOURCE,
         contract, contract);
