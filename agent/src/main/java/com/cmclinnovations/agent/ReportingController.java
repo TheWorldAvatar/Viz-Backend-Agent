@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.GetService;
@@ -26,6 +27,7 @@ import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
+import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @RestController
 @RequestMapping("/report")
@@ -125,7 +127,19 @@ public class ReportingController {
   public ResponseEntity<StandardApiResponse<?>> updatePricing(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to update pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
-      return this.updateService.update(instance.get(QueryResource.ID_KEY).toString(),
+      String targetId = instance.get(QueryResource.ID_KEY).toString();
+      Map<String, Object> currentEntity = (Map<String, Object>) this.getService
+          .getInstance(targetId, BillingResource.PAYMENT_OBLIGATION, false)
+          .getBody().data().items().get(0);
+      // Iterate through the fields to cast from SparqlResponseField to actual value
+      currentEntity.forEach((key, field) -> {
+        // Do not add ID or pricing model variable
+        if (!key.equals(QueryResource.ID_KEY) && !key.equals(QueryResource.PRICING_MODEL_VAR.getVarName())) {
+          String value = TypeCastUtils.castToObject(field, SparqlResponseField.class).value();
+          instance.put(key, value);
+        }
+      });
+      return this.updateService.update(targetId,
           BillingResource.PAYMENT_OBLIGATION, LocalisationResource.SUCCESS_UPDATE_KEY, instance);
     });
   }
