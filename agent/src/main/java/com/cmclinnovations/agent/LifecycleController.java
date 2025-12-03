@@ -195,8 +195,7 @@ public class LifecycleController {
         // the details
         contractDetails.putAll(schedule);
 
-        // Infer and set the branch for cloning
-        inferAndSetBranch(contractDetails);
+        this.inferAndSetBranch(contractDetails);
 
         for (int i = 0; i < reqCopies; i++) {
           // need new copy because there are side effects
@@ -245,19 +244,11 @@ public class LifecycleController {
     // Check if this is a Waste Collection Service (has waste category)
     if (contractDetails.containsKey("waste_category")) {
       branchName = "Waste Collection Service";
-    }
-    // Check if this is a Delivery Service (no waste category)
-    else if (contractDetails.containsKey("service_type")) {
+    } else {
       branchName = "Delivery Service";
     }
 
-    // Add branch_add parameter if a branch was identified
-    if (branchName != null) {
-      contractDetails.put("branch_add", branchName);
-      LOGGER.info("Inferred and set branch '{}' for cloning based on contract data", branchName);
-    } else {
-      LOGGER.debug("No branch detected for cloning - template may not have branches");
-    }
+    contractDetails.put(QueryResource.ADD_BRANCH_KEY, branchName);
   }
 
   /**
