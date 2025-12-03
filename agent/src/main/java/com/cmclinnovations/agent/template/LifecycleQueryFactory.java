@@ -54,7 +54,7 @@ public class LifecycleQueryFactory {
             + "{?schedule <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?"
             + LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY + ".} UNION "
             + "{?schedule a ?schedule_class. BIND(IF(?schedule_class=<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>,\""
-            + LifecycleResource.RECURRENCE_AD_HOC_TASK + "\",\"\") AS ?recurrences)}"
+            + LifecycleResource.RECURRENCE_AD_HOC_TASK + "\",\"invalid\") AS ?recurrences)}"
             + "}");
     SCHEDULE_QUERY_MAPPINGS = Collections.unmodifiableMap(template);
     // Add extended statements to the right mappings with a full reset
@@ -189,7 +189,7 @@ public class LifecycleQueryFactory {
         + "UNION {?iri "
         + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
         "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/a ?schedule_class. BIND(IF(?schedule_class=<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>,\""
-        + LifecycleResource.RECURRENCE_AD_HOC_TASK + "\",\"\") AS ?recurrences)}"
+        + LifecycleResource.RECURRENCE_AD_HOC_TASK + "\",\"invalid\") AS ?recurrences)}"
         + "}BIND(IF(BOUND(?recurrences),?recurrences,\"\") AS "
         + QueryResource.SCHEDULE_RECURRENCE_VAR.getQueryString()
         + ")");
