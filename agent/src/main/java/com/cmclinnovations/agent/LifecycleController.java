@@ -183,12 +183,12 @@ public class LifecycleController {
       String targetId = params.get(QueryResource.ID_KEY).toString();
       // delete the existing schedule assuming it is regular schedule
       ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService
-          .delete(LifecycleResource.SCHEDULE_RESOURCE, targetId);
+          .delete(LifecycleResource.SCHEDULE_RESOURCE, targetId, null);
       if (!deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
         return deleteResponse;
       }
       // delete the existing schedule assuming it is ad hoc schedule
-      deleteResponse = this.deleteService.delete(LifecycleResource.AD_HOC_SCHEDULE_RESOURCE, targetId);
+      deleteResponse = this.deleteService.delete(LifecycleResource.AD_HOC_SCHEDULE_RESOURCE, targetId, null);
       if (!deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
         return deleteResponse;
       }
