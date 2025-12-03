@@ -47,7 +47,7 @@ public class LifecycleQueryService {
     this.dateTimeService = dateTimeService;
     this.getService = getService;
     this.fileService = fileService;
-    AD_HOC_SCHEDULE_ARRAY_VARS.put("entry_date", Set.of("entry_date"));
+    AD_HOC_SCHEDULE_ARRAY_VARS.put(QueryResource.AD_HOC_DATE_KEY, Set.of(QueryResource.AD_HOC_DATE_KEY));
   }
 
   /**

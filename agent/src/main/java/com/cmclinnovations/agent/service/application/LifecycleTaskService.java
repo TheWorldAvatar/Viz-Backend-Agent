@@ -389,8 +389,8 @@ public class LifecycleTaskService {
     Queue<String> occurrences = new ArrayDeque<>();
     // Ad hoc schedule first
     Map<String, Object> schedule = bindings.get();
-    if (schedule.containsKey("entry_date")) {
-      List<SparqlResponseField> entryDates = (List<SparqlResponseField>) schedule.get("entry_date");
+    if (schedule.containsKey(QueryResource.AD_HOC_DATE_KEY)) {
+      List<SparqlResponseField> entryDates = (List<SparqlResponseField>) schedule.get(QueryResource.AD_HOC_DATE_KEY);
       List<String> entryDateStrings = entryDates.stream()
           .map(SparqlResponseField::value)
           .collect(Collectors.toList());

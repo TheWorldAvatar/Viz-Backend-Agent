@@ -105,6 +105,9 @@ public class QueryResource {
 
     public static final String ADD_BRANCH_KEY = "branch_add";
     public static final String DELETE_BRANCH_KEY = "branch_delete";
+    public static final String AD_HOC_DATE_KEY = "entry_date";
+    public static final String AD_HOC_SCHEDULE_KEY = "schedule entry";
+    public static final String AD_HOC_SCHEDULE_DATE_KEY = "schedule entry date";
 
     // Private constructor to prevent instantiation
     private QueryResource() {

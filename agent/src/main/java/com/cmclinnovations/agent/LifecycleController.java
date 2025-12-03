@@ -163,7 +163,7 @@ public class LifecycleController {
       this.lifecycleContractService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
       // use regular schedule or ad hoc schedule
       String scheduleResource = LifecycleResource.SCHEDULE_RESOURCE;
-      if (params.containsKey("schedule entry")) {
+      if (params.containsKey(QueryResource.AD_HOC_SCHEDULE_KEY)) {
         scheduleResource = LifecycleResource.AD_HOC_SCHEDULE_RESOURCE;
       }
       return this.addService.instantiate(scheduleResource,
@@ -194,7 +194,7 @@ public class LifecycleController {
       }
       // use regular schedule or ad hoc schedule
       String scheduleResource = LifecycleResource.SCHEDULE_RESOURCE;
-      if (params.containsKey("schedule entry")) {
+      if (params.containsKey(QueryResource.AD_HOC_SCHEDULE_KEY)) {
         scheduleResource = LifecycleResource.AD_HOC_SCHEDULE_RESOURCE;
       }
       return this.addService.instantiate(scheduleResource, targetId,
