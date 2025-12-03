@@ -340,6 +340,11 @@ A successful request will return:
   }
 }
 ```
+> [!IMPORTANT]
+> **Conditional Branching:**
+> If the target `JSON-LD` template utilises the `@branch` directive, the request body **MUST** include the following keys to manage state transitions:
+> * `branch_add`: The identifier of the branch to be instantiated.
+> * `branch_delete`: The identifier of the branch to be removed.
 
 #### 2.5.2 Delete route
 
@@ -383,6 +388,16 @@ A successful request will return:
     "id": "IRI",
     "message": "type has been successfully updated for id!"
   }
+}
+```
+
+When updating an instance that involves branches, the payload must explicitly specify which branch to remove and which to add.
+
+```json
+{
+  "id": "0001",
+  "branch_delete": "branch_1",
+  "branch_add": "branch_2"
 }
 ```
 
