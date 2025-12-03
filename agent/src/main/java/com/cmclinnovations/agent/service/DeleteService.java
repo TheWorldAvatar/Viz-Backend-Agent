@@ -1,5 +1,8 @@
 package com.cmclinnovations.agent.service;
 
+import java.util.Iterator;
+import java.util.Map;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +11,8 @@ import org.springframework.stereotype.Service;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class DeleteService {
@@ -32,10 +37,12 @@ public class DeleteService {
    * 
    * @param resourceID The target resource identifier for the instance.
    * @param targetId   The target instance IRI.
+   * @param branchName The branch name to filter (can be null).
    */
-  public ResponseEntity<StandardApiResponse<?>> delete(String resourceID, String targetId) {
-    LOGGER.debug("Deleting {} instance of {} ...", resourceID, targetId);
-    String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId);
+  public ResponseEntity<StandardApiResponse<?>> delete(String resourceID, String targetId, String branchName) {
+    LOGGER.debug("Deleting {} instance of {}", resourceID, targetId);
+    // Generate query with branch validation
+    String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId, branchName);
     return this.kgService.delete(query, targetId);
   }
 }
