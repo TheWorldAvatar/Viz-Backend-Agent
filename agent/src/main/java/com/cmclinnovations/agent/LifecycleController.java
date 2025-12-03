@@ -194,6 +194,9 @@ public class LifecycleController {
         // Include schedule details into contract as some custom contract may require
         // the details
         contractDetails.putAll(schedule);
+
+        this.inferAndSetBranch(contractDetails);
+
         for (int i = 0; i < reqCopies; i++) {
           // need new copy because there are side effects
           Map<String, Object> contractDetailsCopy = new HashMap<>(contractDetails);
@@ -218,6 +221,34 @@ public class LifecycleController {
     draftDetails.put(QueryResource.ID_KEY, contractDetails.get(QueryResource.ID_KEY));
     draftDetails.put(LifecycleResource.CONTRACT_KEY, response.data().id());
     this.execGenContractLifecycle(draftDetails);
+  }
+
+  /**
+   * Infer the branch name used for this job based on the presence of
+   * branch-specific fields and add it to the contract details.
+   * 
+   * TODO: Future improvement - This method uses hardcoded field checks to
+   * determine
+   * branch names. Consider implementing a more flexible solution that:
+   * 1. Reads branch definitions from SHACL configuration
+   * 2. Uses branch-specific field patterns from application-form.json
+   * 3. Dynamically maps service types to branch names
+   * 
+   * @param contractDetails The contract data retrieved from the knowledge graph.
+   *                        This map will be modified to include "branch_add" key
+   *                        if a branch is detected.
+   */
+  private void inferAndSetBranch(Map<String, Object> contractDetails) {
+    String branchName = null;
+
+    // Check if this is a Waste Collection Service (has waste category)
+    if (contractDetails.containsKey("waste_category")) {
+      branchName = "Waste Collection Service";
+    } else {
+      branchName = "Delivery Service";
+    }
+
+    contractDetails.put(QueryResource.ADD_BRANCH_KEY, branchName);
   }
 
   /**
@@ -250,7 +281,7 @@ public class LifecycleController {
       return this.responseEntityBuilder.success(contractId,
           LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_APPROVAL_KEY));
     }
-    boolean hasError = this.lifecycleTaskService.genOrderReceivedOccurrences(contractId);
+    boolean hasError = this.lifecycleTaskService.genOrderReceivedOccurrences(contractId, null);
     if (hasError) {
       LOGGER.warn(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));
       return this.responseEntityBuilder.error(

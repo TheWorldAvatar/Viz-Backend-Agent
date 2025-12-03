@@ -278,12 +278,18 @@ public class VisBackendAgent {
 
   /**
    * Removes the specified instance from the knowledge graph.
+   * 
+   * @param type         The resource type
+   * @param id           The identifier of the instance to delete
+   * @param branchDelete Optional branch name to filter deletion
    */
+
   @DeleteMapping("/{type}/{id}")
-  public ResponseEntity<StandardApiResponse<?>> removeEntity(@PathVariable String type, @PathVariable String id) {
+  public ResponseEntity<StandardApiResponse<?>> removeEntity(@PathVariable String type, @PathVariable String id,
+      @RequestParam(name = "branch_delete", required = false) String branchDelete) {
     LOGGER.info("Received request to delete {}...", type);
     return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.deleteService.delete(type, id);
+      return this.deleteService.delete(type, id, branchDelete);
     });
   }
 
@@ -294,6 +300,7 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> updateEntity(@PathVariable String type, @PathVariable String id,
       @RequestBody Map<String, Object> updatedEntity) {
     LOGGER.info("Received request to update {}...", type);
+
     return this.concurrencyService.executeInWriteLock(type, () -> {
       return this.updateService.update(id, type, LocalisationResource.SUCCESS_UPDATE_KEY, updatedEntity);
     });

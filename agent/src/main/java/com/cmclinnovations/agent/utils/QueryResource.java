@@ -101,6 +101,10 @@ public class QueryResource {
             .genVariable(LifecycleResource.SCHEDULE_END_TIME_KEY);
     public static final Variable SCHEDULE_RECURRENCE_VAR = QueryResource
             .genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY);
+    public static final Variable LATEST_DATE_VAR = QueryResource.genVariable("latest_date");
+
+    public static final String ADD_BRANCH_KEY = "branch_add";
+    public static final String DELETE_BRANCH_KEY = "branch_delete";
 
     // Private constructor to prevent instantiation
     private QueryResource() {

@@ -9,10 +9,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
@@ -139,6 +137,37 @@ public class DateTimeService {
         .atZone(ZoneId.systemDefault()) // Adjust to the system default time zone
         .toLocalDate()
         .format(this.formatter);
+  }
+
+  /**
+   * Returns a future date string by adding a specified number of days to a base
+   * date.
+   * The resulting date is returned as a formatted string.
+   *
+   * @param dateString The base date string from which to start the calculation.
+   * @param daysToAdd  The number of days to add to the base date.
+   */
+  public String getFutureDate(String dateString, int daysToAdd) {
+    return this.parseDate(dateString).plusDays(daysToAdd).format(this.formatter);
+  }
+
+  /**
+   * Gets the earliest date between the contract's end date, and the calculated
+   * date offset from today.
+   * 
+   * @param contractEndDate the end date of the contract.
+   * @param offsetDays      number of days from today to be offset.
+   */
+  public String getEarliestDateOrContractEnd(String contractEndDate, int offsetDays) {
+    LocalDate today = LocalDate.now();
+    LocalDate endDate = this.parseDate(contractEndDate);
+    LocalDate calculatedDate = today.plusDays(offsetDays);
+
+    if (calculatedDate.isBefore(endDate)) {
+      return calculatedDate.format(this.formatter);
+    } else {
+      return endDate.format(this.formatter);
+    }
   }
 
   /**
