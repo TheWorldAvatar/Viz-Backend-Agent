@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -332,5 +333,22 @@ public class DateTimeService {
               // name
               return field != null && field.value() != null && field.value().equals(properCaseName);
             }));
+  }
+
+  public String getFirstDateByToday(List<String> dateStrings) {
+    LocalDate today = LocalDate.now();
+    // Use a stream to process the list efficiently
+    Optional<LocalDate> earliestFutureDate = dateStrings.stream()
+        .map(dateString -> this.parseDate(dateString))
+        .filter(date -> !date.isBefore(today))
+        .min(LocalDate::compareTo);
+    return earliestFutureDate.map(date -> date.format(this.formatter)).orElse(null);
+  }
+
+  public String getLastDate(List<String> dateStrings) {
+    Optional<LocalDate> latestDate = dateStrings.stream()
+        .map(dateString -> this.parseDate(dateString))
+        .max(LocalDate::compareTo);
+    return latestDate.map(date -> date.format(this.formatter)).orElse(null);
   }
 }

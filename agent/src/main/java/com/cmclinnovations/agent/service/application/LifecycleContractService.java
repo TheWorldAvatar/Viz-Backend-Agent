@@ -189,21 +189,18 @@ public class LifecycleContractService {
     // convert to draft schedule details
     Map<String, Object> draftDetails = new HashMap<>();
     String today = this.dateTimeService.getCurrentDate();
-    // Keep recurrence details
-    draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
+    // Keep time window
     draftDetails.put("time slot start", schedule.get(QueryResource.SCHEDULE_START_TIME_VAR.getVarName()).value());
     draftDetails.put("time slot end", schedule.get(QueryResource.SCHEDULE_END_TIME_VAR.getVarName()).value());
-    // schedule type specific handling
-    // perpetual service has no end date
-    SparqlResponseField recurrenceField = schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY);
-    if (recurrenceField != null && recurrenceField.value().equals("")) {
-      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, "");
-    } else {
-      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, today);
-    }
     // handle ad hoc schedule separately
     if (isAdHoc) {
       List<SparqlResponseField> dateFields = (List<SparqlResponseField>) rawSchedule.get("entry_date");
+      List<String> entryDateList = dateFields.stream().map(SparqlResponseField::value).collect(Collectors.toList());
+      // start date should be the first order date on/after today
+      draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY,
+          this.dateTimeService.getFirstDateByToday(entryDateList));
+      // end date should be the last order date
+      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, this.dateTimeService.getLastDate(entryDateList));
       List<Map<String, String>> entryDateStrings = dateFields.stream()
           .map(field -> {
             Map<String, String> dateMap = new HashMap<>();
@@ -213,6 +210,13 @@ public class LifecycleContractService {
           .collect(Collectors.toList());
       draftDetails.put("schedule entry", entryDateStrings);
     } else {
+      draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
+      // perpetual service has no end date
+      if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value().equals("")) {
+        draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, "");
+      } else {
+        draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, today);
+      }
       draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY,
           schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value());
       // The day of week for daily tasks will follow today

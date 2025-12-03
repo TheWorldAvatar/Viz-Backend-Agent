@@ -392,7 +392,7 @@ public class LifecycleTaskService {
     if (schedule.containsKey("entry_date")) {
       List<SparqlResponseField> entryDates = (List<SparqlResponseField>) schedule.get("entry_date");
       List<String> entryDateStrings = entryDates.stream()
-          .map(SparqlResponseField::value) // Method reference is cleaner than lambda
+          .map(SparqlResponseField::value)
           .collect(Collectors.toList());
       occurrences = this.dateTimeService.getOccurrenceDates(entryDateStrings, endDate);
     } else {
