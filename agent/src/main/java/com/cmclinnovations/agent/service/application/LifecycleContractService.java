@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -169,19 +170,22 @@ public class LifecycleContractService {
    */
   public Map<String, Object> getContractSchedule(String contractId) {
     Map<String, Object> rawSchedule = this.lifecycleQueryService.querySchedule(contractId).get();
-    Map<String, SparqlResponseField> schedule = rawSchedule.entrySet().stream().collect(Collectors.toMap(
-        Map.Entry::getKey, entry -> {
-          Object value = entry.getValue();
-          if (value == null) {
-            return new SparqlResponseField("", "", "", "");
-          }
-          if (value instanceof SparqlResponseField) {
-            return (SparqlResponseField) value;
-          }
-          throw new ClassCastException(
-              "Value for key '" + entry.getKey() +
-                  "' is not null or SparqlResponseField, but: " + value.getClass().getName());
-        }));
+    boolean isAdHoc = rawSchedule.containsKey("entry_date");
+    Map<String, SparqlResponseField> schedule = rawSchedule.entrySet().stream()
+        .filter(entry -> !(entry.getValue() instanceof ArrayList))
+        .collect(Collectors.toMap(
+            Map.Entry::getKey, entry -> {
+              Object value = entry.getValue();
+              if (value == null) {
+                return new SparqlResponseField("", "", "", "");
+              }
+              if (value instanceof SparqlResponseField) {
+                return (SparqlResponseField) value;
+              }
+              throw new ClassCastException(
+                  "Value for key '" + entry.getKey() +
+                      "' is not null or SparqlResponseField, but: " + value.getClass().getName());
+            }));
     // convert to draft schedule details
     Map<String, Object> draftDetails = new HashMap<>();
     String today = this.dateTimeService.getCurrentDate();
@@ -189,22 +193,36 @@ public class LifecycleContractService {
     draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
     draftDetails.put("time slot start", schedule.get(QueryResource.SCHEDULE_START_TIME_VAR.getVarName()).value());
     draftDetails.put("time slot end", schedule.get(QueryResource.SCHEDULE_END_TIME_VAR.getVarName()).value());
-    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY,
-        schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value());
     // schedule type specific handling
     // perpetual service has no end date
-    if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == "") {
+    SparqlResponseField recurrenceField = schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY);
+    if (recurrenceField != null && recurrenceField.value().equals("")) {
       draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, "");
     } else {
       draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, today);
     }
-    // The day of week for daily tasks will follow today
-    if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY)
-        .value() == LifecycleResource.RECURRENCE_DAILY_TASK) {
-      draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
+    // handle ad hoc schedule separately
+    if (isAdHoc) {
+      List<SparqlResponseField> dateFields = (List<SparqlResponseField>) rawSchedule.get("entry_date");
+      List<Map<String, String>> entryDateStrings = dateFields.stream()
+          .map(field -> {
+            Map<String, String> dateMap = new HashMap<>();
+            dateMap.put("schedule entry date", field.value());
+            return dateMap;
+          })
+          .collect(Collectors.toList());
+      draftDetails.put("schedule entry", entryDateStrings);
     } else {
-      Map<String, Boolean> weekdays = this.dateTimeService.getRecurringDayOfWeek(schedule);
-      draftDetails.putAll(weekdays);
+      draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY,
+          schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value());
+      // The day of week for daily tasks will follow today
+      if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY)
+          .value() == LifecycleResource.RECURRENCE_DAILY_TASK) {
+        draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
+      } else {
+        Map<String, Boolean> weekdays = this.dateTimeService.getRecurringDayOfWeek(schedule);
+        draftDetails.putAll(weekdays);
+      }
     }
     return draftDetails;
   }
