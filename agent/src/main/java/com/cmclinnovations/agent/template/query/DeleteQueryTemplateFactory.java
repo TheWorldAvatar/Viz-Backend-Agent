@@ -198,8 +198,8 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
             }
           }
           break;
-        case ShaclResource.ID_KEY, ShaclResource.CONTEXT_KEY:
-          // Ignore @id and @context fields
+        case ShaclResource.ID_KEY, ShaclResource.CONTEXT_KEY, ShaclResource.OPTIONAL_KEY:
+          // Ignore @id, @context, and @optional fields
           break;
         default:
           this.parseFieldNode(currentNode.path(ShaclResource.ID_KEY), objectNode, idTripleSubject, Rdf.iri(predicate),
@@ -246,17 +246,11 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
 
       GraphPattern wherePattern = tripleStatement;
 
-      if (objectNode.has(ShaclResource.ID_KEY)) {
-        if (objectNode.path(ShaclResource.ID_KEY).has(ShaclResource.OPTIONAL_KEY)) {
-          if (objectNode.path(ShaclResource.ID_KEY).path(ShaclResource.OPTIONAL_KEY).asBoolean()) {
-            wherePattern = GraphPatterns.optional(tripleStatement);
-          }
-        }
-      }
-
       // But add optional clause when required for where clause
-      if (objectNode.has(ShaclResource.REPLACE_KEY)
-          && objectNode.path(ShaclResource.TYPE_KEY).asText().equals("literal")) {
+
+      if ((objectNode.has(ShaclResource.REPLACE_KEY)
+          && objectNode.path(ShaclResource.TYPE_KEY).asText().equals("literal"))
+          || (objectNode.path(ShaclResource.OPTIONAL_KEY).asBoolean(false))) {
         wherePattern = GraphPatterns.optional(tripleStatement);
       }
       this.updateWherePatterns(wherePattern, deleteTemplate, whereBranchPatterns);
