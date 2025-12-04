@@ -290,12 +290,6 @@ public class LifecycleController {
     } else {
       LOGGER.info("All orders has been successfully received!");
       try {
-        this.lifecycleContractService.genReportInstance(contractId);
-      } catch (IllegalStateException e) {
-        LOGGER.warn("Something went wrong with instantiating a report for {}!", contractId);
-        throw e;
-      }
-      try {
         return this.lifecycleTaskService.genOccurrence(params, LifecycleEventType.APPROVED,
             MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
             LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
