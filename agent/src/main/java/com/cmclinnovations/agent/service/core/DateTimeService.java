@@ -274,12 +274,13 @@ public class DateTimeService {
     return occurrenceDates;
   }
 
+  /**
+   * Retrieve dates of occurrences given a list of date and the end date as a cutoff.
+   */
   public Queue<String> getOccurrenceDates(List<String> entryDates, String endDateInput) {
-    LocalDate endDate = this.parseDate(endDateInput);
     return entryDates.stream().filter(dateString -> {
       try {
-        LocalDate entryDate = this.parseDate(dateString);
-        return !entryDate.isAfter(endDate);
+        return !this.isFutureDate(dateString, endDateInput);
       } catch (Exception e) {
         return false;
       }
