@@ -167,32 +167,16 @@ public class LifecycleContractService {
    * @param entityType The entity type.
    */
   public Map<String, Object> getContractSchedule(String contractId) {
-    Map<String, Object> rawSchedule = this.lifecycleQueryService.querySchedule(contractId).get();
-    boolean isFixedDate = rawSchedule.containsKey(QueryResource.FIXED_DATE_DATE_KEY);
-    Map<String, SparqlResponseField> schedule = rawSchedule.entrySet().stream()
-        .filter(entry -> !(entry.getValue() instanceof ArrayList))
-        .collect(Collectors.toMap(
-            Map.Entry::getKey, entry -> {
-              Object value = entry.getValue();
-              if (value == null) {
-                return new SparqlResponseField("", "", "", "");
-              }
-              if (value instanceof SparqlResponseField) {
-                return (SparqlResponseField) value;
-              }
-              throw new ClassCastException(
-                  "Value for key '" + entry.getKey() +
-                      "' is not null or SparqlResponseField, but: " + value.getClass().getName());
-            }));
+    SparqlBinding rawSchedule = this.lifecycleQueryService.querySchedule(contractId);
     // convert to draft schedule details
     Map<String, Object> draftDetails = new HashMap<>();
     String today = this.dateTimeService.getCurrentDate();
     // Keep time window
-    draftDetails.put("time slot start", schedule.get(QueryResource.SCHEDULE_START_TIME_VAR.getVarName()).value());
-    draftDetails.put("time slot end", schedule.get(QueryResource.SCHEDULE_END_TIME_VAR.getVarName()).value());
+    draftDetails.put("time slot start", rawSchedule.getFieldValue(QueryResource.SCHEDULE_START_TIME_VAR.getVarName()));
+    draftDetails.put("time slot end", rawSchedule.getFieldValue(QueryResource.SCHEDULE_END_TIME_VAR.getVarName()));
     // handle fixed date schedule separately
-    if (isFixedDate) {
-      List<SparqlResponseField> dateFields = (List<SparqlResponseField>) rawSchedule.get(QueryResource.FIXED_DATE_DATE_KEY);
+    if (rawSchedule.containsField(QueryResource.FIXED_DATE_DATE_KEY)) {
+      List<SparqlResponseField> dateFields = (List<SparqlResponseField>) rawSchedule.get().get(QueryResource.FIXED_DATE_DATE_KEY);
       List<String> entryDateList = dateFields.stream().map(SparqlResponseField::value).collect(Collectors.toList());
       // start date should be the first order date on/after today
       draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY,
@@ -210,18 +194,32 @@ public class LifecycleContractService {
     } else {
       draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
       // perpetual service has no end date
-      if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value().equals("")) {
+      if (rawSchedule.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).equals("")) {
         draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, "");
       } else {
         draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, today);
       }
       draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY,
-          schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value());
+          rawSchedule.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY));
       // The day of week for daily tasks will follow today
-      if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY)
-          .value() == LifecycleResource.RECURRENCE_DAILY_TASK) {
+      if (rawSchedule.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY)
+           == LifecycleResource.RECURRENCE_DAILY_TASK) {
         draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
       } else {
+        Map<String, SparqlResponseField> schedule = rawSchedule.get().entrySet().stream()
+        .collect(Collectors.toMap(
+            Map.Entry::getKey, entry -> {
+              Object value = entry.getValue();
+              if (value == null) {
+                return new SparqlResponseField("", "", "", "");
+              }
+              if (value instanceof SparqlResponseField) {
+                return (SparqlResponseField) value;
+              }
+              throw new ClassCastException(
+                  "Value for key '" + entry.getKey() +
+                      "' is not null or SparqlResponseField, but: " + value.getClass().getName());
+            }));
         Map<String, Boolean> weekdays = this.dateTimeService.getRecurringDayOfWeek(schedule);
         draftDetails.putAll(weekdays);
       }
