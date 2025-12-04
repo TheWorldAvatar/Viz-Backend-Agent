@@ -160,15 +160,7 @@ public class LifecycleController {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.SCHEDULE_RESOURCE, () -> {
       LOGGER.info("Received request to generate the schedule details for contract...");
-      this.lifecycleContractService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
-      // use regular schedule or fixed date schedule
-      String scheduleResource = LifecycleResource.SCHEDULE_RESOURCE;
-      if (params.containsKey(QueryResource.FIXED_DATE_SCHEDULE_KEY)) {
-        scheduleResource = LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE;
-      }
-      return this.addService.instantiate(scheduleResource,
-          params, "Schedule has been successfully drafted for contract!",
-          LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY);
+      return instantiateContractSchedule(params);
     });
   }
 
@@ -192,15 +184,19 @@ public class LifecycleController {
       if (!deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
         return deleteResponse;
       }
-      // use regular schedule or fixed date schedule
-      String scheduleResource = LifecycleResource.SCHEDULE_RESOURCE;
-      if (params.containsKey(QueryResource.FIXED_DATE_SCHEDULE_KEY)) {
-        scheduleResource = LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE;
-      }
-      return this.addService.instantiate(scheduleResource, targetId,
-          params, "Schedule has been successfully updated for contract!",
-          LocalisationResource.SUCCESS_SCHEDULE_DRAFT_UPDATE_KEY);
+      return instantiateContractSchedule(params);
     });
+  }
+
+  private ResponseEntity<StandardApiResponse<?>> instantiateContractSchedule(Map<String, Object> params) {
+    this.lifecycleContractService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
+    // use regular schedule or fixed date schedule
+    String scheduleResource = params.containsKey(QueryResource.FIXED_DATE_SCHEDULE_KEY)
+        ? LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE
+        : LifecycleResource.SCHEDULE_RESOURCE;
+    return this.addService.instantiate(scheduleResource,
+        params, "Schedule has been successfully drafted for contract!",
+        LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY);
   }
 
   /**
