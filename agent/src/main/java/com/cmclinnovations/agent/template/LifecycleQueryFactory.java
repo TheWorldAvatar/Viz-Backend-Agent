@@ -53,8 +53,9 @@ public class LifecycleQueryFactory {
         "OPTIONAL{"
             + "{?schedule <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?"
             + LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY + ".} UNION "
-            + "{?schedule a ?schedule_class. BIND(IF(?schedule_class=<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>,\""
-            + LifecycleResource.RECURRENCE_FIXED_DATE_TASK + "\",\"invalid\") AS ?recurrences)}"
+            + "{?schedule a ?schedule_class. "
+            + "OPTIONAL{FILTER(?schedule_class=<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>) "
+            + "BIND(\"" + LifecycleResource.RECURRENCE_FIXED_DATE_TASK + "\" AS ?recurrences)}}"
             + "}");
     SCHEDULE_QUERY_MAPPINGS = Collections.unmodifiableMap(template);
     // Add extended statements to the right mappings with a full reset
@@ -188,8 +189,9 @@ public class LifecycleQueryFactory {
         "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?recurrences.}"
         + "UNION {?iri "
         + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
-        "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/a ?schedule_class. BIND(IF(?schedule_class=<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>,\""
-        + LifecycleResource.RECURRENCE_FIXED_DATE_TASK + "\",\"invalid\") AS ?recurrences)}"
+        "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/a ?schedule_class. "
+        + "OPTIONAL{FILTER(?schedule_class=<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>) "
+        + "BIND(\"" + LifecycleResource.RECURRENCE_FIXED_DATE_TASK + "\" AS ?recurrences)}}"
         + "}BIND(IF(BOUND(?recurrences),?recurrences,\"\") AS "
         + QueryResource.SCHEDULE_RECURRENCE_VAR.getQueryString()
         + ")");

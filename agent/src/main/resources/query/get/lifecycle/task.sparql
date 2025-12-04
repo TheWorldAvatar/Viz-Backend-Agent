@@ -26,8 +26,8 @@ WHERE {
     {?stage fibo-fnd-dt-fd:hasSchedule/fibo-fnd-dt-fd:hasRecurrenceInterval/cmns-dt:hasDurationValue ?recurrences.}
     UNION
     {?stage fibo-fnd-dt-fd:hasSchedule/a ?schedule_class.
-    BIND(IF(?schedule_class=<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>,
-            "fixed_date","invalid") AS ?recurrences)}
+    OPTIONAL{FILTER(?schedule_class=<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>)
+            BIND("fixed_date" AS ?recurrences)}}
   }
   BIND(IF(BOUND(?recurrences),?recurrences,"") AS ?recurrence)
 
