@@ -6,9 +6,8 @@ PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTi
 SELECT DISTINCT * WHERE{
   ?iri dc-terms:identifier "[target]";
     fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/fibo-fnd-dt-fd:hasSchedule ?schedule.
-  OPTIONAL{
-    ?schedule ^fibo-fnd-dt-fd:hasSchedule/<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/cmns-dt:hasEndDate/cmns-dt:hasDateValue ?end_date.
-  }
+    ?schedule a <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>;
+    ^fibo-fnd-dt-fd:hasSchedule/<https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring>/cmns-dt:hasEndDate/cmns-dt:hasDateValue ?end_date.
 
   ?schedule cmns-dt:hasTimePeriod/cmns-dt:hasStart/cmns-dt:hasTimeValue ?start_time;
     cmns-dt:hasTimePeriod/cmns-dt:hasEndTime/cmns-dt:hasTimeValue ?end_time;
