@@ -116,6 +116,10 @@ public class SparqlBinding {
     return this.bindings.keySet();
   }
 
+  public List<SparqlResponseField> getList(String field) {
+    return this.bindingList.get(QueryResource.genVariable(field).getVarName());
+  }
+
   /**
    * Adds the sequence for the fields.
    * 
