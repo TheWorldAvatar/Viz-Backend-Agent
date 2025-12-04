@@ -208,37 +208,18 @@ public class LifecycleQueryService {
    */
   public SparqlBinding querySchedule(String contract) {
     // try query as regular schedule
-    SparqlBinding result = this.queryRegularSchedule(contract);
+    SparqlBinding result = this.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,contract, contract);
     if (result==null) {
       // try query as fixed date schedule
-      Queue<SparqlBinding> results = this.queryFixedDateSchedule(contract);
-      SparqlBinding temp = results.poll();
+      Queue<SparqlBinding> results = this.getInstances(FileService.FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE,contract, contract);
+      SparqlBinding fixedDateScheduleInstance = results.poll();
       // Iterate over results to get entry dates as an array
       results.stream().forEach(binding -> {
-        temp.addFieldArray(binding, FIXED_DATE_SCHEDULE_ARRAY_VARS);
+        fixedDateScheduleInstance .addFieldArray(binding, FIXED_DATE_SCHEDULE_ARRAY_VARS);
       });
-      result = temp;
+      return fixedDateScheduleInstance;
     }
     return result;
   }
 
-  /**
-   * Query for regular schedule of a contract.
-   * 
-   * @param contract identifier of contract.
-   */
-  private SparqlBinding queryRegularSchedule(String contract) {
-    return this.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,
-        contract, contract);
-  }
-
-  /**
-   * Query for fixed date schedule of a contract.
-   * 
-   * @param contract identifier of contract.
-   */
-  private Queue<SparqlBinding> queryFixedDateSchedule(String contract) {
-    return this.getInstances(FileService.FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE,
-        contract, contract);
-  }
 }
