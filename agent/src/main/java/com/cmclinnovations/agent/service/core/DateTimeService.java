@@ -64,6 +64,20 @@ public class DateTimeService {
   }
 
   /**
+   * Checks if the input date is today or any date after today.
+   */
+  public boolean isTodayOrFutureDate(String inputDate) {
+    return this.isTodayOrFutureDate(inputDate, this.getCurrentDate());
+  }
+
+  /**
+   * Checks if the input date is the same as, or after, the target date.
+   */
+  public boolean isTodayOrFutureDate(String inputDate, String targetDate) {
+    return !this.parseDate(inputDate).isBefore(this.parseDate(targetDate));
+  }
+
+  /**
    * Get current date in YYYY-MM-DD format.
    */
   public String getCurrentDate() {
@@ -275,7 +289,8 @@ public class DateTimeService {
   }
 
   /**
-   * Retrieve dates of occurrences given a list of date and the end date as a cutoff.
+   * Retrieve dates of occurrences given a list of date and the end date as a
+   * cutoff.
    */
   public Queue<String> getOccurrenceDates(List<String> entryDates, String endDateInput) {
     return entryDates.stream().filter(dateString -> {
@@ -337,6 +352,17 @@ public class DateTimeService {
   }
 
   /**
+   * Parses a list of date strings and returns them as a sorted list of LocalDate
+   * objects.
+   */
+  private List<LocalDate> getSortedDates(List<String> dateStrings) {
+    return dateStrings.stream()
+        .map(dateString -> this.parseDate(dateString))
+        .sorted(LocalDate::compareTo) // Sorts from earliest to latest
+        .collect(Collectors.toList());
+  }
+
+  /**
    * Finds the earliest date in the provided list of date strings that is today or
    * in the future (i.e., not before today).
    *
@@ -344,13 +370,17 @@ public class DateTimeService {
    * 
    */
   public String getFirstDateByToday(List<String> dateStrings) {
-    LocalDate today = LocalDate.now();
-    // Use a stream to process the list efficiently
-    Optional<LocalDate> earliestFutureDate = dateStrings.stream()
-        .map(dateString -> this.parseDate(dateString))
-        .filter(date -> !date.isBefore(today))
-        .min(LocalDate::compareTo);
-    return earliestFutureDate.map(date -> date.format(this.formatter)).orElse(null);
+    List<String> validFutureDateStrings = dateStrings.stream()
+        .filter(dateString -> this.isTodayOrFutureDate(dateString))
+        .collect(Collectors.toList());
+    
+    if (validFutureDateStrings.isEmpty()) {
+        return null;
+    }
+
+    List<LocalDate> sortedValidDates = this.getSortedDates(validFutureDateStrings);
+     
+    return sortedValidDates.get(0).format(this.formatter);
   }
 
   /**
@@ -359,9 +389,11 @@ public class DateTimeService {
    * @param dateStrings A list of date strings to be checked.
    */
   public String getLastDate(List<String> dateStrings) {
-    Optional<LocalDate> latestDate = dateStrings.stream()
-        .map(dateString -> this.parseDate(dateString))
-        .max(LocalDate::compareTo);
-    return latestDate.map(date -> date.format(this.formatter)).orElse(null);
+    List<LocalDate> sortedDates = this.getSortedDates(dateStrings);
+    if (sortedDates.isEmpty()) {
+        return null;
+    }
+    
+    return sortedDates.get(sortedDates.size() - 1).format(this.formatter);
   }
 }
