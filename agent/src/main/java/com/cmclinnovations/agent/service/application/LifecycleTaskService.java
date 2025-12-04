@@ -389,7 +389,7 @@ public class LifecycleTaskService {
     Queue<String> occurrences = new ArrayDeque<>();
     // Handle as fixed date schedule first
     if (bindings.containsField(QueryResource.FIXED_DATE_DATE_KEY)) {
-      List<SparqlResponseField> entryDates = (List<SparqlResponseField>) bindings.getList(QueryResource.FIXED_DATE_DATE_KEY);
+      List<SparqlResponseField> entryDates = bindings.getList(QueryResource.FIXED_DATE_DATE_KEY);
       List<String> entryDateStrings = entryDates.stream()
           .map(SparqlResponseField::value)
           .collect(Collectors.toList());

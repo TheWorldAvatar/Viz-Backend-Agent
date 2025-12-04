@@ -176,17 +176,16 @@ public class LifecycleContractService {
     draftDetails.put("time slot end", rawSchedule.getFieldValue(QueryResource.SCHEDULE_END_TIME_VAR.getVarName()));
     // handle fixed date schedule separately
     if (rawSchedule.containsField(QueryResource.FIXED_DATE_DATE_KEY)) {
-      List<SparqlResponseField> dateFields = (List<SparqlResponseField>) rawSchedule.get().get(QueryResource.FIXED_DATE_DATE_KEY);
+      List<SparqlResponseField> dateFields = rawSchedule.getList(QueryResource.FIXED_DATE_DATE_KEY);
       List<String> entryDateList = dateFields.stream().map(SparqlResponseField::value).collect(Collectors.toList());
-      // start date should be the first order date on/after today
-      draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY,
-          this.dateTimeService.getFirstDateByToday(entryDateList));
-      // end date should be the last order date
-      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, this.dateTimeService.getLastDate(entryDateList));
-      List<Map<String, String>> entryDateStrings = dateFields.stream()
-          .map(field -> {
+      // sort list of dates and filter out past dates
+      List<String> sortedDateList = this.dateTimeService.getSortedUptoDayDates(entryDateList);
+      draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY,sortedDateList.get(0));
+      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, sortedDateList.get(sortedDateList.size()-1));
+      List<Map<String, String>> entryDateStrings = sortedDateList.stream()
+          .map(date -> {
             Map<String, String> dateMap = new HashMap<>();
-            dateMap.put(QueryResource.FIXED_DATE_SCHEDULE_DATE_KEY, field.value());
+            dateMap.put(QueryResource.FIXED_DATE_SCHEDULE_DATE_KEY, date);
             return dateMap;
           })
           .collect(Collectors.toList());
