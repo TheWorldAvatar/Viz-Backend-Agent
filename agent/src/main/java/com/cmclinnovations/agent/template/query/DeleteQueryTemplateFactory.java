@@ -245,6 +245,15 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       deleteTemplate.delete(tripleStatement);
 
       GraphPattern wherePattern = tripleStatement;
+
+      if (objectNode.has(ShaclResource.ID_KEY)) {
+        if (objectNode.path(ShaclResource.ID_KEY).has(ShaclResource.OPTIONAL_KEY)) {
+          if (objectNode.path(ShaclResource.ID_KEY).path(ShaclResource.OPTIONAL_KEY).asBoolean()) {
+            wherePattern = GraphPatterns.optional(tripleStatement);
+          }
+        }
+      }
+
       // But add optional clause when required for where clause
       if (objectNode.has(ShaclResource.REPLACE_KEY)
           && objectNode.path(ShaclResource.TYPE_KEY).asText().equals("literal")) {
