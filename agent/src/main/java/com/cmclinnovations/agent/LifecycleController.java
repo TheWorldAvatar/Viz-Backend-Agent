@@ -160,7 +160,7 @@ public class LifecycleController {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.SCHEDULE_RESOURCE, () -> {
       LOGGER.info("Received request to generate the schedule details for contract...");
-      return instantiateContractSchedule(params);
+      return this.instantiateContractSchedule(params);
     });
   }
 
@@ -176,15 +176,13 @@ public class LifecycleController {
       // delete the existing schedule assuming it is regular schedule
       ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService
           .delete(LifecycleResource.SCHEDULE_RESOURCE, targetId, null);
+      if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
+        deleteResponse = this.deleteService.delete(LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE, targetId, null);
+      }
       if (!deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
         return deleteResponse;
       }
-      // delete the existing schedule assuming it is fixed date schedule
-      deleteResponse = this.deleteService.delete(LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE, targetId, null);
-      if (!deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
-        return deleteResponse;
-      }
-      return instantiateContractSchedule(params);
+      return this.instantiateContractSchedule(params);
     });
   }
 
