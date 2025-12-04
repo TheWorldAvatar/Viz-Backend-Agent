@@ -1,9 +1,7 @@
 package com.cmclinnovations.agent.service.application;
 
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -27,8 +25,8 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
-import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
+import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;

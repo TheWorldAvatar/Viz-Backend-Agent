@@ -1,8 +1,5 @@
 package com.cmclinnovations.agent.service;
 
-import java.util.Iterator;
-import java.util.Map;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
@@ -11,8 +8,6 @@ import org.springframework.stereotype.Service;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class DeleteService {

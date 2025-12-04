@@ -1,0 +1,15 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": {
+    "@replace": "iri",
+    "@type": "iri"
+  },
+  "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/mandates": {
+    "@id": {
+      "@replace": "pricing model",
+      "@type": "iri"
+    }
+  }
+}

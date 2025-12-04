@@ -117,7 +117,9 @@ The following SHACL value constraints will be extracted and present in the form 
 9. sh:pattern
 10. `sh:defaultValue`: Accepts either an IRI `<iri>`or string literal `"string"`
 11. <https://theworldavatar.io/kg/form/step>: Defines the increment between valid numbers for a numeric input field
-  - When combined with the `sh:pattern` attribute, it enforces specific format requirements. For example, with the pattern `\.(00|15|30|45|60)$` and a `0.05` step, the field will increment to the nearest value matching the pattern within that step. Ensure the step value does not exceed the pattern's granularity; `0.15` steps would fail to meet the `\.(00|15|30|45|60)$` pattern, while `0.01` steps are inefficient.
+
+- When combined with the `sh:pattern` attribute, it enforces specific format requirements. For example, with the pattern `\.(00|15|30|45|60)$` and a `0.05` step, the field will increment to the nearest value matching the pattern within that step. Ensure the step value does not exceed the pattern's granularity; `0.15` steps would fail to meet the `\.(00|15|30|45|60)$` pattern, while `0.01` steps are inefficient.
+
 12. <https://theworldavatar.io/kg/form/singleLine>: A (`true`/`false`) boolean indicating if a text area input is required. MUST be used with a `sh:datatype xsd:string`.
 
 > [!IMPORTANT]  
@@ -259,7 +261,7 @@ base:ExampleFormSectionGroup
   sh:order "2"^^xsd:integer .
 ```
 
-> [!IMPORTANT] 
+> [!IMPORTANT]
 > `PropertyGroup` are most useful for setting dependent form fields, which relies on some form field.
 
 ### 1.1.3 Dependent Form Fields
@@ -409,6 +411,42 @@ base:ConceptShape
 > [!IMPORTANT]
 > The property **MUST** target a string literal with semi-colon delimiters
 
+### 1.1.7 Billing-specific Feature
+
+When billing is required, users must define a `SHACL` shape for `https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation`. This shape must include two Property Shapes:
+
+1. Provides the requesting party of a contract
+2. Provides the pricing model, which is dependent on the requesting party
+
+An example minimal shape is provided below. Users can change the `sh:description` for both shapes, and the `sh:path` property for the requesting party shape to fit their needs.
+
+```
+base:PaymentObligationShape
+  a sh:NodeShape ;
+  sh:targetClass fibo-fnd-pas-psch:PaymentObligation ;
+  sh:property base:PaymentObligationShape-requesting-party ;
+  sh:property [
+    sh:name "pricing model" ;
+    sh:description "The pricing model to be quoted to the requesting party." ;
+    sh:order 2;
+    sh:path fibo-fnd-rel-rel:mandates ;
+    sh:class fibo-fbc-fi-ip:PricingModel;
+    twa:dependentOn base:PaymentObligationShape-requesting-party ;
+    sh:minCount 0 ;
+    sh:maxCount 1 ;
+  ] .
+
+base:PaymentObligationShape-requesting-party
+  a sh:PropertyShape ;
+  sh:name "requesting party - This can be changed" ;
+  sh:description "The party that purchases professional services from, or has a formal relationship to purchase services from the service provider under this agreement." ;
+  sh:order 1;
+  sh:path [MUST CHANGE PATH ACCORDINGLY] ;
+  sh:class fibo-fnd-org-fm:FormalOrganization ;
+  sh:minCount 1 ;
+  sh:maxCount 1 .
+```
+
 ### 1.2 Automated Data Retrieval
 
 This agent can dynamically query fields for different instances based on the `SHACL` restrictions in three steps:
@@ -485,7 +523,7 @@ An example is provided below:
 2. `SHACL` rule in ttl
 
 > [!IMPORTANT]
-> The `order` property is required to execute the rules in the desired sequence as rules may be dependent on each other. 
+> The `order` property is required to execute the rules in the desired sequence as rules may be dependent on each other.
 
 > [!TIP]
 > `SPARQL` rules (using `sh:construct`) will be executed across all `SPARQL` endpoints, while Triple rules will only be executed on the instance being instantiated. It is recommended to use `SPARQL` rules if you require a derivation based on existing knowledge stored in the endpoints OR the derived triples are complex with nested and/or multiple statements.
@@ -576,7 +614,6 @@ A sample file can be found at `./example.jsonld`. It is recommended for users to
 > [!IMPORTANT]  
 > Users must submit an `id` field in their HTTP request when instantiating a new instance. The agent will automatically append the `id` using the relationship `http://purl.org/dc/terms/identifier`, and users need **NOT** specify any id literal in the SHACL config or JSON-LD. If an user wishes to upload triples directly to the KG, they must ensure that this relationship exists for the relevant instances so that the data is compatible with this agent.
 
-
 #### 2.1.1 Array
 
 The instantiation of array fields can be created using the following replacement object:
@@ -648,11 +685,13 @@ Form branches adapt to selected categories by displaying different field sets. D
 
 #### 2.1.3 Service Lifecycle
 
+If your application requires the management of the lifecycle of contracts and their associated services, users must set up a custom contract `JSON-LD` file, with a minimal sample file located at `./jsonld/contract.jsonld`. Remove **lines 10 - 27** from the sample contract definition if **billing is not required**.
+
 > [!IMPORTANT]
 > Users will be required to add a `JSON-LD` for the `ServiceDispatchEvent`. This event should assign dispatch details before the service executes. A sample file has been created in `./jsonld/dispatch.jsonld`, and users must not modify line 1 - 36. The relevant route(s) is found in the `Service dispatch` section [over here](../README.md#265-service-order-route).
 
 > [!IMPORTANT]
-> Users will be required to add a `JSON-LD` for the `ServiceDeliveryEvent`. This event should execute upon completion of the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/complete.jsonld`, and users must not modify line 1 - 41. The relevant route(s) is found in the `Service completion` section [over here](../README.md#265-service-order-route). 
+> Users will be required to add a `JSON-LD` for the `ServiceDeliveryEvent`. This event should execute upon completion of the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/complete.jsonld`, and users must not modify line 1 - 41. The relevant route(s) is found in the `Service completion` section [over here](../README.md#265-service-order-route).
 
 ### 2.2 Geocoding
 
@@ -665,7 +704,7 @@ fibo-fnd-plc-adr:   https://spec.edmcouncil.org/fibo/ontology/FND/Places/Address
 fibo-fnd-plc-loc:   https://spec.edmcouncil.org/fibo/ontology/FND/Places/Locations/
 fibo-fnd-rel-rel:   https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/
 geo:                http://www.opengis.net/ont/geosparql#
-rdfs:	              http://www.w3.org/2000/01/rdf-schema#
+rdfs:               http://www.w3.org/2000/01/rdf-schema#
 xsd:                http://www.w3.org/2001/XMLSchema#
 
 AddressInstance a fibo-fnd-plc-adr:ConventionalStreetAddress ;

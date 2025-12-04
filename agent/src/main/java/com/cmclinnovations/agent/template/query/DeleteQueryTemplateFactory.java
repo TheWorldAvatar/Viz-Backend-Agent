@@ -52,7 +52,8 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
   public String write(QueryTemplateFactoryParameters params) {
     this.reset();
 
-    ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetIds().poll().get(0));
+    ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetIds().poll().get(0),
+        this.parseVariable((ObjectNode) params.rootNode().path(ShaclResource.ID_KEY)));
     this.recursiveParseNode(deleteTemplate, null, params.rootNode(), params.branchName());
     return deleteTemplate.getQueryString();
   }
@@ -65,9 +66,10 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    * Initialise a delete template.
    * 
    * @param targetId The identifier of the instance to delete.
+   * @param idVar    The instance id as a variable.
    */
-  private ModifyQuery genDeleteTemplate(String targetId) {
-    TriplePattern identifierTriple = SparqlBuilder.var("id0").has(QueryResource.DC_TERM_ID,
+  private ModifyQuery genDeleteTemplate(String targetId, Variable idVar) {
+    TriplePattern identifierTriple = idVar.has(QueryResource.DC_TERM_ID,
         Rdf.literalOf(targetId));
     return QueryResource.getDeleteQuery().delete(identifierTriple).where(identifierTriple);
   }
