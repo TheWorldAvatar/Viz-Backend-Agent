@@ -238,11 +238,12 @@ public class LifecycleContractService {
    */
   public ResponseEntity<StandardApiResponse<?>> getContractCount(String resourceID, LifecycleEventType eventType,
       Map<String, String> filters) {
-    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    boolean isContract = true;
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, isContract);
     // Sorting is irrelevant for count
     String[] addStatements = this.genLifecycleStatements(eventType, new HashSet<>(), parsedFilters, "", false);
     return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(resourceID, addStatements[0], "", filters, true)));
+        String.valueOf(this.getService.getCount(resourceID, addStatements[0], "", filters, isContract)));
   }
 
   /**
