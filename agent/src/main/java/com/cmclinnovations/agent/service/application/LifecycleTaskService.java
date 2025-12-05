@@ -55,6 +55,8 @@ public class LifecycleTaskService {
   private static final int NUM_DAY_ORDER_GEN = 30;
   static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
+  private static final boolean IS_CONTRACT = false;
+
   /**
    * Constructs a new service with the following dependencies.
    * 
@@ -91,13 +93,13 @@ public class LifecycleTaskService {
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrenceCount(String resourceID, String startTimestamp,
       String endTimestamp, boolean isClosed, Map<String, String> filters) {
-    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, IS_CONTRACT);
     String[] queryStatement = this.genLifecycleStatements(startTimestamp, endTimestamp, new HashSet<>(), parsedFilters,
         "", isClosed, false);
     return this.responseEntityBuilder.success(null,
         String.valueOf(
             this.getService.getCount(resourceID, queryStatement[0], LifecycleResource.TASK_ID_SORT_BY_PARAMS, filters,
-                false)));
+                IS_CONTRACT)));
   }
 
   /**
@@ -113,8 +115,8 @@ public class LifecycleTaskService {
    */
   public List<String> getFilterOptions(String resourceID, String field, String search, String startTimestamp,
       String endTimestamp, boolean isClosed, Map<String, String> filters) {
-    String originalField = LifecycleResource.revertLifecycleSpecialFields(field, false);
-    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    String originalField = LifecycleResource.revertLifecycleSpecialFields(field, IS_CONTRACT);
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, IS_CONTRACT);
     parsedFilters.remove(originalField);
     String[] queryStatement = this.genLifecycleStatements(startTimestamp, endTimestamp, new HashSet<>(), parsedFilters,
         originalField, isClosed, false);
