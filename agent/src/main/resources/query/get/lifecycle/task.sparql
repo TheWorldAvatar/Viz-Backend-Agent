@@ -23,7 +23,11 @@ WHERE {
   ?stage fibo-fnd-rel-rel:exemplifies ontoservice:ServiceExecutionStage;
   	^fibo-fnd-arr-lif:hasStage/^fibo-fnd-arr-lif:hasLifecycle/dc-terms:identifier ?contract.
   OPTIONAL{
-    ?stage fibo-fnd-dt-fd:hasSchedule/fibo-fnd-dt-fd:hasRecurrenceInterval/cmns-dt:hasDurationValue ?recurrences.
+    {?stage fibo-fnd-dt-fd:hasSchedule/fibo-fnd-dt-fd:hasRecurrenceInterval/cmns-dt:hasDurationValue ?recurrences.}
+    UNION
+    {?stage fibo-fnd-dt-fd:hasSchedule/a ?schedule_class.
+    OPTIONAL{FILTER(?schedule_class=<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule>)
+            BIND("fixed_date" AS ?recurrences)}}
   }
   BIND(IF(BOUND(?recurrences),?recurrences,"") AS ?recurrence)
 

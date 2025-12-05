@@ -18,6 +18,7 @@ public class LifecycleResource {
   public static final String LIFECYCLE_RESOURCE = "lifecycle";
   public static final String LIFECYCLE_REPORT_RESOURCE = "lifecycle report";
   public static final String SCHEDULE_RESOURCE = "schedule";
+  public static final String FIXED_DATE_SCHEDULE_RESOURCE = "fixed_date_schedule";
   public static final String TASK_RESOURCE = "task";
   public static final String OCCURRENCE_INSTANT_RESOURCE = "occurrence instant";
   public static final String CANCEL_RESOURCE = "cancel";
@@ -25,9 +26,11 @@ public class LifecycleResource {
   public static final String TASK_ID_SORT_BY_PARAMS = ",+event_id";
   public static final String RECURRENCE_DAILY_TASK = "P1D";
   public static final String RECURRENCE_ALT_DAY_TASK = "P2D";
+  public static final String RECURRENCE_FIXED_DATE_TASK = "fixed_date";
   public static final String EMPTY_STRING = "\"\"";
   public static final String RECURRENCE_DAILY_TASK_STRING = "\"" + RECURRENCE_DAILY_TASK + "\"";
   public static final String RECURRENCE_ALT_DAY_TASK_STRING = "\"" + RECURRENCE_ALT_DAY_TASK + "\"";
+  public static final String RECURRENCE_FIXED_DATE_TASK_STRING = "\"" + RECURRENCE_FIXED_DATE_TASK + "\"";
 
   public static final String INSTANCE_KEY = "id_instance";
   public static final String CONTRACT_KEY = "contract";
@@ -91,6 +94,7 @@ public class LifecycleResource {
     template.put(RECURRENCE_DAILY_TASK_STRING, "?recurrence!=\"P1D\"");
     template.put(RECURRENCE_ALT_DAY_TASK, "?recurrence!=\"P2D\"");
     template.put(EMPTY_STRING, "?recurrence!=\"\"");
+    template.put(RECURRENCE_FIXED_DATE_TASK_STRING, "?recurrence!=\""+RECURRENCE_FIXED_DATE_TASK+"\"");
     NEGATE_RECURRENCE_MAP = Collections.unmodifiableMap(template);
   }
 
@@ -144,6 +148,8 @@ public class LifecycleResource {
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
       case LifecycleResource.SCHEDULE_RESOURCE:
         return FileService.SCHEDULE_JSON_LD_RESOURCE;
+      case LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE:
+        return FileService.FIXED_DATE_SCHEDULE_JSON_LD_RESOURCE;
       default:
         return null;
     }

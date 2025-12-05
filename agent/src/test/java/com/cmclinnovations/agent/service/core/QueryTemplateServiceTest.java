@@ -68,7 +68,7 @@ class QueryTemplateServiceTest {
         when(fileService.getJsonContents(Mockito.anyString())).thenReturn(sample);
 
         // Execution
-        String results = testService.genDeleteQuery(TEST_RESOURCE, DeleteQueryTemplateFactoryTest.SAMPLE_ID);
+        String results = testService.genDeleteQuery(TEST_RESOURCE, DeleteQueryTemplateFactoryTest.SAMPLE_ID, null);
         assertEquals(TestUtils.getSparqlQuery(DeleteQueryTemplateFactoryTest.EXPECTED_SIMPLE_FILE),
                 results.replace("\n", ""));
     }

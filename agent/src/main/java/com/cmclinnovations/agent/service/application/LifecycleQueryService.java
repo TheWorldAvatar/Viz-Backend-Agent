@@ -34,6 +34,7 @@ public class LifecycleQueryService {
       QueryResource.SCHEDULE_START_TIME_VAR.getVarName(), QueryResource.SCHEDULE_END_TIME_VAR.getVarName(),
       QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName()
   };
+  private static final Map<String, Set<String>> FIXED_DATE_SCHEDULE_ARRAY_VARS = new HashMap<>();
 
   /**
    * Constructs a new service.
@@ -46,6 +47,7 @@ public class LifecycleQueryService {
     this.dateTimeService = dateTimeService;
     this.getService = getService;
     this.fileService = fileService;
+    FIXED_DATE_SCHEDULE_ARRAY_VARS.put(QueryResource.FIXED_DATE_DATE_KEY, Set.of(QueryResource.FIXED_DATE_DATE_KEY));
   }
 
   /**
@@ -197,4 +199,27 @@ public class LifecycleQueryService {
             (oldVal, newVal) -> newVal,
             LinkedHashMap::new));
   }
+
+  
+  /**
+   * Query for schedule of a contract.
+   * 
+   * @param contract identifier of contract.
+   */
+  public SparqlBinding querySchedule(String contract) {
+    // try query as regular schedule
+    SparqlBinding result = this.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,contract, contract);
+    if (result==null) {
+      // try query as fixed date schedule
+      Queue<SparqlBinding> results = this.getInstances(FileService.FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE,contract, contract);
+      SparqlBinding fixedDateScheduleInstance = results.poll();
+      // Iterate over results to get entry dates as an array
+      results.stream().forEach(binding -> {
+        fixedDateScheduleInstance .addFieldArray(binding, FIXED_DATE_SCHEDULE_ARRAY_VARS);
+      });
+      return fixedDateScheduleInstance;
+    }
+    return result;
+  }
+
 }
