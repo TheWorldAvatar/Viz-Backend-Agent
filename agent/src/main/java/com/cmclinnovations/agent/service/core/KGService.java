@@ -3,6 +3,8 @@ package com.cmclinnovations.agent.service.core;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -194,6 +196,30 @@ public class KGService {
     return results.stream()
         .map(innerList -> new ArrayDeque<>(innerList))
         .collect(Collectors.toCollection(ArrayDeque::new));
+  }
+
+  public Set<String> getSparqlOptionalParameters(String resourceId) {
+    switch (resourceId) {
+      case LifecycleResource.SCHEDULE_RESOURCE, LifecycleResource.LIFECYCLE_RESOURCE:
+        return Collections.emptySet();
+      default:
+        String target;
+        try {
+          target = this.fileService.getTargetIri(resourceId).getQueryString();
+        } catch (InvalidRouteException e) {
+          LifecycleEventType eventType = LifecycleEventType.fromId(resourceId);
+          if (eventType != null) {
+            target = eventType.getShaclReplacement();
+          } else {
+            throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_DELETE_KEY));
+          }
+        }
+        List<SparqlBinding> results = this.kgRepository.execOptionalParamQuery(target);
+        return results.stream()
+            .map(x -> x.getFieldValue("name"))
+            .collect(Collectors.toSet());
+    }
+
   }
 
   /**

@@ -3,6 +3,7 @@ package com.cmclinnovations.agent.model;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.Queue;
 
@@ -18,22 +19,27 @@ public record QueryTemplateFactoryParameters(
     Map<String, String> criterias,
     String addQueryStatements,
     Map<Variable, List<Integer>> addVars,
-    String branchName) {
+    String branchName,
+    Set<String> optionalNames) {
 
   public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId) {
-    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, null);
+    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, null, null);
   }
 
   public QueryTemplateFactoryParameters(Queue<Queue<SparqlBinding>> bindings, Map<String, String> criterias) {
-    this(bindings, null, new ArrayDeque<>(), null, criterias, null, null, null);
+    this(bindings, null, new ArrayDeque<>(), null, criterias, null, null, null, null);
   }
 
   public QueryTemplateFactoryParameters(Queue<Queue<SparqlBinding>> bindings, Queue<List<String>> targetIds,
       ParentField parent, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
-    this(bindings, null, targetIds, parent, null, addQueryStatements, addVars, null);
+    this(bindings, null, targetIds, parent, null, addQueryStatements, addVars, null, null);
   }
 
   public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId, String branchName) {
-    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, branchName);
+    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, branchName, null);
+  }
+
+  public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId, String branchName, Set<String> optionalNames) {
+    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, branchName, optionalNames);
   }
 }

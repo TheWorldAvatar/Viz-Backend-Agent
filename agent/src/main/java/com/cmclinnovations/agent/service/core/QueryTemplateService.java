@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.service.core;
 
 import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.List;
@@ -77,12 +78,12 @@ public class QueryTemplateService {
    * @param targetId   The target instance IRI.
    * @param branchName The branch name to filter (can be null).
    */
-  public String genDeleteQuery(String resourceID, String targetId, String branchName) {
+  public String genDeleteQuery(String resourceID, String targetId, String branchName, Set<String> optionalNames) {
     LOGGER.debug("Generating the DELETE query with branchName = {}", branchName);
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.getJsonLDResource(resourceID).deepCopy();
     return this.deleteQueryTemplateFactory
-        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId, branchName));
+        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId, branchName, optionalNames));
   }
 
   /**
@@ -140,13 +141,16 @@ public class QueryTemplateService {
    * @param requireLabel Indicates if labels should be returned for all the
    *                     fields that are IRIs.
    */
-  public String getShaclQuery(String replacement, boolean requireLabel) {
+  public String getShaclQuery(String replacement, boolean requireLabel, boolean optional) {
     LOGGER.debug("Retrieving the required SHACL query...");
     String queryPath = FileService.SHACL_PATH_QUERY_RESOURCE;
     if (requireLabel) {
       // Only use the label query if required due to the associated slower query
       // performance
       queryPath = FileService.SHACL_PATH_LABEL_QUERY_RESOURCE;
+    }
+    if (optional) {
+      queryPath = FileService.SHACL_PROPERTY_OPTIONAL_RESOURCE;
     }
     return this.fileService.getContentsWithReplacement(queryPath, replacement);
   }
