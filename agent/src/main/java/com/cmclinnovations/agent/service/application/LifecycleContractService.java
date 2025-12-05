@@ -340,6 +340,8 @@ public class LifecycleContractService {
         .insertExtendedScheduleFilters(statementMappings);
     // Process end date first as it will be removed if not required
     String endDateFilter = this.processEndDateScheduleForFilter(filters, extendedMappings);
+    // additional mapping for status for contracts only. needed for filtering
+    extendedMappings.put("status","?event <https://www.omg.org/spec/Commons/Designators/describes> / <http://www.w3.org/2000/01/rdf-schema#label> ?status.");
     String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
         filters, field);
     lifecycleStatements += endDateFilter;
