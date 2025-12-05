@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.service;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,7 +43,8 @@ public class DeleteService {
   public ResponseEntity<StandardApiResponse<?>> delete(String resourceID, String targetId, String branchName) {
     LOGGER.debug("Deleting {} instance of {}", resourceID, targetId);
     // Generate query with branch validation
-    String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId, branchName);
+    Set<String> optionalNames = this.kgService.getSparqlOptionalParameters(resourceID);
+    String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId, branchName, optionalNames);
     return this.kgService.delete(query, targetId);
   }
 }
