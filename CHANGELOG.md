@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.21.2
+
+ - Fixed bug with filtering pending job requests by status
+ - Fixed bug where delete template uses id0 for the identifier instead of the first id
+
 ## 1.21.1
  
  - Added a route to get current task details

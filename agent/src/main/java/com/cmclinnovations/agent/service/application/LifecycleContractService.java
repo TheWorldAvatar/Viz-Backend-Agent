@@ -50,6 +50,8 @@ public class LifecycleContractService {
   private static final String SERVICE_DISCHARGE_MESSAGE = "Service has been completed successfully.";
   private static final Logger LOGGER = LogManager.getLogger(LifecycleContractService.class);
 
+  private static final boolean IS_CONTRACT = true;
+
   /**
    * Constructs a new service with the following dependencies.
    * 
@@ -238,11 +240,12 @@ public class LifecycleContractService {
    */
   public ResponseEntity<StandardApiResponse<?>> getContractCount(String resourceID, LifecycleEventType eventType,
       Map<String, String> filters) {
-    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, IS_CONTRACT);
     // Sorting is irrelevant for count
     String[] addStatements = this.genLifecycleStatements(eventType, new HashSet<>(), parsedFilters, "", false);
     return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(resourceID, addStatements[0], "", filters, true)));
+        String.valueOf(this.getService.getCount(resourceID, addStatements[0], "", filters, IS_CONTRACT)));
   }
 
   /**
@@ -256,8 +259,8 @@ public class LifecycleContractService {
    */
   public List<String> getFilterOptions(String resourceID, String field, String search, LifecycleEventType eventType,
       Map<String, String> filters) {
-    String originalField = LifecycleResource.revertLifecycleSpecialFields(field, true);
-    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    String originalField = LifecycleResource.revertLifecycleSpecialFields(field, IS_CONTRACT);
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, IS_CONTRACT);
     parsedFilters.remove(originalField);
     // Sorting is irrelevant for specific lifecycle statements
     String[] addStatements = this.genLifecycleStatements(eventType, new HashSet<>(), parsedFilters, originalField,
@@ -340,6 +343,8 @@ public class LifecycleContractService {
         .insertExtendedScheduleFilters(statementMappings);
     // Process end date first as it will be removed if not required
     String endDateFilter = this.processEndDateScheduleForFilter(filters, extendedMappings);
+    // additional mapping for status for contracts only. needed for filtering
+    extendedMappings.put("status","?event <https://www.omg.org/spec/Commons/Designators/describes> / <http://www.w3.org/2000/01/rdf-schema#label> ?status.");
     String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
         filters, field);
     lifecycleStatements += endDateFilter;
