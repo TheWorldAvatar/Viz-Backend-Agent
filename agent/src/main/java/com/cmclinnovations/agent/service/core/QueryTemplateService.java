@@ -73,9 +73,10 @@ public class QueryTemplateService {
   /**
    * Generates a DELETE SPARQL query from the inputs.
    * 
-   * @param resourceID The target resource identifier for the instance.
-   * @param targetId   The target instance IRI.
-   * @param branchName The branch name to filter (can be null).
+   * @param resourceID  The target resource identifier for the instance.
+   * @param targetId    The target instance IRI.
+   * @param branchName  The branch name to filter (can be null).
+   * @param optVarNames Set of names of optional variables.
    */
   public String genDeleteQuery(String resourceID, String targetId, String branchName, Set<String> optVarNames) {
     LOGGER.debug("Generating the DELETE query with branchName = {}", branchName);

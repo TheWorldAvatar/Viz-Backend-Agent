@@ -250,9 +250,9 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
 
       // But add optional clause when required for where clause
 
-      if ((objectNode.has(ShaclResource.REPLACE_KEY)
-          && objectNode.path(ShaclResource.TYPE_KEY).asText().equals("literal"))
-          || optVarNames.contains(objectNode.path(ShaclResource.ID_KEY).path(ShaclResource.REPLACE_KEY).asText())) {
+      if (optVarNames.contains(objectNode.path(ShaclResource.REPLACE_KEY).asText()) || // literal
+          optVarNames.contains(objectNode.path(ShaclResource.ID_KEY).path(ShaclResource.REPLACE_KEY).asText()) // IRI
+        ) {
         wherePattern = GraphPatterns.optional(tripleStatement);
       }
       this.updateWherePatterns(wherePattern, deleteTemplate, whereBranchPatterns);
