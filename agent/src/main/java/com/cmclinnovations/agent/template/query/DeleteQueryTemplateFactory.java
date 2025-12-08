@@ -54,7 +54,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
 
     ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetIds().poll().get(0),
         this.parseVariable((ObjectNode) params.rootNode().path(ShaclResource.ID_KEY)));
-    this.recursiveParseNode(deleteTemplate, null, params.rootNode(), params.branchName(), params.optionalNames());
+    this.recursiveParseNode(deleteTemplate, null, params.rootNode(), params.branchName(), params.optVarNames());
     return deleteTemplate.getQueryString();
   }
 
@@ -128,9 +128,10 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    *                            template.
    * @param currentNode         Input contents to perform operation on.
    * @param branch              Name of branch for deletion.
+   * @param optVarNames         Set of names of optional variables.
    */
   private void recursiveParseNode(ModifyQuery deleteTemplate, Queue<GraphPattern> whereBranchPatterns,
-      ObjectNode currentNode, String branch, Set<String> optionalNames) {
+      ObjectNode currentNode, String branch, Set<String> optVarNames) {
     // First retrieve the ID value as a subject of the triple if required, else
     // default to target it
     JsonNode idNode = currentNode.path(ShaclResource.ID_KEY);
@@ -178,7 +179,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
           Queue<GraphPattern> branchPatterns = new ArrayDeque<>();
           // Parse branch contents directly into delete template
           matchingBranch.set(ShaclResource.ID_KEY, currentNode.path(ShaclResource.ID_KEY));
-          this.recursiveParseNode(deleteTemplate, branchPatterns, matchingBranch, branch, optionalNames);
+          this.recursiveParseNode(deleteTemplate, branchPatterns, matchingBranch, branch, optVarNames);
           deleteTemplate.where(branchPatterns.toArray(new GraphPattern[0]));
           break;
         case ShaclResource.REVERSE_KEY:
@@ -194,7 +195,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
             while (fieldIterator.hasNext()) {
               String reversePredicate = fieldIterator.next();
               this.parseNestedNode(currentNode.path(ShaclResource.ID_KEY), objectNode.path(reversePredicate),
-                  Rdf.iri(reversePredicate), deleteTemplate, whereBranchPatterns, branch, true, optionalNames);
+                  Rdf.iri(reversePredicate), deleteTemplate, whereBranchPatterns, branch, true, optVarNames);
             }
           }
           break;
@@ -203,7 +204,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
           break;
         default:
           this.parseFieldNode(currentNode.path(ShaclResource.ID_KEY), objectNode, idTripleSubject, Rdf.iri(predicate),
-              deleteTemplate, whereBranchPatterns, branch, optionalNames);
+              deleteTemplate, whereBranchPatterns, branch, optVarNames);
           break;
       }
     }
@@ -223,9 +224,10 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    *                            given, patterns will not be appended to the delete
    *                            template.
    * @param branch              Name of branch for deletion.
+   * @param optVarNames         Set of names of optional variables.
    */
   private void parseFieldNode(JsonNode idNode, JsonNode objectNode, RdfSubject subject, Iri predicate,
-      ModifyQuery deleteTemplate, Queue<GraphPattern> whereBranchPatterns, String branch, Set<String> optionalNames) {
+      ModifyQuery deleteTemplate, Queue<GraphPattern> whereBranchPatterns, String branch, Set<String> optVarNames) {
     // For object field node
     if (objectNode.isObject()) {
       JsonNode targetTripleObjectNode = objectNode.has(ShaclResource.REPLACE_KEY)
@@ -250,7 +252,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
 
       if ((objectNode.has(ShaclResource.REPLACE_KEY)
           && objectNode.path(ShaclResource.TYPE_KEY).asText().equals("literal"))
-          || optionalNames.contains(objectNode.path(ShaclResource.ID_KEY).path(ShaclResource.REPLACE_KEY).asText())) {
+          || optVarNames.contains(objectNode.path(ShaclResource.ID_KEY).path(ShaclResource.REPLACE_KEY).asText())) {
         wherePattern = GraphPatterns.optional(tripleStatement);
       }
       this.updateWherePatterns(wherePattern, deleteTemplate, whereBranchPatterns);
@@ -263,20 +265,20 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
         ObjectNode arrayContents = this.getArrayReplacementContents(
             this.jsonLdService.getObjectNode(objectNode.path(ShaclResource.CONTENTS_KEY)),
             objectNode.path(ShaclResource.REPLACE_KEY).asText());
-        this.recursiveParseNode(deleteTemplate, whereBranchPatterns, arrayContents, branch, optionalNames);
+        this.recursiveParseNode(deleteTemplate, whereBranchPatterns, arrayContents, branch, optVarNames);
       }
       // No further processing required for objects intended for replacement, @value,
       if (!objectNode.has(ShaclResource.REPLACE_KEY) && !objectNode.has(ShaclResource.VAL_KEY) &&
       // or a one line instance link to a TextNode eg: "@id" : "instanceIri"
           !(objectNode.has(ShaclResource.ID_KEY) && objectNode.size() == 1
               && objectNode.path(ShaclResource.ID_KEY).isTextual())) {
-        this.recursiveParseNode(deleteTemplate, whereBranchPatterns, (ObjectNode) objectNode, branch, optionalNames);
+        this.recursiveParseNode(deleteTemplate, whereBranchPatterns, (ObjectNode) objectNode, branch, optVarNames);
       }
       // For arrays,iterate through each object and parse the nested node
     } else if (objectNode.isArray()) {
       ArrayNode fieldArray = (ArrayNode) objectNode;
       for (JsonNode tripleObjNode : fieldArray) {
-        this.parseNestedNode(idNode, tripleObjNode, predicate, deleteTemplate, whereBranchPatterns, branch, false, optionalNames);
+        this.parseNestedNode(idNode, tripleObjNode, predicate, deleteTemplate, whereBranchPatterns, branch, false, optVarNames);
       }
     } else {
       TriplePattern triplePattern = subject.has(predicate, Rdf.literalOf(((TextNode) objectNode).textValue()));
@@ -299,9 +301,10 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    * @param branch              Name of branch for deletion.
    * @param isReverse           Indicates if the variable should be inverse or
    *                            not.
+   * @param optVarNames         Set of names of optional variables.
    */
   private void parseNestedNode(JsonNode idNode, JsonNode objectNode, Iri predicatePath,
-      ModifyQuery deleteTemplate, Queue<GraphPattern> whereBranchPatterns, String branch, boolean isReverse, Set<String> optionalNames) {
+      ModifyQuery deleteTemplate, Queue<GraphPattern> whereBranchPatterns, String branch, boolean isReverse, Set<String> optVarNames) {
     if (isReverse) {
       if (objectNode.isObject()) {
         // A reverse node indicates that the replacement object should now be the
@@ -309,7 +312,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
         if (objectNode.has(ShaclResource.REPLACE_KEY)) {
           RdfSubject replacementVar = this.parseVariable((ObjectNode) objectNode);
           this.parseFieldNode(null, idNode, replacementVar, predicatePath,
-              deleteTemplate, whereBranchPatterns, branch, optionalNames);
+              deleteTemplate, whereBranchPatterns, branch, optVarNames);
         } else {
           // A reverse node indicates that the original object should now be the subject
           // And the Id Node should become the object
@@ -317,7 +320,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
           // Ensure the predicate path excludes the enclosing <>
           String predicate = predicatePath.getQueryString();
           nestedReverseNode.set(predicate.substring(1, predicate.length() - 1), idNode);
-          this.recursiveParseNode(deleteTemplate, whereBranchPatterns, nestedReverseNode, branch, optionalNames);
+          this.recursiveParseNode(deleteTemplate, whereBranchPatterns, nestedReverseNode, branch, optVarNames);
         }
       } else if (objectNode.isArray()) {
         // For reverse arrays, iterate and recursively parse each object as a reverse
@@ -325,7 +328,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
         ArrayNode objArray = (ArrayNode) objectNode;
         for (JsonNode nestedReverseObjNode : objArray) {
           this.parseNestedNode(idNode, nestedReverseObjNode, predicatePath, deleteTemplate, whereBranchPatterns, branch,
-              true, optionalNames);
+              true, optVarNames);
         }
       }
     } else {
@@ -336,7 +339,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       // Ensure the predicate path excludes the enclosing <>
       String predicate = predicatePath.getQueryString();
       nestedNode.set(predicate.substring(1, predicate.length() - 1), objectNode);
-      this.recursiveParseNode(deleteTemplate, whereBranchPatterns, nestedNode, branch, optionalNames);
+      this.recursiveParseNode(deleteTemplate, whereBranchPatterns, nestedNode, branch, optVarNames);
     }
   }
 

@@ -20,7 +20,7 @@ public record QueryTemplateFactoryParameters(
     String addQueryStatements,
     Map<Variable, List<Integer>> addVars,
     String branchName,
-    Set<String> optionalNames) {
+    Set<String> optVarNames) {
 
   public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId) {
     this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, null, null);
@@ -39,7 +39,7 @@ public record QueryTemplateFactoryParameters(
     this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, branchName, null);
   }
 
-  public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId, String branchName, Set<String> optionalNames) {
-    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, branchName, optionalNames);
+  public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId, String branchName, Set<String> optVarNames) {
+    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, branchName, optVarNames);
   }
 }
