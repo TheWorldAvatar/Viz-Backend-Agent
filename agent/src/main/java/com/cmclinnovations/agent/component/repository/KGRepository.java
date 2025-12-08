@@ -155,6 +155,12 @@ public class KGRepository {
         return this.queryNestedPredicates(query);
     }
 
+    /**
+     * Retrieve the optional parameters defined by the user in SHACL to generate the
+     * SPARQL query required.
+     *
+     * @param shaclReplacement The replacement value of the SHACL query target
+     */
     @Cacheable(value = "shaclOptionalQuery", key = "#shaclReplacement.concat('-optional')")
     public List<SparqlBinding> execOptionalParamQuery(String shaclReplacement) {
         String query = this.queryTemplateService.getShaclQuery(shaclReplacement, false, true);

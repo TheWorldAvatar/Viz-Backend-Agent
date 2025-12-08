@@ -9,7 +9,6 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.ModifyQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
@@ -199,8 +198,8 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
             }
           }
           break;
-        case ShaclResource.ID_KEY, ShaclResource.CONTEXT_KEY, ShaclResource.OPTIONAL_KEY:
-          // Ignore @id, @context, and @optional fields
+        case ShaclResource.ID_KEY, ShaclResource.CONTEXT_KEY:
+          // Ignore @id and @context fields
           break;
         default:
           this.parseFieldNode(currentNode.path(ShaclResource.ID_KEY), objectNode, idTripleSubject, Rdf.iri(predicate),
