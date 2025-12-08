@@ -3,7 +3,7 @@ version: "3.9"
 services:
   agent:
     container_name: vis-backend-agent
-    image: ghcr.io/theworldavatar/vis-backend-agent:1.21.3-event-id-filter-SNAPSHOT
+    image: ghcr.io/theworldavatar/vis-backend-agent:1.22.1-event-id-filter-SNAPSHOT
     build:
       context: ..
       target: agent

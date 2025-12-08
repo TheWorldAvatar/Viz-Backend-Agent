@@ -97,6 +97,7 @@ public class LocalisationTranslator {
     return switch (recurrence) {
       case null -> getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY);
       case "" -> getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY);
+      case LifecycleResource.RECURRENCE_FIXED_DATE_TASK -> getMessage(LocalisationResource.LABEL_FIXED_DATE_SERVICE_KEY);
       case LifecycleResource.RECURRENCE_DAILY_TASK -> getMessage(LocalisationResource.LABEL_SINGLE_SERVICE_KEY);
       case LifecycleResource.RECURRENCE_ALT_DAY_TASK ->
         getMessage(LocalisationResource.LABEL_ALTERNATE_DAY_SERVICE_KEY);
