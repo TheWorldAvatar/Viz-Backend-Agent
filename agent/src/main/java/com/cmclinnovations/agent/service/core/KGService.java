@@ -219,8 +219,7 @@ public class KGService {
             throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_DELETE_KEY));
           }
         }
-        List<String> endpoints = this.kgRepository.getEndpoints(SparqlEndpointType.BLAZEGRAPH).stream()
-                .map(binding -> binding.getFieldValue("endpoint")).toList();
+        List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
         List<SparqlBinding> results = this.kgRepository.execOptionalParamQuery(target, endpoints);
         return results.stream()
             .map(x -> x.getFieldValue("name"))

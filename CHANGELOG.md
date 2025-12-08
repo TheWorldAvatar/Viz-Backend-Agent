@@ -1,5 +1,8 @@
 # Change Log
 
+## 1.23.0
+ - Fixed bug with delete and update to identify optional parameters correctly
+
 ## 1.22.1
 
  - Fixed bug with filter options of event ID
