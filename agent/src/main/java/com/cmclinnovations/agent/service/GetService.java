@@ -269,7 +269,13 @@ public class GetService {
     String iri = this.queryTemplateService.getIri(resourceID);
     addStatements += this.getQueryStatementsForTargetFields(iri, new HashSet<>(Set.of(field)), filters);
     if (search != null && !search.isBlank()) {
-      addStatements += "FILTER(CONTAINS(LCASE(" + QueryResource.genVariable(field).getQueryString() + ") ,\""
+      String fieldVarString = QueryResource.genVariable(field).getQueryString();
+      if (field.equals(QueryResource.EVENT_ID_VAR.getVarName())) {
+        // special handling of event ID, because event ID is IRI not string
+        addStatements += "?event_id dc-terms:identifier ?ori_event_id.";
+        fieldVarString = "?ori_event_id";
+      }
+      addStatements += "FILTER(CONTAINS(LCASE(" + fieldVarString + ") ,\""
           + search.toLowerCase()
           + "\"))";
     }

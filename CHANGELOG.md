@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.22.1
+
+ - Fixed bug with filter options of event ID
+
+## 1.22.0
+
+ - Added new fixed date schedule type for contracts
+
 ## 1.21.2
 
  - Fixed bug with filtering pending job requests by status

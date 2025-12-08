@@ -3,7 +3,7 @@ version: "3.9"
 services:
   agent:
     container_name: vis-backend-agent
-    image: ghcr.io/theworldavatar/vis-backend-agent:1.22.0-delete-optional-object-property-SNAPSHOT
+    image: ghcr.io/theworldavatar/vis-backend-agent:1.23.0-delete-optional-object-property-SNAPSHOT
     build:
       context: ..
       target: agent
