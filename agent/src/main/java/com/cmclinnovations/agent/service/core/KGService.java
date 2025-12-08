@@ -198,15 +198,21 @@ public class KGService {
         .collect(Collectors.toCollection(ArrayDeque::new));
   }
 
+  /**
+   * Retrieve optional parameters of a resource based on its corresponding SHACL.
+   * @param resourceID             The target resource identifier for the instance.
+   */
   public Set<String> getSparqlOptionalParameters(String resourceId) {
     switch (resourceId) {
-      case LifecycleResource.SCHEDULE_RESOURCE, LifecycleResource.LIFECYCLE_RESOURCE:
+      case LifecycleResource.SCHEDULE_RESOURCE, LifecycleResource.LIFECYCLE_RESOURCE, LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE:
+        // these are special resources where all properties are mandatory
         return Collections.emptySet();
       default:
         String target;
         try {
           target = this.fileService.getTargetIri(resourceId).getQueryString();
         } catch (InvalidRouteException e) {
+          // specific handling for lifecycle event types
           LifecycleEventType eventType = LifecycleEventType.fromId(resourceId);
           if (eventType != null) {
             target = eventType.getShaclReplacement();
