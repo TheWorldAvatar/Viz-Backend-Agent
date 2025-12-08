@@ -134,6 +134,10 @@ public class LifecycleResource {
     switch (resourceID) {
       case LifecycleResource.LIFECYCLE_RESOURCE:
         return FileService.LIFECYCLE_JSON_LD_RESOURCE;
+      case BillingResource.CUSTOMER_ACCOUNT_RESOURCE:
+        return FileService.CUSTOMER_ACCOUNT_JSON_LD_RESOURCE;
+      case BillingResource.CUSTOMER_ACCOUNT_PRICING_RESOURCE:
+        return FileService.ACCOUNT_PRICING_JSON_LD_RESOURCE;
       case LifecycleResource.OCCURRENCE_INSTANT_RESOURCE:
         return FileService.OCCURRENCE_INSTANT_JSON_LD_RESOURCE;
       case BillingResource.PAYMENT_OBLIGATION:

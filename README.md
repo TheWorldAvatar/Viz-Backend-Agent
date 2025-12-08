@@ -30,8 +30,9 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
       - [2.6.5 Service order route](#265-service-order-route)
       - [2.6.6 Archive contract route](#266-archive-contract-route)
   - [2.7 Service Reporting Route](#27-service-reporting-route)
-    - [2.7.1 Closed activities route](#271-closed-activities)
-    - [2.7.2 Pricing model route](#272-pricing-model-route)
+    - [2.7.1 Customer account route](#271-customer-account)
+    - [2.7.2 Closed activities route](#272-closed-activities)
+    - [2.7.3 Pricing model route](#273-pricing-model-route)
 
 ## 1. Agent Deployment
 
@@ -890,7 +891,19 @@ Users must send a `POST` request to terminate an ongoing contract at the `<baseU
 
 This `<baseURL>/vis-backend-agent/report/` route serves as an endpoint to manage any reporting requirements such as pricing and billing:
 
-#### 2.7.1 Closed activities
+#### 2.7.1 Customer account
+
+This endpoint serves to allow users to create new customer accounts by sending a `POST` request to the `<baseURL>/vis-backend-agent/report/account` endpoint. This endpoint is an extension to the [add instance endpoint](#251-add-route), which requires users to send request parameters for creating a custom customer based on their `JSON-LD` file. The endpoint will generate an account for the customer, with relations to the instance via the root `@id`.
+
+> [!IMPORTANT]  
+> Users must include a `type` in the request parameter that corresponds to the customer's custom target file name in the `./resources/application-service.json`
+
+Users can send a `POST` request to the `<baseURL>/vis-backend-agent/report/account/price` endpoint to create a new pricing model and assign it to the specified account. This endpoint is an extension to the [add instance endpoint](#251-add-route), which requires users to send request parameters for creating a custom pricing model based on their `JSON-LD` file. The endpoint will generate a pricing model and assign it to the corresponding customer account id via the `account` parameter.
+
+> [!IMPORTANT]  
+> Users must include a `type` in the request parameter that corresponds to the pricing model's custom resource ID specified in the `application-service.json`
+
+#### 2.7.2 Closed activities
 
 This endpoint serves to retrieve all closed activities within the target date range for the purpose of billing. Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/bill?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}&sort_by={sortby}` endpoint, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
 
@@ -904,7 +917,7 @@ To get the count of closed activities, users can send a `GET` request to the `<b
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/report/bill/filter?type={type}&field={field}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all the distinct field options for a specific field on all closed activities, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{field}` is the target field, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. Users can also include an optional `search` parameter as well as any active filters.
 
-#### 2.7.2 Pricing model route
+#### 2.7.3 Pricing model route
 
 These endpoints allow users to view and update the pricing model associated with a specific contract or task. Before using these endpoints, please read the corresponding required definitions for a **[Payment Obligation](https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation)** concept in the [`JSON-LD`](./resources/README.md#213-service-lifecycle) and [`SHACL` shapes](./resources/README.md#117-billing-specific-feature) section.
 

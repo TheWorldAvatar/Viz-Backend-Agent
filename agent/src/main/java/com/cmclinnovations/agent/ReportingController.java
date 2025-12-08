@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +21,7 @@ import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
+import com.cmclinnovations.agent.service.application.BillingService;
 import com.cmclinnovations.agent.service.application.LifecycleTaskService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.BillingResource;
@@ -36,14 +38,17 @@ public class ReportingController {
   private final ResponseEntityBuilder responseEntityBuilder;
   private final GetService getService;
   private final UpdateService updateService;
+  private final BillingService billingService;
   private final LifecycleTaskService lifecycleTaskService;
 
   private static final Logger LOGGER = LogManager.getLogger(ReportingController.class);
 
   public ReportingController(ConcurrencyService concurrencyService, ResponseEntityBuilder responseEntityBuilder,
-      GetService getService, UpdateService updateService, LifecycleTaskService lifecycleTaskService) {
+      GetService getService, UpdateService updateService, BillingService billingService,
+      LifecycleTaskService lifecycleTaskService) {
     this.concurrencyService = concurrencyService;
     this.responseEntityBuilder = responseEntityBuilder;
+    this.billingService = billingService;
     this.updateService = updateService;
     this.getService = getService;
     this.lifecycleTaskService = lifecycleTaskService;
@@ -117,6 +122,28 @@ public class ReportingController {
     LOGGER.info("Received request to get the form template for pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
       return this.getService.getForm(id, BillingResource.PAYMENT_OBLIGATION, false, null);
+    });
+  }
+
+  /**
+   * Creates a customer instance, along with a new customer account.
+   */
+  @PostMapping("/account")
+  public ResponseEntity<StandardApiResponse<?>> createCustomerAccount(@RequestBody Map<String, Object> instance) {
+    LOGGER.info("Received request to create a new customer account...");
+    return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
+      return this.billingService.genCustomerAccountInstance(instance);
+    });
+  }
+
+  /**
+   * Assigns pricing models to a customer account.
+   */
+  @PostMapping("/account/price")
+  public ResponseEntity<StandardApiResponse<?>> assignPricingPlansToAccount(@RequestBody Map<String, Object> instance) {
+    LOGGER.info("Received request to assign pricing model to account...");
+    return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
+      return this.billingService.assignPricingPlansToAccount(instance);
     });
   }
 

@@ -1,0 +1,39 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": {
+    "@replace": "iri",
+    "@type": "iri"
+  },
+  "@reverse": {
+    "https://www.omg.org/spec/Commons/RolesAndCompositions/isPlayedBy": {
+      "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://theworldavatar.io/kg/org/account/holder/"
+      },
+      "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/AccountHolder",
+      "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/holds": {
+        "@id": {
+          "@replace": "id",
+          "@type": "iri",
+          "prefix": "https://www.theworldavatar.io/kg/customer/account/"
+        },
+        "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/CustomerAccount",
+        "http://purl.org/dc/terms/identifier": {
+          "@replace": "id",
+          "@type": "literal"
+        },
+        "https://www.omg.org/spec/Commons/Designators/isDefinedIn": {
+          "@id": {
+            "@replace": "id",
+            "@type": "iri",
+            "prefix": "https://www.theworldavatar.io/kg/account/agreement/"
+          },
+          "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/AccountSpecificServiceAgreement"
+        }
+      }
+    }
+  }
+}
