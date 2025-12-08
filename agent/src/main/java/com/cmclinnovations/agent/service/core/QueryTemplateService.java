@@ -140,16 +140,13 @@ public class QueryTemplateService {
    * @param requireLabel Indicates if labels should be returned for all the
    *                     fields that are IRIs.
    */
-  public String getShaclQuery(String replacement, boolean requireLabel, boolean optional) {
+  public String getShaclQuery(String replacement, boolean requireLabel) {
     LOGGER.debug("Retrieving the required SHACL query...");
     String queryPath = FileService.SHACL_PATH_QUERY_RESOURCE;
     if (requireLabel) {
       // Only use the label query if required due to the associated slower query
       // performance
       queryPath = FileService.SHACL_PATH_LABEL_QUERY_RESOURCE;
-    }
-    if (optional) {
-      queryPath = FileService.SHACL_PROPERTY_OPTIONAL_RESOURCE;
     }
     return this.fileService.getContentsWithReplacement(queryPath, replacement);
   }
