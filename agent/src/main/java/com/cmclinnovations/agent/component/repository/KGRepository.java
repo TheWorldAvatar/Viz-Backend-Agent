@@ -156,6 +156,18 @@ public class KGRepository {
     }
 
     /**
+     * Retrieve the optional parameters defined by the user in SHACL to generate the
+     * SPARQL query required.
+     *
+     * @param shaclReplacement The replacement value of the SHACL query target
+     */
+    @Cacheable(value = "shaclOptionalQuery", key = "#shaclReplacement.concat('-optional')")
+    public List<SparqlBinding> execOptionalParamQuery(String shaclReplacement, List<String> endpoints) {
+        String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PROPERTY_OPTIONAL_RESOURCE, shaclReplacement);
+        return this.query(query, endpoints);
+    }
+
+    /**
      * Reads the SPARQL query response into object nodes.
      * 
      * @param response Response string from the knowledge graph.

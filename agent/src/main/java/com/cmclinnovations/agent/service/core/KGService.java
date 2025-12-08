@@ -3,6 +3,7 @@ package com.cmclinnovations.agent.service.core;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -194,6 +195,37 @@ public class KGService {
     return results.stream()
         .map(innerList -> new ArrayDeque<>(innerList))
         .collect(Collectors.toCollection(ArrayDeque::new));
+  }
+
+  /**
+   * Retrieve optional parameters of a resource based on its corresponding SHACL.
+   * @param resourceID             The target resource identifier for the instance.
+   */
+  public Set<String> getSparqlOptionalParameters(String resourceId) {
+    switch (resourceId) {
+      case LifecycleResource.SCHEDULE_RESOURCE, LifecycleResource.LIFECYCLE_RESOURCE, LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE:
+        // these are special resources where all properties are mandatory
+        return Collections.emptySet();
+      default:
+        String target;
+        try {
+          target = this.fileService.getTargetIri(resourceId).getQueryString();
+        } catch (InvalidRouteException e) {
+          // specific handling for lifecycle event types
+          LifecycleEventType eventType = LifecycleEventType.fromId(resourceId);
+          if (eventType != null) {
+            target = eventType.getShaclReplacement();
+          } else {
+            throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_DELETE_KEY));
+          }
+        }
+        List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
+        List<SparqlBinding> results = this.kgRepository.execOptionalParamQuery(target, endpoints);
+        return results.stream()
+            .map(x -> x.getFieldValue("name"))
+            .collect(Collectors.toSet());
+    }
+
   }
 
   /**
