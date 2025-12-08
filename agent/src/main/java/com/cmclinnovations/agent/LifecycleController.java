@@ -261,14 +261,15 @@ public class LifecycleController {
   private void inferAndSetBranch(Map<String, Object> contractDetails) {
     String branchName = null;
 
-    // Check if this is a Waste Collection Service (has waste category)
-    if (hasValue(contractDetails, "waste_category")) {
+    Object wasteCategory = contractDetails.get("waste_category");
+    Object bin = contractDetails.get("bin");
+    Object truck = contractDetails.get("truck");
+
+    if (wasteCategory != null && !wasteCategory.toString().isEmpty()) {
       branchName = "Waste Collection Service";
-    } else if (hasValue(contractDetails, "bin")) {
-      // Has specific bin instance → Bin Handling Service
+    } else if (bin != null && !bin.toString().isEmpty()) {
       branchName = "Bin Handling Service";
-    } else if (hasValue(contractDetails, "truck")) {
-      // Has specific truck instance → Vehicle Maintenance and Operations Service
+    } else if (truck != null && !truck.toString().isEmpty()) {
       branchName = "Vehicle Maintenance and Operations Service";
     } else {
       branchName = "Delivery Service";
@@ -276,32 +277,6 @@ public class LifecycleController {
 
     contractDetails.put(QueryResource.ADD_BRANCH_KEY, branchName);
     LOGGER.info("Set branch to: {}", branchName);
-  }
-
-  private boolean hasValue(Map<String, Object> map, String key) {
-    if (!map.containsKey(key)) {
-      return false;
-    }
-
-    Object value = map.get(key);
-
-    // Check for null
-    if (value == null) {
-      return false;
-    }
-
-    // Check for empty string
-    if (value instanceof String) {
-      return !((String) value).isEmpty();
-    }
-
-    // Check for empty list
-    if (value instanceof List) {
-      return !((List<?>) value).isEmpty();
-    }
-
-    // Any other non-null value is considered present
-    return true;
   }
 
   /**
