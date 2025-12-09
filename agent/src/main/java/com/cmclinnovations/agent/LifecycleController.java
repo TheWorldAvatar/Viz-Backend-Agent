@@ -396,6 +396,7 @@ public class LifecycleController {
           throw new IllegalArgumentException(
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
         }
+        params.put(LifecycleResource.ORDER_KEY, this.lifecycleTaskService.getPreviousOccurrenceEnum(params)); // get previous event enum
         return this.lifecycleTaskService.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params,
             LifecycleEventType.SERVICE_CANCELLATION, "Task has been successfully cancelled!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
@@ -407,6 +408,7 @@ public class LifecycleController {
           throw new IllegalArgumentException(
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
         }
+        params.put(LifecycleResource.ORDER_KEY, this.lifecycleTaskService.getPreviousOccurrenceEnum(params)); // get previous event enum
         return this.lifecycleTaskService.genOccurrence(LifecycleResource.REPORT_RESOURCE, params,
             LifecycleEventType.SERVICE_INCIDENT_REPORT, "Task has been successfully reported!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
@@ -485,7 +487,6 @@ public class LifecycleController {
       Map<String, Object> params = new HashMap<>();
       params.put("contract", contractId);
       params.put("date", date);
-      params.put("order", 0);
       params.put("special remarks", "Contract has been terminated.");
       ResponseEntity<StandardApiResponse<?>> response = this.performSingleServiceAction(type, params);
       if (!response.getStatusCode().equals(HttpStatus.OK)) {

@@ -601,4 +601,14 @@ public class LifecycleTaskService {
             params.get(LifecycleResource.DATE_KEY).toString(), eventType)
         .poll().getFieldValue(field);
   }
+
+  public String getPreviousOccurrenceEnum(Map<String,Object> params) {
+    try {
+      // try getting dispatch event first
+      this.getPreviousOccurrence(QueryResource.IRI_KEY, LifecycleEventType.SERVICE_ORDER_DISPATCHED, params);
+      return "1";
+    } catch (NullPointerException e) {
+    }
+    return "0";
+  }
 }
