@@ -11,6 +11,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
@@ -59,6 +60,20 @@ public class DateTimeService {
    */
   public boolean isFutureDate(String inputDate, String targetDate) {
     return this.parseDate(inputDate).isAfter(this.parseDate(targetDate));
+  }
+
+  /**
+   * Checks if the input date is today or any date after today.
+   */
+  public boolean isTodayOrFutureDate(String inputDate) {
+    return this.isTodayOrFutureDate(inputDate, this.getCurrentDate());
+  }
+
+  /**
+   * Checks if the input date is the same as, or after, the target date.
+   */
+  public boolean isTodayOrFutureDate(String inputDate, String targetDate) {
+    return !this.parseDate(inputDate).isBefore(this.parseDate(targetDate));
   }
 
   /**
@@ -273,6 +288,20 @@ public class DateTimeService {
   }
 
   /**
+   * Retrieve dates of occurrences given a list of date and the end date as a
+   * cutoff.
+   */
+  public Queue<String> getOccurrenceDates(List<String> entryDates, String endDateInput) {
+    return entryDates.stream().filter(dateString -> {
+      try {
+        return !this.isFutureDate(dateString, endDateInput);
+      } catch (Exception e) {
+        return false;
+      }
+    }).collect(Collectors.toCollection(ArrayDeque::new));
+  }
+
+  /**
    * Retrieve the scheduled days of the week from the SPARQL binding results.
    * 
    * @param bindings The results for retrieval.
@@ -320,4 +349,18 @@ public class DateTimeService {
               return field != null && field.value() != null && field.value().equals(properCaseName);
             }));
   }
+
+  /**
+   * Parses a list of date strings and returns them as a sorted list of LocalDate
+   * objects. Only keep dates that are today or in the future.
+   */
+  public List<String> getSortedUptoDayDates(List<String> dateStrings) {
+    return dateStrings.stream()
+        .filter(dateString -> this.isTodayOrFutureDate(dateString))
+        .map(dateString -> this.parseDate(dateString))
+        .sorted(LocalDate::compareTo) // Sorts from earliest to latest
+        .map(date -> date.format(this.formatter))
+        .collect(Collectors.toList());
+  }
+
 }

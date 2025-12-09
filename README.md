@@ -572,8 +572,27 @@ Note that this route will interact with the [schedule route](#263-schedule-route
   "friday": "A boolean indicating if the service should occur on a friday",
   "saturday": "A boolean indicating if the service should occur on a saturday",
   "sunday": "A boolean indicating if the service should occur on a sunday",
-  "branch_add": "Optional parameter for branch to add when there is a form branching",
-  "branch_delete": "Optional parameter for branch to delete when there is a form branching"
+  "branch_add": "Mandatory parameter for branch to add when there is a form branching",
+  "branch_delete": "Mandatory parameter for branch to delete when there is a form branching"
+}
+```
+
+For contracts with fixed date schedules, the following `JSON` request parameters should be supplied:
+
+```json
+{
+  /* parameters */
+  "id": "An identifier for the lifecycle",
+  "contract": "The target contract IRI",
+  "start date": "Date when the first service is to be delivered in the YYYY-MM-DD format",
+  "end date": "Date of the final service in the YYYY-MM-DD format",
+  "time slot start": "Beginning of the time window during which the service is scheduled to be delivered in the HH:MM format",
+  "time slot end": "End of the time window during which the service is scheduled to be delivered in the HH:MM format",
+  "schedule entry": [
+    {"schedule entry date": "Date when each service is to be delivered in the YYYY-MM-DD format"}
+  ],
+  "branch_add": "Mandatory parameter for branch to add when there is a form branching",
+  "branch_delete": "Mandatory parameter for branch to delete when there is a form branching"
 }
 ```
 

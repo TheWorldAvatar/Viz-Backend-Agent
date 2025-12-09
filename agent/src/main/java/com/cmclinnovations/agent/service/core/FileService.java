@@ -49,6 +49,7 @@ public class FileService {
   public static final String INSTANCE_QUERY_RESOURCE = QUERY_GET_DIR + "instance.sparql";
   public static final String SHACL_PATH_QUERY_RESOURCE = QUERY_GET_DIR + "property_path.sparql";
   public static final String SHACL_PATH_LABEL_QUERY_RESOURCE = QUERY_GET_DIR + "property_path_label.sparql";
+  public static final String SHACL_PROPERTY_OPTIONAL_RESOURCE = QUERY_GET_DIR + "property_optional.sparql";
   public static final String LIFECYCLE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/lifecycle.jsonld";
   public static final String CUSTOMER_ACCOUNT_JSON_LD_RESOURCE = CLASS_PATH_DIR
   + "jsonld/accounts/customer_account.jsonld";
@@ -58,6 +59,7 @@ public class FileService {
   public static final String OCCURRENCE_INSTANT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_instant.jsonld";
   public static final String OCCURRENCE_LINK_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_link.jsonld";
   public static final String SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/schedule.jsonld";
+  public static final String FIXED_DATE_SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/fixed_date_schedule.jsonld";
 
   public static final String ACCOUNT_AGREEMENT_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_agreement.sparql";
   public static final String ACCOUNT_PRICING_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_pricing.sparql";
@@ -68,6 +70,7 @@ public class FileService {
   public static final String CONTRACT_PREV_EVENT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR
       + "contract_prev_event.sparql";
   public static final String CONTRACT_SCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "schedule.sparql";
+  public static final String FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "fixed_date_schedule.sparql";
   public static final String TASK_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "task.sparql";
 
   public static final String REPLACEMENT_TARGET = "\\[target\\]";

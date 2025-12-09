@@ -1,5 +1,21 @@
 # Change Log
 
+## 1.23.0
+ - Fixed bug with delete and update to identify optional parameters correctly
+
+## 1.22.1
+
+ - Fixed bug with filter options of event ID
+
+## 1.22.0
+
+ - Added new fixed date schedule type for contracts
+
+## 1.21.2
+
+ - Fixed bug with filtering pending job requests by status
+ - Fixed bug where delete template uses id0 for the identifier instead of the first id
+
 ## 1.21.1
  
  - Added a route to get current task details

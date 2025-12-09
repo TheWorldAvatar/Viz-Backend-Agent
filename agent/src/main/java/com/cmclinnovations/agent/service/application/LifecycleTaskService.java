@@ -53,6 +53,8 @@ public class LifecycleTaskService {
   private static final int NUM_DAY_ORDER_GEN = 30;
   static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
+  private static final boolean IS_CONTRACT = false;
+
   /**
    * Constructs a new service with the following dependencies.
    * 
@@ -89,13 +91,13 @@ public class LifecycleTaskService {
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrenceCount(String resourceID, String startTimestamp,
       String endTimestamp, boolean isClosed, Map<String, String> filters) {
-    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, IS_CONTRACT);
     String[] queryStatement = this.genLifecycleStatements(startTimestamp, endTimestamp, new HashSet<>(), parsedFilters,
         "", isClosed, false);
     return this.responseEntityBuilder.success(null,
         String.valueOf(
             this.getService.getCount(resourceID, queryStatement[0], LifecycleResource.TASK_ID_SORT_BY_PARAMS, filters,
-                false)));
+                IS_CONTRACT)));
   }
 
   /**
@@ -111,8 +113,8 @@ public class LifecycleTaskService {
    */
   public List<String> getFilterOptions(String resourceID, String field, String search, String startTimestamp,
       String endTimestamp, boolean isClosed, Map<String, String> filters) {
-    String originalField = LifecycleResource.revertLifecycleSpecialFields(field, false);
-    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    String originalField = LifecycleResource.revertLifecycleSpecialFields(field, IS_CONTRACT);
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, IS_CONTRACT);
     parsedFilters.remove(originalField);
     String[] queryStatement = this.genLifecycleStatements(startTimestamp, endTimestamp, new HashSet<>(), parsedFilters,
         originalField, isClosed, false);
@@ -373,8 +375,7 @@ public class LifecycleTaskService {
   public boolean genOrderReceivedOccurrences(String contract, String nextTaskStartDate) {
     LOGGER.info("Generating all orders for the active contract {}...", contract);
     // Retrieve schedule information for the specific contract
-    SparqlBinding bindings = this.lifecycleQueryService.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,
-        contract, contract);
+    SparqlBinding bindings = this.lifecycleQueryService.querySchedule(contract);
     // Extract specific schedule info
     String startDate = nextTaskStartDate != null ? nextTaskStartDate
         : bindings.getFieldValue(QueryResource.SCHEDULE_START_DATE_VAR.getVarName());
@@ -386,19 +387,28 @@ public class LifecycleTaskService {
     }
     String recurrence = bindings.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY);
     Queue<String> occurrences = new ArrayDeque<>();
-    // Extract date of occurrences based on the schedule information
-    // For perpetual and single time schedules, simply add the start date
-    if (recurrence == null || recurrence.equals(LifecycleResource.RECURRENCE_DAILY_TASK)) {
-      occurrences.offer(this.dateTimeService.getDateTimeFromDate(startDate));
-    } else if (recurrence.equals(LifecycleResource.RECURRENCE_ALT_DAY_TASK)) {
-      // Alternate day recurrence should have dual interval
-      occurrences = this.dateTimeService.getOccurrenceDates(startDate, endDate, 2);
+    // Handle as fixed date schedule first
+    if (bindings.containsField(QueryResource.FIXED_DATE_DATE_KEY)) {
+      List<SparqlResponseField> entryDates = bindings.getList(QueryResource.FIXED_DATE_DATE_KEY);
+      List<String> entryDateStrings = entryDates.stream()
+          .map(SparqlResponseField::value)
+          .collect(Collectors.toList());
+      occurrences = this.dateTimeService.getOccurrenceDates(entryDateStrings, endDate);
     } else {
-      // Note that this may run for other intervals like P3D but
-      // an error will be thrown in the following method unless the recurrence is in
-      // intervals of 7
-      int weeklyInterval = this.dateTimeService.getWeeklyInterval(recurrence);
-      occurrences = this.dateTimeService.getOccurrenceDates(startDate, endDate, bindings, weeklyInterval);
+      // Extract date of occurrences based on the schedule information
+      // For perpetual and single time schedules, simply add the start date
+      if (recurrence == null || recurrence.equals(LifecycleResource.RECURRENCE_DAILY_TASK)) {
+        occurrences.offer(this.dateTimeService.getDateTimeFromDate(startDate));
+      } else if (recurrence.equals(LifecycleResource.RECURRENCE_ALT_DAY_TASK)) {
+        // Alternate day recurrence should have dual interval
+        occurrences = this.dateTimeService.getOccurrenceDates(startDate, endDate, 2);
+      } else {
+        // Note that this may run for other intervals like P3D but
+        // an error will be thrown in the following method unless the recurrence is in
+        // intervals of 7
+        int weeklyInterval = this.dateTimeService.getWeeklyInterval(recurrence);
+        occurrences = this.dateTimeService.getOccurrenceDates(startDate, endDate, bindings, weeklyInterval);
+      }
     }
     // Add parameter template
     Map<String, Object> params = new HashMap<>();

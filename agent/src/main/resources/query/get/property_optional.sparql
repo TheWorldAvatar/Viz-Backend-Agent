@@ -1,0 +1,19 @@
+PREFIX sh:             <http://www.w3.org/ns/shacl#>
+PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/>
+PREFIX twa:            <https://theworldavatar.io/kg/form/>
+
+SELECT DISTINCT ?name
+WHERE{
+  ?shape rdf:type sh:NodeShape ;
+         sh:targetClass [target] ;
+         (sh:or/rdf:rest*/rdf:first)? ?node.
+    ?node (sh:and/rdf:rest*/rdf:first)?/sh:node?/sh:property ?property .
+    ?property sh:name ?name ;
+
+    OPTIONAL{
+      ?property sh:minCount ?minCount.
+    }
+
+  FILTER ((COALESCE(?minCount, 0)=0))
+
+}

@@ -47,6 +47,8 @@ public class LifecycleContractService {
   private static final String SERVICE_DISCHARGE_MESSAGE = "Service has been completed successfully.";
   private static final Logger LOGGER = LogManager.getLogger(LifecycleContractService.class);
 
+  private static final boolean IS_CONTRACT = true;
+
   /**
    * Constructs a new service with the following dependencies.
    * 
@@ -112,14 +114,9 @@ public class LifecycleContractService {
    */
   public ResponseEntity<Map<String, Object>> getSchedule(String contract) {
     LOGGER.debug("Retrieving the schedule details of the contract...");
-    SparqlBinding result = this.querySchedule(contract);
+    SparqlBinding result = this.lifecycleQueryService.querySchedule(contract);
     LOGGER.info("Successfuly retrieved schedule!");
     return new ResponseEntity<>(result.get(), HttpStatus.OK);
-  }
-
-  private SparqlBinding querySchedule(String contract) {
-    return this.lifecycleQueryService.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,
-        contract, contract);
   }
 
   /**
@@ -156,43 +153,61 @@ public class LifecycleContractService {
    * @param entityType The entity type.
    */
   public Map<String, Object> getContractSchedule(String contractId) {
-    Map<String, Object> rawSchedule = this.querySchedule(contractId).get();
-    Map<String, SparqlResponseField> schedule = rawSchedule.entrySet().stream().collect(Collectors.toMap(
-        Map.Entry::getKey, entry -> {
-          Object value = entry.getValue();
-          if (value == null) {
-            return new SparqlResponseField("", "", "", "");
-          }
-          if (value instanceof SparqlResponseField) {
-            return (SparqlResponseField) value;
-          }
-          throw new ClassCastException(
-              "Value for key '" + entry.getKey() +
-                  "' is not null or SparqlResponseField, but: " + value.getClass().getName());
-        }));
+    SparqlBinding rawSchedule = this.lifecycleQueryService.querySchedule(contractId);
     // convert to draft schedule details
     Map<String, Object> draftDetails = new HashMap<>();
     String today = this.dateTimeService.getCurrentDate();
-    // Keep recurrence details
-    draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
-    draftDetails.put("time slot start", schedule.get(QueryResource.SCHEDULE_START_TIME_VAR.getVarName()).value());
-    draftDetails.put("time slot end", schedule.get(QueryResource.SCHEDULE_END_TIME_VAR.getVarName()).value());
-    draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY,
-        schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value());
-    // schedule type specific handling
-    // perpetual service has no end date
-    if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).value() == "") {
-      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, "");
+    // Keep time window
+    draftDetails.put("time slot start", rawSchedule.getFieldValue(QueryResource.SCHEDULE_START_TIME_VAR.getVarName()));
+    draftDetails.put("time slot end", rawSchedule.getFieldValue(QueryResource.SCHEDULE_END_TIME_VAR.getVarName()));
+    // handle fixed date schedule separately
+    if (rawSchedule.containsField(QueryResource.FIXED_DATE_DATE_KEY)) {
+      List<SparqlResponseField> dateFields = rawSchedule.getList(QueryResource.FIXED_DATE_DATE_KEY);
+      List<String> entryDateList = dateFields.stream().map(SparqlResponseField::value).collect(Collectors.toList());
+      // sort list of dates and filter out past dates
+      List<String> sortedDateList = this.dateTimeService.getSortedUptoDayDates(entryDateList);
+      draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY,sortedDateList.get(0));
+      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, sortedDateList.get(sortedDateList.size()-1));
+      List<Map<String, String>> entryDateStrings = sortedDateList.stream()
+          .map(date -> {
+            Map<String, String> dateMap = new HashMap<>();
+            dateMap.put(QueryResource.FIXED_DATE_SCHEDULE_DATE_KEY, date);
+            return dateMap;
+          })
+          .collect(Collectors.toList());
+      draftDetails.put(QueryResource.FIXED_DATE_SCHEDULE_KEY, entryDateStrings);
     } else {
-      draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, today);
-    }
-    // The day of week for daily tasks will follow today
-    if (schedule.get(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY)
-        .value() == LifecycleResource.RECURRENCE_DAILY_TASK) {
-      draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
-    } else {
-      Map<String, Boolean> weekdays = this.dateTimeService.getRecurringDayOfWeek(schedule);
-      draftDetails.putAll(weekdays);
+      draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
+      // perpetual service has no end date
+      if (rawSchedule.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).equals("")) {
+        draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, "");
+      } else {
+        draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, today);
+      }
+      draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY,
+          rawSchedule.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY));
+      // The day of week for daily tasks will follow today
+      if (rawSchedule.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY)
+           == LifecycleResource.RECURRENCE_DAILY_TASK) {
+        draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
+      } else {
+        Map<String, SparqlResponseField> schedule = rawSchedule.get().entrySet().stream()
+        .collect(Collectors.toMap(
+            Map.Entry::getKey, entry -> {
+              Object value = entry.getValue();
+              if (value == null) {
+                return new SparqlResponseField("", "", "", "");
+              }
+              if (value instanceof SparqlResponseField) {
+                return (SparqlResponseField) value;
+              }
+              throw new ClassCastException(
+                  "Value for key '" + entry.getKey() +
+                      "' is not null or SparqlResponseField, but: " + value.getClass().getName());
+            }));
+        Map<String, Boolean> weekdays = this.dateTimeService.getRecurringDayOfWeek(schedule);
+        draftDetails.putAll(weekdays);
+      }
     }
     return draftDetails;
   }
@@ -221,11 +236,12 @@ public class LifecycleContractService {
    */
   public ResponseEntity<StandardApiResponse<?>> getContractCount(String resourceID, LifecycleEventType eventType,
       Map<String, String> filters) {
-    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, IS_CONTRACT);
     // Sorting is irrelevant for count
     String[] addStatements = this.genLifecycleStatements(eventType, new HashSet<>(), parsedFilters, "", false);
     return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(resourceID, addStatements[0], "", filters, true)));
+        String.valueOf(this.getService.getCount(resourceID, addStatements[0], "", filters, IS_CONTRACT)));
   }
 
   /**
@@ -239,8 +255,8 @@ public class LifecycleContractService {
    */
   public List<String> getFilterOptions(String resourceID, String field, String search, LifecycleEventType eventType,
       Map<String, String> filters) {
-    String originalField = LifecycleResource.revertLifecycleSpecialFields(field, true);
-    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, false);
+    String originalField = LifecycleResource.revertLifecycleSpecialFields(field, IS_CONTRACT);
+    Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, IS_CONTRACT);
     parsedFilters.remove(originalField);
     // Sorting is irrelevant for specific lifecycle statements
     String[] addStatements = this.genLifecycleStatements(eventType, new HashSet<>(), parsedFilters, originalField,
@@ -323,6 +339,8 @@ public class LifecycleContractService {
         .insertExtendedScheduleFilters(statementMappings);
     // Process end date first as it will be removed if not required
     String endDateFilter = this.processEndDateScheduleForFilter(filters, extendedMappings);
+    // additional mapping for status for contracts only. needed for filtering
+    extendedMappings.put("status","?event <https://www.omg.org/spec/Commons/Designators/describes> / <http://www.w3.org/2000/01/rdf-schema#label> ?status.");
     String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
         filters, field);
     lifecycleStatements += endDateFilter;

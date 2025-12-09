@@ -1,5 +1,7 @@
 package com.cmclinnovations.agent.service;
 
+import java.util.Set;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
@@ -36,8 +38,10 @@ public class DeleteService {
    */
   public ResponseEntity<StandardApiResponse<?>> delete(String resourceID, String targetId, String branchName) {
     LOGGER.debug("Deleting {} instance of {}", resourceID, targetId);
+    // Query for optional parameters
+    Set<String> optVarNames = this.kgService.getSparqlOptionalParameters(resourceID);
     // Generate query with branch validation
-    String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId, branchName);
+    String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId, branchName, optVarNames);
     return this.kgService.delete(query, targetId);
   }
 }
