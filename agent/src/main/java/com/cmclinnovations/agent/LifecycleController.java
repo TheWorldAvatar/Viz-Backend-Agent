@@ -427,6 +427,7 @@ public class LifecycleController {
     final record ServiceActionParams(String logSuccess, String messageSuccess, LifecycleEventType eventType) {
     }
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
+    String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     ServiceActionParams serviceActionParams = switch (action) {
       case "rescind" ->
         new ServiceActionParams("Contract has been successfully rescinded!",
@@ -439,12 +440,39 @@ public class LifecycleController {
     LOGGER.info("Received request to {} the contract...", action);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
       String entityType = params.get(StringResource.TYPE_REQUEST_PARAM).toString();
-      List<String> oustandingDates = this.lifecycleTaskService.getOccurrenceDateByContract(null, null, entityType, false,
-          params.get(LifecycleResource.CONTRACT_KEY).toString());
-      String tomorrowTimeStamp = String.valueOf(java.time.LocalDate.now(java.time.ZoneOffset.UTC).plusDays(1).atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC));
+      // get outstanding tasks. these should be reported
+      List<String> oustandingDates = this.lifecycleTaskService.getOccurrenceDateByContract(null, null, entityType,
+          false,
+          contractId);
+      for (String outstandingDate : oustandingDates) {
+        Map<String, Object> reportParams = new HashMap<>();
+        reportParams.put("contract", contractId);
+        reportParams.put("date", outstandingDate);
+        reportParams.put("order", 0);
+        reportParams.put("special remarks", "Contract has been terminated.");
+        ResponseEntity<StandardApiResponse<?>> x = this.lifecycleTaskService.genOccurrence(LifecycleResource.REPORT_RESOURCE, reportParams,
+              LifecycleEventType.SERVICE_INCIDENT_REPORT, "Task has been successfully reported!",
+              LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
+        LOGGER.info(x.toString());
+      };
+      // get scheduled tasks. these should be cancelled
+      String tomorrowTimeStamp = String.valueOf(java.time.LocalDate.now(java.time.ZoneOffset.UTC).plusDays(1)
+          .atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC));
       String finalTimeStamp = "4102444800"; // 1 January 2100
-      List<String> scheduledDates = this.lifecycleTaskService.getOccurrenceDateByContract(tomorrowTimeStamp, finalTimeStamp, entityType, false,
+      List<String> scheduledDates = this.lifecycleTaskService.getOccurrenceDateByContract(tomorrowTimeStamp,
+          finalTimeStamp, entityType, false,
           params.get(LifecycleResource.CONTRACT_KEY).toString());
+      for (String scheduledDate : scheduledDates) {
+        Map<String, Object> cancelParams = new HashMap<>();
+        cancelParams.put("contract", contractId);
+        cancelParams.put("date", scheduledDate);
+        cancelParams.put("order", 0);
+        cancelParams.put("special remarks", "Contract has been terminated.");
+        ResponseEntity<StandardApiResponse<?>> y = this.lifecycleTaskService.genOccurrence(LifecycleResource.CANCEL_RESOURCE, cancelParams,
+              LifecycleEventType.SERVICE_CANCELLATION, "Task has been successfully cancelled!",
+              LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
+        LOGGER.info(y.toString());
+      };
       return this.lifecycleTaskService.genOccurrence(params, serviceActionParams.eventType,
           serviceActionParams.logSuccess, serviceActionParams.messageSuccess);
     });
