@@ -84,6 +84,27 @@ public class BillingService {
   }
 
   /**
+   * Assigns a pricing plan to the target contract. Has a side effect of creating
+   * a transaction record for the contract.
+   * 
+   * @param instance Request parameters containing the IRI for pricing model and
+   *                 the contract ID.
+   */
+  public ResponseEntity<StandardApiResponse<?>> assignPricingPlanToContract(Map<String, Object> instance) {
+    // Query for the contract IRI from the contract ID
+    String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
+    SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
+    // Query for the account IRI from the pricing model's IRI
+    String pricingModel = TypeCastUtils.castToObject(instance.get(QueryResource.PRICING_MODEL_VAR.getVarName()),
+        String.class);
+    SparqlBinding accountInstance = this.lifecycleQueryService
+        .getInstance(FileService.ACCOUNT_PRICING_QUERY_RESOURCE, pricingModel);
+    instance.put(QueryResource.ACCOUNT_ID_KEY, accountInstance.getFieldValue(QueryResource.IRI_KEY));
+    instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
+    return this.addService.instantiate(BillingResource.TRANSACTION_RECORD_RESOURCE, instance);
+  }
+
+  /**
    * Reusable code to add custom instance.
    * 
    * @param replacements The replacement fields for the JSON-LD.

@@ -16,20 +16,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
-import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.GetService;
-import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.application.BillingService;
 import com.cmclinnovations.agent.service.application.LifecycleTaskService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
-import com.cmclinnovations.agent.utils.LocalisationResource;
-import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
-import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @RestController
 @RequestMapping("/report")
@@ -37,19 +32,16 @@ public class ReportingController {
   private final ConcurrencyService concurrencyService;
   private final ResponseEntityBuilder responseEntityBuilder;
   private final GetService getService;
-  private final UpdateService updateService;
   private final BillingService billingService;
   private final LifecycleTaskService lifecycleTaskService;
 
   private static final Logger LOGGER = LogManager.getLogger(ReportingController.class);
 
   public ReportingController(ConcurrencyService concurrencyService, ResponseEntityBuilder responseEntityBuilder,
-      GetService getService, UpdateService updateService, BillingService billingService,
-      LifecycleTaskService lifecycleTaskService) {
+      GetService getService, BillingService billingService, LifecycleTaskService lifecycleTaskService) {
     this.concurrencyService = concurrencyService;
     this.responseEntityBuilder = responseEntityBuilder;
     this.billingService = billingService;
-    this.updateService = updateService;
     this.getService = getService;
     this.lifecycleTaskService = lifecycleTaskService;
   }
@@ -117,11 +109,11 @@ public class ReportingController {
    * Retrieves the form template for the pricing model for the target task if
    * available.
    */
-  @GetMapping("/price/{id}")
+  @GetMapping("/transaction/model/{id}")
   public ResponseEntity<StandardApiResponse<?>> getPricingForm(@PathVariable String id) {
     LOGGER.info("Received request to get the form template for pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
-      return this.getService.getForm(id, BillingResource.PAYMENT_OBLIGATION, false, null);
+      return this.getService.getForm(id, BillingResource.TRANSACTION_RECORD_RESOURCE, false, null);
     });
   }
 
@@ -148,26 +140,14 @@ public class ReportingController {
   }
 
   /**
-   * Updates the pricing model for the specified contract.
+   * Updates the pricing model and create a transaction record for the specified
+   * contract.
    */
-  @PutMapping("/price")
-  public ResponseEntity<StandardApiResponse<?>> updatePricing(@RequestBody Map<String, Object> instance) {
+  @PutMapping("/transaction/model")
+  public ResponseEntity<StandardApiResponse<?>> assignPricingToContract(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to update pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
-      String targetId = instance.get(QueryResource.ID_KEY).toString();
-      Map<String, Object> currentEntity = (Map<String, Object>) this.getService
-          .getInstance(targetId, BillingResource.PAYMENT_OBLIGATION, false)
-          .getBody().data().items().get(0);
-      // Iterate through the fields to cast from SparqlResponseField to actual value
-      currentEntity.forEach((key, field) -> {
-        // Do not add ID or pricing model variable
-        if (!key.equals(QueryResource.ID_KEY) && !key.equals(QueryResource.PRICING_MODEL_VAR.getVarName())) {
-          String value = TypeCastUtils.castToObject(field, SparqlResponseField.class).value();
-          instance.put(key, value);
-        }
-      });
-      return this.updateService.update(targetId,
-          BillingResource.PAYMENT_OBLIGATION, LocalisationResource.SUCCESS_UPDATE_KEY, instance);
+      return this.billingService.assignPricingPlanToContract(instance);
     });
   }
 }

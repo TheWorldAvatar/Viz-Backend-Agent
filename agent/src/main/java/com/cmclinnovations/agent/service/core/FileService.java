@@ -49,17 +49,18 @@ public class FileService {
   public static final String INSTANCE_QUERY_RESOURCE = QUERY_GET_DIR + "instance.sparql";
   public static final String SHACL_PATH_QUERY_RESOURCE = QUERY_GET_DIR + "property_path.sparql";
   public static final String SHACL_PATH_LABEL_QUERY_RESOURCE = QUERY_GET_DIR + "property_path_label.sparql";
-  public static final String PAYMENT_OBLIGATION_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/payment_obligation.jsonld";
   public static final String LIFECYCLE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/lifecycle.jsonld";
   public static final String CUSTOMER_ACCOUNT_JSON_LD_RESOURCE = CLASS_PATH_DIR
-      + "jsonld/accounts/customer_account.jsonld";
+  + "jsonld/accounts/customer_account.jsonld";
   public static final String ACCOUNT_PRICING_JSON_LD_RESOURCE = CLASS_PATH_DIR
-      + "jsonld/accounts/account_pricing.jsonld";
+  + "jsonld/accounts/account_pricing.jsonld";
+  public static final String TRANSACTION_RECORD_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/accounts/transaction_record.jsonld";
   public static final String OCCURRENCE_INSTANT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_instant.jsonld";
   public static final String OCCURRENCE_LINK_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_link.jsonld";
   public static final String SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/schedule.jsonld";
 
   public static final String ACCOUNT_AGREEMENT_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_agreement.sparql";
+  public static final String ACCOUNT_PRICING_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_pricing.sparql";
   public static final String CONTRACT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract.sparql";
   public static final String CONTRACT_STATUS_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_status.sparql";
   public static final String CONTRACT_STAGE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_stage.sparql";
@@ -160,7 +161,7 @@ public class FileService {
     LOGGER.debug("Retrieving the target class associated with the resource identifier: {} ...", resourceID);
     if (resourceID.equals(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE)) {
       return Rdf.iri(LifecycleResource.EVENT_OCCURRENCE_IRI);
-    } else if (resourceID.equals(BillingResource.PAYMENT_OBLIGATION)) {
+    } else if (resourceID.equals(BillingResource.TRANSACTION_RECORD_RESOURCE)) {
       return BillingResource.PAYMENT_OBLIGATION_IRI;
     }
     String targetClass = this.getResourceTarget(resourceID,

@@ -685,8 +685,6 @@ Form branches adapt to selected categories by displaying different field sets. D
 
 #### 2.1.3 Service Lifecycle
 
-If your application requires the management of the lifecycle of contracts and their associated services, users must set up a custom contract `JSON-LD` file, with a minimal sample file located at `./jsonld/contract.jsonld`. Remove **lines 10 - 27** from the sample contract definition if **billing is not required**.
-
 > [!IMPORTANT]
 > Users will be required to add a `JSON-LD` for the `ServiceDispatchEvent`. This event should assign dispatch details before the service executes. A sample file has been created in `./jsonld/dispatch.jsonld`, and users must not modify line 1 - 36. The relevant route(s) is found in the `Service dispatch` section [over here](../README.md#265-service-order-route).
 

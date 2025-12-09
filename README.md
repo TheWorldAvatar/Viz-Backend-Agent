@@ -919,15 +919,15 @@ Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/report/b
 
 #### 2.7.3 Pricing model route
 
-These endpoints allow users to view and update the pricing model associated with a specific contract or task. Before using these endpoints, please read the corresponding required definitions for a **[Payment Obligation](https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation)** concept in the [`JSON-LD`](./resources/README.md#213-service-lifecycle) and [`SHACL` shapes](./resources/README.md#117-billing-specific-feature) section.
+These endpoints allow users to view and update the pricing model associated with a specific contract or task. Before using these endpoints, please read the corresponding required definitions for a **[Payment Obligation](https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation)** concept in the [`SHACL` shapes](./resources/README.md#117-billing-specific-feature) section.
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/price/{id}` endpoint to get the form template of the payment obligation associated with the target contract, where `id` is the identifier for the target contract. This requires the definition of a [specific `SHACL` shape](./resources/README.md#117-billing-specific-feature).
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/model/{id}` endpoint to get the form template of the transaction record and pricing model associated with the target contract, where `id` is the identifier for the target contract. This requires the definition of a [specific `SHACL` shape](./resources/README.md#117-billing-specific-feature).
 
-To update the pricing model of a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/price`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
+To update the pricing model and transaction record of a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/transaction/model`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
 
 ```json
 {
-  "id": "payment obligation id",
-  "pricing model": "pricing model instance"
+  "id": "identifier of the contract",
+  "pricing": "pricing model instance"
 }
 ```

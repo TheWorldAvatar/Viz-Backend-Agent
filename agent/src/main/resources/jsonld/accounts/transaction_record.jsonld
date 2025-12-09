@@ -1,0 +1,37 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": {
+    "@replace": "id",
+    "@type": "iri",
+    "prefix": "https://theworldavatar.io/kg/account/record/"
+  },
+  "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/TransactionRecord",
+  "https://www.omg.org/spec/Commons/Documents/isAbout": {
+    "@id": {
+      "@replace": "contract",
+      "@type": "iri"
+    },
+    "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/confers": {
+      "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://theworldavatar.io/kg/contract/payment/obligation/"
+      },
+      "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation",
+      "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/mandates": {
+        "@id": {
+          "@replace": "pricing",
+          "@type": "iri"
+        }
+      }
+    }
+  },
+  "@reverse": {
+    "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Documents/hasRecord": {
+      "@replace": "account",
+      "@type": "iri"
+    }
+  }
+}
