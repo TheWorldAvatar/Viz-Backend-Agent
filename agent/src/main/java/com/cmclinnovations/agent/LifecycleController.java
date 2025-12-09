@@ -381,36 +381,40 @@ public class LifecycleController {
       @RequestBody Map<String, Object> params) {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      switch (type.toLowerCase()) {
-        case "cancel":
-          LOGGER.info("Received request to cancel the upcoming service...");
-          this.checkMissingParams(params, LifecycleResource.DATE_KEY);
-          // Service date selected for cancellation cannot be a past date
-          if (this.dateTimeService.isFutureDate(this.dateTimeService.getCurrentDate(),
-              params.get(LifecycleResource.DATE_KEY).toString())) {
-            throw new IllegalArgumentException(
-                LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
-          }
-          return this.lifecycleTaskService.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params,
-              LifecycleEventType.SERVICE_CANCELLATION, "Task has been successfully cancelled!",
-              LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
-        case "report":
-          LOGGER.info("Received request to report an unfulfilled service...");
-          this.checkMissingParams(params, LifecycleResource.DATE_KEY);
-          // Service date selected for reporting an issue cannot be a future date
-          if (this.dateTimeService.isFutureDate(params.get(LifecycleResource.DATE_KEY).toString())) {
-            throw new IllegalArgumentException(
-                LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
-          }
-          return this.lifecycleTaskService.genOccurrence(LifecycleResource.REPORT_RESOURCE, params,
-              LifecycleEventType.SERVICE_INCIDENT_REPORT, "Task has been successfully reported!",
-              LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
-
-        default:
-          throw new IllegalArgumentException(
-              LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, type));
-      }
+      return this.performSingleServiceAction(type, params);
     });
+  }
+
+  private ResponseEntity<StandardApiResponse<?>> performSingleServiceAction(String type, Map<String, Object> params) {
+    switch (type.toLowerCase()) {
+      case "cancel":
+        LOGGER.info("Received request to cancel the upcoming service...");
+        this.checkMissingParams(params, LifecycleResource.DATE_KEY);
+        // Service date selected for cancellation cannot be a past date
+        if (this.dateTimeService.isFutureDate(this.dateTimeService.getCurrentDate(),
+            params.get(LifecycleResource.DATE_KEY).toString())) {
+          throw new IllegalArgumentException(
+              LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
+        }
+        return this.lifecycleTaskService.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params,
+            LifecycleEventType.SERVICE_CANCELLATION, "Task has been successfully cancelled!",
+            LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
+      case "report":
+        LOGGER.info("Received request to report an unfulfilled service...");
+        this.checkMissingParams(params, LifecycleResource.DATE_KEY);
+        // Service date selected for reporting an issue cannot be a future date
+        if (this.dateTimeService.isFutureDate(params.get(LifecycleResource.DATE_KEY).toString())) {
+          throw new IllegalArgumentException(
+              LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
+        }
+        return this.lifecycleTaskService.genOccurrence(LifecycleResource.REPORT_RESOURCE, params,
+            LifecycleEventType.SERVICE_INCIDENT_REPORT, "Task has been successfully reported!",
+            LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
+
+      default:
+        throw new IllegalArgumentException(
+            LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, type));
+    }
   }
 
   /**
@@ -450,19 +454,12 @@ public class LifecycleController {
       String entityType = params.get(StringResource.TYPE_REQUEST_PARAM).toString();
       // get outstanding tasks. these should be reported
       List<String> oustandingDates = this.lifecycleTaskService.getOccurrenceDateByContract(null, null, entityType,
-          false,
-          contractId);
-      for (String outstandingDate : oustandingDates) {
-        Map<String, Object> reportParams = new HashMap<>();
-        reportParams.put("contract", contractId);
-        reportParams.put("date", outstandingDate);
-        reportParams.put("order", 0);
-        reportParams.put("special remarks", "Contract has been terminated.");
-        ResponseEntity<StandardApiResponse<?>> x = this.lifecycleTaskService.genOccurrence(LifecycleResource.REPORT_RESOURCE, reportParams,
-              LifecycleEventType.SERVICE_INCIDENT_REPORT, "Task has been successfully reported!",
-              LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
-        LOGGER.info(x.toString());
-      };
+          false, contractId);
+      ResponseEntity<StandardApiResponse<?>> reportResponse = this.updateTaskOfTerminatedContract(contractId, oustandingDates, "report");
+      if (!reportResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return reportResponse;
+      }
+      LOGGER.info("Successfully reported outstanding tasks of terminated contract!");
       // get scheduled tasks. these should be cancelled
       String tomorrowTimeStamp = String.valueOf(java.time.LocalDate.now(java.time.ZoneOffset.UTC).plusDays(1)
           .atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC));
@@ -470,20 +467,33 @@ public class LifecycleController {
       List<String> scheduledDates = this.lifecycleTaskService.getOccurrenceDateByContract(tomorrowTimeStamp,
           finalTimeStamp, entityType, false,
           params.get(LifecycleResource.CONTRACT_KEY).toString());
-      for (String scheduledDate : scheduledDates) {
-        Map<String, Object> cancelParams = new HashMap<>();
-        cancelParams.put("contract", contractId);
-        cancelParams.put("date", scheduledDate);
-        cancelParams.put("order", 0);
-        cancelParams.put("special remarks", "Contract has been terminated.");
-        ResponseEntity<StandardApiResponse<?>> y = this.lifecycleTaskService.genOccurrence(LifecycleResource.CANCEL_RESOURCE, cancelParams,
-              LifecycleEventType.SERVICE_CANCELLATION, "Task has been successfully cancelled!",
-              LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
-        LOGGER.info(y.toString());
-      };
+      ResponseEntity<StandardApiResponse<?>> cancelResponse = this.updateTaskOfTerminatedContract(contractId, scheduledDates, "cancel");
+      if (!cancelResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return cancelResponse;
+      }
+      LOGGER.info("Successfully cancelled scheduled tasks of terminated contract!");
+      // update contract status
       return this.lifecycleTaskService.genOccurrence(params, serviceActionParams.eventType,
           serviceActionParams.logSuccess, serviceActionParams.messageSuccess);
     });
+  }
+
+  private ResponseEntity<StandardApiResponse<?>> updateTaskOfTerminatedContract(String contractId, List<String> dates,
+      String type) {
+    ResponseEntity<StandardApiResponse<?>> lastSuccessfulResponse = null;
+    for (String date : dates) {
+      Map<String, Object> params = new HashMap<>();
+      params.put("contract", contractId);
+      params.put("date", date);
+      params.put("order", 0);
+      params.put("special remarks", "Contract has been terminated.");
+      ResponseEntity<StandardApiResponse<?>> response = this.performSingleServiceAction(type, params);
+      if (!response.getStatusCode().equals(HttpStatus.OK)) {
+        return response;
+      }
+      lastSuccessfulResponse = response;
+    }
+    return lastSuccessfulResponse;
   }
 
   /**
