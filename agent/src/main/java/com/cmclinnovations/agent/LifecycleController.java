@@ -186,6 +186,9 @@ public class LifecycleController {
     });
   }
 
+  /**
+   * Instantiate a schedule instance in the knowledge graph.
+   */
   private ResponseEntity<StandardApiResponse<?>> instantiateContractSchedule(Map<String, Object> params) {
     this.lifecycleContractService.addStageInstanceToParams(params, LifecycleEventType.SERVICE_EXECUTION);
     // use regular schedule or fixed date schedule
