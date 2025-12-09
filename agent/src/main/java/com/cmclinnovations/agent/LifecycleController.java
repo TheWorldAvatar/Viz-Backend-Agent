@@ -438,6 +438,13 @@ public class LifecycleController {
     };
     LOGGER.info("Received request to {} the contract...", action);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
+      String entityType = params.get(StringResource.TYPE_REQUEST_PARAM).toString();
+      List<String> oustandingDates = this.lifecycleTaskService.getOccurrenceDateByContract(null, null, entityType, false,
+          params.get(LifecycleResource.CONTRACT_KEY).toString());
+      String tomorrowTimeStamp = String.valueOf(java.time.LocalDate.now(java.time.ZoneOffset.UTC).plusDays(1).atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC));
+      String finalTimeStamp = "4102444800"; // 1 January 2100
+      List<String> scheduledDates = this.lifecycleTaskService.getOccurrenceDateByContract(tomorrowTimeStamp, finalTimeStamp, entityType, false,
+          params.get(LifecycleResource.CONTRACT_KEY).toString());
       return this.lifecycleTaskService.genOccurrence(params, serviceActionParams.eventType,
           serviceActionParams.logSuccess, serviceActionParams.messageSuccess);
     });

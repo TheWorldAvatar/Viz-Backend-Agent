@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.service.application;
 
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -162,12 +163,36 @@ public class LifecycleTaskService {
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String startTimestamp, String endTimestamp,
       String entityType, boolean isClosed, PaginationState pagination) {
-    String[] lifecycleStatements = this.genLifecycleStatements(startTimestamp, endTimestamp,
-        pagination.getSortedFields(), pagination.getFilters(), "", isClosed, true);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, lifecycleStatements,
-        isClosed, pagination);
+    List<Map<String, Object>> occurrences = this.queryOccurrences(startTimestamp, endTimestamp,
+        entityType, isClosed, pagination);
     LOGGER.info("Successfuly retrieved tasks!");
     return this.responseEntityBuilder.success(null, occurrences);
+  }
+
+  private List<Map<String, Object>> queryOccurrences(String startTimestamp, String endTimestamp,
+      String entityType, boolean isClosed, PaginationState pagination) {
+    String[] lifecycleStatements = this.genLifecycleStatements(startTimestamp, endTimestamp,
+        pagination.getSortedFields(), pagination.getFilters(), "", isClosed, true);
+    return this.executeOccurrenceQuery(entityType, lifecycleStatements,
+        isClosed, pagination);
+    }
+
+  public List<String> getOccurrenceDateByContract(String startTimestamp, String endTimestamp,
+      String entityType, boolean isClosed, String contractId) {
+        Map<String, String> filter = new HashMap<>();
+        filter.put("id", contractId);
+        PaginationState pagination = new PaginationState(0, null, 
+          StringResource.DEFAULT_SORT_BY + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, filter);
+    List<Map<String, Object>> occurrences = this.queryOccurrences(startTimestamp, endTimestamp,
+        entityType, isClosed, pagination);
+    List<String> dates = new ArrayList<>();
+    for (Map<String, Object> occurrenceMap : occurrences) {
+      if (occurrenceMap.containsKey("date")) {
+        SparqlResponseField dateObject = (SparqlResponseField) occurrenceMap.get("date");
+        dates.add(dateObject.value());
+      }
+    }
+    return dates;
   }
 
   /**
