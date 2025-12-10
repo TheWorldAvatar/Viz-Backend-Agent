@@ -31,8 +31,8 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
       - [2.6.6 Archive contract route](#266-archive-contract-route)
   - [2.7 Service Reporting Route](#27-service-reporting-route)
     - [2.7.1 Customer account route](#271-customer-account)
-    - [2.7.2 Closed activities route](#272-closed-activities)
-    - [2.7.3 Pricing model route](#273-pricing-model-route)
+    - [2.7.2 Transaction record route](#272-transaction-record-route)
+    - [2.7.3 Closed activities route](#273-closed-activities)
 
 ## 1. Agent Deployment
 
@@ -922,7 +922,36 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/report/accou
 > [!IMPORTANT]  
 > Users must include a `type` in the request parameter that corresponds to the pricing model's custom resource ID specified in the `application-service.json`
 
-#### 2.7.2 Closed activities
+#### 2.7.2 Transaction record route
+
+These endpoints allow users to view and update the transaction record and pricing model associated with a specific contract or task. Before using these endpoints, please read the corresponding required definitions for a **[Payment Obligation](https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation)** concept in the [`SHACL` shapes](./resources/README.md#1171-paymentobligation) section.
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/model/{id}` endpoint to get the form template of the transaction record and pricing model associated with the target contract, where `id` is the identifier for the target contract. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1171-paymentobligation).
+
+To update the pricing model and transaction record of a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/transaction/model`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
+
+```json
+{
+  "id": "identifier of the contract",
+  "pricing": "pricing model instance"
+}
+```
+
+#### 2.7.2.1 Individual transactions
+
+These endpoints allow users to view and create new invoices for a specific tasks. Before using these endpoints, please read the corresponding required definitions for a **[IndividualTransaction](https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/IndividualTransaction)** concept in the [`SHACL` shapes](./resources/README.md#1172-individualtransaction) section.
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/invoice` endpoint to get the form template of the invoice to include discounts, additional charges, and waiting time charges. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1172-individualtransaction).
+
+To generate the invoice for a specific task, users must send a `POST` request with their corresponding parameters from the above template to `<baseURL>/vis-backend-agent/report/transaction/invoice`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
+
+```json
+{
+  "event": "closed event instance"
+}
+```
+
+#### 2.7.3 Closed activities
 
 This endpoint serves to retrieve all closed activities within the target date range for the purpose of billing. Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/bill?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}&sort_by={sortby}` endpoint, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
 
@@ -935,18 +964,3 @@ This endpoint serves to retrieve all closed activities within the target date ra
 To get the count of closed activities, users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/bill/count?type={contractType}}&startTimestamp={start}&endTimestamp={end}` endpoint.
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/report/bill/filter?type={type}&field={field}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all the distinct field options for a specific field on all closed activities, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{field}` is the target field, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. Users can also include an optional `search` parameter as well as any active filters.
-
-#### 2.7.3 Pricing model route
-
-These endpoints allow users to view and update the pricing model associated with a specific contract or task. Before using these endpoints, please read the corresponding required definitions for a **[Payment Obligation](https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation)** concept in the [`SHACL` shapes](./resources/README.md#117-billing-specific-feature) section.
-
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/model/{id}` endpoint to get the form template of the transaction record and pricing model associated with the target contract, where `id` is the identifier for the target contract. This requires the definition of a [specific `SHACL` shape](./resources/README.md#117-billing-specific-feature).
-
-To update the pricing model and transaction record of a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/transaction/model`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
-
-```json
-{
-  "id": "identifier of the contract",
-  "pricing": "pricing model instance"
-}
-```

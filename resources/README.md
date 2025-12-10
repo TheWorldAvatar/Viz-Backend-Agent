@@ -413,7 +413,11 @@ base:ConceptShape
 
 ### 1.1.7 Billing-specific Feature
 
-When billing is required, users must define a `SHACL` shape for `https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation`. This shape must include two Property Shapes:
+When billing is required, users must define a `SHACL` shape for `https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation` and `https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/IndividualTransaction`.
+
+#### 1.1.7.1 PaymentObligation
+
+This shape must include two Property Shapes:
 
 1. Provides the requesting party of a contract
 2. Provides the pricing model, which is dependent on the requesting party
@@ -445,6 +449,144 @@ base:PaymentObligationShape-requesting-party
   sh:class fibo-fnd-org-fm:FormalOrganization ;
   sh:minCount 1 ;
   sh:maxCount 1 .
+```
+
+#### 1.1.7.2 IndividualTransaction
+
+This shape must include three Property Shapes to indicate the discounts, additional charges, and chargeable waiting time, and this MUST not be changed. However, users must also include two SHACL rules to:
+
+1. Derive the service charges for the event
+2. Derive the total bill amount from the service price, discounts, and additional charges for that event
+
+An example minimal shape is provided below. Users should only change the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge.
+
+```
+base:TransactionShape
+  a sh:NodeShape ;
+  sh:targetClass fibo-fbc-pas-caa:IndividualTransaction ;
+  sh:property [
+    sh:name "chargeable waiting time" ;
+    sh:description "Waiting time to be charged" ;
+    sh:order 1;
+    sh:path (
+      cmns-doc:isAbout
+    ) ;
+    sh:datatype xsd:decimal ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:name "discounts" ;
+    sh:description "Discounts to be subtracted from the total charge." ;
+    sh:order 2;
+    sh:path (
+      cmns-doc:isAbout
+      p2p-o-inv:hasInvoiceLine
+    ) ;
+    sh:node base:DiscountInvoiceLineShape ;
+    sh:minCount 0 ;
+  ] ;
+  sh:property [
+    sh:name "additional charges" ;
+    sh:description "Additional charges to be added to total charge." ;
+    sh:order 3;
+    sh:path (
+      cmns-doc:isAbout
+      p2p-o-inv:hasInvoiceLine
+    ) ;
+    sh:node base:AddChargeInvoiceLineShape ;
+    sh:minCount 0 ;
+  ] ;
+  sh:rule [
+    a sh:SPARQLRule ;
+    sh:order 0 ;
+    sh:construct """
+    PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>
+    PREFIX cmns-doc: <https://www.omg.org/spec/Commons/Documents/>
+    PREFIX cmns-dsg: <https://www.omg.org/spec/Commons/Designators/>
+    PREFIX cmns-qtu: <https://www.omg.org/spec/Commons/QuantitiesAndUnits/>
+    PREFIX dc-terms: <http://purl.org/dc/terms/>
+
+    PREFIX fibo-fnd-acc-cur: <https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/>
+    PREFIX fibo-fnd-arr-lif: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/>
+    PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+    PREFIX fibo-fnd-pas-pas: <https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/>
+    PREFIX p2p-o-doc-line:   <https://purl.org/p2p-o/documentline#>
+    PREFIX p2p-o-inv:        <https://purl.org/p2p-o/invoice#>
+    PREFIX ontoservice:      <https://www.theworldavatar.com/kg/ontoservice/>
+    PREFIX xsd:              <http://www.w3.org/2001/XMLSchema#>
+
+    CONSTRUCT {
+      ?invoice p2p-o-inv:hasInvoiceLine ?invoice_line_instance.
+      ?invoice_line_instance p2p-o-doc-line:lineNote "Service"^^xsd:string;
+        p2p-o-doc-line:hasLineNetAmount ?invoice_line_amount_instance.
+      ?invoice_line_amount_instance fibo-fnd-acc-cur:hasAmount ?service_price.
+    } WHERE { 
+      ?this fibo-fnd-rel-rel:involves ?event_id;
+        dc-terms:identifier ?id.
+      ?invoice cmns-doc:isAbout ?this.
+      ?iri a fibo-fnd-pas-pas:ServiceAgreement;
+        fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/cmns-col:comprises ?event_id;
+        fibo-fnd-rel-rel:confers/fibo-fnd-rel-rel:mandates ?price_model.
+      ?event_id ^cmns-doc:refersTo/cmns-doc:records/cmns-qtu:hasQuantityValue	?weight;
+        fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent;
+        cmns-dsg:describes ontoservice:CompletedStatus .
+      ?price_model cmns-qtu:hasArgument/fibo-fnd-acc-cur:hasAmount ?base_fee;
+        cmns-qtu:hasArgument ?var_fee_instance.
+      ?base_fee ^fibo-fnd-acc-cur:hasAmount/a ontoservice:BaseFee.
+      ?var_fee_instance a ontoservice:VariableFee;
+        fibo-fnd-acc-cur:hasAmount ?var_fee;
+        cmns-qtu:hasLowerBound/cmns-qtu:hasNumericValue ?lower_bound.
+      BIND((?base_fee+(?weight-?lower_bound)*?var_fee) AS ?service_price)
+
+      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/",?id)) AS ?invoice_line_instance)
+      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/amount/",?id)) AS ?invoice_line_amount_instance)
+    }
+    """
+  ] ;
+  sh:rule [
+    a sh:SPARQLRule ;
+    sh:order 1 ;
+    sh:construct """
+    PREFIX cmns-doc:        <https://www.omg.org/spec/Commons/Documents/>
+    PREFIX cmns-qtu:        <https://www.omg.org/spec/Commons/QuantitiesAndUnits/>
+    PREFIX dc-terms:        <http://purl.org/dc/terms/>
+    PREFIX fibo-fnd-acc-cur:<https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/>
+    PREFIX fibo-fnd-rel-rel:<https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+    PREFIX p2p-o-doc-line:  <https://purl.org/p2p-o/documentline#>
+    PREFIX p2p-o-inv:       <https://purl.org/p2p-o/invoice#>
+    PREFIX ontoservice:     <https://www.theworldavatar.com/kg/ontoservice/>
+    PREFIX xsd:             <http://www.w3.org/2001/XMLSchema#>
+
+    CONSTRUCT {
+      ?this fibo-fnd-acc-cur:hasMonetaryAmount ?total_instance.
+      ?total_instance a fibo-fnd-acc-cur:CalculatedPrice; 
+        fibo-fnd-acc-cur:hasAmount ?total.
+    } WHERE { 
+      ?this fibo-fnd-rel-rel:involves ?event_id;
+        dc-terms:identifier ?id.
+      ?invoice cmns-doc:isAbout ?this;
+        p2p-o-inv:hasInvoiceLine ?invoice_line_instance.
+      ?invoice_line_instance p2p-o-doc-line:lineNote "Service"^^xsd:string;
+        p2p-o-doc-line:hasLineNetAmount/fibo-fnd-acc-cur:hasAmount ?service_price.
+      {
+        SELECT ?invoice (SUM(?charges) AS ?add_charges) WHERE {
+          ?invoice cmns-doc:isAbout ?this;
+            p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasGrosspriceOfItem/cmns-qtu:hasNumericValue ?charge .
+          BIND(COALESCE(?charge,0) AS ?charges)
+        } GROUP BY ?invoice 
+      }
+      { 
+        SELECT ?invoice (SUM(?charges) AS ?discount) WHERE {
+          ?invoice cmns-doc:isAbout ?this;
+            p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasPriceDiscountOfItem/cmns-qtu:hasNumericValue ?charge .
+          BIND(COALESCE(?charge,0) AS ?charges)
+        } GROUP BY ?invoice }
+      BIND(?service_price+?add_charges-?discount AS ?total)
+      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/total/",?id)) AS ?total_instance)
+    }
+    """
+  ] .
 ```
 
 ### 1.2 Automated Data Retrieval
