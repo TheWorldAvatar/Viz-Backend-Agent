@@ -462,7 +462,7 @@ public class LifecycleController {
         if (!reportResponse.getStatusCode().equals(HttpStatus.OK)) {
           return reportResponse;
         }
-        LOGGER.info("Successfully reported outstanding tasks of terminated contract!");
+        LOGGER.info("Successfully reported outstanding tasks of {} contract!", action);
       }
       // get scheduled tasks. these should be cancelled
       String tomorrowTimeStamp = String.valueOf(java.time.LocalDate.now(java.time.ZoneOffset.UTC).plusDays(1)
@@ -476,7 +476,7 @@ public class LifecycleController {
           return cancelResponse;
         }
       }
-      LOGGER.info("Successfully cancelled scheduled tasks of terminated contract!");
+      LOGGER.info("Successfully cancelled scheduled tasks of {} contract!", action);
       // update contract status
       return this.lifecycleTaskService.genOccurrence(params, serviceActionParams.eventType,
           serviceActionParams.logSuccess, serviceActionParams.messageSuccess);

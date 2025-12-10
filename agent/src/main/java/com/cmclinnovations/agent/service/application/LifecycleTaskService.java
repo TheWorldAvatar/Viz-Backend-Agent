@@ -1,11 +1,9 @@
 package com.cmclinnovations.agent.service.application;
 
-import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -175,24 +173,19 @@ public class LifecycleTaskService {
         pagination.getSortedFields(), pagination.getFilters(), "", isClosed, true);
     return this.executeOccurrenceQuery(entityType, lifecycleStatements,
         isClosed, pagination);
-    }
+  }
 
   public List<String> getOccurrenceDateByContract(String startTimestamp, String endTimestamp,
       String entityType, boolean isClosed, String contractId) {
-        Map<String, String> filter = new HashMap<>();
-        filter.put("id", contractId);
-        PaginationState pagination = new PaginationState(0, null, 
-          StringResource.DEFAULT_SORT_BY + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, filter);
+    Map<String, String> filter = new HashMap<>();
+    filter.put("id", contractId);
+    PaginationState pagination = new PaginationState(0, null,
+        StringResource.DEFAULT_SORT_BY + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, filter);
     List<Map<String, Object>> occurrences = this.queryOccurrences(startTimestamp, endTimestamp,
         entityType, isClosed, pagination);
-    List<String> dates = new ArrayList<>();
-    for (Map<String, Object> occurrenceMap : occurrences) {
-      if (occurrenceMap.containsKey("date")) {
-        SparqlResponseField dateObject = (SparqlResponseField) occurrenceMap.get("date");
-        dates.add(dateObject.value());
-      }
-    }
-    return dates;
+    return occurrences.stream().filter(occurrenceMap -> occurrenceMap.containsKey(LifecycleResource.DATE_KEY))
+        .map(occurrenceMap -> (SparqlResponseField) occurrenceMap.get(LifecycleResource.DATE_KEY)).map(SparqlResponseField::value)
+        .collect(Collectors.toList());
   }
 
   /**
@@ -602,7 +595,7 @@ public class LifecycleTaskService {
         .poll().getFieldValue(field);
   }
 
-  public String getPreviousOccurrenceEnum(Map<String,Object> params) {
+  public String getPreviousOccurrenceEnum(Map<String, Object> params) {
     try {
       // try getting dispatch event first
       this.getPreviousOccurrence(QueryResource.IRI_KEY, LifecycleEventType.SERVICE_ORDER_DISPATCHED, params);
