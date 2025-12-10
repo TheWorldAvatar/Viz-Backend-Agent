@@ -235,38 +235,52 @@ public class LifecycleQueryFactory {
     String recurrenceVar = QueryResource.genVariable(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY)
         .getQueryString();
     statementMappings.putAll(SCHEDULE_QUERY_MAPPINGS);
+    // Add recurrence statement
     statementMappings.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY,
         statementMappings.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY) + "BIND(IF(BOUND("
             + recurrenceVar + ")," + recurrenceVar + ",\"\") AS "
             + QueryResource.SCHEDULE_RECURRENCE_VAR.getQueryString()
             + ")");
+    // Add last modified statement
+    Variable eventVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY);
+    statementMappings.put(LifecycleResource.LAST_MODIFIED_KEY, eventVar
+        .has(QueryResource.FIBO_FND_DT_OC_HAS_EVENT_DATE,
+            QueryResource.LAST_MODIFIED_VAR)
+        .getQueryString());
     StringBuilder coreQueryBuilder = new StringBuilder();
+    String lifecycleStatement = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
+        .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE)
+        .then(QueryResource.CMNS_COL_COMPRISES), eventVar).getQueryString();
     switch (lifecycleEvent) {
       case LifecycleEventType.APPROVED:
-        Variable creationVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY);
-        // Add last modified statement separately
-        statementMappings.put(LifecycleResource.LAST_MODIFIED_KEY, creationVar
-            .has(QueryResource.FIBO_FND_DT_OC_HAS_EVENT_DATE,
-                QueryResource.LAST_MODIFIED_VAR)
-            .getQueryString());
-        // Continue with required lifecycle statements
-        String creationStatement = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
-            .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE)
-            .then(QueryResource.CMNS_COL_COMPRISES), creationVar).getQueryString();
-        String creationEventStatement = creationVar
+        // for pending contract, look for creation event
+        String creationEventStatement = eventVar
             .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, QueryResource.ONTOSERVICE.iri("ContractCreation"))
             .andHas(p -> p.pred(QueryResource.CMNS_DSG_DESCRIBES).then(RDFS.LABEL),
                 QueryResource.genVariable(LifecycleResource.STATUS_KEY))
             .getQueryString();
-        coreQueryBuilder.append(creationStatement).append(creationEventStatement);
+        coreQueryBuilder.append(lifecycleStatement).append(creationEventStatement);
         this.appendFilterExists(coreQueryBuilder, false, LifecycleResource.EVENT_APPROVAL);
         break;
       case LifecycleEventType.ACTIVE_SERVICE:
-        this.appendFilterExists(coreQueryBuilder, true, LifecycleResource.EVENT_APPROVAL);
+        // for active contract, look for approval event
+        String approvalEventStatement = eventVar
+            .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, QueryResource.ONTOSERVICE.iri("ContractApproval"))
+            .getQueryString();
+        coreQueryBuilder.append(lifecycleStatement).append(approvalEventStatement);
         this.appendArchivedFilterExists(coreQueryBuilder, false);
         break;
       case LifecycleEventType.ARCHIVE_COMPLETION:
-        this.appendArchivedStateQuery(coreQueryBuilder);
+        // for archive contract, look for complete, rescind, or terminated
+        String completeEventStatement = GraphPatterns.and(
+          GraphPatterns.union(
+            eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+                QueryResource.ONTOSERVICE.iri("ContractDischarge")),
+            eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+                QueryResource.ONTOSERVICE.iri("ContractRescission")),
+            eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+                QueryResource.ONTOSERVICE.iri("ContractTermination")))).getQueryString();
+        coreQueryBuilder.append(lifecycleStatement).append(completeEventStatement);
         break;
       default:
         // Do nothing if it doesnt meet the above events
@@ -335,14 +349,16 @@ public class LifecycleQueryFactory {
    */
   private void appendArchivedFilterExists(StringBuilder query, boolean exists) {
     Variable stageVar = QueryResource.genVariable(LifecycleResource.STAGE_KEY + "_archived");
+    Variable archiveEeventVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY + "_archived");
     // contract has stage
     TriplePattern iriToStagePattern = QueryResource.IRI_VAR.has(
         p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
-              .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE), stageVar);
+            .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE),
+        stageVar);
     // stage exemplifies expiration stage
     TriplePattern stageConditionsPattern = stageVar
         .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, Rdf.iri(LifecycleEventType.ARCHIVE_COMPLETION.getStage()))
-        .andHas(QueryResource.CMNS_COL_COMPRISES, QueryResource.genVariable(LifecycleResource.EVENT_KEY));
+        .andHas(QueryResource.CMNS_COL_COMPRISES, archiveEeventVar);
     GraphPatternNotTriples combinedPattern = GraphPatterns.and(iriToStagePattern, stageConditionsPattern);
     GraphPatternNotTriples filterClause = QueryResource.genFilterExists(combinedPattern, exists);
     query.append(filterClause.getQueryString());
