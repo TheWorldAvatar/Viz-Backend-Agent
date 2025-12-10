@@ -185,7 +185,7 @@ public class ShaclRuleProcesser {
             return Rdf.iri(targetNode.getURI()).getQueryString();
         } else if (targetNode.isLiteral()) {
             String literal = "\"" + targetNode.getLiteralLexicalForm() + "\"";
-            if (targetNode.getLiteralLanguage() != null) {
+            if (targetNode.getLiteralLanguage() != null && !targetNode.getLiteralLanguage().isEmpty()) {
                 literal += "@" + targetNode.getLiteralLanguage();
             } else if (targetNode.getLiteralDatatype() != null) {
                 literal += "^^" + Rdf.iri(targetNode.getLiteralDatatypeURI()).getQueryString();
