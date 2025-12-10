@@ -167,14 +167,33 @@ public class LifecycleTaskService {
     return this.responseEntityBuilder.success(null, occurrences);
   }
 
+  /**
+   * Retrieve all service related occurrences in the lifecycle for the specified
+   * date(s) by executing the constructed SPARQL query.
+   * 
+   * @param startTimestamp Start timestamp in UNIX format.
+   * @param endTimestamp   End timestamp in UNIX format.
+   * @param entityType     Target resource ID.
+   * @param isClosed       Indicates whether to retrieve closed tasks.
+   * @param pagination     Pagination state to filter results.
+   */
   private List<Map<String, Object>> queryOccurrences(String startTimestamp, String endTimestamp,
       String entityType, boolean isClosed, PaginationState pagination) {
     String[] lifecycleStatements = this.genLifecycleStatements(startTimestamp, endTimestamp,
         pagination.getSortedFields(), pagination.getFilters(), "", isClosed, true);
-    return this.executeOccurrenceQuery(entityType, lifecycleStatements,
-        isClosed, pagination);
+    return this.executeOccurrenceQuery(entityType, lifecycleStatements, isClosed, pagination);
   }
 
+  /**
+   * Retrieves a list of unique occurrence dates associated with a specific
+   * contract within a given time range.
+   *
+   * @param startTimestamp Start timestamp in UNIX format.
+   * @param endTimestamp   End timestamp in UNIX format.
+   * @param entityType     Target resource ID.
+   * @param isClosed       Indicates whether to retrieve dates for closed tasks.
+   * @param contractId     The ID of the contract to filter occurrences by.
+   */
   public List<String> getOccurrenceDateByContract(String startTimestamp, String endTimestamp,
       String entityType, boolean isClosed, String contractId) {
     Map<String, String> filter = new HashMap<>();
@@ -184,7 +203,8 @@ public class LifecycleTaskService {
     List<Map<String, Object>> occurrences = this.queryOccurrences(startTimestamp, endTimestamp,
         entityType, isClosed, pagination);
     return occurrences.stream().filter(occurrenceMap -> occurrenceMap.containsKey(LifecycleResource.DATE_KEY))
-        .map(occurrenceMap -> (SparqlResponseField) occurrenceMap.get(LifecycleResource.DATE_KEY)).map(SparqlResponseField::value)
+        .map(occurrenceMap -> (SparqlResponseField) occurrenceMap.get(LifecycleResource.DATE_KEY))
+        .map(SparqlResponseField::value)
         .collect(Collectors.toList());
   }
 
@@ -595,6 +615,11 @@ public class LifecycleTaskService {
         .poll().getFieldValue(field);
   }
 
+  /**
+   * Retrieves the enum of the previous occurrence instance.
+   * 
+   * @param params Mappings containing the contract and date value for the query.
+   */
   public String getPreviousOccurrenceEnum(Map<String, Object> params) {
     try {
       // try getting dispatch event first

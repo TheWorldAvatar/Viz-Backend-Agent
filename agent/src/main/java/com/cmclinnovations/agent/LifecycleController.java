@@ -372,9 +372,7 @@ public class LifecycleController {
   }
 
   /**
-   * Performs a service action for a specific service action. Valid types include:
-   * 1) report: Reports any unfulfilled service delivery
-   * 2) cancel: Cancel any upcoming service
+   * Route to perform a service action on a specific service.
    */
   @PostMapping("/service/{type}")
   public ResponseEntity<StandardApiResponse<?>> performServiceAction(@PathVariable String type,
@@ -385,6 +383,11 @@ public class LifecycleController {
     });
   }
 
+  /**
+   * Performs a service action for a specific service action. Valid types include:
+   * 1) report: Reports any unfulfilled service delivery
+   * 2) cancel: Cancel any upcoming service
+   */
   private ResponseEntity<StandardApiResponse<?>> performSingleServiceAction(String type, Map<String, Object> params) {
     switch (type.toLowerCase()) {
       case "cancel":
@@ -483,6 +486,9 @@ public class LifecycleController {
     });
   }
 
+  /**
+   * Perform action of multiple services belong to the same contract. Services are identified by their dates.
+   */
   private ResponseEntity<StandardApiResponse<?>> updateTaskOfTerminatedContract(Map<String, Object> params, List<String> dates,
       String type) {
     ResponseEntity<StandardApiResponse<?>> lastSuccessfulResponse = null;
@@ -524,8 +530,7 @@ public class LifecycleController {
   /**
    * Retrieve the number of contracts in the target stage:
    * 1) draft - awaiting approval
-   * 2) service - active and in progress
-   * 3) archive - expired
+   * 2) archive - expired
    */
   @GetMapping("/{stage}/count")
   public ResponseEntity<StandardApiResponse<?>> getContractCount(
@@ -549,6 +554,9 @@ public class LifecycleController {
     });
   }
 
+  /**
+   * Retrieve the number of active contracts.
+   */
   @GetMapping("/service/count")
   public ResponseEntity<StandardApiResponse<?>> getActiveContractCount(
       @RequestParam Map<String, String> allRequestParams) {
