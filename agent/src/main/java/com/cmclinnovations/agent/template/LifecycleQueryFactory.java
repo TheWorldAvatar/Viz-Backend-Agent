@@ -8,6 +8,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.ModifyQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
@@ -334,11 +335,16 @@ public class LifecycleQueryFactory {
    */
   private void appendArchivedFilterExists(StringBuilder query, boolean exists) {
     Variable stageVar = QueryResource.genVariable(LifecycleResource.STAGE_KEY + "_archived");
-    TriplePattern pattern = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
-        .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE), stageVar)
-        .andHas(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, Rdf.iri(LifecycleEventType.ARCHIVE_COMPLETION.getStage()))
+    // contract has stage
+    TriplePattern iriToStagePattern = QueryResource.IRI_VAR.has(
+        p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
+              .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE), stageVar);
+    // stage exemplifies expiration stage
+    TriplePattern stageConditionsPattern = stageVar
+        .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, Rdf.iri(LifecycleEventType.ARCHIVE_COMPLETION.getStage()))
         .andHas(QueryResource.CMNS_COL_COMPRISES, QueryResource.genVariable(LifecycleResource.EVENT_KEY));
-    GraphPatternNotTriples filterClause = QueryResource.genFilterExists(pattern, exists);
+    GraphPatternNotTriples combinedPattern = GraphPatterns.and(iriToStagePattern, stageConditionsPattern);
+    GraphPatternNotTriples filterClause = QueryResource.genFilterExists(combinedPattern, exists);
     query.append(filterClause.getQueryString());
   }
 
