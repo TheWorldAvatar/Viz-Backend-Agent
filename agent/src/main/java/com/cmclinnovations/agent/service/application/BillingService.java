@@ -103,6 +103,14 @@ public class BillingService {
     instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
     return this.addService.instantiate(BillingResource.TRANSACTION_RECORD_RESOURCE, instance);
   }
+  /**
+   * Creates an instance for the invoice and individual transaction with the required details.
+   * 
+   * @param instance Request parameters containing the invoice parameters.
+   */
+  public ResponseEntity<StandardApiResponse<?>> genInvoiceInstance(Map<String, Object> instance) {
+    return this.addService.instantiate(BillingResource.TRANSACTION_BILL_RESOURCE, instance);
+  }
 
   /**
    * Reusable code to add custom instance.

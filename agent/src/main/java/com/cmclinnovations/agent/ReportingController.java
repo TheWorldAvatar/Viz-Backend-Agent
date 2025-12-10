@@ -118,6 +118,17 @@ public class ReportingController {
   }
 
   /**
+   * Retrieves the form template for a transaction invoice.
+   */
+  @GetMapping("/transaction/invoice")
+  public ResponseEntity<StandardApiResponse<?>> getTransactionInvoiceFormTemplate() {
+    LOGGER.info("Received request to get the form template for a transaction invoice...");
+    return this.concurrencyService.executeInOptimisticReadLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
+      return this.getService.getForm(BillingResource.TRANSACTION_BILL_RESOURCE, false);
+    });
+  }
+
+  /**
    * Creates a customer instance, along with a new customer account.
    */
   @PostMapping("/account")
@@ -148,6 +159,17 @@ public class ReportingController {
     LOGGER.info("Received request to update pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
       return this.billingService.assignPricingPlanToContract(instance);
+    });
+  }
+
+  /**
+   * Creates an invoice instance along with a transaction record.
+   */
+  @PostMapping("/transaction/invoice")
+  public ResponseEntity<StandardApiResponse<?>> createInvoice(@RequestBody Map<String, Object> instance) {
+    LOGGER.info("Received request to create a new invoice and transaction...");
+    return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
+      return this.billingService.genInvoiceInstance(instance);
     });
   }
 }

@@ -93,7 +93,7 @@ public class LifecycleResource {
     template.put(RECURRENCE_DAILY_TASK_STRING, "?recurrence!=\"P1D\"");
     template.put(RECURRENCE_ALT_DAY_TASK, "?recurrence!=\"P2D\"");
     template.put(EMPTY_STRING, "?recurrence!=\"\"");
-    template.put(RECURRENCE_FIXED_DATE_TASK_STRING, "?recurrence!=\""+RECURRENCE_FIXED_DATE_TASK+"\"");
+    template.put(RECURRENCE_FIXED_DATE_TASK_STRING, "?recurrence!=\"" + RECURRENCE_FIXED_DATE_TASK + "\"");
     NEGATE_RECURRENCE_MAP = Collections.unmodifiableMap(template);
   }
 
@@ -146,6 +146,8 @@ public class LifecycleResource {
         return FileService.OCCURRENCE_INSTANT_JSON_LD_RESOURCE;
       case BillingResource.TRANSACTION_RECORD_RESOURCE:
         return FileService.TRANSACTION_RECORD_JSON_LD_RESOURCE;
+      case BillingResource.TRANSACTION_BILL_RESOURCE:
+        return FileService.TRANSACTION_INVOICE_JSON_LD_RESOURCE;
       case LifecycleResource.CANCEL_RESOURCE:
       case LifecycleResource.REPORT_RESOURCE:
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
