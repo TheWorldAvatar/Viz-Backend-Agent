@@ -265,7 +265,7 @@ public class LifecycleQueryFactory {
       case LifecycleEventType.ACTIVE_SERVICE:
         // for active contract, look for approval event
         String approvalEventStatement = eventVar
-            .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, QueryResource.ONTOSERVICE.iri("ContractApproval"))
+            .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, Rdf.iri(LifecycleResource.EVENT_APPROVAL))
             .getQueryString();
         coreQueryBuilder.append(lifecycleStatement).append(approvalEventStatement);
         this.appendArchivedFilterExists(coreQueryBuilder, false);
@@ -275,11 +275,11 @@ public class LifecycleQueryFactory {
         String completeEventStatement = GraphPatterns.and(
           GraphPatterns.union(
             eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-                QueryResource.ONTOSERVICE.iri("ContractDischarge")),
+                Rdf.iri(LifecycleResource.EVENT_CONTRACT_COMPLETION)),
             eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-                QueryResource.ONTOSERVICE.iri("ContractRescission")),
+                Rdf.iri(LifecycleResource.EVENT_CONTRACT_RESCISSION)),
             eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-                QueryResource.ONTOSERVICE.iri("ContractTermination")))).getQueryString();
+                Rdf.iri(LifecycleResource.EVENT_CONTRACT_TERMINATION)))).getQueryString();
         coreQueryBuilder.append(lifecycleStatement).append(completeEventStatement);
         this.appendArchivedStateQuery(coreQueryBuilder);
         break;
