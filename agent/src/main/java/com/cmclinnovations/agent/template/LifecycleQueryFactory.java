@@ -281,6 +281,7 @@ public class LifecycleQueryFactory {
             eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
                 QueryResource.ONTOSERVICE.iri("ContractTermination")))).getQueryString();
         coreQueryBuilder.append(lifecycleStatement).append(completeEventStatement);
+        this.appendArchivedStateQuery(coreQueryBuilder);
         break;
       default:
         // Do nothing if it doesnt meet the above events
@@ -320,18 +321,16 @@ public class LifecycleQueryFactory {
    */
   private void appendArchivedStateQuery(StringBuilder query) {
     Variable eventVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY);
-    TriplePattern eventPattern = QueryResource.IRI_VAR.has(p -> p.pred(QueryResource.FIBO_FND_ARR_LIF_HAS_LIFECYCLE)
-        .then(QueryResource.FIBO_FND_ARR_LIF_HAS_STAGE)
-        .then(QueryResource.CMNS_COL_COMPRISES)
-        .then(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES), eventVar);
+    Variable eventTypeVar = QueryResource.genVariable("event_type");
+    TriplePattern eventPattern = eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, eventTypeVar);
     String statement = "BIND("
-        + "IF(" + eventVar.getQueryString() + "="
+        + "IF(" + eventTypeVar.getQueryString() + "="
         + Rdf.iri(LifecycleResource.EVENT_CONTRACT_COMPLETION).getQueryString()
         + ",\"Completed\","
-        + "IF(" + eventVar.getQueryString() + "="
+        + "IF(" + eventTypeVar.getQueryString() + "="
         + Rdf.iri(LifecycleResource.EVENT_CONTRACT_RESCISSION).getQueryString()
         + ",\"Rescinded\","
-        + "IF(" + eventVar.getQueryString() + "="
+        + "IF(" + eventTypeVar.getQueryString() + "="
         + Rdf.iri(LifecycleResource.EVENT_CONTRACT_TERMINATION).getQueryString()
         + ",\"Terminated\""
         + ",\"Unknown\"))) AS ?" + LifecycleResource.STATUS_KEY

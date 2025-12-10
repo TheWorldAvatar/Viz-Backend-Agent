@@ -297,7 +297,7 @@ public class LifecycleContractService {
       LifecycleEventType eventType, PaginationState pagination) {
     LOGGER.debug("Retrieving all contracts...");
     Map<Variable, List<Integer>> contractVariables = new HashMap<>(this.lifecycleVarSequence);
-    if (eventType.equals(LifecycleEventType.APPROVED)) {
+    if (eventType.equals(LifecycleEventType.APPROVED) || eventType.equals(LifecycleEventType.ARCHIVE_COMPLETION)) {
       contractVariables.put(
           QueryResource.genVariable(LifecycleResource.STATUS_KEY),
           List.of(1, 1));
@@ -356,7 +356,7 @@ public class LifecycleContractService {
     // Process end date first as it will be removed if not required
     String endDateFilter = this.processEndDateScheduleForFilter(filters, extendedMappings);
     // additional mapping for status for contracts only. needed for filtering
-    extendedMappings.put("status","?event <https://www.omg.org/spec/Commons/Designators/describes> / <http://www.w3.org/2000/01/rdf-schema#label> ?status.");
+    extendedMappings.put("status","OPTIONAL {?event <https://www.omg.org/spec/Commons/Designators/describes> / <http://www.w3.org/2000/01/rdf-schema#label> ?status.}");
     String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
         filters, field);
     lifecycleStatements += endDateFilter;
