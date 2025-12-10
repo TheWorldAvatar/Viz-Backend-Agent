@@ -455,22 +455,26 @@ public class LifecycleController {
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
       String entityType = params.remove(StringResource.TYPE_REQUEST_PARAM).toString();
       // get outstanding tasks. these should be reported
-      List<String> oustandingDates = this.lifecycleTaskService.getOccurrenceDateByContract(null, null, entityType,
+      List<String> outstandingDates = this.lifecycleTaskService.getOccurrenceDateByContract(null, null, entityType,
           false, contractId);
-      ResponseEntity<StandardApiResponse<?>> reportResponse = this.updateTaskOfTerminatedContract(params, oustandingDates, "report");
-      if (!reportResponse.getStatusCode().equals(HttpStatus.OK)) {
-        return reportResponse;
+      if (outstandingDates != null && !outstandingDates.isEmpty()) {
+        ResponseEntity<StandardApiResponse<?>> reportResponse = this.updateTaskOfTerminatedContract(params, outstandingDates, "report");
+        if (!reportResponse.getStatusCode().equals(HttpStatus.OK)) {
+          return reportResponse;
+        }
+        LOGGER.info("Successfully reported outstanding tasks of terminated contract!");
       }
-      LOGGER.info("Successfully reported outstanding tasks of terminated contract!");
       // get scheduled tasks. these should be cancelled
       String tomorrowTimeStamp = String.valueOf(java.time.LocalDate.now(java.time.ZoneOffset.UTC).plusDays(1)
           .atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC));
       String finalTimeStamp = "4102444800"; // 1 January 2100
       List<String> scheduledDates = this.lifecycleTaskService.getOccurrenceDateByContract(tomorrowTimeStamp,
           finalTimeStamp, entityType, false,contractId);
-      ResponseEntity<StandardApiResponse<?>> cancelResponse = this.updateTaskOfTerminatedContract(params, scheduledDates, "cancel");
-      if (!cancelResponse.getStatusCode().equals(HttpStatus.OK)) {
-        return cancelResponse;
+      if (scheduledDates != null && !scheduledDates.isEmpty()) {
+        ResponseEntity<StandardApiResponse<?>> cancelResponse = this.updateTaskOfTerminatedContract(params, scheduledDates, "cancel");
+        if (!cancelResponse.getStatusCode().equals(HttpStatus.OK)) {
+          return cancelResponse;
+        }
       }
       LOGGER.info("Successfully cancelled scheduled tasks of terminated contract!");
       // update contract status
