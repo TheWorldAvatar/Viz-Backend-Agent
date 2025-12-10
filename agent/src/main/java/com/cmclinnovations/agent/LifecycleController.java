@@ -533,10 +533,6 @@ public class LifecycleController {
         LOGGER.info("Received request to retrieve number of draft contracts...");
         yield LifecycleEventType.APPROVED;
       }
-      case "service" -> {
-        LOGGER.info("Received request to retrieve number of contracts in progress...");
-        yield LifecycleEventType.ACTIVE_SERVICE;
-      }
       case "archive" -> {
         LOGGER.info("Received request to retrieve number of archived contracts...");
         yield LifecycleEventType.ARCHIVE_COMPLETION;
@@ -544,6 +540,17 @@ public class LifecycleController {
       default -> throw new IllegalArgumentException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     };
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
+      return this.lifecycleContractService.getContractCount(type, eventType, allRequestParams);
+    });
+  }
+
+  @GetMapping("/service/count")
+  public ResponseEntity<StandardApiResponse<?>> getActiveContractCount(
+      @RequestParam Map<String, String> allRequestParams) {
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    LOGGER.info("Received request to retrieve number of contracts in progress...");
+    LifecycleEventType eventType = LifecycleEventType.ACTIVE_SERVICE;
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       return this.lifecycleContractService.getContractCount(type, eventType, allRequestParams);
     });
