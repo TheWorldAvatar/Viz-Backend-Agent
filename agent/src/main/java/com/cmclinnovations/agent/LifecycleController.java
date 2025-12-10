@@ -264,14 +264,22 @@ public class LifecycleController {
   private void inferAndSetBranch(Map<String, Object> contractDetails) {
     String branchName = null;
 
-    // Check if this is a Waste Collection Service (has waste category)
-    if (contractDetails.containsKey("waste_category")) {
+    Object wasteCategory = contractDetails.get("waste_category");
+    Object bin = contractDetails.get("bin");
+    Object truck = contractDetails.get("truck");
+
+    if (wasteCategory != null && !wasteCategory.toString().isEmpty()) {
       branchName = "Waste Collection Service";
+    } else if (bin != null && !bin.toString().isEmpty()) {
+      branchName = "Bin Handling Service";
+    } else if (truck != null && !truck.toString().isEmpty()) {
+      branchName = "Vehicle Maintenance and Operations Service";
     } else {
       branchName = "Delivery Service";
     }
 
     contractDetails.put(QueryResource.ADD_BRANCH_KEY, branchName);
+    LOGGER.info("Set branch to: {}", branchName);
   }
 
   /**

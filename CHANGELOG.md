@@ -1,5 +1,8 @@
 # Change Log
 
+## 1.23.1
+ - Fixed bug with cloning jobs with branching type
+
 ## 1.23.0
  - Fixed bug with delete and update to identify optional parameters correctly
 
