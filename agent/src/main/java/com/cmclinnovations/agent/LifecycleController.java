@@ -453,11 +453,11 @@ public class LifecycleController {
     };
     LOGGER.info("Received request to {} the contract...", action);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      String entityType = params.get(StringResource.TYPE_REQUEST_PARAM).toString();
+      String entityType = params.remove(StringResource.TYPE_REQUEST_PARAM).toString();
       // get outstanding tasks. these should be reported
       List<String> oustandingDates = this.lifecycleTaskService.getOccurrenceDateByContract(null, null, entityType,
           false, contractId);
-      ResponseEntity<StandardApiResponse<?>> reportResponse = this.updateTaskOfTerminatedContract(contractId, oustandingDates, "report");
+      ResponseEntity<StandardApiResponse<?>> reportResponse = this.updateTaskOfTerminatedContract(params, oustandingDates, "report");
       if (!reportResponse.getStatusCode().equals(HttpStatus.OK)) {
         return reportResponse;
       }
@@ -467,9 +467,8 @@ public class LifecycleController {
           .atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC));
       String finalTimeStamp = "4102444800"; // 1 January 2100
       List<String> scheduledDates = this.lifecycleTaskService.getOccurrenceDateByContract(tomorrowTimeStamp,
-          finalTimeStamp, entityType, false,
-          params.get(LifecycleResource.CONTRACT_KEY).toString());
-      ResponseEntity<StandardApiResponse<?>> cancelResponse = this.updateTaskOfTerminatedContract(contractId, scheduledDates, "cancel");
+          finalTimeStamp, entityType, false,contractId);
+      ResponseEntity<StandardApiResponse<?>> cancelResponse = this.updateTaskOfTerminatedContract(params, scheduledDates, "cancel");
       if (!cancelResponse.getStatusCode().equals(HttpStatus.OK)) {
         return cancelResponse;
       }
@@ -480,15 +479,13 @@ public class LifecycleController {
     });
   }
 
-  private ResponseEntity<StandardApiResponse<?>> updateTaskOfTerminatedContract(String contractId, List<String> dates,
+  private ResponseEntity<StandardApiResponse<?>> updateTaskOfTerminatedContract(Map<String, Object> params, List<String> dates,
       String type) {
     ResponseEntity<StandardApiResponse<?>> lastSuccessfulResponse = null;
     for (String date : dates) {
-      Map<String, Object> params = new HashMap<>();
-      params.put("contract", contractId);
-      params.put("date", date);
-      params.put("special remarks", "Contract has been terminated.");
-      ResponseEntity<StandardApiResponse<?>> response = this.performSingleServiceAction(type, params);
+      Map<String, Object> dateParams = new HashMap<>(params);
+      dateParams.put("date", date);
+      ResponseEntity<StandardApiResponse<?>> response = this.performSingleServiceAction(type, dateParams);
       if (!response.getStatusCode().equals(HttpStatus.OK)) {
         return response;
       }
