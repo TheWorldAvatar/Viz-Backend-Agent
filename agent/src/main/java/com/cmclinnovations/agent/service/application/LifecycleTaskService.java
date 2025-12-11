@@ -1,7 +1,6 @@
 package com.cmclinnovations.agent.service.application;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -206,6 +205,63 @@ public class LifecycleTaskService {
         .map(occurrenceMap -> (SparqlResponseField) occurrenceMap.get(LifecycleResource.DATE_KEY))
         .map(SparqlResponseField::value)
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Perform action of multiple services belong to the same contract. Services are
+   * identified by their dates.
+   */
+  public ResponseEntity<StandardApiResponse<?>> updateTaskOfTerminatedContract(Map<String, Object> params,
+      List<String> dates,
+      String type) {
+    ResponseEntity<StandardApiResponse<?>> lastSuccessfulResponse = null;
+    for (String date : dates) {
+      Map<String, Object> dateParams = new HashMap<>(params);
+      dateParams.put(LifecycleResource.DATE_KEY, date);
+      ResponseEntity<StandardApiResponse<?>> response = this.performSingleServiceAction(type, dateParams);
+      if (!response.getStatusCode().equals(HttpStatus.OK)) {
+        return response;
+      }
+      lastSuccessfulResponse = response;
+    }
+    return lastSuccessfulResponse;
+  }
+
+  
+  /**
+   * Performs a service action for a specific service action. Valid types include:
+   * 1) report: Reports any unfulfilled service delivery
+   * 2) cancel: Cancel any upcoming service
+   */
+  public ResponseEntity<StandardApiResponse<?>> performSingleServiceAction(String type, Map<String, Object> params) {
+    params.put(LifecycleResource.ORDER_KEY, this.getPreviousOccurrenceEnum(params)); // get previous event enum
+    switch (type.toLowerCase()) {
+      case "cancel":
+        LOGGER.info("Received request to cancel the upcoming service...");
+        // Service date selected for cancellation cannot be a past date
+        if (this.dateTimeService.isFutureDate(this.dateTimeService.getCurrentDate(),
+            params.get(LifecycleResource.DATE_KEY).toString())) {
+          throw new IllegalArgumentException(
+              LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
+        }
+        return this.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params,
+            LifecycleEventType.SERVICE_CANCELLATION, "Task has been successfully cancelled!",
+            LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
+      case "report":
+        LOGGER.info("Received request to report an unfulfilled service...");
+        // Service date selected for reporting an issue cannot be a future date
+        if (this.dateTimeService.isFutureDate(params.get(LifecycleResource.DATE_KEY).toString())) {
+          throw new IllegalArgumentException(
+              LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
+        }
+        return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params,
+            LifecycleEventType.SERVICE_INCIDENT_REPORT, "Task has been successfully reported!",
+            LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
+
+      default:
+        throw new IllegalArgumentException(
+            LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, type));
+    }
   }
 
   /**
