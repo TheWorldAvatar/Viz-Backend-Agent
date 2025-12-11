@@ -429,9 +429,11 @@ public class LifecycleController {
       }
       LOGGER.info("Successfully reported outstanding tasks of {} contract!", action);
       // get scheduled tasks. these should be cancelled
-      String tomorrowTimeStamp = String.valueOf(java.time.LocalDate.now(java.time.ZoneOffset.UTC).plusDays(1)
-          .atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC));
-      String finalTimeStamp = "4102444800"; // 1 January 2100
+      String tomorrowTimeStamp = this.dateTimeService
+          .getTimestampFromDate(this.dateTimeService.getFutureDate(this.dateTimeService.getCurrentDate(), 1));
+      // far enough future, about 27 years
+      String finalTimeStamp = this.dateTimeService
+          .getTimestampFromDate(this.dateTimeService.getFutureDate(this.dateTimeService.getCurrentDate(), 10000));
       ResponseEntity<StandardApiResponse<?>> cancelResponse = this.updateTaskOfTerminatedContract(params,
           contractId, entityType, "cancel", tomorrowTimeStamp, finalTimeStamp);
       if (!cancelResponse.getStatusCode().equals(HttpStatus.OK)) {
