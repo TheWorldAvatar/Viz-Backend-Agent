@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayDeque;
@@ -14,7 +15,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -153,6 +153,14 @@ public class DateTimeService {
         .atZone(ZoneId.systemDefault()) // Adjust to the system default time zone
         .toLocalDate()
         .format(this.formatter);
+  }
+
+  /**
+   * Retrieve the timestamp as a date time string at start of day.
+   * @param date The input in YYYY-MM-DD format.
+   */
+  public String getTimestampFromDate(String date) {
+    return String.valueOf(this.parseDate(date).atStartOfDay().atZone(ZoneId.systemDefault()).toEpochSecond());
   }
 
   /**

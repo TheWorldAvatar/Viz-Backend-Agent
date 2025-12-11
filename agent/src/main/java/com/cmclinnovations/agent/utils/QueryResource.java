@@ -21,6 +21,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -180,7 +181,7 @@ public class QueryResource {
      * @param tripleContents The target triple pattern to be added.
      * @param exists         Set FILTER EXISTS if true. Else, uses MINUS.
      */
-    public static GraphPatternNotTriples genFilterExists(TriplePattern tripleContents, boolean exists) {
+    public static GraphPatternNotTriples genFilterExists(GraphPattern tripleContents, boolean exists) {
         if (exists) {
             return GraphPatterns.filterExists(tripleContents);
         }

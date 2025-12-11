@@ -1,10 +1,8 @@
 package com.cmclinnovations.agent.service.application;
 
-import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -162,12 +160,108 @@ public class LifecycleTaskService {
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String startTimestamp, String endTimestamp,
       String entityType, boolean isClosed, PaginationState pagination) {
-    String[] lifecycleStatements = this.genLifecycleStatements(startTimestamp, endTimestamp,
-        pagination.getSortedFields(), pagination.getFilters(), "", isClosed, true);
-    List<Map<String, Object>> occurrences = this.executeOccurrenceQuery(entityType, lifecycleStatements,
-        isClosed, pagination);
+    List<Map<String, Object>> occurrences = this.queryOccurrences(startTimestamp, endTimestamp,
+        entityType, isClosed, pagination);
     LOGGER.info("Successfuly retrieved tasks!");
     return this.responseEntityBuilder.success(null, occurrences);
+  }
+
+  /**
+   * Retrieve all service related occurrences in the lifecycle for the specified
+   * date(s) by executing the constructed SPARQL query.
+   * 
+   * @param startTimestamp Start timestamp in UNIX format.
+   * @param endTimestamp   End timestamp in UNIX format.
+   * @param entityType     Target resource ID.
+   * @param isClosed       Indicates whether to retrieve closed tasks.
+   * @param pagination     Pagination state to filter results.
+   */
+  private List<Map<String, Object>> queryOccurrences(String startTimestamp, String endTimestamp,
+      String entityType, boolean isClosed, PaginationState pagination) {
+    String[] lifecycleStatements = this.genLifecycleStatements(startTimestamp, endTimestamp,
+        pagination.getSortedFields(), pagination.getFilters(), "", isClosed, true);
+    return this.executeOccurrenceQuery(entityType, lifecycleStatements, isClosed, pagination);
+  }
+
+  /**
+   * Retrieves a list of unique occurrence dates associated with a specific
+   * contract within a given time range.
+   *
+   * @param startTimestamp Start timestamp in UNIX format.
+   * @param endTimestamp   End timestamp in UNIX format.
+   * @param entityType     Target resource ID.
+   * @param isClosed       Indicates whether to retrieve dates for closed tasks.
+   * @param contractId     The ID of the contract to filter occurrences by.
+   */
+  public List<String> getOccurrenceDateByContract(String startTimestamp, String endTimestamp,
+      String entityType, boolean isClosed, String contractId) {
+    Map<String, String> filter = new HashMap<>();
+    filter.put("id", contractId);
+    PaginationState pagination = new PaginationState(0, null,
+        StringResource.DEFAULT_SORT_BY + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, filter);
+    List<Map<String, Object>> occurrences = this.queryOccurrences(startTimestamp, endTimestamp,
+        entityType, isClosed, pagination);
+    return occurrences.stream().filter(occurrenceMap -> occurrenceMap.containsKey(LifecycleResource.DATE_KEY))
+        .map(occurrenceMap -> (SparqlResponseField) occurrenceMap.get(LifecycleResource.DATE_KEY))
+        .map(SparqlResponseField::value)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Perform action of multiple services belong to the same contract. Services are
+   * identified by their dates.
+   */
+  public ResponseEntity<StandardApiResponse<?>> updateTaskOfTerminatedContract(Map<String, Object> params,
+      List<String> dates,
+      String type) {
+    ResponseEntity<StandardApiResponse<?>> lastSuccessfulResponse = null;
+    for (String date : dates) {
+      Map<String, Object> dateParams = new HashMap<>(params);
+      dateParams.put(LifecycleResource.DATE_KEY, date);
+      ResponseEntity<StandardApiResponse<?>> response = this.performSingleServiceAction(type, dateParams);
+      if (!response.getStatusCode().equals(HttpStatus.OK)) {
+        return response;
+      }
+      lastSuccessfulResponse = response;
+    }
+    return lastSuccessfulResponse;
+  }
+
+  
+  /**
+   * Performs a service action for a specific service action. Valid types include:
+   * 1) report: Reports any unfulfilled service delivery
+   * 2) cancel: Cancel any upcoming service
+   */
+  public ResponseEntity<StandardApiResponse<?>> performSingleServiceAction(String type, Map<String, Object> params) {
+    params.put(LifecycleResource.ORDER_KEY, this.getPreviousOccurrenceEnum(params)); // get previous event enum
+    switch (type.toLowerCase()) {
+      case "cancel":
+        LOGGER.info("Received request to cancel the upcoming service...");
+        // Service date selected for cancellation cannot be a past date
+        if (this.dateTimeService.isFutureDate(this.dateTimeService.getCurrentDate(),
+            params.get(LifecycleResource.DATE_KEY).toString())) {
+          throw new IllegalArgumentException(
+              LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
+        }
+        return this.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params,
+            LifecycleEventType.SERVICE_CANCELLATION, "Task has been successfully cancelled!",
+            LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
+      case "report":
+        LOGGER.info("Received request to report an unfulfilled service...");
+        // Service date selected for reporting an issue cannot be a future date
+        if (this.dateTimeService.isFutureDate(params.get(LifecycleResource.DATE_KEY).toString())) {
+          throw new IllegalArgumentException(
+              LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
+        }
+        return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params,
+            LifecycleEventType.SERVICE_INCIDENT_REPORT, "Task has been successfully reported!",
+            LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
+
+      default:
+        throw new IllegalArgumentException(
+            LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, type));
+    }
   }
 
   /**
@@ -575,5 +669,20 @@ public class LifecycleTaskService {
         .getContractEventQuery(params.get(LifecycleResource.CONTRACT_KEY).toString(),
             params.get(LifecycleResource.DATE_KEY).toString(), eventType)
         .poll().getFieldValue(field);
+  }
+
+  /**
+   * Retrieves the enum of the previous occurrence instance.
+   * 
+   * @param params Mappings containing the contract and date value for the query.
+   */
+  public String getPreviousOccurrenceEnum(Map<String, Object> params) {
+    try {
+      // try getting dispatch event first
+      this.getPreviousOccurrence(QueryResource.IRI_KEY, LifecycleEventType.SERVICE_ORDER_DISPATCHED, params);
+      return "1";
+    } catch (NullPointerException e) {
+    }
+    return "0";
   }
 }
