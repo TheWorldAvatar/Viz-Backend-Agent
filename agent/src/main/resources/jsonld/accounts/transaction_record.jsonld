@@ -20,6 +20,10 @@
         "prefix": "https://theworldavatar.io/kg/contract/payment/obligation/"
       },
       "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation",
+      "http://purl.org/dc/terms/identifier": {
+        "@replace": "id",
+        "@type": "literal"
+      },
       "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/mandates": {
         "@id": {
           "@replace": "pricing",
