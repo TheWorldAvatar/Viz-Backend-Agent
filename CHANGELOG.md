@@ -1,5 +1,8 @@
 # Change Log
 
+## 1.23.2
+ - Fixed the bug in the union issue on the table query
+
 ## 1.23.1
  - Fixed bug with cloning jobs with branching type
 
