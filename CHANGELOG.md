@@ -1,5 +1,8 @@
 # Change Log
 
+## 1.24.0
+ - Extended contract termination route to auto-update related tasks
+
 ## 1.23.1
  - Fixed bug with cloning jobs with branching type
 

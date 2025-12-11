@@ -55,7 +55,7 @@ public class ConcurrencyService {
     T result = reader.get();
     // Validate if optimistic read is successful ie has a writer modified the data
     if (lock.validate(stamp)) {
-      LOGGER.info("Sucesssfully read with OPTIMISTIC lock for {}", resource);
+      LOGGER.info("Successfully read with OPTIMISTIC lock for {}", resource);
     } else {
       LOGGER.info("Failed to read with OPTIMISTIC lock for {}", resource);
       LOGGER.info("Falling back to READ lock...");

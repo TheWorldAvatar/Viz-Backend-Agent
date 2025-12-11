@@ -372,7 +372,7 @@ public class LifecycleController {
   }
 
   /**
-   * Performs a service action for a specific service action. Valid types include:
+   * Route to perform a service action on a specific service. Valid types include:
    * 1) report: Reports any unfulfilled service delivery
    * 2) cancel: Cancel any upcoming service
    */
@@ -381,35 +381,8 @@ public class LifecycleController {
       @RequestBody Map<String, Object> params) {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      switch (type.toLowerCase()) {
-        case "cancel":
-          LOGGER.info("Received request to cancel the upcoming service...");
-          this.checkMissingParams(params, LifecycleResource.DATE_KEY);
-          // Service date selected for cancellation cannot be a past date
-          if (this.dateTimeService.isFutureDate(this.dateTimeService.getCurrentDate(),
-              params.get(LifecycleResource.DATE_KEY).toString())) {
-            throw new IllegalArgumentException(
-                LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
-          }
-          return this.lifecycleTaskService.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params,
-              LifecycleEventType.SERVICE_CANCELLATION, "Task has been successfully cancelled!",
-              LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
-        case "report":
-          LOGGER.info("Received request to report an unfulfilled service...");
-          this.checkMissingParams(params, LifecycleResource.DATE_KEY);
-          // Service date selected for reporting an issue cannot be a future date
-          if (this.dateTimeService.isFutureDate(params.get(LifecycleResource.DATE_KEY).toString())) {
-            throw new IllegalArgumentException(
-                LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
-          }
-          return this.lifecycleTaskService.genOccurrence(LifecycleResource.REPORT_RESOURCE, params,
-              LifecycleEventType.SERVICE_INCIDENT_REPORT, "Task has been successfully reported!",
-              LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
-
-        default:
-          throw new IllegalArgumentException(
-              LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, type));
-      }
+      this.checkMissingParams(params, LifecycleResource.DATE_KEY);
+      return this.lifecycleTaskService.performSingleServiceAction(type, params);
     });
   }
 
@@ -435,6 +408,7 @@ public class LifecycleController {
     final record ServiceActionParams(String logSuccess, String messageSuccess, LifecycleEventType eventType) {
     }
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
+    String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     ServiceActionParams serviceActionParams = switch (action) {
       case "rescind" ->
         new ServiceActionParams("Contract has been successfully rescinded!",
@@ -446,9 +420,52 @@ public class LifecycleController {
     };
     LOGGER.info("Received request to {} the contract...", action);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
+      String entityType = params.remove(StringResource.TYPE_REQUEST_PARAM).toString();
+      // get outstanding tasks. these should be reported
+      ResponseEntity<StandardApiResponse<?>> reportResponse = this.updateTaskOfTerminatedContract(params,
+          contractId, entityType, "report", null, null);
+      if (!reportResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return reportResponse;
+      }
+      LOGGER.info("Successfully reported outstanding tasks of {} contract!", action);
+      // get scheduled tasks. these should be cancelled
+      String tomorrowTimeStamp = this.dateTimeService
+          .getTimestampFromDate(this.dateTimeService.getFutureDate(this.dateTimeService.getCurrentDate(), 1));
+      // far enough future, about 27 years
+      String finalTimeStamp = this.dateTimeService
+          .getTimestampFromDate(this.dateTimeService.getFutureDate(this.dateTimeService.getCurrentDate(), 10000));
+      ResponseEntity<StandardApiResponse<?>> cancelResponse = this.updateTaskOfTerminatedContract(params,
+          contractId, entityType, "cancel", tomorrowTimeStamp, finalTimeStamp);
+      if (!cancelResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return cancelResponse;
+      }
+      LOGGER.info("Successfully cancelled scheduled tasks of {} contract!", action);
+      // update contract status
       return this.lifecycleTaskService.genOccurrence(params, serviceActionParams.eventType,
           serviceActionParams.logSuccess, serviceActionParams.messageSuccess);
     });
+  }
+
+  /**
+   * Fetch and update tasks of a terminated contract based on a date range and
+   * action.
+   */
+  private ResponseEntity<StandardApiResponse<?>> updateTaskOfTerminatedContract(Map<String, Object> params,
+      String contractId, String entityType, String taskAction, String startTimestamp, String endTimestamp) {
+
+    List<String> occurrenceDates = this.lifecycleTaskService.getOccurrenceDateByContract(
+        startTimestamp, endTimestamp, entityType, false, contractId);
+
+    if (occurrenceDates != null && !occurrenceDates.isEmpty()) {
+      ResponseEntity<StandardApiResponse<?>> updateResponse = this.lifecycleTaskService
+          .updateTaskOfTerminatedContract(params, occurrenceDates, taskAction);
+
+      if (!updateResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return updateResponse; // Early exit on failure
+      }
+    }
+
+    return new ResponseEntity<>(HttpStatus.OK);
   }
 
   /**
@@ -477,8 +494,7 @@ public class LifecycleController {
   /**
    * Retrieve the number of contracts in the target stage:
    * 1) draft - awaiting approval
-   * 2) service - active and in progress
-   * 3) archive - expired
+   * 2) archive - expired
    */
   @GetMapping("/{stage}/count")
   public ResponseEntity<StandardApiResponse<?>> getContractCount(
@@ -490,10 +506,6 @@ public class LifecycleController {
         LOGGER.info("Received request to retrieve number of draft contracts...");
         yield LifecycleEventType.APPROVED;
       }
-      case "service" -> {
-        LOGGER.info("Received request to retrieve number of contracts in progress...");
-        yield LifecycleEventType.ACTIVE_SERVICE;
-      }
       case "archive" -> {
         LOGGER.info("Received request to retrieve number of archived contracts...");
         yield LifecycleEventType.ARCHIVE_COMPLETION;
@@ -501,6 +513,20 @@ public class LifecycleController {
       default -> throw new IllegalArgumentException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     };
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
+      return this.lifecycleContractService.getContractCount(type, eventType, allRequestParams);
+    });
+  }
+
+  /**
+   * Retrieve the number of active contracts.
+   */
+  @GetMapping("/service/count")
+  public ResponseEntity<StandardApiResponse<?>> getActiveContractCount(
+      @RequestParam Map<String, String> allRequestParams) {
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    LOGGER.info("Received request to retrieve number of contracts in progress...");
+    LifecycleEventType eventType = LifecycleEventType.ACTIVE_SERVICE;
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       return this.lifecycleContractService.getContractCount(type, eventType, allRequestParams);
     });
