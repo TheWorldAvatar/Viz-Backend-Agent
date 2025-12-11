@@ -386,7 +386,6 @@ public class LifecycleController {
     });
   }
 
-
   /**
    * Continues the task on the next working day by generating the same details on
    * new occurrences.
@@ -423,32 +422,48 @@ public class LifecycleController {
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
       String entityType = params.remove(StringResource.TYPE_REQUEST_PARAM).toString();
       // get outstanding tasks. these should be reported
-      List<String> outstandingDates = this.lifecycleTaskService.getOccurrenceDateByContract(null, null, entityType,
-          false, contractId);
-      if (outstandingDates != null && !outstandingDates.isEmpty()) {
-        ResponseEntity<StandardApiResponse<?>> reportResponse = this.lifecycleTaskService.updateTaskOfTerminatedContract(params, outstandingDates, "report");
-        if (!reportResponse.getStatusCode().equals(HttpStatus.OK)) {
-          return reportResponse;
-        }
-        LOGGER.info("Successfully reported outstanding tasks of {} contract!", action);
+      ResponseEntity<StandardApiResponse<?>> reportResponse = this.updateTaskOfTerminatedContract(params,
+          contractId, entityType, "report", null, null);
+      if (!reportResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return reportResponse;
       }
+      LOGGER.info("Successfully reported outstanding tasks of {} contract!", action);
       // get scheduled tasks. these should be cancelled
       String tomorrowTimeStamp = String.valueOf(java.time.LocalDate.now(java.time.ZoneOffset.UTC).plusDays(1)
           .atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC));
       String finalTimeStamp = "4102444800"; // 1 January 2100
-      List<String> scheduledDates = this.lifecycleTaskService.getOccurrenceDateByContract(tomorrowTimeStamp,
-          finalTimeStamp, entityType, false,contractId);
-      if (scheduledDates != null && !scheduledDates.isEmpty()) {
-        ResponseEntity<StandardApiResponse<?>> cancelResponse = this.lifecycleTaskService.updateTaskOfTerminatedContract(params, scheduledDates, "cancel");
-        if (!cancelResponse.getStatusCode().equals(HttpStatus.OK)) {
-          return cancelResponse;
-        }
+      ResponseEntity<StandardApiResponse<?>> cancelResponse = this.updateTaskOfTerminatedContract(params,
+          contractId, entityType, "cancel", tomorrowTimeStamp, finalTimeStamp);
+      if (!cancelResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return cancelResponse;
       }
       LOGGER.info("Successfully cancelled scheduled tasks of {} contract!", action);
       // update contract status
       return this.lifecycleTaskService.genOccurrence(params, serviceActionParams.eventType,
           serviceActionParams.logSuccess, serviceActionParams.messageSuccess);
     });
+  }
+
+  /**
+   * Fetch and update tasks of a terminated contract based on a date range and
+   * action.
+   */
+  private ResponseEntity<StandardApiResponse<?>> updateTaskOfTerminatedContract(Map<String, Object> params,
+      String contractId, String entityType, String taskAction, String startTimestamp, String endTimestamp) {
+
+    List<String> occurrenceDates = this.lifecycleTaskService.getOccurrenceDateByContract(
+        startTimestamp, endTimestamp, entityType, false, contractId);
+
+    if (occurrenceDates != null && !occurrenceDates.isEmpty()) {
+      ResponseEntity<StandardApiResponse<?>> updateResponse = this.lifecycleTaskService
+          .updateTaskOfTerminatedContract(params, occurrenceDates, taskAction);
+
+      if (!updateResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return updateResponse; // Early exit on failure
+      }
+    }
+
+    return new ResponseEntity<>(HttpStatus.OK);
   }
 
   /**
