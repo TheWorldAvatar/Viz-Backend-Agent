@@ -917,6 +917,8 @@ This endpoint serves to allow users to create new customer accounts by sending a
 > [!IMPORTANT]  
 > Users must include a `type` in the request parameter that corresponds to the customer's custom target file name in the `./resources/application-service.json`
 
+Users can also get all customer account IDs and names by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account?type={type}&search={search}` endpoint, where `{type}`is the requested identifier that must correspond to the customer's target class in`./resources/application-form.json` and `{search}` is the `search` parameter.
+
 Users can send a `POST` request to the `<baseURL>/vis-backend-agent/report/account/price` endpoint to create a new pricing model and assign it to the specified account. This endpoint is an extension to the [add instance endpoint](#251-add-route), which requires users to send request parameters for creating a custom pricing model based on their `JSON-LD` file. The endpoint will generate a pricing model and assign it to the corresponding customer account id via the `account` parameter.
 
 > [!IMPORTANT]  

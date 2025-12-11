@@ -28,6 +28,7 @@ import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
+import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
@@ -255,7 +256,7 @@ public class GetService {
 
   /**
    * Retrieve all filter options associated with the resource and the target
-   * field.
+   * field as a single string list.
    * 
    * @param resourceID    Target resource identifier for the instance class.
    * @param field         The field of interest.
@@ -263,8 +264,40 @@ public class GetService {
    * @param search        String subset to narrow filter scope.
    * @param filters       Optional additional filters.
    */
-  public List<String> getAllFilterOptions(String resourceID, String field, String addStatements,
+  public List<String> getAllFilterOptionsAsStrings(String resourceID, String field, String addStatements,
       String search, Map<String, Set<String>> filters) {
+    return this.queryFilterOptions(resourceID, field, addStatements, search, filters, false).stream()
+        .map(binding -> binding.getFieldValue(field))
+        .toList();
+  }
+
+  /**
+   * Retrieve all filter options associated with the resource and the target
+   * field as options with names and their IDs.
+   * 
+   * @param resourceID Target resource identifier for the instance class.
+   * @param search     String subset to narrow filter scope.
+   */
+  public List<SelectOption> getAllFilterOptions(String resourceID, String search) {
+    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", search, new HashMap<>(), true).stream()
+        .map(binding -> new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
+            binding.getFieldValue(QueryResource.ID_KEY)))
+        .toList();
+  }
+
+  /**
+   * Query for all filter options associated with the resource and the target
+   * field as their original format.
+   * 
+   * @param resourceID    Target resource identifier for the instance class.
+   * @param field         The field of interest.
+   * @param addStatements Additional query statements to be added if any.
+   * @param search        String subset to narrow filter scope.
+   * @param filters       Optional additional filters.
+   * @param requireId     If the results should include ID.
+   */
+  private Queue<SparqlBinding> queryFilterOptions(String resourceID, String field, String addStatements,
+      String search, Map<String, Set<String>> filters, boolean requireId) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
     addStatements += this.getQueryStatementsForTargetFields(iri, new HashSet<>(Set.of(field)), filters);
@@ -280,10 +313,8 @@ public class GetService {
           + "\"))";
     }
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
-        new PaginationState(0, 21, "+" + field, new HashMap<>()), false);
-    return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
-        .map(binding -> binding.getFieldValue(field))
-        .toList();
+        new PaginationState(0, 21, "+" + field, new HashMap<>()), requireId);
+    return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED);
   }
 
   /**

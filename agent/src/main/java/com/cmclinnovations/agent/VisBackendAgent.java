@@ -165,7 +165,7 @@ public class VisBackendAgent {
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       Map<String, Set<String>> parsedFilters = StringResource.parseFilters(allRequestParams, null);
       parsedFilters.remove(field);
-      List<String> options = this.getService.getAllFilterOptions(type, field, "", search, parsedFilters);
+      List<String> options = this.getService.getAllFilterOptionsAsStrings(type, field, "", search, parsedFilters);
       return this.responseEntityBuilder.success(options);
     });
   }

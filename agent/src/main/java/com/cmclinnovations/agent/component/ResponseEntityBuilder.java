@@ -82,8 +82,8 @@ public class ResponseEntityBuilder {
    *
    * @param items An optional collection of strings.
    */
-  public ResponseEntity<StandardApiResponse<?>> success(List<String> items) {
-    DataPayload<String> dataPayload = new DataPayload<>(null, null, null, items);
+  public <T> ResponseEntity<StandardApiResponse<?>> success(List<T> items) {
+    DataPayload<T> dataPayload = new DataPayload<>(null, null, null, items);
     return new ResponseEntity<>(
         new StandardApiResponse<>(this.appVersion, dataPayload, null),
         HttpStatus.OK);

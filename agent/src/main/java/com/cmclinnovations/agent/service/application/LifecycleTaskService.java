@@ -118,7 +118,7 @@ public class LifecycleTaskService {
     parsedFilters.remove(originalField);
     String[] queryStatement = this.genLifecycleStatements(startTimestamp, endTimestamp, new HashSet<>(), parsedFilters,
         originalField, isClosed, false);
-    List<String> options = this.getService.getAllFilterOptions(resourceID, originalField, queryStatement[0], search,
+    List<String> options = this.getService.getAllFilterOptionsAsStrings(resourceID, originalField, queryStatement[0], search,
         parsedFilters);
     if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
       return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();

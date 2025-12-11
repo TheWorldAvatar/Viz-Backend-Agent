@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
+import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.BillingService;
@@ -101,6 +102,18 @@ public class ReportingController {
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> options = this.lifecycleTaskService.getFilterOptions(type, field,
           search, startTimestamp, endTimestamp, true, allRequestParams);
+      return this.responseEntityBuilder.success(options);
+    });
+  }
+
+  /**
+   * Retrieves the accounts as dropdown options including name and id.
+   */
+  @GetMapping("/account")
+  public ResponseEntity<StandardApiResponse<?>> getAccounts(@RequestParam String type, @RequestParam String search) {
+    LOGGER.info("Received request to get the customer accounts...");
+    return this.concurrencyService.executeInOptimisticReadLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search);
       return this.responseEntityBuilder.success(options);
     });
   }
