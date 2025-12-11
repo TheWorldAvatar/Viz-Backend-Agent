@@ -3,7 +3,6 @@ package com.cmclinnovations.agent.service.application;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -302,6 +301,9 @@ public class LifecycleContractService {
           QueryResource.genVariable(LifecycleResource.STATUS_KEY),
           List.of(1, 1));
     }
+    if (eventType.equals(LifecycleEventType.ARCHIVE_COMPLETION)) {
+      contractVariables.put(QueryResource.genVariable("final remarks"), List.of(10,20));
+    }
     String[] addStatements = this.genLifecycleStatements(eventType, pagination.getSortedFields(),
         pagination.getFilters(), "", true);
     Queue<List<String>> ids = this.getService.getAllIds(resourceID, addStatements[0], pagination);
@@ -357,6 +359,8 @@ public class LifecycleContractService {
     String endDateFilter = this.processEndDateScheduleForFilter(filters, extendedMappings);
     // additional mapping for status for contracts only. needed for filtering
     extendedMappings.put("status","OPTIONAL {?event <https://www.omg.org/spec/Commons/Designators/describes> / <http://www.w3.org/2000/01/rdf-schema#label> ?status.}");
+    // this should only appears for archived contracts
+    statementMappings.put("final remarks","OPTIONAL {?event <http://www.w3.org/2000/01/rdf-schema#comment> ?final_remarks . }");
     String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
         filters, field);
     lifecycleStatements += endDateFilter;
