@@ -1,5 +1,7 @@
 # Change Log
 
+## 1.24.1
+ - Fixed the bug in the union issue on the table query
 ## 1.24.0
  - Extended contract termination route to auto-update related tasks
 

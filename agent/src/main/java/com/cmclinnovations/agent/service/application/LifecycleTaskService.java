@@ -218,6 +218,7 @@ public class LifecycleTaskService {
     for (String date : dates) {
       Map<String, Object> dateParams = new HashMap<>(params);
       dateParams.put(LifecycleResource.DATE_KEY, date);
+      dateParams.remove(QueryResource.ID_KEY);
       ResponseEntity<StandardApiResponse<?>> response = this.performSingleServiceAction(type, dateParams);
       if (!response.getStatusCode().equals(HttpStatus.OK)) {
         return response;
