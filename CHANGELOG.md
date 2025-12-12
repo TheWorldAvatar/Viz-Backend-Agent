@@ -1,37 +1,53 @@
 # Change Log
 
+## 1.25.0
+
+### Changes
+
+- Added routes for billing functionality
+
+### Bug fixes
+
+- Ignores empty language tag when parsing rules
+- Array fields are only parsed within array groups for JSON-LD, and they may or may not include the group name in the JSON-LD target for replacements
+
 ## 1.24.1
- - Fixed the bug in the union issue on the table query
+
+- Fixed the bug in the union issue on the table query
+
 ## 1.24.0
- - Extended contract termination route to auto-update related tasks
+
+- Extended contract termination route to auto-update related tasks
 
 ## 1.23.1
- - Fixed bug with cloning jobs with branching type
+
+- Fixed bug with cloning jobs with branching type
 
 ## 1.23.0
- - Fixed bug with delete and update to identify optional parameters correctly
+
+- Fixed bug with delete and update to identify optional parameters correctly
 
 ## 1.22.1
 
- - Fixed bug with filter options of event ID
+- Fixed bug with filter options of event ID
 
 ## 1.22.0
 
- - Added new fixed date schedule type for contracts
+- Added new fixed date schedule type for contracts
 
 ## 1.21.2
 
- - Fixed bug with filtering pending job requests by status
- - Fixed bug where delete template uses id0 for the identifier instead of the first id
+- Fixed bug with filtering pending job requests by status
+- Fixed bug where delete template uses id0 for the identifier instead of the first id
 
 ## 1.21.1
- 
- - Added a route to get current task details
+
+- Added a route to get current task details
 
 ## 1.21.0
- 
- - Enforced `branch_add` and `branch_delete` parameters to support add, delete, and edit operations.
- - Support branch usage when cloning contract with new parameters
+
+- Enforced `branch_add` and `branch_delete` parameters to support add, delete, and edit operations.
+- Support branch usage when cloning contract with new parameters
 
 ## 1.20.1
 
@@ -57,7 +73,6 @@
 
 - Implemented server-side pagination and filters
 - Added routes for retrieving count and filter options
-
 
 ## 1.18.1
 
