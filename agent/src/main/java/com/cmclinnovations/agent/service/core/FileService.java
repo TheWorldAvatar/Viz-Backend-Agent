@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
+import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -40,6 +41,7 @@ public class FileService {
   private static final String QUERY_DIR = CLASS_PATH_DIR + "query/";
   private static final String QUERY_CONSTR_DIR = QUERY_DIR + "construct/";
   private static final String QUERY_GET_DIR = QUERY_DIR + "get/";
+  private static final String QUERY_GET_BILLING_DIR = QUERY_GET_DIR + "billing/";
   private static final String QUERY_GET_LIFECYCLE_DIR = QUERY_GET_DIR + "lifecycle/";
   public static final String FORM_QUERY_RESOURCE = QUERY_CONSTR_DIR + "form.sparql";
   public static final String SHACL_RULE_QUERY_RESOURCE = QUERY_CONSTR_DIR + "shacl_rule.sparql";
@@ -49,12 +51,22 @@ public class FileService {
   public static final String SHACL_PATH_LABEL_QUERY_RESOURCE = QUERY_GET_DIR + "property_path_label.sparql";
   public static final String SHACL_PROPERTY_OPTIONAL_RESOURCE = QUERY_GET_DIR + "property_optional.sparql";
   public static final String LIFECYCLE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/lifecycle.jsonld";
-  public static final String LIFECYCLE_REPORT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/report.jsonld";
+  public static final String CUSTOMER_ACCOUNT_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/accounts/customer_account.jsonld";
+  public static final String ACCOUNT_PRICING_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/accounts/account_pricing.jsonld";
+  public static final String TRANSACTION_RECORD_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/accounts/transaction_record.jsonld";
+  public static final String TRANSACTION_INVOICE_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/accounts/individual_transaction.jsonld";
   public static final String OCCURRENCE_INSTANT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_instant.jsonld";
   public static final String OCCURRENCE_LINK_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_link.jsonld";
   public static final String SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/schedule.jsonld";
-  public static final String FIXED_DATE_SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/fixed_date_schedule.jsonld";
+  public static final String FIXED_DATE_SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/fixed_date_schedule.jsonld";
 
+  public static final String ACCOUNT_AGREEMENT_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_agreement.sparql";
+  public static final String ACCOUNT_PRICING_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_pricing.sparql";
   public static final String CONTRACT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract.sparql";
   public static final String CONTRACT_STATUS_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_status.sparql";
   public static final String CONTRACT_STAGE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_stage.sparql";
@@ -62,7 +74,8 @@ public class FileService {
   public static final String CONTRACT_PREV_EVENT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR
       + "contract_prev_event.sparql";
   public static final String CONTRACT_SCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "schedule.sparql";
-  public static final String FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "fixed_date_schedule.sparql";
+  public static final String FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR
+      + "fixed_date_schedule.sparql";
   public static final String TASK_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "task.sparql";
 
   public static final String REPLACEMENT_TARGET = "\\[target\\]";
@@ -156,6 +169,10 @@ public class FileService {
     LOGGER.debug("Retrieving the target class associated with the resource identifier: {} ...", resourceID);
     if (resourceID.equals(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE)) {
       return Rdf.iri(LifecycleResource.EVENT_OCCURRENCE_IRI);
+    } else if (resourceID.equals(BillingResource.TRANSACTION_RECORD_RESOURCE)) {
+      return BillingResource.PAYMENT_OBLIGATION_IRI;
+    } else if (resourceID.equals(BillingResource.TRANSACTION_BILL_RESOURCE)) {
+      return BillingResource.INDIVIDUAL_TRANSACTION_IRI;
     }
     String targetClass = this.getResourceTarget(resourceID,
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_FORM_RESOURCE);

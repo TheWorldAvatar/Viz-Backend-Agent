@@ -1,0 +1,9 @@
+PREFIX cmns-dsg: <https://www.omg.org/spec/Commons/Designators/>
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX fibo-fbc-pas-caa: <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/>
+SELECT DISTINCT ?iri
+WHERE{
+  ?account a fibo-fbc-pas-caa:CustomerAccount;
+    dc-terms:identifier "[target]";
+    cmns-dsg:isDefinedIn ?iri.
+}

@@ -16,7 +16,6 @@ import com.cmclinnovations.agent.service.core.FileService;
 
 public class LifecycleResource {
   public static final String LIFECYCLE_RESOURCE = "lifecycle";
-  public static final String LIFECYCLE_REPORT_RESOURCE = "lifecycle report";
   public static final String SCHEDULE_RESOURCE = "schedule";
   public static final String FIXED_DATE_SCHEDULE_RESOURCE = "fixed_date_schedule";
   public static final String TASK_RESOURCE = "task";
@@ -94,7 +93,7 @@ public class LifecycleResource {
     template.put(RECURRENCE_DAILY_TASK_STRING, "?recurrence!=\"P1D\"");
     template.put(RECURRENCE_ALT_DAY_TASK, "?recurrence!=\"P2D\"");
     template.put(EMPTY_STRING, "?recurrence!=\"\"");
-    template.put(RECURRENCE_FIXED_DATE_TASK_STRING, "?recurrence!=\""+RECURRENCE_FIXED_DATE_TASK+"\"");
+    template.put(RECURRENCE_FIXED_DATE_TASK_STRING, "?recurrence!=\"" + RECURRENCE_FIXED_DATE_TASK + "\"");
     NEGATE_RECURRENCE_MAP = Collections.unmodifiableMap(template);
   }
 
@@ -139,10 +138,16 @@ public class LifecycleResource {
     switch (resourceID) {
       case LifecycleResource.LIFECYCLE_RESOURCE:
         return FileService.LIFECYCLE_JSON_LD_RESOURCE;
-      case LifecycleResource.LIFECYCLE_REPORT_RESOURCE:
-        return FileService.LIFECYCLE_REPORT_JSON_LD_RESOURCE;
+      case BillingResource.CUSTOMER_ACCOUNT_RESOURCE:
+        return FileService.CUSTOMER_ACCOUNT_JSON_LD_RESOURCE;
+      case BillingResource.CUSTOMER_ACCOUNT_PRICING_RESOURCE:
+        return FileService.ACCOUNT_PRICING_JSON_LD_RESOURCE;
       case LifecycleResource.OCCURRENCE_INSTANT_RESOURCE:
         return FileService.OCCURRENCE_INSTANT_JSON_LD_RESOURCE;
+      case BillingResource.TRANSACTION_RECORD_RESOURCE:
+        return FileService.TRANSACTION_RECORD_JSON_LD_RESOURCE;
+      case BillingResource.TRANSACTION_BILL_RESOURCE:
+        return FileService.TRANSACTION_INVOICE_JSON_LD_RESOURCE;
       case LifecycleResource.CANCEL_RESOURCE:
       case LifecycleResource.REPORT_RESOURCE:
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;

@@ -25,11 +25,10 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
-import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
+import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
-import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
@@ -96,20 +95,6 @@ public class LifecycleContractService {
     String contractStatus = this.lifecycleQueryService.getInstance(FileService.CONTRACT_STATUS_QUERY_RESOURCE, contract)
         .getFieldValue(LifecycleResource.STATUS_KEY);
     return !contractStatus.equals("Pending");
-  }
-
-  /**
-   * Generates a report instance.
-   * 
-   * @param contractId The ID of the target contract to report on.
-   */
-  public void genReportInstance(String contractId) {
-    String contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId)
-        .getFieldValue(QueryResource.IRI_KEY);
-    Map<String, Object> reportParams = new HashMap<>();
-    reportParams.put(LifecycleResource.CONTRACT_KEY, contract);
-    this.addService.instantiate(LifecycleResource.LIFECYCLE_REPORT_RESOURCE, reportParams, null,
-        LocalisationResource.SUCCESS_ADD_REPORT_KEY);
   }
 
   /**
@@ -276,7 +261,7 @@ public class LifecycleContractService {
     // Sorting is irrelevant for specific lifecycle statements
     String[] addStatements = this.genLifecycleStatements(eventType, new HashSet<>(), parsedFilters, originalField,
         false);
-    List<String> options = this.getService.getAllFilterOptions(resourceID, originalField, addStatements[0], search,
+    List<String> options = this.getService.getAllFilterOptionsAsStrings(resourceID, originalField, addStatements[0], search,
         parsedFilters);
     if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
       return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();

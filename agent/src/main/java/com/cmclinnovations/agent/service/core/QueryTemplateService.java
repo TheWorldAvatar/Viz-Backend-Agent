@@ -103,6 +103,7 @@ public class QueryTemplateService {
    * @param addQueryStatements   Additional query statements to be added.
    * @param pagination           Optional state containing the current page and
    *                             limit.
+   * @param requireId            If the results should include ID.
    */
   public String getAllIdsQueryTemplate(String nodeShapeReplacement, String addQueryStatements,
       PaginationState pagination, boolean requireId) {

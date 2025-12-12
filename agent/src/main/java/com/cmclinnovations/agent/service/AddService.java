@@ -6,6 +6,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -326,11 +327,14 @@ public class AddService {
     String arrayFieldName = replacementNode.path(ShaclResource.REPLACE_KEY).asText();
     List<Map<String, Object>> arrayFields = (List<Map<String, Object>>) replacements.get(arrayFieldName);
     arrayFields.forEach(arrayField -> {
+      Map<String, Object> currentFields = new HashMap<>(arrayField);
+      arrayField.forEach((key, value) -> {
+        currentFields.put(key.replaceFirst(arrayFieldName + ShaclResource.WHITE_SPACE, ""), value);
+      });
       // Copy the template to prevent any modification
       ObjectNode currentArrayItem = arrayTemplate.deepCopy();
-      arrayField.putAll(replacements);// place existing replacements into the array mappings
-      arrayField.put(QueryResource.ID_KEY, UUID.randomUUID()); // generate a new ID key for each item in the array
-      this.recursiveReplacePlaceholders(currentArrayItem, null, null, arrayField);
+      currentFields.put(QueryResource.ID_KEY, UUID.randomUUID()); // generate a new ID key for each item in the array
+      this.recursiveReplacePlaceholders(currentArrayItem, null, null, currentFields);
       resultArray.add(currentArrayItem);
     });
     return resultArray;

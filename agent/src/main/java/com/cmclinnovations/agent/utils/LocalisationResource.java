@@ -14,7 +14,6 @@ public class LocalisationResource {
   public static final String MESSAGE_DUPLICATE_APPROVAL_KEY = MESSAGE_PREFIX + "duplicate.approval";
   public static final String MESSAGE_DUPLICATE_TASK_KEY = MESSAGE_PREFIX + "duplicate.task";
   public static final String SUCCESS_ADD_KEY = SUCCESS_PREFIX + "add";
-  public static final String SUCCESS_ADD_REPORT_KEY = SUCCESS_PREFIX + "add.report";
   public static final String SUCCESS_CONTRACT_DRAFT_KEY = SUCCESS_CONTRACT_PREFIX + "draft";
   public static final String SUCCESS_SCHEDULE_DRAFT_KEY = SUCCESS_PREFIX + "schedule.draft";
   public static final String SUCCESS_CONTRACT_DRAFT_COPY_KEY = SUCCESS_CONTRACT_DRAFT_KEY + ".copy";

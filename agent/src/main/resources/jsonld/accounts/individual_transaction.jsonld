@@ -1,0 +1,85 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": {
+    "@replace": "id",
+    "@type": "iri",
+    "prefix": "https://theworldavatar.io/kg/account/record/transaction/"
+  },
+  "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/IndividualTransaction",
+  "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/involves": {
+    "@id": {
+      "@replace": "event",
+      "@type": "iri"
+    }
+  },
+  "@reverse": {
+    "https://www.omg.org/spec/Commons/Documents/isAbout": {
+      "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://theworldavatar.io/kg/account/invoice/"
+      },
+      "@type": "https://purl.org/p2p-o/document#E-Invoice",
+      "https://purl.org/p2p-o/invoice#hasInvoiceLine": [
+        {
+          "@replace": "discounts",
+          "@type": "array",
+          "@contents": {
+            "@id": {
+              "@replace": "id",
+              "@type": "iri",
+              "prefix": "https://theworldavatar.io/kg/account/invoice/discount/"
+            },
+            "@type": "https://purl.org/p2p-o/documentline#InvoiceLine",
+            "https://purl.org/p2p-o/documentline#lineNote": {
+              "@replace": "description",
+              "@type": "literal"
+            },
+            "https://purl.org/p2p-o/documentline#hasPriceDiscountOfItem": {
+              "@id": {
+                "@replace": "id",
+                "@type": "iri",
+                "prefix": "https://theworldavatar.io/kg/account/invoice/discount/amount/"
+              },
+              "https://www.omg.org/spec/Commons/QuantitiesAndUnits/hasNumericValue": {
+                "@replace": "discount",
+                "@type": "literal",
+                "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+              }
+            }
+          }
+        },
+        {
+          "@replace": "additional charges",
+          "@type": "array",
+          "@contents": {
+            "@id": {
+              "@replace": "id",
+              "@type": "iri",
+              "prefix": "https://theworldavatar.io/kg/account/invoice/charges/"
+            },
+            "@type": "https://purl.org/p2p-o/documentline#InvoiceLine",
+            "https://purl.org/p2p-o/documentline#lineNote": {
+              "@replace": "description",
+              "@type": "literal"
+            },
+            "https://purl.org/p2p-o/documentline#hasGrosspriceOfItem": {
+              "@id": {
+                "@replace": "id",
+                "@type": "iri",
+                "prefix": "https://theworldavatar.io/kg/account/invoice/additional/charges/amount/"
+              },
+              "https://www.omg.org/spec/Commons/QuantitiesAndUnits/hasNumericValue": {
+                "@replace": "amount",
+                "@type": "literal",
+                "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
