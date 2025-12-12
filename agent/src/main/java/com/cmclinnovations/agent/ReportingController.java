@@ -60,7 +60,7 @@ public class ReportingController {
     LOGGER.info("Received request to retrieve number of scheduled contract task...");
     boolean isClosed = true;
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrenceCount(type, startTimestamp, endTimestamp, isClosed,
+      return this.lifecycleTaskService.getOccurrenceCount(type, startTimestamp, endTimestamp, isClosed, true,
           allRequestParams);
     });
   }
@@ -80,7 +80,7 @@ public class ReportingController {
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, true,
+      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, true, true,
           new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
     });
   }
@@ -101,7 +101,7 @@ public class ReportingController {
     String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> options = this.lifecycleTaskService.getFilterOptions(type, field,
-          search, startTimestamp, endTimestamp, true, allRequestParams);
+          search, startTimestamp, endTimestamp, true, true, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }

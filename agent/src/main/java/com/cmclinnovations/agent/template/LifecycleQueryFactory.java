@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
+import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
@@ -272,13 +273,14 @@ public class LifecycleQueryFactory {
       case LifecycleEventType.ARCHIVE_COMPLETION:
         // for archive contract, look for complete, rescind, or terminated
         String completeEventStatement = GraphPatterns.and(
-          GraphPatterns.union(
-            eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-                Rdf.iri(LifecycleResource.EVENT_CONTRACT_COMPLETION)),
-            eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-                Rdf.iri(LifecycleResource.EVENT_CONTRACT_RESCISSION)),
-            eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-                Rdf.iri(LifecycleResource.EVENT_CONTRACT_TERMINATION)))).getQueryString();
+            GraphPatterns.union(
+                eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+                    Rdf.iri(LifecycleResource.EVENT_CONTRACT_COMPLETION)),
+                eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+                    Rdf.iri(LifecycleResource.EVENT_CONTRACT_RESCISSION)),
+                eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+                    Rdf.iri(LifecycleResource.EVENT_CONTRACT_TERMINATION))))
+            .getQueryString();
         coreQueryBuilder.append(lifecycleStatement).append(completeEventStatement);
         this.appendArchivedStateQuery(coreQueryBuilder);
         break;
@@ -288,6 +290,18 @@ public class LifecycleQueryFactory {
     }
     statementMappings.put(LifecycleResource.LIFECYCLE_RESOURCE, coreQueryBuilder.toString());
     return statementMappings;
+  }
+
+  /**
+   * Insert mappings for billing matters.
+   * 
+   * @param queryMappings Target mappings containing the existing statements.
+   */
+  public Map<String, String> addBillMappings(Map<String, String> queryMappings) {
+    queryMappings.put(BillingResource.AMOUNT_KEY,
+        "OPTIONAL{?event_id ^fibo-fnd-rel-rel:involves/fibo-fnd-acc-cur:hasMonetaryAmount/fibo-fnd-acc-cur:hasAmount ?bill.}"
+            + "BIND(COALESCE(?bill,\"-\") AS ?amount)");
+    return queryMappings;
   }
 
   /**

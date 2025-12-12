@@ -19,10 +19,9 @@ import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.ModifyQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatternNotTriples;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
-import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
-import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.http.MediaType;
@@ -105,6 +104,7 @@ public class QueryResource {
             .genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY);
     public static final Variable LATEST_DATE_VAR = QueryResource.genVariable("latest_date");
     public static final Variable PRICING_MODEL_VAR = QueryResource.genVariable("pricing");
+    public static final Variable AMOUNT_VAR = QueryResource.genVariable(BillingResource.AMOUNT_KEY);
 
     public static final String ADD_BRANCH_KEY = "branch_add";
     public static final String DELETE_BRANCH_KEY = "branch_delete";
