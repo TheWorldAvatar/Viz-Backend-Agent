@@ -570,18 +570,18 @@ base:TransactionShape
       ?invoice_line_instance p2p-o-doc-line:lineNote "Service"^^xsd:string;
         p2p-o-doc-line:hasLineNetAmount/fibo-fnd-acc-cur:hasAmount ?service_price.
       OPTIONAL{
-        SELECT ?invoice (SUM(?charges) AS ?add_charges) WHERE {
+        SELECT ?invoice (SUM(?charges) AS ?temp_add_charges) WHERE {
           ?invoice cmns-doc:isAbout ?this;
             p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasGrosspriceOfItem/cmns-qtu:hasNumericValue ?charge .
         } GROUP BY ?invoice 
       }
-      BIND(COALESCE(?add_charges,0) AS ?add_charges)
+      BIND(COALESCE(?temp_add_charges,0) AS ?add_charges)
       OPTIONAL{ 
-        SELECT ?invoice (SUM(?charges) AS ?discount) WHERE {
+        SELECT ?invoice (SUM(?charges) AS ?temp_discount) WHERE {
           ?invoice cmns-doc:isAbout ?this;
             p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasPriceDiscountOfItem/cmns-qtu:hasNumericValue ?charge .
         } GROUP BY ?invoice }
-      BIND(COALESCE(?discount,0) AS ?discount)
+      BIND(COALESCE(?temp_discount,0) AS ?discount)
       BIND(?service_price+?add_charges-?discount AS ?total)
       BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/total/",?id)) AS ?total_instance)
     }
