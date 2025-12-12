@@ -109,6 +109,7 @@ public class BillingService {
    * @param instance Request parameters containing the invoice parameters.
    */
   public ResponseEntity<StandardApiResponse<?>> genInvoiceInstance(Map<String, Object> instance) {
+    instance.remove(QueryResource.ID_KEY); // remove contract ID, let code generate new ID
     return this.addService.instantiate(BillingResource.TRANSACTION_BILL_RESOURCE, instance);
   }
 
