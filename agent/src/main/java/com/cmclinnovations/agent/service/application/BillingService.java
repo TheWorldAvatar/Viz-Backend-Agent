@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.AddService;
+import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.utils.BillingResource;
@@ -23,6 +24,7 @@ import com.cmclinnovations.agent.utils.TypeCastUtils;
 @Service
 public class BillingService {
   private final AddService addService;
+  private final UpdateService updateService;
   final DateTimeService dateTimeService;
   public final LifecycleQueryService lifecycleQueryService;
 
@@ -31,9 +33,10 @@ public class BillingService {
   /**
    * Constructs a new service with the following dependencies.
    */
-  public BillingService(AddService addService, DateTimeService dateTimeService,
+  public BillingService(AddService addService, UpdateService updateService, DateTimeService dateTimeService,
       LifecycleQueryService lifecycleQueryService) {
     this.addService = addService;
+    this.updateService = updateService;
     this.dateTimeService = dateTimeService;
     this.lifecycleQueryService = lifecycleQueryService;
   }
@@ -101,10 +104,12 @@ public class BillingService {
         .getInstance(FileService.ACCOUNT_PRICING_QUERY_RESOURCE, pricingModel);
     instance.put(QueryResource.ACCOUNT_ID_KEY, accountInstance.getFieldValue(QueryResource.IRI_KEY));
     instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
-    return this.addService.instantiate(BillingResource.TRANSACTION_RECORD_RESOURCE, instance);
+    return this.updateService.update(contractId, BillingResource.TRANSACTION_RECORD_RESOURCE, null, instance);
   }
+
   /**
-   * Creates an instance for the invoice and individual transaction with the required details.
+   * Creates an instance for the invoice and individual transaction with the
+   * required details.
    * 
    * @param instance Request parameters containing the invoice parameters.
    */
