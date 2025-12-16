@@ -125,7 +125,7 @@ public class LifecycleTaskService {
         parsedFilters);
     if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
       return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();
-    } else if (originalField.equals(BillingResource.AMOUNT_KEY)) {
+    } else if (field.equals(BillingResource.BILLING_STATUS_KEY)) {
       return options.stream().map(option -> LocalisationTranslator.getBillingStatus(option)).toList();
     } else if (originalField.equals(LifecycleResource.EVENT_KEY)) {
       return options.stream().map(option -> LocalisationTranslator.getEvent(option)).toList();
