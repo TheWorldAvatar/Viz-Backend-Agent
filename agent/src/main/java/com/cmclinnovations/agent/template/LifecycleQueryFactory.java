@@ -300,9 +300,9 @@ public class LifecycleQueryFactory {
   public Map<String, String> addBillMappings(Map<String, String> queryMappings) {
     queryMappings.put(BillingResource.AMOUNT_KEY,
         "OPTIONAL{?event_id ^fibo-fnd-rel-rel:involves/fibo-fnd-acc-cur:hasMonetaryAmount/fibo-fnd-acc-cur:hasAmount ?bill.}"
-            + "BIND(COALESCE(?bill,\"-\") AS ?amount)\n"
-            + "BIND(IF(BOUND(?bill),\"readyForPayment\",\"pendingApproval\") AS ?" + BillingResource.BILLING_STATUS_KEY
-            + ")");
+            + "BIND(IF(BOUND(?bill),IF(?bill=0,\"N/A\", ?bill),\"-\") AS ?amount)\n"
+            + "BIND(IF(BOUND(?bill),IF(?bill=0,\"nonBillable\", \"readyForPayment\"),\"pendingApproval\") AS ?"
+            + BillingResource.BILLING_STATUS_KEY + ")");
     return queryMappings;
   }
 

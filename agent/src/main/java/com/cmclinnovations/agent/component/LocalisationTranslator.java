@@ -47,6 +47,8 @@ public class LocalisationTranslator {
     return switch (amountVal) {
       case "-":
         yield LocalisationResource.BILLING_STATUS_PENDING_APPROVAL_KEY;
+      case "N/A":
+        yield LocalisationResource.BILLING_STATUS_NON_BILLABLE_KEY;
       default:
         yield LocalisationResource.BILLING_STATUS_READY_FOR_PAYMENT_KEY;
     };

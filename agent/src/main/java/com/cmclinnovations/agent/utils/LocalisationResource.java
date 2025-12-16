@@ -62,6 +62,7 @@ public class LocalisationResource {
   public static final String EVENT_STATUS_NEW_KEY = "new";
 
   public static final String BILLING_STATUS_PENDING_APPROVAL_KEY = "pendingApproval";
+  public static final String BILLING_STATUS_NON_BILLABLE_KEY = "nonBillable";
   public static final String BILLING_STATUS_READY_FOR_PAYMENT_KEY = "readyForPayment";
 
   // Private constructor to prevent instantiation
