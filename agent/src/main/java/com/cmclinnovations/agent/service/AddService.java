@@ -19,6 +19,7 @@ import org.apache.jena.riot.RDFFormat;
 import org.apache.jena.riot.RDFWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -133,7 +134,7 @@ public class AddService {
     Model otherRules = this.kgService.getShaclRules(resourceID, false);
     if (response.getStatusCode() == HttpStatus.OK && (!sparqlConstructRules.isEmpty() || !otherRules.isEmpty())) {
       LOGGER.info("Detected rules! Instantiating inferred instances to endpoint...");
-      this.kgService.execShaclRules(sparqlConstructRules);
+      this.kgService.execShaclRules(sparqlConstructRules, Rdf.iri(instanceIri).getQueryString());
 
       Model dataModel = this.kgService.readStringModel(jsonString, Lang.JSONLD);
       Model inferredData = RuleUtil.executeRules(dataModel, otherRules, null, null);

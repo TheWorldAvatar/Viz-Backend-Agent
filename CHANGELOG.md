@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.26.0
+
+- Modified SHACL construction rules to only apply to the target instance
+
 ## 1.25.0
 
 ### Changes
