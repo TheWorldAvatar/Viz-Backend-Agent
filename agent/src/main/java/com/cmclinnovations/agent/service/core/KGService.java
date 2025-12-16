@@ -276,18 +276,18 @@ public class KGService {
    * 
    * @param rules The target SHACL rules.
    */
-  public void execShaclRules(Model rules) {
+  public void execShaclRules(Model rules, String targetId) {
     LOGGER.info("Executing SHACL SPARQL construct rules directly in the knowledge graph...");
     Queue<String> constructQueries = this.shaclRuleProcesser.getConstructQueries(rules);
     while (!constructQueries.isEmpty()) {
       String currentQuery = constructQueries.poll();
       // Execute a SELECT query to retrieve all possible variables and their values in
       // the WHERE clause
-      String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery);
+      String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery, targetId);
       Queue<SparqlBinding> results = this.query(queryForExecution, SparqlEndpointType.MIXED);
       List<Triple> tripleList = this.shaclRuleProcesser.genConstructTriples(currentQuery);
       // Generate the delete where query templates
-      String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList);
+      String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, targetId);
       // Using the results of the SELECT query as replacements to the CONSTRUCT
       // clause, generate the INSERT DATA query
       String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(tripleList, results);
