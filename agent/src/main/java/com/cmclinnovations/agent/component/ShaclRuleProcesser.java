@@ -83,7 +83,12 @@ public class ShaclRuleProcesser {
      *
      * @param targetQuery The input SPARQL query string.
      */
+
     public String genSelectQuery(String targetQuery, String instanceIri) {
+        return this.genSelectQuery(targetQuery, List.of(instanceIri));
+    }
+
+    public String genSelectQuery(String targetQuery, List<String> iris) {
         LOGGER.debug("Constructing a SELECT query from the WHERE clause....");
         Query query = QueryFactory.create(targetQuery);
         if (!query.isConstructType()) {
@@ -92,9 +97,7 @@ public class ShaclRuleProcesser {
         StringBuilder selectQueryBuilder = new StringBuilder();
         selectQueryBuilder.append("SELECT *").append(System.lineSeparator());
         String whereClause = query.getQueryPattern().toString();
-        String idClause = "\nVALUES ?this {<" + instanceIri +">} . }";
-        whereClause = whereClause.substring(0, whereClause.length() - 1);
-        selectQueryBuilder.append("WHERE ").append(whereClause + idClause);
+        selectQueryBuilder.append("WHERE ").append(whereClause.substring(0, whereClause.length() - 1) + this.getIriClause(iris));
         return selectQueryBuilder.toString();
     }
 
@@ -140,7 +143,12 @@ public class ShaclRuleProcesser {
      *
      * @param tripleList The list of triples in the CONSTRUCT template.
      */
+
     public String genDeleteWhereQuery(List<Triple> tripleList, String instanceIri) {
+        return this.genDeleteWhereQuery(tripleList, List.of(instanceIri));
+    }
+
+    public String genDeleteWhereQuery(List<Triple> tripleList, List<String> iris) {
         LOGGER.debug("Generating the INSERT DATA content....");
         StringBuilder deleteContentBuilder = new StringBuilder();
 
@@ -154,11 +162,14 @@ public class ShaclRuleProcesser {
             StringResource.appendTriple(deleteContentBuilder, subjectForm, predicateForm, objectForm);
         });
         String deleteContents = deleteContentBuilder.toString();
-        String idClause = "\nVALUES ?this {<" + instanceIri +">} . }";
         return new StringBuilder("DELETE{")
                 .append(deleteContents).append("} WHERE{")
-                .append(deleteContents).append(idClause)
+                .append(deleteContents).append(this.getIriClause(iris))
                 .toString();
+    }
+
+    private String getIriClause(List<String> iris) {
+        return "\n"+QueryResource.values("this", iris) +"}";
     }
 
     /**
