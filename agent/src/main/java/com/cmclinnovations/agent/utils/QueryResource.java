@@ -105,6 +105,7 @@ public class QueryResource {
     public static final Variable LATEST_DATE_VAR = QueryResource.genVariable("latest_date");
     public static final Variable PRICING_MODEL_VAR = QueryResource.genVariable("pricing");
     public static final Variable AMOUNT_VAR = QueryResource.genVariable(BillingResource.AMOUNT_KEY);
+    public static final Variable BILLING_STATUS_VAR = QueryResource.genVariable(BillingResource.BILLING_STATUS_KEY);
 
     public static final String ADD_BRANCH_KEY = "branch_add";
     public static final String DELETE_BRANCH_KEY = "branch_delete";

@@ -345,7 +345,8 @@ public class LifecycleTaskService {
     String addQuery = lifecycleStatements[1];
     // Billing requires the extra variable but does not need dispatch details
     if (isBilling) {
-      varSequences.put(QueryResource.AMOUNT_VAR, List.of(MIN_INDEX, 4));
+      varSequences.put(QueryResource.BILLING_STATUS_VAR, List.of(MIN_INDEX, 4));
+      varSequences.put(QueryResource.AMOUNT_VAR, List.of(MIN_INDEX, 5));
     } else {
       addQuery += this.parseEventOccurrenceQuery(-4, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
     }

@@ -10,6 +10,7 @@ public class BillingResource {
   public static final String TRANSACTION_BILL_RESOURCE = "individual transaction";
 
   public static final String AMOUNT_KEY = "amount";
+  public static final String BILLING_STATUS_KEY = "billingStatus";
 
   public static final String PAYMENT_OBLIGATION = "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation";
   public static final Iri PAYMENT_OBLIGATION_IRI = Rdf.iri(PAYMENT_OBLIGATION);
