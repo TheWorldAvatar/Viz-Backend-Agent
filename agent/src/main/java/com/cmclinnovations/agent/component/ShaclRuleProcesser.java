@@ -83,7 +83,7 @@ public class ShaclRuleProcesser {
      *
      * @param targetQuery The input SPARQL query string.
      */
-    public String genSelectQuery(String targetQuery, String targetId) {
+    public String genSelectQuery(String targetQuery, String instanceIri) {
         LOGGER.debug("Constructing a SELECT query from the WHERE clause....");
         Query query = QueryFactory.create(targetQuery);
         if (!query.isConstructType()) {
@@ -92,7 +92,7 @@ public class ShaclRuleProcesser {
         StringBuilder selectQueryBuilder = new StringBuilder();
         selectQueryBuilder.append("SELECT *").append(System.lineSeparator());
         String whereClause = query.getQueryPattern().toString();
-        String idClause = "\n?this <http://purl.org/dc/terms/identifier> \"" + targetId +"\" . }";
+        String idClause = "\nVALUES ?this {<" + instanceIri +">} . }";
         whereClause = whereClause.substring(0, whereClause.length() - 1);
         selectQueryBuilder.append("WHERE ").append(whereClause + idClause);
         return selectQueryBuilder.toString();
@@ -140,7 +140,7 @@ public class ShaclRuleProcesser {
      *
      * @param tripleList The list of triples in the CONSTRUCT template.
      */
-    public String genDeleteWhereQuery(List<Triple> tripleList, String targetId) {
+    public String genDeleteWhereQuery(List<Triple> tripleList, String instanceIri) {
         LOGGER.debug("Generating the INSERT DATA content....");
         StringBuilder deleteContentBuilder = new StringBuilder();
 
@@ -154,7 +154,7 @@ public class ShaclRuleProcesser {
             StringResource.appendTriple(deleteContentBuilder, subjectForm, predicateForm, objectForm);
         });
         String deleteContents = deleteContentBuilder.toString();
-        String idClause = "\n?this <http://purl.org/dc/terms/identifier> \"" + targetId +"\" . }";
+        String idClause = "\nVALUES ?this {<" + instanceIri +">} . }";
         return new StringBuilder("DELETE{")
                 .append(deleteContents).append("} WHERE{")
                 .append(deleteContents).append(idClause)

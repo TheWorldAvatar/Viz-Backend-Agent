@@ -109,7 +109,7 @@ public class AddService {
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
     // Add the static ID reference
     this.jsonLdService.appendId(addJsonSchema, targetId);
-    return this.instantiateJsonLd(addJsonSchema, resourceID, targetId, successLogMessage, messageResource);
+    return this.instantiateJsonLd(addJsonSchema, resourceID, successLogMessage, messageResource);
   }
 
   /**
@@ -122,7 +122,7 @@ public class AddService {
    *                          when successful.
    */
   private ResponseEntity<StandardApiResponse<?>> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID,
-      String targetId, String successLogMessage, String messageResource) {
+      String successLogMessage, String messageResource) {
     LOGGER.info("Adding instance to endpoint...");
     String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();
     String jsonString = jsonLdSchema.toString();
@@ -133,7 +133,7 @@ public class AddService {
     Model otherRules = this.kgService.getShaclRules(resourceID, false);
     if (response.getStatusCode() == HttpStatus.OK && (!sparqlConstructRules.isEmpty() || !otherRules.isEmpty())) {
       LOGGER.info("Detected rules! Instantiating inferred instances to endpoint...");
-      this.kgService.execShaclRules(sparqlConstructRules, targetId);
+      this.kgService.execShaclRules(sparqlConstructRules, instanceIri);
 
       Model dataModel = this.kgService.readStringModel(jsonString, Lang.JSONLD);
       Model inferredData = RuleUtil.executeRules(dataModel, otherRules, null, null);
