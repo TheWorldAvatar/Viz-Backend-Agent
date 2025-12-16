@@ -338,6 +338,12 @@ public class QueryResource {
                     }).collect(Collectors.toSet());
             String valuesClause = QueryResource.values(field, parsedFilters);
             builder.append(valuesClause);
+        } else if (field.equals(BillingResource.AMOUNT_KEY)
+                && (filters.contains("\"" + LocalisationResource.BILLING_STATUS_PENDING_APPROVAL_KEY + "\"")
+                        || filters.contains("\"" + LocalisationResource.BILLING_STATUS_READY_FOR_PAYMENT_KEY + "\""))) {
+            String valuesClause = QueryResource.values(BillingResource.BILLING_STATUS_KEY, filters);
+            builder.append(query)
+                    .append(valuesClause);
         } else {
             // When there are null filter values, the user has requested for blank values,
             // and this should be excluded from the query via a MINUS clause

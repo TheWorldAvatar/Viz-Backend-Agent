@@ -252,6 +252,8 @@ public class LifecycleResource {
     String lowerCaseField = field.toLowerCase();
     if (lowerCaseField.equals(STATUS_KEY)) {
       return isContract ? STATUS_KEY : EVENT_KEY;
+    } else if (lowerCaseField.equals(BillingResource.BILLING_STATUS_KEY.toLowerCase())) {
+      return BillingResource.AMOUNT_KEY;
     } else if (lowerCaseField.equals(SCHEDULE_TYPE_KEY.toLowerCase())) {
       return SCHEDULE_RECURRENCE_KEY;
     }

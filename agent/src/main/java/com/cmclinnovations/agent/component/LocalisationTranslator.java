@@ -39,6 +39,20 @@ public class LocalisationTranslator {
   }
 
   /**
+   * Retrieves the localised billing status.
+   *
+   * @param amountVal The value of the bill amount.
+   */
+  public static String getBillingStatus(String amountVal) {
+    return switch (amountVal) {
+      case "-":
+        yield LocalisationResource.BILLING_STATUS_PENDING_APPROVAL_KEY;
+      default:
+        yield LocalisationResource.BILLING_STATUS_READY_FOR_PAYMENT_KEY;
+    };
+  }
+
+  /**
    * Retrieves the localised event status.
    *
    * @param event The event of interest.
@@ -97,7 +111,8 @@ public class LocalisationTranslator {
     return switch (recurrence) {
       case null -> getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY);
       case "" -> getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY);
-      case LifecycleResource.RECURRENCE_FIXED_DATE_TASK -> getMessage(LocalisationResource.LABEL_FIXED_DATE_SERVICE_KEY);
+      case LifecycleResource.RECURRENCE_FIXED_DATE_TASK ->
+        getMessage(LocalisationResource.LABEL_FIXED_DATE_SERVICE_KEY);
       case LifecycleResource.RECURRENCE_DAILY_TASK -> getMessage(LocalisationResource.LABEL_SINGLE_SERVICE_KEY);
       case LifecycleResource.RECURRENCE_ALT_DAY_TASK ->
         getMessage(LocalisationResource.LABEL_ALTERNATE_DAY_SERVICE_KEY);
