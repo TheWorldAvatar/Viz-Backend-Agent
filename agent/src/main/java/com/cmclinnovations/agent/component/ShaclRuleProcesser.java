@@ -94,7 +94,7 @@ public class ShaclRuleProcesser {
      * clause.
      *
      * @param targetQuery The input SPARQL query string.
-     * @param iris List of IRI strings.
+     * @param iris        List of IRI strings.
      */
     public String genSelectQuery(String targetQuery, List<String> iris) {
         LOGGER.debug("Constructing a SELECT query from the WHERE clause....");
@@ -105,7 +105,8 @@ public class ShaclRuleProcesser {
         StringBuilder selectQueryBuilder = new StringBuilder();
         selectQueryBuilder.append("SELECT *").append(System.lineSeparator());
         String whereClause = query.getQueryPattern().toString();
-        selectQueryBuilder.append("WHERE ").append(whereClause.substring(0, whereClause.length() - 1) + this.getIriClause(iris));
+        selectQueryBuilder.append("WHERE ")
+                .append(whereClause.substring(0, whereClause.length() - 1) + this.getIriClause(iris));
         return selectQueryBuilder.toString();
     }
 
@@ -149,7 +150,7 @@ public class ShaclRuleProcesser {
      * Generates a SPARQL DELETE WHERE statement based on the CONSTRUCT template and
      * data to replace their associated variables in the query.
      *
-     * @param tripleList The list of triples in the CONSTRUCT template.
+     * @param tripleList  The list of triples in the CONSTRUCT template.
      * @param instanceIri The instance IRI string.
      */
 
@@ -162,7 +163,7 @@ public class ShaclRuleProcesser {
      * data to replace their associated variables in the query.
      *
      * @param tripleList The list of triples in the CONSTRUCT template.
-     * @param iris List of IRI strings.
+     * @param iris       List of IRI strings.
      */
     public String genDeleteWhereQuery(List<Triple> tripleList, List<String> iris) {
         LOGGER.debug("Generating the INSERT DATA content....");
@@ -185,13 +186,14 @@ public class ShaclRuleProcesser {
     }
 
     /**
-     * Generates a SPARQL VALUES clause that enforce variable "this" to take values of a list of IRIs.
+     * Generates a SPARQL VALUES clause that enforce variable "this" to take values
+     * of a list of IRIs.
      *
      * @param iris List of IRI strings.
      */
 
     private String getIriClause(List<String> iris) {
-        return "\n"+QueryResource.values("this", iris) +"}";
+        return "\n" + QueryResource.values(QueryResource.THIS_KEY, iris) + "}";
     }
 
     /**

@@ -134,7 +134,7 @@ public class AddService {
     Model otherRules = this.kgService.getShaclRules(resourceID, false);
     if (response.getStatusCode() == HttpStatus.OK && (!sparqlConstructRules.isEmpty() || !otherRules.isEmpty())) {
       LOGGER.info("Detected rules! Instantiating inferred instances to endpoint...");
-      this.kgService.execShaclRules(sparqlConstructRules, Rdf.iri(instanceIri));
+      this.kgService.execShaclRules(sparqlConstructRules, Rdf.iri(instanceIri).getQueryString());
 
       Model dataModel = this.kgService.readStringModel(jsonString, Lang.JSONLD);
       Model inferredData = RuleUtil.executeRules(dataModel, otherRules, null, null);

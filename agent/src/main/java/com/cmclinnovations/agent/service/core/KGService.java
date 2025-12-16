@@ -200,11 +200,13 @@ public class KGService {
 
   /**
    * Retrieve optional parameters of a resource based on its corresponding SHACL.
-   * @param resourceID             The target resource identifier for the instance.
+   * 
+   * @param resourceID The target resource identifier for the instance.
    */
   public Set<String> getSparqlOptionalParameters(String resourceId) {
     switch (resourceId) {
-      case LifecycleResource.SCHEDULE_RESOURCE, LifecycleResource.LIFECYCLE_RESOURCE, LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE:
+      case LifecycleResource.SCHEDULE_RESOURCE, LifecycleResource.LIFECYCLE_RESOURCE,
+          LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE:
         // these are special resources where all properties are mandatory
         return Collections.emptySet();
       default:
@@ -275,20 +277,21 @@ public class KGService {
   /**
    * Executes the SHACL SPARQL construct rules on all available endpoints.
    * 
-   * @param rules The target SHACL rules.
+   * @param rules       The target SHACL rules.
+   * @param instanceIri The instance IRI string.
    */
-  public void execShaclRules(Model rules, Iri instanceIri) {
+  public void execShaclRules(Model rules, String instanceIri) {
     LOGGER.info("Executing SHACL SPARQL construct rules directly in the knowledge graph...");
     Queue<String> constructQueries = this.shaclRuleProcesser.getConstructQueries(rules);
     while (!constructQueries.isEmpty()) {
       String currentQuery = constructQueries.poll();
       // Execute a SELECT query to retrieve all possible variables and their values in
       // the WHERE clause
-      String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery, instanceIri.getQueryString());
+      String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery, instanceIri);
       Queue<SparqlBinding> results = this.query(queryForExecution, SparqlEndpointType.MIXED);
       List<Triple> tripleList = this.shaclRuleProcesser.genConstructTriples(currentQuery);
       // Generate the delete where query templates
-      String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, instanceIri.getQueryString());
+      String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, instanceIri);
       // Using the results of the SELECT query as replacements to the CONSTRUCT
       // clause, generate the INSERT DATA query
       String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(tripleList, results);
