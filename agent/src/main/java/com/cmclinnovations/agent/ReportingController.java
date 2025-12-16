@@ -62,8 +62,8 @@ public class ReportingController {
     String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
     LOGGER.info("Received request to retrieve number of scheduled contract task...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrenceCount(type, startTimestamp, endTimestamp, this.IS_CLOSED, this.IS_BILLING,
-          allRequestParams);
+      return this.lifecycleTaskService.getOccurrenceCount(type, startTimestamp, endTimestamp, this.IS_CLOSED,
+          this.IS_BILLING, allRequestParams);
     });
   }
 
@@ -82,7 +82,8 @@ public class ReportingController {
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, this.IS_CLOSED, this.IS_BILLING,
+      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, this.IS_CLOSED,
+          this.IS_BILLING,
           new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
     });
   }
@@ -117,6 +118,18 @@ public class ReportingController {
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
       List<SelectOption> options = this.getService.getAllFilterOptions(type, search);
       return this.responseEntityBuilder.success(options);
+    });
+  }
+
+  /**
+   * Verifies if the pricing model has been assigned to the contract.
+   */
+  @GetMapping("/transaction/contract/{id}")
+  public ResponseEntity<StandardApiResponse<?>> checkHasContractPricingModel(@PathVariable String id) {
+    LOGGER.info("Received request to get the customer accounts...");
+    return this.concurrencyService.executeInOptimisticReadLock(BillingResource.PAYMENT_OBLIGATION, () -> {
+      boolean hasContractPricingModel = this.billingService.getHasContractPricingModel(id);
+      return this.responseEntityBuilder.success(id, Boolean.toString(hasContractPricingModel));
     });
   }
 

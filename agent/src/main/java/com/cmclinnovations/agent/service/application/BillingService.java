@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.service.application;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -105,6 +106,17 @@ public class BillingService {
     instance.put(QueryResource.ACCOUNT_ID_KEY, accountInstance.getFieldValue(QueryResource.IRI_KEY));
     instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
     return this.updateService.update(contractId, BillingResource.TRANSACTION_RECORD_RESOURCE, null, instance);
+  }
+
+  /**
+   * Checks if a pricing model has been assigned to the specified contract.
+   * 
+   * @param id Contract ID.
+   */
+  public boolean getHasContractPricingModel(String id) {
+    Queue<SparqlBinding> instance = this.lifecycleQueryService.getInstances(FileService.CONTRACT_PRICING_QUERY_RESOURCE,
+        id);
+    return instance.size() > 0;
   }
 
   /**
