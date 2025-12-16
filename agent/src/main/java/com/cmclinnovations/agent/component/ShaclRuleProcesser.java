@@ -82,12 +82,20 @@ public class ShaclRuleProcesser {
      * clause.
      *
      * @param targetQuery The input SPARQL query string.
+     * @param instanceIri The instance IRI string.
      */
 
     public String genSelectQuery(String targetQuery, String instanceIri) {
         return this.genSelectQuery(targetQuery, List.of(instanceIri));
     }
 
+    /**
+     * Generates a SELECT SPARQL query from the CONSTRUCT query using the same WHERE
+     * clause.
+     *
+     * @param targetQuery The input SPARQL query string.
+     * @param iris List of IRI strings.
+     */
     public String genSelectQuery(String targetQuery, List<String> iris) {
         LOGGER.debug("Constructing a SELECT query from the WHERE clause....");
         Query query = QueryFactory.create(targetQuery);
@@ -142,12 +150,20 @@ public class ShaclRuleProcesser {
      * data to replace their associated variables in the query.
      *
      * @param tripleList The list of triples in the CONSTRUCT template.
+     * @param instanceIri The instance IRI string.
      */
 
     public String genDeleteWhereQuery(List<Triple> tripleList, String instanceIri) {
         return this.genDeleteWhereQuery(tripleList, List.of(instanceIri));
     }
 
+    /**
+     * Generates a SPARQL DELETE WHERE statement based on the CONSTRUCT template and
+     * data to replace their associated variables in the query.
+     *
+     * @param tripleList The list of triples in the CONSTRUCT template.
+     * @param iris List of IRI strings.
+     */
     public String genDeleteWhereQuery(List<Triple> tripleList, List<String> iris) {
         LOGGER.debug("Generating the INSERT DATA content....");
         StringBuilder deleteContentBuilder = new StringBuilder();
@@ -167,6 +183,12 @@ public class ShaclRuleProcesser {
                 .append(deleteContents).append(this.getIriClause(iris))
                 .toString();
     }
+
+    /**
+     * Generates a SPARQL VALUES clause that enforce variable "this" to take values of a list of IRIs.
+     *
+     * @param iris List of IRI strings.
+     */
 
     private String getIriClause(List<String> iris) {
         return "\n"+QueryResource.values("this", iris) +"}";
