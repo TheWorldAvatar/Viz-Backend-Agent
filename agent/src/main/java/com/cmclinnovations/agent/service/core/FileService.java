@@ -59,6 +59,8 @@ public class FileService {
       + "jsonld/accounts/transaction_record.jsonld";
   public static final String TRANSACTION_INVOICE_JSON_LD_RESOURCE = CLASS_PATH_DIR
       + "jsonld/accounts/individual_transaction.jsonld";
+  public static final String NON_BILLABLE_INVOICE_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/accounts/nonbillable_transaction.jsonld";
   public static final String OCCURRENCE_INSTANT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_instant.jsonld";
   public static final String OCCURRENCE_LINK_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_link.jsonld";
   public static final String SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/schedule.jsonld";

@@ -123,10 +123,12 @@ public class BillingService {
    * Creates an instance for the invoice and individual transaction with the
    * required details.
    * 
-   * @param instance Request parameters containing the invoice parameters.
+   * @param resourceId Resource should either be generic or nonbillable
+   *                   transaction.
+   * @param instance   Request parameters containing the invoice parameters.
    */
-  public ResponseEntity<StandardApiResponse<?>> genInvoiceInstance(Map<String, Object> instance) {
-    return this.addService.instantiate(BillingResource.TRANSACTION_BILL_RESOURCE, instance);
+  public ResponseEntity<StandardApiResponse<?>> genInvoiceInstance(String resourceId, Map<String, Object> instance) {
+    return this.addService.instantiate(resourceId, instance);
   }
 
   /**

@@ -8,6 +8,7 @@ public class BillingResource {
   public static final String CUSTOMER_ACCOUNT_PRICING_RESOURCE = "customer pricing plans";
   public static final String TRANSACTION_RECORD_RESOURCE = "transaction record";
   public static final String TRANSACTION_BILL_RESOURCE = "individual transaction";
+  public static final String TRANSACTION_NONBILLABLE_BILL_RESOURCE = "nonbillable transaction";
 
   public static final String AMOUNT_KEY = "amount";
   public static final String BILLING_STATUS_KEY = "billingStatus";
