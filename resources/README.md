@@ -520,7 +520,7 @@ base:TransactionShape
       ?invoice p2p-o-inv:hasInvoiceLine ?invoice_line_instance.
       ?invoice_line_instance p2p-o-doc-line:lineNote "Service"^^xsd:string;
         p2p-o-doc-line:hasLineNetAmount ?invoice_line_amount_instance.
-      ?invoice_line_amount_instance fibo-fnd-acc-cur:hasAmount ?service_price.
+      ?invoice_line_amount_instance cmns-qtu:hasNumericValue ?service_price.
     } WHERE { 
       ?this fibo-fnd-rel-rel:involves ?event_id;
         dc-terms:identifier ?id.
@@ -568,7 +568,7 @@ base:TransactionShape
       ?invoice cmns-doc:isAbout ?this;
         p2p-o-inv:hasInvoiceLine ?invoice_line_instance.
       ?invoice_line_instance p2p-o-doc-line:lineNote "Service"^^xsd:string;
-        p2p-o-doc-line:hasLineNetAmount/fibo-fnd-acc-cur:hasAmount ?service_price.
+        p2p-o-doc-line:hasLineNetAmount/cmns-qtu:hasNumericValue ?service_price.
       OPTIONAL{
         SELECT ?invoice (SUM(?charge) AS ?temp_add_charges) WHERE {
           ?invoice cmns-doc:isAbout ?this;
