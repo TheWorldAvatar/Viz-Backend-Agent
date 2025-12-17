@@ -957,6 +957,10 @@ To generate the invoice for a specific task, users must send a `POST` request wi
 
 Users can also send  a `POST` request to `<baseURL>/vis-backend-agent/report/transaction/nonbillable` to exclude a transaction from billing, which will require the `event` key along with the corresponding closed event instance.
 
+#### 2.7.2.2 Bills
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/invoice/{id}` endpoint to get the bill details for the target task, where `id` is the task's identifier. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1172-individualtransaction).
+
 #### 2.7.3 Closed activities
 
 This endpoint serves to retrieve all closed activities within the target date range for the purpose of billing. Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/bill?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}&sort_by={sortby}` endpoint, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.

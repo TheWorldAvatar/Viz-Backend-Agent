@@ -157,6 +157,18 @@ public class ReportingController {
   }
 
   /**
+   * Retrieves the bill for the target task.
+   */
+  @GetMapping("/transaction/invoice/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getBill(@PathVariable String id) {
+    LOGGER.info("Received request to get the bill for a task...");
+    return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
+      return this.responseEntityBuilder.success(
+          List.of(this.billingService.getBill(id)));
+    });
+  }
+
+  /**
    * Creates a customer instance, along with a new customer account.
    */
   @PostMapping("/account")
@@ -202,7 +214,8 @@ public class ReportingController {
   }
 
   /**
-   * Creates an invoice instance along with a transaction record for non-billable transactions.
+   * Creates an invoice instance along with a transaction record for non-billable
+   * transactions.
    */
   @PostMapping("/transaction/nonbillable")
   public ResponseEntity<StandardApiResponse<?>> createNonBillableInvoice(@RequestBody Map<String, Object> instance) {

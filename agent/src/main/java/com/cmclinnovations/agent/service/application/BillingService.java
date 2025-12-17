@@ -1,6 +1,8 @@
 package com.cmclinnovations.agent.service.application;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -11,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.response.InvoiceLine;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.UpdateService;
@@ -19,6 +22,7 @@ import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 
@@ -129,6 +133,32 @@ public class BillingService {
    */
   public ResponseEntity<StandardApiResponse<?>> genInvoiceInstance(String resourceId, Map<String, Object> instance) {
     return this.addService.instantiate(resourceId, instance);
+  }
+
+  /**
+   * Retrieves the bill for the specific task.
+   * 
+   * @param id Target task ID.
+   */
+  public Map<String, Object> getBill(String id) {
+    Queue<SparqlBinding> billItemsInstances = this.lifecycleQueryService.getInstances(
+        FileService.ACCOUNT_BILL_QUERY_RESOURCE, id);
+    Map<String, Object> billItems = new HashMap<>();
+    while (!billItemsInstances.isEmpty()) {
+      SparqlBinding currentBillItem = billItemsInstances.poll();
+      billItems.putIfAbsent(BillingResource.PRICE_KEY, currentBillItem.getFieldValue(BillingResource.PRICE_KEY));
+      billItems.putIfAbsent(BillingResource.AMOUNT_KEY, currentBillItem.getFieldValue(BillingResource.AMOUNT_KEY));
+      String chargeType = currentBillItem.containsField(BillingResource.CHARGE_KEY) ? BillingResource.CHARGE_KEY
+          : BillingResource.DISCOUNT_KEY;
+      // List in map should be updated in place, and type cast may create a copy that
+      // overwrites this behavior
+      List<InvoiceLine> chargesLines = (List<InvoiceLine>) billItems.computeIfAbsent(chargeType,
+          k -> new ArrayList<>());
+      InvoiceLine line = new InvoiceLine(currentBillItem.getFieldValue(chargeType),
+          currentBillItem.getFieldValue(ShaclResource.DESCRIPTION_PROPERTY));
+      chargesLines.add(line);
+    }
+    return billItems;
   }
 
   /**
