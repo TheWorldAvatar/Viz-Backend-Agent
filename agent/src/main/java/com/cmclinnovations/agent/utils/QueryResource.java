@@ -341,7 +341,8 @@ public class QueryResource {
             builder.append(valuesClause);
         } else if (field.equals(BillingResource.AMOUNT_KEY)
                 && (filters.contains("\"" + LocalisationResource.BILLING_STATUS_PENDING_APPROVAL_KEY + "\"")
-                        || filters.contains("\"" + LocalisationResource.BILLING_STATUS_READY_FOR_PAYMENT_KEY + "\""))) {
+                        || filters.contains("\"" + LocalisationResource.BILLING_STATUS_READY_FOR_PAYMENT_KEY + "\"")
+                        || filters.contains("\"" + LocalisationResource.BILLING_STATUS_NON_BILLABLE_KEY + "\""))) {
             String valuesClause = QueryResource.values(BillingResource.BILLING_STATUS_KEY, filters);
             builder.append(query)
                     .append(valuesClause);
