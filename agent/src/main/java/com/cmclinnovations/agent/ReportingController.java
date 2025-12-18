@@ -62,8 +62,8 @@ public class ReportingController {
     String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
     LOGGER.info("Received request to retrieve number of scheduled contract task...");
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrenceCount(type, startTimestamp, endTimestamp, this.IS_CLOSED, this.IS_BILLING,
-          allRequestParams);
+      return this.lifecycleTaskService.getOccurrenceCount(type, startTimestamp, endTimestamp, this.IS_CLOSED,
+          this.IS_BILLING, allRequestParams);
     });
   }
 
@@ -82,7 +82,8 @@ public class ReportingController {
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, this.IS_CLOSED, this.IS_BILLING,
+      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, this.IS_CLOSED,
+          this.IS_BILLING,
           new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
     });
   }
@@ -121,6 +122,18 @@ public class ReportingController {
   }
 
   /**
+   * Verifies if the pricing model has been assigned to the contract.
+   */
+  @GetMapping("/transaction/contract/{id}")
+  public ResponseEntity<StandardApiResponse<?>> checkHasContractPricingModel(@PathVariable String id) {
+    LOGGER.info("Received request to get the customer accounts...");
+    return this.concurrencyService.executeInOptimisticReadLock(BillingResource.PAYMENT_OBLIGATION, () -> {
+      boolean hasContractPricingModel = this.billingService.getHasContractPricingModel(id);
+      return this.responseEntityBuilder.success(id, Boolean.toString(hasContractPricingModel));
+    });
+  }
+
+  /**
    * Retrieves the form template for the pricing model for the target task if
    * available.
    */
@@ -140,6 +153,18 @@ public class ReportingController {
     LOGGER.info("Received request to get the form template for a transaction invoice...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
       return this.getService.getForm(BillingResource.TRANSACTION_BILL_RESOURCE, false);
+    });
+  }
+
+  /**
+   * Retrieves the bill for the target task.
+   */
+  @GetMapping("/transaction/invoice/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getBill(@PathVariable String id) {
+    LOGGER.info("Received request to get the bill for a task...");
+    return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
+      return this.responseEntityBuilder.success(
+          List.of(this.billingService.getBill(id)));
     });
   }
 
@@ -184,7 +209,19 @@ public class ReportingController {
   public ResponseEntity<StandardApiResponse<?>> createInvoice(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to create a new invoice and transaction...");
     return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
-      return this.billingService.genInvoiceInstance(instance);
+      return this.billingService.genInvoiceInstance(BillingResource.TRANSACTION_BILL_RESOURCE, instance);
+    });
+  }
+
+  /**
+   * Creates an invoice instance along with a transaction record for non-billable
+   * transactions.
+   */
+  @PostMapping("/transaction/nonbillable")
+  public ResponseEntity<StandardApiResponse<?>> createNonBillableInvoice(@RequestBody Map<String, Object> instance) {
+    LOGGER.info("Received request to create a non-billable invoice and transaction...");
+    return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
+      return this.billingService.genInvoiceInstance(BillingResource.TRANSACTION_NONBILLABLE_BILL_RESOURCE, instance);
     });
   }
 }

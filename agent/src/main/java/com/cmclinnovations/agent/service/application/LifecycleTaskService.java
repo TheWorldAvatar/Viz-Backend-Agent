@@ -29,6 +29,7 @@ import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
+import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
@@ -124,6 +125,8 @@ public class LifecycleTaskService {
         parsedFilters);
     if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
       return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();
+    } else if (field.equals(BillingResource.BILLING_STATUS_KEY)) {
+      return options.stream().map(option -> LocalisationTranslator.getBillingStatus(option)).toList();
     } else if (originalField.equals(LifecycleResource.EVENT_KEY)) {
       return options.stream().map(option -> LocalisationTranslator.getEvent(option)).toList();
     }
@@ -345,7 +348,8 @@ public class LifecycleTaskService {
     String addQuery = lifecycleStatements[1];
     // Billing requires the extra variable but does not need dispatch details
     if (isBilling) {
-      varSequences.put(QueryResource.AMOUNT_VAR, List.of(MIN_INDEX, 4));
+      varSequences.put(QueryResource.BILLING_STATUS_VAR, List.of(MIN_INDEX, 4));
+      varSequences.put(QueryResource.AMOUNT_VAR, List.of(MIN_INDEX, 5));
     } else {
       addQuery += this.parseEventOccurrenceQuery(-4, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
     }

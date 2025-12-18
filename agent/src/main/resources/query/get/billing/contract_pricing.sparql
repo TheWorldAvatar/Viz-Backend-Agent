@@ -1,0 +1,13 @@
+PREFIX dc-terms:          <http://purl.org/dc/terms/>
+PREFIX fibo-fnd-rel-rel:  <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+PREFIX fibo-fnd-pas-psch: <https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/>
+PREFIX fibo-fbc-fi-ip:    <https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/InstrumentPricing/>
+
+SELECT ?iri
+WHERE {
+  ?iri a fibo-fnd-pas-psch:PaymentObligation ;
+    dc-terms:identifier "[target]" ;
+    fibo-fnd-rel-rel:mandates ?pricing_model .
+
+  ?pricing_model a <https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/InstrumentPricing/PricingModel> . 
+}

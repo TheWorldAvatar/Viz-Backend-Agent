@@ -930,6 +930,8 @@ These endpoints allow users to view and update the transaction record and pricin
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/model/{id}` endpoint to get the form template of the transaction record and pricing model associated with the target contract, where `id` is the identifier for the target contract. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1171-paymentobligation).
 
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/contract/{id}` endpoint to check if a pricing model has been assigned to the target contract, where `id` is the identifier for the target contract.
+
 To update the pricing model and transaction record of a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/transaction/model`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
 
 ```json
@@ -952,6 +954,12 @@ To generate the invoice for a specific task, users must send a `POST` request wi
   "event": "closed event instance"
 }
 ```
+
+Users can also send  a `POST` request to `<baseURL>/vis-backend-agent/report/transaction/nonbillable` to exclude a transaction from billing, which will require the `event` key along with the corresponding closed event instance.
+
+#### 2.7.2.2 Bills
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/invoice/{id}` endpoint to get the bill details for the target task, where `id` is the task's identifier. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1172-individualtransaction).
 
 #### 2.7.3 Closed activities
 

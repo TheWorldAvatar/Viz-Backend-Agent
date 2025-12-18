@@ -148,6 +148,8 @@ public class LifecycleResource {
         return FileService.TRANSACTION_RECORD_JSON_LD_RESOURCE;
       case BillingResource.TRANSACTION_BILL_RESOURCE:
         return FileService.TRANSACTION_INVOICE_JSON_LD_RESOURCE;
+      case BillingResource.TRANSACTION_NONBILLABLE_BILL_RESOURCE:
+        return FileService.NON_BILLABLE_INVOICE_JSON_LD_RESOURCE;
       case LifecycleResource.CANCEL_RESOURCE:
       case LifecycleResource.REPORT_RESOURCE:
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
@@ -252,6 +254,8 @@ public class LifecycleResource {
     String lowerCaseField = field.toLowerCase();
     if (lowerCaseField.equals(STATUS_KEY)) {
       return isContract ? STATUS_KEY : EVENT_KEY;
+    } else if (lowerCaseField.equals(BillingResource.BILLING_STATUS_KEY.toLowerCase())) {
+      return BillingResource.AMOUNT_KEY;
     } else if (lowerCaseField.equals(SCHEDULE_TYPE_KEY.toLowerCase())) {
       return SCHEDULE_RECURRENCE_KEY;
     }

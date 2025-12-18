@@ -1,7 +1,10 @@
 package com.cmclinnovations.agent.service.application;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -10,19 +13,23 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.response.InvoiceLine;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.AddService;
+import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @Service
 public class BillingService {
   private final AddService addService;
+  private final UpdateService updateService;
   final DateTimeService dateTimeService;
   public final LifecycleQueryService lifecycleQueryService;
 
@@ -31,9 +38,10 @@ public class BillingService {
   /**
    * Constructs a new service with the following dependencies.
    */
-  public BillingService(AddService addService, DateTimeService dateTimeService,
+  public BillingService(AddService addService, UpdateService updateService, DateTimeService dateTimeService,
       LifecycleQueryService lifecycleQueryService) {
     this.addService = addService;
+    this.updateService = updateService;
     this.dateTimeService = dateTimeService;
     this.lifecycleQueryService = lifecycleQueryService;
   }
@@ -101,16 +109,56 @@ public class BillingService {
         .getInstance(FileService.ACCOUNT_PRICING_QUERY_RESOURCE, pricingModel);
     instance.put(QueryResource.ACCOUNT_ID_KEY, accountInstance.getFieldValue(QueryResource.IRI_KEY));
     instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
-    return this.addService.instantiate(BillingResource.TRANSACTION_RECORD_RESOURCE, instance);
+    return this.updateService.update(contractId, BillingResource.TRANSACTION_RECORD_RESOURCE, null, instance);
   }
+
   /**
-   * Creates an instance for the invoice and individual transaction with the required details.
+   * Checks if a pricing model has been assigned to the specified contract.
    * 
-   * @param instance Request parameters containing the invoice parameters.
+   * @param id Contract ID.
    */
-  public ResponseEntity<StandardApiResponse<?>> genInvoiceInstance(Map<String, Object> instance) {
-    instance.remove(QueryResource.ID_KEY); // remove contract ID, let code generate new ID
-    return this.addService.instantiate(BillingResource.TRANSACTION_BILL_RESOURCE, instance);
+  public boolean getHasContractPricingModel(String id) {
+    Queue<SparqlBinding> instance = this.lifecycleQueryService.getInstances(FileService.CONTRACT_PRICING_QUERY_RESOURCE,
+        id);
+    return instance.size() == 1;
+  }
+
+  /**
+   * Creates an instance for the invoice and individual transaction with the
+   * required details.
+   * 
+   * @param resourceId Resource should either be generic or nonbillable
+   *                   transaction.
+   * @param instance   Request parameters containing the invoice parameters.
+   */
+  public ResponseEntity<StandardApiResponse<?>> genInvoiceInstance(String resourceId, Map<String, Object> instance) {
+    return this.addService.instantiate(resourceId, instance);
+  }
+
+  /**
+   * Retrieves the bill for the specific task.
+   * 
+   * @param id Target task ID.
+   */
+  public Map<String, Object> getBill(String id) {
+    Queue<SparqlBinding> billItemsInstances = this.lifecycleQueryService.getInstances(
+        FileService.ACCOUNT_BILL_QUERY_RESOURCE, id);
+    Map<String, Object> billItems = new HashMap<>();
+    while (!billItemsInstances.isEmpty()) {
+      SparqlBinding currentBillItem = billItemsInstances.poll();
+      billItems.putIfAbsent(BillingResource.PRICE_KEY, currentBillItem.getFieldValue(BillingResource.PRICE_KEY));
+      billItems.putIfAbsent(BillingResource.AMOUNT_KEY, currentBillItem.getFieldValue(BillingResource.AMOUNT_KEY));
+      String chargeType = currentBillItem.containsField(BillingResource.CHARGE_KEY) ? BillingResource.CHARGE_KEY
+          : BillingResource.DISCOUNT_KEY;
+      // List in map should be updated in place, and type cast may create a copy that
+      // overwrites this behavior
+      List<InvoiceLine> chargesLines = (List<InvoiceLine>) billItems.computeIfAbsent(chargeType,
+          k -> new ArrayList<>());
+      InvoiceLine line = new InvoiceLine(currentBillItem.getFieldValue(chargeType),
+          currentBillItem.getFieldValue(ShaclResource.DESCRIPTION_PROPERTY));
+      chargesLines.add(line);
+    }
+    return billItems;
   }
 
   /**
