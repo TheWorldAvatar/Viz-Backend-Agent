@@ -106,7 +106,8 @@ public class ShaclRuleProcesser {
         selectQueryBuilder.append("SELECT *").append(System.lineSeparator());
         String whereClause = query.getQueryPattern().toString();
         selectQueryBuilder.append("WHERE ")
-                .append(whereClause.substring(0, whereClause.length() - 1) + this.getIriClause(iris));
+                .append(whereClause.substring(0, whereClause.length() - 1))
+                .append(this.getIriClause(QueryResource.THIS_KEY, iris)).append("}");
         return selectQueryBuilder.toString();
     }
 
@@ -165,7 +166,7 @@ public class ShaclRuleProcesser {
      * @param iris       List of IRI strings.
      */
     public String genDeleteWhereQuery(List<Triple> tripleList, List<String> iris, List<SparqlBinding> results) {
-        LOGGER.debug("Generating the INSERT DATA content....");
+        LOGGER.debug("Generating the DELETE content....");
         StringBuilder deleteContentBuilder = new StringBuilder();
 
         tripleList.forEach(triple -> {
@@ -180,8 +181,8 @@ public class ShaclRuleProcesser {
         String deleteContents = deleteContentBuilder.toString();
         return new StringBuilder("DELETE{")
                 .append(deleteContents).append("} WHERE{")
-                .append(deleteContents).append(this.getIriClause(iris))
-                .toString();
+                .append(deleteContents).append(this.getIriClause(QueryResource.THIS_KEY, iris))
+                .append("}").toString();
     }
 
     /**
@@ -191,8 +192,8 @@ public class ShaclRuleProcesser {
      * @param iris List of IRI strings.
      */
 
-    private String getIriClause(List<String> iris) {
-        return "\n" + QueryResource.values(QueryResource.THIS_KEY, iris) + "}";
+    private String getIriClause(String field, List<String> iris) {
+        return "\n" + QueryResource.values(field, iris);
     }
 
     /**
