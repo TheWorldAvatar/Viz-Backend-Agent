@@ -2,9 +2,12 @@ package com.cmclinnovations.agent.component;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.jena.graph.Node;
@@ -169,6 +172,8 @@ public class ShaclRuleProcesser {
         LOGGER.debug("Generating the DELETE content....");
         StringBuilder deleteContentBuilder = new StringBuilder();
 
+        Set<String> allVar = new HashSet<>();
+
         tripleList.forEach(triple -> {
             Node subject = triple.getSubject();
             Node pred = triple.getPredicate();
@@ -177,12 +182,46 @@ public class ShaclRuleProcesser {
             String predicateForm = parseNode(pred, null);
             String objectForm = parseNode(object, null);
             StringResource.appendTriple(deleteContentBuilder, subjectForm, predicateForm, objectForm);
+            // store all variables needed
+            allVar.add(this.getVarName(subject));
+            allVar.add(this.getVarName(pred));
+            allVar.add(this.getVarName(object));
         });
+        allVar.remove(null);
+
+        // filter all existing IRIs
+
+        Map<String, Set<String>> iriMap = new HashMap<>();
+
+        for (SparqlBinding currentData : results) {
+            for (String field : currentData.getFields()) {
+                if (allVar.contains(field)) {
+                    SparqlResponseField responseField = currentData.getFieldResponse(field);
+                    String fieldValue = responseField.value();
+                    if (fieldValue != null && responseField.type().equals("uri")) {
+                        iriMap.computeIfAbsent(field, k -> new HashSet<>()).add(Rdf.iri(fieldValue).getQueryString());
+                    }
+                }
+            }
+        }
+
         String deleteContents = deleteContentBuilder.toString();
-        return new StringBuilder("DELETE{")
+        StringBuilder deleteBuilder = new StringBuilder("DELETE{")
                 .append(deleteContents).append("} WHERE{")
-                .append(deleteContents).append(this.getIriClause(QueryResource.THIS_KEY, iris))
-                .append("}").toString();
+                .append(deleteContents);
+
+        iriMap.forEach((field, values) -> {
+            deleteBuilder.append(this.getIriClause(field, new ArrayList<>(values)));
+        });
+
+        return deleteBuilder.append("}").toString();
+    }
+
+    private String getVarName(Node targetNode) {
+        if (targetNode.isVariable()) {
+            return targetNode.getName();
+        }
+        return null;
     }
 
     /**
