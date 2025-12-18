@@ -20,7 +20,7 @@
       "@type": "iri",
       "prefix": "https://theworldavatar.io/kg/account/record/transaction/amount"
     },
-    "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasAmount": -1
+    "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasAmount": 0
   },
   "@reverse": {
     "https://www.omg.org/spec/Commons/Documents/isAbout": {
