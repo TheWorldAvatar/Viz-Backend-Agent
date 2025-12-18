@@ -288,10 +288,10 @@ public class KGService {
       // Execute a SELECT query to retrieve all possible variables and their values in
       // the WHERE clause
       String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery, instanceIri);
-      Queue<SparqlBinding> results = this.query(queryForExecution, SparqlEndpointType.MIXED);
+      List<SparqlBinding> results = this.query(queryForExecution, SparqlEndpointType.MIXED).stream().collect(Collectors.toList());
       List<Triple> tripleList = this.shaclRuleProcesser.genConstructTriples(currentQuery);
       // Generate the delete where query templates
-      String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, instanceIri);
+      String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, instanceIri, results);
       // Using the results of the SELECT query as replacements to the CONSTRUCT
       // clause, generate the INSERT DATA query
       String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(tripleList, results);

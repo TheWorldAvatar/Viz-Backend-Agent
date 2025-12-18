@@ -129,11 +129,10 @@ public class ShaclRuleProcesser {
      * @param data       Query results containing data to be replaced in the
      *                   CONSTRUCT query.
      */
-    public String genInsertDataQuery(List<Triple> tripleList, Queue<SparqlBinding> data) {
+    public String genInsertDataQuery(List<Triple> tripleList, List<SparqlBinding> data) {
         LOGGER.debug("Generating the INSERT DATA content....");
         StringBuilder insertBuilder = new StringBuilder("INSERT DATA {");
-        while (!data.isEmpty()) {
-            SparqlBinding currentData = data.poll();
+        for (SparqlBinding currentData : data) {
             tripleList.forEach(triple -> {
                 Node subject = triple.getSubject();
                 Node pred = triple.getPredicate();
@@ -154,8 +153,8 @@ public class ShaclRuleProcesser {
      * @param instanceIri The instance IRI string.
      */
 
-    public String genDeleteWhereQuery(List<Triple> tripleList, String instanceIri) {
-        return this.genDeleteWhereQuery(tripleList, List.of(instanceIri));
+    public String genDeleteWhereQuery(List<Triple> tripleList, String instanceIri, List<SparqlBinding> results) {
+        return this.genDeleteWhereQuery(tripleList, List.of(instanceIri), results);
     }
 
     /**
@@ -165,7 +164,7 @@ public class ShaclRuleProcesser {
      * @param tripleList The list of triples in the CONSTRUCT template.
      * @param iris       List of IRI strings.
      */
-    public String genDeleteWhereQuery(List<Triple> tripleList, List<String> iris) {
+    public String genDeleteWhereQuery(List<Triple> tripleList, List<String> iris, List<SparqlBinding> results) {
         LOGGER.debug("Generating the INSERT DATA content....");
         StringBuilder deleteContentBuilder = new StringBuilder();
 
