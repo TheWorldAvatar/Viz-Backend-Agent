@@ -153,22 +153,12 @@ public class ShaclRuleProcesser {
      * Generates a SPARQL DELETE WHERE statement based on the CONSTRUCT template and
      * data to replace their associated variables in the query.
      *
-     * @param tripleList  The list of triples in the CONSTRUCT template.
-     * @param instanceIri The instance IRI string.
-     */
-
-    public String genDeleteWhereQuery(List<Triple> tripleList, String instanceIri, List<SparqlBinding> results) {
-        return this.genDeleteWhereQuery(tripleList, List.of(instanceIri), results);
-    }
-
-    /**
-     * Generates a SPARQL DELETE WHERE statement based on the CONSTRUCT template and
-     * data to replace their associated variables in the query.
-     *
      * @param tripleList The list of triples in the CONSTRUCT template.
-     * @param iris       List of IRI strings.
+     * @param results    Query results containing data to be replaced in the
+     *                   CONSTRUCT query.
      */
-    public String genDeleteWhereQuery(List<Triple> tripleList, List<String> iris, List<SparqlBinding> results) {
+
+    public String genDeleteWhereQuery(List<Triple> tripleList, List<SparqlBinding> results) {
         LOGGER.debug("Generating the DELETE content....");
         StringBuilder deleteContentBuilder = new StringBuilder();
 
