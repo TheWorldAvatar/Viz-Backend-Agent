@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.27.1
+
+- Fixed to not return discounts if both discounts and charges are not included in bill
+
 ## 1.27.0
 
 - Refactored transaction record route to be updated over being added
