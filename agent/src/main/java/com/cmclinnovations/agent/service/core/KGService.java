@@ -18,7 +18,6 @@ import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -291,7 +290,7 @@ public class KGService {
       List<SparqlBinding> results = this.query(queryForExecution, SparqlEndpointType.MIXED).stream().collect(Collectors.toList());
       List<Triple> tripleList = this.shaclRuleProcesser.genConstructTriples(currentQuery);
       // Generate the delete where query templates
-      String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, instanceIri, results);
+      String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, results);
       // Using the results of the SELECT query as replacements to the CONSTRUCT
       // clause, generate the INSERT DATA query
       String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(tripleList, results);

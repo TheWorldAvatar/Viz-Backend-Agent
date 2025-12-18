@@ -207,6 +207,13 @@ public class ShaclRuleProcesser {
         return deleteBuilder.append("}").toString();
     }
 
+    /**
+     * Return the variable name of a target Node.
+     * If the target node is not a variable, it will reutrn null.
+     *
+     * @param targetNode  The input node of interest.
+     */
+
     private String getVarName(Node targetNode) {
         if (targetNode.isVariable()) {
             return targetNode.getName();
