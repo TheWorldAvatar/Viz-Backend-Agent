@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.27.0
+
+- Refactored transaction record route to be updated over being added
+- Extended billing activity route to retrieve billing status
+- Added route to retrieve bill details
+
 ## 1.26.0
 
 - Modified SHACL construction rules to only apply to the target instance
