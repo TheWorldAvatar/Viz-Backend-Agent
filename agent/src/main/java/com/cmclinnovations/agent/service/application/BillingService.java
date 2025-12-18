@@ -148,15 +148,18 @@ public class BillingService {
       SparqlBinding currentBillItem = billItemsInstances.poll();
       billItems.putIfAbsent(BillingResource.PRICE_KEY, currentBillItem.getFieldValue(BillingResource.PRICE_KEY));
       billItems.putIfAbsent(BillingResource.AMOUNT_KEY, currentBillItem.getFieldValue(BillingResource.AMOUNT_KEY));
-      String chargeType = currentBillItem.containsField(BillingResource.CHARGE_KEY) ? BillingResource.CHARGE_KEY
-          : BillingResource.DISCOUNT_KEY;
-      // List in map should be updated in place, and type cast may create a copy that
-      // overwrites this behavior
-      List<InvoiceLine> chargesLines = (List<InvoiceLine>) billItems.computeIfAbsent(chargeType,
-          k -> new ArrayList<>());
-      InvoiceLine line = new InvoiceLine(currentBillItem.getFieldValue(chargeType),
-          currentBillItem.getFieldValue(ShaclResource.DESCRIPTION_PROPERTY));
-      chargesLines.add(line);
+      if (currentBillItem.containsField(BillingResource.CHARGE_KEY)
+          || currentBillItem.containsField(BillingResource.DISCOUNT_KEY)) {
+        String chargeType = currentBillItem.containsField(BillingResource.CHARGE_KEY) ? BillingResource.CHARGE_KEY
+            : BillingResource.DISCOUNT_KEY;
+        // List in map should be updated in place, and type cast may create a copy that
+        // overwrites this behavior
+        List<InvoiceLine> chargesLines = (List<InvoiceLine>) billItems.computeIfAbsent(chargeType,
+            k -> new ArrayList<>());
+        InvoiceLine line = new InvoiceLine(currentBillItem.getFieldValue(chargeType),
+            currentBillItem.getFieldValue(ShaclResource.DESCRIPTION_PROPERTY));
+        chargesLines.add(line);
+      }
     }
     return billItems;
   }
