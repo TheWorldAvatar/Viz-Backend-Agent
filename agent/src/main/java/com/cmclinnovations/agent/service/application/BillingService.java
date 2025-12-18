@@ -120,7 +120,7 @@ public class BillingService {
   public boolean getHasContractPricingModel(String id) {
     Queue<SparqlBinding> instance = this.lifecycleQueryService.getInstances(FileService.CONTRACT_PRICING_QUERY_RESOURCE,
         id);
-    return instance.size() > 0;
+    return instance.size() == 1;
   }
 
   /**
