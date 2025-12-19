@@ -2,9 +2,12 @@ package com.cmclinnovations.agent.component;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.jena.graph.Node;
@@ -106,7 +109,8 @@ public class ShaclRuleProcesser {
         selectQueryBuilder.append("SELECT *").append(System.lineSeparator());
         String whereClause = query.getQueryPattern().toString();
         selectQueryBuilder.append("WHERE ")
-                .append(whereClause.substring(0, whereClause.length() - 1) + this.getIriClause(iris));
+                .append(whereClause.substring(0, whereClause.length() - 1))
+                .append(this.getIriClause(QueryResource.THIS_KEY, iris)).append("}");
         return selectQueryBuilder.toString();
     }
 
@@ -129,11 +133,10 @@ public class ShaclRuleProcesser {
      * @param data       Query results containing data to be replaced in the
      *                   CONSTRUCT query.
      */
-    public String genInsertDataQuery(List<Triple> tripleList, Queue<SparqlBinding> data) {
+    public String genInsertDataQuery(List<Triple> tripleList, List<SparqlBinding> data) {
         LOGGER.debug("Generating the INSERT DATA content....");
         StringBuilder insertBuilder = new StringBuilder("INSERT DATA {");
-        while (!data.isEmpty()) {
-            SparqlBinding currentData = data.poll();
+        for (SparqlBinding currentData : data) {
             tripleList.forEach(triple -> {
                 Node subject = triple.getSubject();
                 Node pred = triple.getPredicate();
@@ -150,24 +153,16 @@ public class ShaclRuleProcesser {
      * Generates a SPARQL DELETE WHERE statement based on the CONSTRUCT template and
      * data to replace their associated variables in the query.
      *
-     * @param tripleList  The list of triples in the CONSTRUCT template.
-     * @param instanceIri The instance IRI string.
-     */
-
-    public String genDeleteWhereQuery(List<Triple> tripleList, String instanceIri) {
-        return this.genDeleteWhereQuery(tripleList, List.of(instanceIri));
-    }
-
-    /**
-     * Generates a SPARQL DELETE WHERE statement based on the CONSTRUCT template and
-     * data to replace their associated variables in the query.
-     *
      * @param tripleList The list of triples in the CONSTRUCT template.
-     * @param iris       List of IRI strings.
+     * @param results    Query results containing data to be replaced in the
+     *                   CONSTRUCT query.
      */
-    public String genDeleteWhereQuery(List<Triple> tripleList, List<String> iris) {
-        LOGGER.debug("Generating the INSERT DATA content....");
+
+    public String genDeleteWhereQuery(List<Triple> tripleList, List<SparqlBinding> results) {
+        LOGGER.debug("Generating the DELETE content....");
         StringBuilder deleteContentBuilder = new StringBuilder();
+
+        Set<String> allVar = new HashSet<>();
 
         tripleList.forEach(triple -> {
             Node subject = triple.getSubject();
@@ -177,12 +172,53 @@ public class ShaclRuleProcesser {
             String predicateForm = parseNode(pred, null);
             String objectForm = parseNode(object, null);
             StringResource.appendTriple(deleteContentBuilder, subjectForm, predicateForm, objectForm);
+            // store all variables needed
+            // for now, only cares about subject and object
+            allVar.add(this.getVarName(subject));
+            allVar.add(this.getVarName(object));
         });
+        allVar.remove(null);
+
+        // filter all existing IRIs
+
+        Map<String, Set<String>> iriMap = new HashMap<>();
+
+        for (SparqlBinding currentData : results) {
+            for (String field : currentData.getFields()) {
+                if (allVar.contains(field)) {
+                    SparqlResponseField responseField = currentData.getFieldResponse(field);
+                    String fieldValue = responseField.value();
+                    if (fieldValue != null && responseField.type().equals("uri")) {
+                        iriMap.computeIfAbsent(field, k -> new HashSet<>()).add(Rdf.iri(fieldValue).getQueryString());
+                    }
+                }
+            }
+        }
+
         String deleteContents = deleteContentBuilder.toString();
-        return new StringBuilder("DELETE{")
+        StringBuilder deleteBuilder = new StringBuilder("DELETE{")
                 .append(deleteContents).append("} WHERE{")
-                .append(deleteContents).append(this.getIriClause(iris))
-                .toString();
+                .append(deleteContents);
+
+        iriMap.forEach((field, values) -> {
+            deleteBuilder.append(this.getIriClause(field, new ArrayList<>(values)));
+        });
+
+        return deleteBuilder.append("}").toString();
+    }
+
+    /**
+     * Return the variable name of a target Node.
+     * If the target node is not a variable, it will reutrn null.
+     *
+     * @param targetNode  The input node of interest.
+     */
+
+    private String getVarName(Node targetNode) {
+        if (targetNode.isVariable()) {
+            return targetNode.getName();
+        }
+        return null;
     }
 
     /**
@@ -192,8 +228,8 @@ public class ShaclRuleProcesser {
      * @param iris List of IRI strings.
      */
 
-    private String getIriClause(List<String> iris) {
-        return "\n" + QueryResource.values(QueryResource.THIS_KEY, iris) + "}";
+    private String getIriClause(String field, List<String> iris) {
+        return "\n" + QueryResource.values(field, iris);
     }
 
     /**

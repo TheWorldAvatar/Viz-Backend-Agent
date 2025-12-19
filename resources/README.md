@@ -670,6 +670,11 @@ An example is provided below:
 > [!TIP]
 > `SPARQL` rules (using `sh:construct`) will be executed across all `SPARQL` endpoints, while Triple rules will only be executed on the instance being instantiated. It is recommended to use `SPARQL` rules if you require a derivation based on existing knowledge stored in the endpoints OR the derived triples are complex with nested and/or multiple statements.
 
+> [!IMPORTANT]
+> * The `WHERE` clause of the SHACL rule **must** explicitly reference the `?this` variable to avoid unexpected side effects.
+> * The individuals bound to `?this` must be instances of the `sh:targetClass` defined by the NodeShape.
+
+
 ```
 @prefix ex:   <http://example.org/> .
 @prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
