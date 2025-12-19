@@ -173,8 +173,8 @@ public class ShaclRuleProcesser {
             String objectForm = parseNode(object, null);
             StringResource.appendTriple(deleteContentBuilder, subjectForm, predicateForm, objectForm);
             // store all variables needed
+            // for now, only cares about subject and object
             allVar.add(this.getVarName(subject));
-            allVar.add(this.getVarName(pred));
             allVar.add(this.getVarName(object));
         });
         allVar.remove(null);
