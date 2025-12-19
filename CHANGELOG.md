@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.28.0
+
+- Modified SHACL construction rules to apply on limited instances IRIs
+
 ## 1.27.1
 
 - Fixed to not return discounts if both discounts and charges are not included in bill
