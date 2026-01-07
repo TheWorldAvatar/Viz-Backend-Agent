@@ -78,8 +78,9 @@ public class LifecycleQueryFactory {
     this.appendFilterExists(activeFilter, true, LifecycleResource.EVENT_APPROVAL);
     this.appendArchivedFilterExists(activeFilter, false);
     return QueryResource.PREFIX_TEMPLATE
-        + "SELECT DISTINCT ?iri WHERE{"
-        + "?iri fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage."
+        + "SELECT DISTINCT ?id WHERE{"
+        + "?iri fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage;"
+        + "dc-terms:identifier ?id."
         // Nested query for all days
         + "?stage fibo-fnd-rel-rel:exemplifies <"
         + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
