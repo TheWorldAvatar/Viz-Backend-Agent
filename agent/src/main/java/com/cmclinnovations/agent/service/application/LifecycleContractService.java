@@ -311,7 +311,7 @@ public class LifecycleContractService {
     LOGGER.debug("Instanting completed occurrences for these contracts...");
     while (!results.isEmpty()) {
       Map<String, Object> params = new HashMap<>(paramTemplate);
-      String currentContract = results.poll().getFieldValue(QueryResource.IRI_KEY);
+      String currentContract = results.poll().getFieldValue(QueryResource.ID_KEY);
       params.put(LifecycleResource.CONTRACT_KEY, currentContract);
       this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_COMPLETION);
       ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(

@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.28.1
+
+- Fixed expired contract query for scheduled archiving task
+
 ## 1.28.0
 
 - Modified SHACL construction rules to apply on limited instances IRIs

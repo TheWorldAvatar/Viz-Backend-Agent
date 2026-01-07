@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.cmclinnovations</groupId>
 	<artifactId>vis-backend-agent</artifactId>
-	<version>1.28.0</version>
+	<version>1.28.1</version>
 	<packaging>war</packaging>
 	<name>vis-backend-agent</name>
 	<url />
