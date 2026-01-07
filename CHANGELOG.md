@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.28.3
+
+- Fixed OPTIONAL clause stripping for multiline filter statement
+
 ## 1.28.2
 
 - Fixed active contract order date query for scheduled dynamic order generation task
