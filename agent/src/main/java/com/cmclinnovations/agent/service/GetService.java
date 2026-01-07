@@ -518,7 +518,7 @@ public class GetService {
     filterQueryPartMappings.forEach((key, queryParts) -> {
       // Generate the query statements for this filter
       String clause = this.queryTemplateService.genWhereClause(queryParts)
-          .replaceAll("\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
+          .replaceAll("(?s)\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
       outputMappings.put(key, clause);
     });
     return outputMappings;
