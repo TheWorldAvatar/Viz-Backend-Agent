@@ -117,7 +117,7 @@ public class LifecycleQueryFactory {
         + "BIND(xsd:date(?event_date) AS ?date)"
         + activeFilter
         + "}"
-        + "GROUP BY ?id ?end_date"
+        + "GROUP BY ?id ?end_date \n"
         + "HAVING (" + latestDateVar + " < \"" + taskGenerationCutoffDate + "\"^^xsd:date && ?end_date > "
         + latestDateVar + ")";
   }

@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.28.2
+
+- Fixed active contract order date query for scheduled dynamic order generation task
+
 ## 1.28.1
 
 - Fixed expired contract query for scheduled archiving task

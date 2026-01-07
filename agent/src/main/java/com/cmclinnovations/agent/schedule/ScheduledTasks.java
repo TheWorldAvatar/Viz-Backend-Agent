@@ -29,7 +29,7 @@ public class ScheduledTasks {
     LOGGER.info("Scheduled task for service discharge has been completed successfully!");
   }
 
-  @Scheduled(cron = "0 0 0 * * SUN")
+  @Scheduled(cron = "0 0 0 * * *")
   public void genOrderActiveContracts() {
     this.lifecycleTaskService.genOrderActiveContracts();
   }
