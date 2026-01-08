@@ -26,6 +26,9 @@
         "Secrets": [
           {
             "SecretName": "blazegraph_password"
+          },
+          {
+            "SecretName": "redis_password"
           }
         ]
       }
@@ -44,7 +47,7 @@
     }
   },
   "endpoints": {
-    "ui": {
+    "agent": {
       "url": "http://localhost:8080/vis-backend-agent/",
       "externalPath": "/vis-backend-agent/"
     }
