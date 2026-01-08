@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.28.4
+
+- Only execute SHACL construction if there are data to be added
+
 ## 1.28.3
 
 - Fixed OPTIONAL clause stripping for multiline filter statement
