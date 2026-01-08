@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.29.0
+
+- Extended access to authenticated Redis stores
+
 ## 1.28.4
 
 - Only execute SHACL construction if there are data to be added
