@@ -70,6 +70,12 @@ The agent requires the following environment variables. These variables must be 
 - `REDIS`: The redis endpoint. Redis must be running to support the caching function of this agent. Format: `redis://<url>`; If redis is deployed within the same stack, `<url>` may be `<STACK>-redis:6379`
 - `KEYCLOAK_ISSUER_URI`: Optional parameter to enable web security via Keycloak. Format: `http://<DOMAIN>/realms/<REALM>`; To disable, either set an empty string or remove the variable entirely
 
+##### Docker secrets
+
+The agent requires the following secrets set in the Docker environment:
+
+1) `redis_password`: password to access redis cache
+
 ##### Files
 
 **FORM TEMPLATE**
@@ -104,7 +110,8 @@ docker compose -f "./docker/docker-compose.test.yml" up -d --build
 2. Update the environment variables in `./docker/vis-backend-agent.json` if required.
 3. Copy the `./docker/vis-backend-agent.json` file into the `inputs/config/services` directory of the stack manager.
 4. Ensure the bind mount path is correctly set in the stack configuration for `vis-resources`.
-5. Start the stack manager as usual following [these instructions](https://github.com/cambridge-cares/TheWorldAvatar/tree/main/Deploy/stacks/dynamic/stack-manager).
+5. Add a secret for `redis_password` to the `inputs/secrets` directory of the stack manager.
+6. Start the stack manager as usual following [these instructions](https://github.com/cambridge-cares/TheWorldAvatar/tree/main/Deploy/stacks/dynamic/stack-manager).
 
 **DEBUGGING ENVIRONMENT**
 Follow the same steps as the **PRODUCTION ENVIRONMENT**, but use the `vis-backend-agent-debug.json` file instead in step 3.
