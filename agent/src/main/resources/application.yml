@@ -2,9 +2,6 @@ spring:
   application:
     name:
       - agent
-  data:
-    redis:
-      url: ${REDIS}
   cache:
     type: redis
 app:
