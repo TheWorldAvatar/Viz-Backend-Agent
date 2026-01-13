@@ -135,6 +135,7 @@ public class LifecycleQueryFactory {
    */
   public Map<String, String> getServiceTasksQuery(String contract, String startDate, String endDate, Boolean isClosed) {
     String eventDateVar = QueryResource.genVariable(LifecycleResource.DATE_KEY).getQueryString();
+    String closedDateVar = QueryResource.genVariable(LifecycleResource.CLOSED_DATE_KEY).getQueryString();
     String eventDatePlaceholderVar = QueryResource.genVariable("event_date").getQueryString();
     String eventVar = QueryResource.genVariable(LifecycleResource.EVENT_KEY).getQueryString();
     String eventIdVar = QueryResource.EVENT_ID_VAR.getQueryString();
@@ -146,11 +147,12 @@ public class LifecycleQueryFactory {
     // Dates must be included in the template to sort out different task status
     String filterDateStatement = "";
     if (contract == null && endDate != null) {
+      String dateFilterVar = isClosed ? closedDateVar : eventDateVar;
       // For outstanding tasks, start dates are omitted
       if (!startDate.isEmpty()) {
-        filterDateStatement = eventDateVar + ">=\"" + startDate + "\"^^xsd:date && ";
+        filterDateStatement = dateFilterVar + ">=\"" + startDate + "\"^^xsd:date && ";
       }
-      filterDateStatement = "FILTER(" + filterDateStatement + eventDateVar + "<=\"" + endDate
+      filterDateStatement = "FILTER(" + filterDateStatement + dateFilterVar + "<=\"" + endDate
           + "\"^^xsd:date)";
     }
     // Generates query statements to target specific events based on closed status
@@ -160,6 +162,8 @@ public class LifecycleQueryFactory {
     } else if (isClosed) {
       eventTargetStatements = CLOSED_QUERY_STATEMENTS.replace(QueryResource.IRI_KEY,
           QueryResource.EVENT_ID_VAR.getVarName());
+      eventTargetStatements += "?event_id <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder."
+          + "BIND(xsd:date(?closed_date_placeholder) AS " + closedDateVar + ")";
     } else {
       eventTargetStatements = UNCLOSED_QUERY_STATEMENTS.replace(QueryResource.IRI_KEY,
           QueryResource.EVENT_ID_VAR.getVarName());
