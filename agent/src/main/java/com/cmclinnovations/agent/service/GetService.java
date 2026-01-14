@@ -272,8 +272,23 @@ public class GetService {
   }
 
   /**
-   * Retrieve all filter options associated with the resource and the target
-   * field as options with names and their IDs.
+   * Retrieve all filter options associated with the resource, based on the search
+   * and filters as options with names and their IDs.
+   * 
+   * @param resourceID Target resource identifier for the instance class.
+   * @param search     String subset to narrow filter scope.
+   * @param filters    Filters to further narrow filter scope.
+   */
+  public List<SelectOption> getAllFilterOptions(String resourceID, String search, Map<String, Set<String>> filters) {
+    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", search, filters, true).stream()
+        .map(binding -> new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
+            binding.getFieldValue(QueryResource.ID_KEY)))
+        .toList();
+  }
+
+  /**
+   * Retrieve all filter options associated with the resource and search terms as
+   * options with names and their IDs.
    * 
    * @param resourceID Target resource identifier for the instance class.
    * @param search     String subset to narrow filter scope.

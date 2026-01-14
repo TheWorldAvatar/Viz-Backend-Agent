@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
-import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.SelectOption;
@@ -171,21 +170,22 @@ public class VisBackendAgent {
   /**
    * Retrieves all instances belonging to the specified type and associated with a
    * parent in the knowledge graph. Assumes the field name is the same as the
-   * parent resource identifier.
+   * parent resource identifier. By default, without a search parameter, this will
+   * return 21 instances. Matching search results for instances are returned up to
+   * 21.
    */
   @GetMapping("/{parent}/{id}/{type}")
   public ResponseEntity<StandardApiResponse<?>> getAllInstancesWithParent(@PathVariable(name = "parent") String parent,
       @PathVariable(name = "id") String id,
-      @PathVariable(name = "type") String type) {
+      @PathVariable(name = "type") String type,
+      @RequestParam String search) {
     LOGGER.info("Received request to get all instances of target {} associated with the parent type {}...", type,
         parent);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, false, new ParentField(id, parent),
-          new PaginationState(0, null, "", new HashMap<>()));
-      return this.responseEntityBuilder.success(null,
-          instances.stream()
-              .map(SparqlBinding::get)
-              .toList());
+      Map<String, Set<String>> parentFilter = new HashMap<>();
+      parentFilter.put(parent, Set.of(id));
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, parentFilter);
+      return this.responseEntityBuilder.success(options);
     });
   }
 
