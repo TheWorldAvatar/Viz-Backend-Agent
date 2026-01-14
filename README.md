@@ -452,10 +452,10 @@ where `{type}`is the requested identifier that must correspond to a target class
 Users can send a `GET` request to
 
 ```
-<baseURL>/vis-backend-agent/{type}
+<baseURL>/vis-backend-agent/{type}?search={search}
 ```
 
-where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`.
+where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, and `{search}` is the `search` parameter. Note that a maximum of 21 instances are returned at all times, and users should use the search parameter to narrow their instances returned.
 
 ##### Get a instance
 
@@ -500,10 +500,10 @@ where `{type}`is the requested identifier that must correspond to a target class
 Users can send a `GET` request to:
 
 ```
-<baseURL>/vis-backend-agent/{parent}/{id}/{type}
+<baseURL>/vis-backend-agent/{parent}/{id}/{type}?search={search}
 ```
 
-where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{parent}` is the requested parent identifier that is linked to the type, and `{id}` is the specific parent instance's identifier to retrieve all instances associated with.
+where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{parent}` is the requested parent identifier that is linked to the type, `{id}` is the specific parent instance's identifier to retrieve all instances associated with, and `{search}` is the `search` parameter. Note that a maximum of 21 instances are returned at all times, and users should use the search parameter to narrow their instances returned.
 
 ##### Get all instances matching the search criteria
 
