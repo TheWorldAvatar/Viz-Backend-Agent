@@ -36,6 +36,7 @@ public class LifecycleResource {
   public static final String ORDER_KEY = "order";
   public static final String CURRENT_DATE_KEY = "current date";
   public static final String NEW_DATE_KEY = "newDate";
+  public static final String CLOSED_DATE_KEY = "closedDate";
   public static final String DATE_KEY = "date";
   public static final String DATE_TIME_KEY = "dateTime";
   public static final String EVENT_KEY = "event";
