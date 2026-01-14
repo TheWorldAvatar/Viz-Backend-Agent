@@ -23,6 +23,7 @@ import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
+import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
@@ -94,20 +95,17 @@ public class VisBackendAgent {
 
   /**
    * Retrieves all instances belonging to the specified type in the knowledge
-   * graph.
+   * graph. By default, without a search parameter, this will return 21 instances.
+   * Matching search results for instances are given up to 21.
    */
   @GetMapping("/{type}")
   public ResponseEntity<StandardApiResponse<?>> getAllInstances(
-      @PathVariable(name = "type") String type) {
+      @PathVariable(name = "type") String type, @RequestParam String search) {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, false, null,
-          new PaginationState(0, null, "", new HashMap<>()));
-      return this.responseEntityBuilder.success(null,
-          instances.stream()
-              .map(SparqlBinding::get)
-              .toList());
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search);
+      return this.responseEntityBuilder.success(options);
     });
   }
 
