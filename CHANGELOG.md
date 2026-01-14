@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.30.0
+
+- Closed tasks are based on closed date
+
 ## 1.29.0
 
 - Extended access to authenticated Redis stores
