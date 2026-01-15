@@ -99,7 +99,7 @@ public class VisBackendAgent {
    */
   @GetMapping("/{type}")
   public ResponseEntity<StandardApiResponse<?>> getAllInstances(
-      @PathVariable(name = "type") String type, @RequestParam String search) {
+      @PathVariable(name = "type") String type, @RequestParam(required = false) String search) {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
@@ -178,7 +178,7 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> getAllInstancesWithParent(@PathVariable(name = "parent") String parent,
       @PathVariable(name = "id") String id,
       @PathVariable(name = "type") String type,
-      @RequestParam String search) {
+      @RequestParam(required = false) String search) {
     LOGGER.info("Received request to get all instances of target {} associated with the parent type {}...", type,
         parent);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
