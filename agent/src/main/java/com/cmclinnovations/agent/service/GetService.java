@@ -333,6 +333,24 @@ public class GetService {
   }
 
   /**
+   * Retrieve the parent filters for further usage.
+   * 
+   * @param resourceId The target resource identifier for the parent
+   *                   instance.
+   * @param id         The identifier for the parent instance.
+   */
+  public Map<String, Set<String>> getParentFilter(String resourceId, String id) {
+    LOGGER.debug("Retrieving parent filter for {} ...", resourceId);
+    Queue<List<String>> targetIds = new ArrayDeque<>();
+    targetIds.offer(List.of(id));
+    Queue<SparqlBinding> parentInstances = this.getInstances(resourceId, false, targetIds, "", new HashMap<>());
+    Map<String, Set<String>> parentFilter = new HashMap<>();
+    parentFilter.put(resourceId,
+        Set.of("\"" + parentInstances.poll().getFieldValue(ShaclResource.NAME_PROPERTY) + "\""));
+    return parentFilter;
+  }
+
+  /**
    * Retrieve all the target instances and their information using pre-queried
    * IDs. This is an overloaded method that does not depend on the additional
    * query statements in the ID query template.

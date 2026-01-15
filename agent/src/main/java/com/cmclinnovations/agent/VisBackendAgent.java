@@ -1,6 +1,5 @@
 package com.cmclinnovations.agent;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -182,8 +181,7 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances of target {} associated with the parent type {}...", type,
         parent);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      Map<String, Set<String>> parentFilter = new HashMap<>();
-      parentFilter.put(parent, Set.of(id));
+      Map<String, Set<String>> parentFilter = this.getService.getParentFilter(parent, id);
       List<SelectOption> options = this.getService.getAllFilterOptions(type, search, parentFilter);
       return this.responseEntityBuilder.success(options);
     });
