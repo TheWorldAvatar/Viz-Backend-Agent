@@ -24,7 +24,6 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
-import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
@@ -74,7 +73,7 @@ public class GetService {
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService
         .getSparqlQueryConstructionParameters(shaclReplacement, requireLabel);
     return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, new ArrayDeque<>(),
-        null, "", new HashMap<>());
+        "", new HashMap<>());
   }
 
   /**
@@ -371,7 +370,7 @@ public class GetService {
     if (ids.isEmpty()) {
       return new ArrayDeque<>();
     }
-    return this.execGetInstances(iri, ids, requireLabel, null, addQueryStatements, addVars);
+    return this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
   }
 
   /**
@@ -382,18 +381,16 @@ public class GetService {
    *                     class.
    * @param requireLabel Indicates if labels should be returned for all
    *                     the fields that are IRIs.
-   * @param parentField  Optional parent field.
    * @param pagination   Optional pagination state to filter results.
    */
-  public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, ParentField parentField,
-      PaginationState pagination) {
+  public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, PaginationState pagination) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
     Queue<List<String>> ids = this.getAllIds(resourceID, "", pagination);
     if (ids.isEmpty()) {
       return new ArrayDeque<>();
     }
-    return this.execGetInstances(iri, ids, requireLabel, parentField, "", new HashMap<>());
+    return this.execGetInstances(iri, ids, requireLabel, "", new HashMap<>());
   }
 
   /**
@@ -409,7 +406,7 @@ public class GetService {
     LOGGER.debug("Retrieving an instance of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
     Queue<SparqlBinding> instances = this.execGetInstances(iri, new ArrayDeque<>(List.of(Arrays.asList(targetId))),
-        requireLabel, null, "", new HashMap<>());
+        requireLabel, "", new HashMap<>());
     return this.getSingleInstanceResponse(instances);
   }
 
@@ -425,7 +422,7 @@ public class GetService {
         QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
         Rdf.iri(eventType.getEvent()));
     Queue<SparqlBinding> instances = this.execGetInstances(eventType.getShaclReplacement(),
-        new ArrayDeque<>(List.of(Arrays.asList(targetId))), false, null, lifecycleEventPattern.getQueryString(),
+        new ArrayDeque<>(List.of(Arrays.asList(targetId))), false, lifecycleEventPattern.getQueryString(),
         new HashMap<>());
     return this.getSingleInstanceResponse(instances);
   }
@@ -565,21 +562,17 @@ public class GetService {
    * @param targetIds            An optional field with specific IDs to target.
    * @param requireLabel         Indicates if labels should be returned for all
    *                             the fields that are IRIs.
-   * @param parentField          Optional parent field.
    * @param addQueryStatements   Additional query statements to be added
    * @param addVars              Optional additional variables to be included in
    *                             the query, along with their order sequence
    */
   private Queue<SparqlBinding> execGetInstances(String nodeShapeReplacement, Queue<List<String>> targetIds,
-      boolean requireLabel, ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
-    if (requireLabel) {
-      // Parent related parameters should be disabled
-      parentField = null;
-    }
+      boolean requireLabel, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+
     Queue<Queue<SparqlBinding>> queryVarsAndPaths = this.kgService.getSparqlQueryConstructionParameters(
         nodeShapeReplacement, requireLabel);
     String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetIds,
-        parentField, addQueryStatements, addVars);
+        addQueryStatements, addVars);
     LOGGER.debug("Querying the knowledge graph for the instances...");
     List<Variable> varSequence = this.queryTemplateService.getFieldSequence();
     // Query for direct instances

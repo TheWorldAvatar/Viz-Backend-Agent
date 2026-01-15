@@ -15,7 +15,6 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.stereotype.Service;
 
-import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
@@ -195,7 +194,7 @@ public class QueryTemplateService {
    * @param queryVarsAndPaths The query construction requirements.
    */
   public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
-    return this.genGetQuery(queryVarsAndPaths, new ArrayDeque<>(), null, "", new HashMap<>());
+    return this.genGetQuery(queryVarsAndPaths, new ArrayDeque<>(), "", new HashMap<>());
   }
 
   /**
@@ -203,17 +202,16 @@ public class QueryTemplateService {
    * 
    * @param queryVarsAndPaths  The query construction requirements.
    * @param targetIds          An optional field with the specific IDs to target.
-   * @param parentField        Optional parent field.
    * @param addQueryStatements Additional query statements to be added
    * @param addVars            Optional additional variables to be included in the
    *                           query, along with their order sequence
    */
   public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, Queue<List<String>> targetIds,
-      ParentField parentField, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+      String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Generating the SELECT query to get instances...");
     return this.getQueryTemplateFactory
         .write(
-            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetIds, parentField, addQueryStatements, addVars));
+            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetIds, addQueryStatements, addVars));
   }
 
   /**
