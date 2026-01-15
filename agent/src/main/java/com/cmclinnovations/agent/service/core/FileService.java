@@ -66,6 +66,8 @@ public class FileService {
   public static final String SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/schedule.jsonld";
   public static final String FIXED_DATE_SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR
       + "jsonld/fixed_date_schedule.jsonld";
+  public static final String HISTORY_ACTIVITY_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/history/activity.jsonld";
 
   public static final String ACCOUNT_AGREEMENT_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_agreement.sparql";
   public static final String ACCOUNT_PRICING_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_pricing.sparql";

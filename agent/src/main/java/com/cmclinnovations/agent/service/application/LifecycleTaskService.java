@@ -457,7 +457,7 @@ public class LifecycleTaskService {
   public ResponseEntity<StandardApiResponse<?>> genOccurrence(String resourceId, Map<String, Object> params,
       LifecycleEventType eventType, String successLogMessage, String messageResource) {
     this.lifecycleQueryService.addOccurrenceParams(params, eventType);
-    return this.addService.instantiate(resourceId, params, successLogMessage, messageResource);
+    return this.addService.instantiate(resourceId, params, successLogMessage, messageResource, false);
   }
 
   /**
@@ -545,7 +545,7 @@ public class LifecycleTaskService {
       params.put(LifecycleResource.DATE_TIME_KEY, occurrenceDate);
       try {
         // Error logs for any specified occurrence
-        this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
+        this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, false);
       } catch (IllegalStateException e) {
         LOGGER.error("Error encountered while creating order for {} on {}! Read error logs for more details",
             contract, occurrenceDate);
@@ -587,7 +587,7 @@ public class LifecycleTaskService {
     LifecycleResource.genIdAndInstanceParameters(defaultPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
 
     ResponseEntity<StandardApiResponse<?>> orderInstantiatedResponse = this.addService.instantiate(
-        LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
+        LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, false);
     if (orderInstantiatedResponse.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Retrieving the current dispatch details...");
       String prevDispatchId = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_ORDER_DISPATCHED);
@@ -608,7 +608,7 @@ public class LifecycleTaskService {
         LifecycleResource.genIdAndInstanceParameters(defaultPrefix, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
             params);
         params.put(LifecycleResource.ORDER_KEY, orderInstantiatedResponse.getBody().data().id());
-        return this.addService.instantiate(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), params);
+        return this.addService.instantiate(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), params, false);
       }
     }
     throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));

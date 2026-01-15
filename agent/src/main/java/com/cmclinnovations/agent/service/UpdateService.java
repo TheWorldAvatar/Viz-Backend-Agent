@@ -59,7 +59,7 @@ public class UpdateService {
 
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
       return this.addService.instantiate(resourceId, id, editedParams,
-          MessageFormat.format("{0} has been successfully updated for {1}", resourceId, id), successMessageId);
+          MessageFormat.format("{0} has been successfully updated for {1}", resourceId, id), successMessageId, false);
     } else {
       return deleteResponse;
     }

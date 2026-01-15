@@ -315,7 +315,7 @@ public class LifecycleContractService {
       params.put(LifecycleResource.CONTRACT_KEY, currentContract);
       this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.ARCHIVE_COMPLETION);
       ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
-          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
+          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, false);
       // Error logs for any specified occurrence
       if (response.getStatusCode() != HttpStatus.OK) {
         LOGGER.error("Error encountered while discharging the contract for {}! Read error logs for more details.",

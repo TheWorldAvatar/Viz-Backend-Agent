@@ -92,7 +92,7 @@ public class LifecycleController {
     // Instantiates the lifecycle first before adding schedule parameters
     ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
         LifecycleResource.LIFECYCLE_RESOURCE, params, "The lifecycle of the contract has been successfully drafted!",
-        LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY);
+        LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY, false);
     this.genContractSchedule(params);
     // Log out successful message, and return the original response
     LOGGER.info("Contract has been successfully drafted!");
@@ -197,7 +197,7 @@ public class LifecycleController {
         : LifecycleResource.SCHEDULE_RESOURCE;
     return this.addService.instantiate(scheduleResource,
         params, "Schedule has been successfully drafted for contract!",
-        LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY);
+        LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY, false);
   }
 
   /**
@@ -238,7 +238,7 @@ public class LifecycleController {
   private void cloneDraftContract(String entityType, Map<String, Object> contractDetails,
       Map<String, Object> draftDetails) {
     // Generate new contract details from existing contract
-    StandardApiResponse<?> response = this.addService.instantiate(entityType, contractDetails).getBody();
+    StandardApiResponse<?> response = this.addService.instantiate(entityType, contractDetails, false).getBody();
     // Generate the params to be sent to the draft route
     // ID should be side effect of instantiate
     draftDetails.put(QueryResource.ID_KEY, contractDetails.get(QueryResource.ID_KEY));

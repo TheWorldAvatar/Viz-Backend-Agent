@@ -272,7 +272,7 @@ public class VisBackendAgent {
       @RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to add one {}...", type);
     return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.addService.instantiate(type, instance);
+      return this.addService.instantiate(type, instance, true);
     });
   }
 
