@@ -3,7 +3,7 @@
     "Name": "vis-backend-agent",
     "TaskTemplate": {
       "ContainerSpec": {
-        "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.30.0",
+        "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.31.0-reschedule-single-service-SNAPSHOT",
         "Env": [
           "REDIS=redis://<STACK>-redis:6379",
           "KEYCLOAK_ISSUER_URI=http://<DOMAIN>/realms/<REALM>",

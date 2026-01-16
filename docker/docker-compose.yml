@@ -3,7 +3,7 @@ version: "3.9"
 services:
   agent:
     container_name: vis-backend-agent
-    image: ghcr.io/theworldavatar/vis-backend-agent:1.30.0
+    image: ghcr.io/theworldavatar/vis-backend-agent:1.31.0-reschedule-single-service-SNAPSHOT
     build:
       context: ..
       target: agent

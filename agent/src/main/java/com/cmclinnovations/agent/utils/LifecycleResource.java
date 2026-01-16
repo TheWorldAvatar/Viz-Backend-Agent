@@ -56,6 +56,7 @@ public class LifecycleResource {
   public static final String SCHEDULE_RECURRENCE_KEY = "recurrence";
   public static final String SCHEDULE_RECURRENCE_PLACEHOLDER_KEY = "recurrences";
   public static final String SCHEDULE_TYPE_KEY = "scheduleType";
+  public static final String RESCHEDULE_DATE_KEY = "reschedule date";
 
   public static final String EXEMPLIFIES_RELATIONS = "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies";
   public static final String IS_ABOUT_RELATIONS = "https://www.omg.org/spec/Commons/Documents/isAbout";
