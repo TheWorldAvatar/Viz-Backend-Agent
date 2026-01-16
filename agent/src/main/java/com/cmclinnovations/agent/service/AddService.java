@@ -123,6 +123,23 @@ public class AddService {
   }
 
   /**
+   * Logs the activity for the target instance.
+   * 
+   * @param iri         The target instance IRI.
+   * @param trackAction The action required for tracking.
+   */
+  public void logActivity(String iri, TrackActionType trackAction) {
+    Map<String, Object> agentDetails = this.changelogService.setAgent();
+    Map<String, Object> actionDetails = this.changelogService.logAction(iri, trackAction);
+    if (!agentDetails.isEmpty()) {
+      String agentId = this.instantiate(QueryResource.HISTORY_AGENT_RESOURCE, agentDetails, TrackActionType.IGNORED)
+          .getBody().data().id();
+      actionDetails.put(QueryResource.HISTORY_AGENT_RESOURCE, agentId);
+    }
+    this.instantiate(QueryResource.HISTORY_ACTIVITY_RESOURCE, actionDetails, TrackActionType.IGNORED);
+  }
+
+  /**
    * Instantiate an instance based on a jsonLD object.
    * 
    * @param jsonLdSchema      The target json LD object to instantiate.
@@ -163,14 +180,7 @@ public class AddService {
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(successLogMessage == null ? "Instantiation is successful!" : successLogMessage);
       if (trackAction != TrackActionType.IGNORED) {
-        Map<String, Object> agentDetails = this.changelogService.setAgent();
-        Map<String, Object> actionDetails = this.changelogService.logAction(instanceIri, trackAction);
-        if (!agentDetails.isEmpty()) {
-          String agentId = this.instantiate(QueryResource.HISTORY_AGENT_RESOURCE, agentDetails, TrackActionType.IGNORED)
-              .getBody().data().id();
-          actionDetails.put(QueryResource.HISTORY_AGENT_RESOURCE, agentId);
-        }
-        this.instantiate(QueryResource.HISTORY_ACTIVITY_RESOURCE, actionDetails, TrackActionType.IGNORED);
+        this.logActivity(instanceIri, trackAction);
       }
       return this.responseEntityBuilder.success(instanceIri,
           LocalisationTranslator
