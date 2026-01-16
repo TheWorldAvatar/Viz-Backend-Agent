@@ -545,8 +545,8 @@ public class LifecycleTaskService {
       LifecycleResource.genIdAndInstanceParameters(orderPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
       params.put(LifecycleResource.DATE_TIME_KEY, occurrenceDate);
       try {
+        this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, TrackActionType.CREATION);
         // Error logs for any specified occurrence
-        this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, TrackActionType.IGNORED);
       } catch (IllegalStateException e) {
         LOGGER.error("Error encountered while creating order for {} on {}! Read error logs for more details",
             contract, occurrenceDate);
