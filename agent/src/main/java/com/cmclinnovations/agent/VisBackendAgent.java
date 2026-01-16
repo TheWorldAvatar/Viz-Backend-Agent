@@ -303,7 +303,8 @@ public class VisBackendAgent {
     LOGGER.info("Received request to update {}...", type);
 
     return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.updateService.update(id, type, LocalisationResource.SUCCESS_UPDATE_KEY, updatedEntity);
+      return this.updateService.update(id, type, LocalisationResource.SUCCESS_UPDATE_KEY, updatedEntity,
+          TrackActionType.MODIFICATION);
     });
   }
 }

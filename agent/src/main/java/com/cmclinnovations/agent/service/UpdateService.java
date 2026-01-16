@@ -13,6 +13,7 @@ import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.TrackActionType;
+import com.cmclinnovations.agent.service.core.ChangelogService;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
@@ -21,6 +22,7 @@ import com.cmclinnovations.agent.utils.QueryResource;
 public class UpdateService {
   private final AddService addService;
   private final DeleteService deleteService;
+  private final ChangelogService changelogService;
   private final KGService kgService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
@@ -31,13 +33,15 @@ public class UpdateService {
    * 
    * @param addService            KG service to add instances.
    * @param deleteService         KG service to delete instances.
+   * @param changelogService      Service to log changes.
    * @param kgService             KG service for performing the query.
    * @param responseEntityBuilder A component to build the response entity.
    */
-  public UpdateService(AddService addService, DeleteService deleteService, KGService kgService,
-      ResponseEntityBuilder responseEntityBuilder) {
+  public UpdateService(AddService addService, DeleteService deleteService, ChangelogService changelogService,
+      KGService kgService, ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.deleteService = deleteService;
+    this.changelogService = changelogService;
     this.kgService = kgService;
     this.responseEntityBuilder = responseEntityBuilder;
   }
@@ -51,18 +55,20 @@ public class UpdateService {
    * @param resourceID       The resource identifier ie type for the instance.
    * @param successMessageId Successful message identifier.
    * @param editedParams     Edited parameters to replace the current values.
-   * @param branchName       The branch name to use for filtering (can be null).
+   * @param trackAction      The action required for tracking.
    */
   public ResponseEntity<StandardApiResponse<?>> update(String id, String resourceId, String successMessageId,
-      Map<String, Object> editedParams) {
+      Map<String, Object> editedParams, TrackActionType trackAction) {
     String branchDelete = (String) editedParams.get(QueryResource.DELETE_BRANCH_KEY);
     ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id, branchDelete);
 
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
       return this.addService.instantiate(resourceId, id, editedParams,
           MessageFormat.format("{0} has been successfully updated for {1}", resourceId, id), successMessageId,
-          TrackActionType.IGNORED);
-    } else {
+          trackAction);
+    } else
+
+    {
       return deleteResponse;
     }
   }

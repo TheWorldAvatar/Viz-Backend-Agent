@@ -663,7 +663,7 @@ public class LifecycleTaskService {
     params.put(LifecycleResource.ORDER_KEY,
         this.getPreviousOccurrence(QueryResource.IRI_KEY, succeedsEventType, params));
 
-    return this.updateService.update(occurrenceId, eventType.getId(), successMsgId, params);
+    return this.updateService.update(occurrenceId, eventType.getId(), successMsgId, params, TrackActionType.IGNORED);
   }
 
   /**

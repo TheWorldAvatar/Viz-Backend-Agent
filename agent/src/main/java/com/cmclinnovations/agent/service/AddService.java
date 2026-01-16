@@ -162,7 +162,7 @@ public class AddService {
 
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(successLogMessage == null ? "Instantiation is successful!" : successLogMessage);
-      if (trackAction == TrackActionType.CREATION) {
+      if (trackAction != TrackActionType.IGNORED) {
         this.instantiate(QueryResource.HISTORY_ACTIVITY_RESOURCE,
             this.changelogService.logAction(instanceIri, trackAction),
             TrackActionType.IGNORED);

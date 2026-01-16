@@ -122,7 +122,7 @@ public class LifecycleController {
       if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
         return this.updateService.update(
             targetId, LifecycleResource.LIFECYCLE_RESOURCE, LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY,
-            params);
+            params, TrackActionType.IGNORED);
       }
       return scheduleResponse;
     });
