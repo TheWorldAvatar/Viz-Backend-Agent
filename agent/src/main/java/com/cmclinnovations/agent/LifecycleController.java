@@ -323,9 +323,14 @@ public class LifecycleController {
     } else {
       LOGGER.info("All orders has been successfully received!");
       try {
-        return this.lifecycleTaskService.genOccurrence(params, LifecycleEventType.APPROVED,
+        ResponseEntity<StandardApiResponse<?>> response = this.lifecycleTaskService.genOccurrence(params,
+            LifecycleEventType.APPROVED,
             MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
             LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
+        if (response.getStatusCode() == HttpStatus.OK) {
+          this.lifecycleContractService.logContractActivity(contractId, TrackActionType.APPROVED);
+        }
+        return response;
       } catch (IllegalStateException e) {
         LOGGER.warn("Something went wrong with instantiating the approve event for {}!", contractId);
         throw e;

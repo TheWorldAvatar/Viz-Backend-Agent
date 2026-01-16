@@ -4,6 +4,7 @@ public enum TrackActionType {
   CREATION("Created"),
   MODIFICATION("Modified"),
   CONTRACT_RESET_STATUS("Verified with client; Pending approval"),
+  APPROVED("Approved"),
   IGNORED("");
 
   private final String message;

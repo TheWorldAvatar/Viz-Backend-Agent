@@ -107,8 +107,7 @@ public class LifecycleContractService {
     String updateQuery = this.lifecycleQueryFactory.genContractEventStatusUpdateQuery(id);
     ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(updateQuery);
     if (response.getStatusCode() == HttpStatus.OK) {
-      SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, id);
-      this.addService.logActivity(contract.getFieldValue(QueryResource.IRI_KEY), TrackActionType.CONTRACT_RESET_STATUS);
+      this.logContractActivity(id, TrackActionType.CONTRACT_RESET_STATUS);
     }
     return response;
   }
@@ -329,6 +328,17 @@ public class LifecycleContractService {
             currentContract);
       }
     }
+  }
+
+  /**
+   * Logs the activity for the target contract instance.
+   * 
+   * @param id          The contract identifier.
+   * @param trackAction The action required for tracking.
+   */
+  public void logContractActivity(String id, TrackActionType trackAction) {
+    SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, id);
+    this.addService.logActivity(contract.getFieldValue(QueryResource.IRI_KEY), trackAction);
   }
 
   /**
