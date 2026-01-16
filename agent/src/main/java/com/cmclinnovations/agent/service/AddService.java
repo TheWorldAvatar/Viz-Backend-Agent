@@ -163,9 +163,14 @@ public class AddService {
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(successLogMessage == null ? "Instantiation is successful!" : successLogMessage);
       if (trackAction != TrackActionType.IGNORED) {
-        this.instantiate(QueryResource.HISTORY_ACTIVITY_RESOURCE,
-            this.changelogService.logAction(instanceIri, trackAction),
-            TrackActionType.IGNORED);
+        Map<String, Object> agentDetails = this.changelogService.setAgent();
+        Map<String, Object> actionDetails = this.changelogService.logAction(instanceIri, trackAction);
+        if (!agentDetails.isEmpty()) {
+          String agentId = this.instantiate(QueryResource.HISTORY_AGENT_RESOURCE, agentDetails, TrackActionType.IGNORED)
+              .getBody().data().id();
+          actionDetails.put(QueryResource.HISTORY_AGENT_RESOURCE, agentId);
+        }
+        this.instantiate(QueryResource.HISTORY_ACTIVITY_RESOURCE, actionDetails, TrackActionType.IGNORED);
       }
       return this.responseEntityBuilder.success(instanceIri,
           LocalisationTranslator

@@ -115,6 +115,7 @@ public class QueryResource {
     public static final String FIXED_DATE_SCHEDULE_DATE_KEY = "schedule entry date";
 
     public static final String HISTORY_ACTIVITY_RESOURCE = "activity";
+    public static final String HISTORY_AGENT_RESOURCE = "agent";
 
     // Private constructor to prevent instantiation
     private QueryResource() {

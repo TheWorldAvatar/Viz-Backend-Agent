@@ -20,5 +20,10 @@
   "https://theworldavatar.io/kg/ontochangelog/affected": {
     "@replace": "iri",
     "@type": "iri"
+  },
+  "https://theworldavatar.io/kg/ontochangelog/wasPerformedBy": {
+    "@replace": "agent",
+    "@type": "iri",
+    "@optional": true
   }
 }

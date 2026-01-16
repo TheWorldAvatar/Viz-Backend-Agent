@@ -1,0 +1,15 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": {
+    "@replace": "id",
+    "@type": "iri",
+    "prefix": "https://theworldavatar.io/kg/agent/"
+  },
+  "@type": "http://xmlns.com/foaf/0.1/Agent",
+  "http://www.w3.org/2000/01/rdf-schema#label": {
+    "@replace": "name",
+    "@type": "literal"
+  }
+}
