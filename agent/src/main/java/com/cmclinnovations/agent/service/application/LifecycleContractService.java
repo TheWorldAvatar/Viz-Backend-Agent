@@ -105,7 +105,12 @@ public class LifecycleContractService {
    */
   public ResponseEntity<StandardApiResponse<?>> updateContractStatus(String id) {
     String updateQuery = this.lifecycleQueryFactory.genContractEventStatusUpdateQuery(id);
-    return this.updateService.update(updateQuery);
+    ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(updateQuery);
+    if (response.getStatusCode() == HttpStatus.OK) {
+      SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, id);
+      this.addService.logActivity(contract.getFieldValue(QueryResource.IRI_KEY), TrackActionType.CONTRACT_RESET_STATUS);
+    }
+    return response;
   }
 
   /**
