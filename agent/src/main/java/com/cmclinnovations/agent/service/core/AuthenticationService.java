@@ -4,9 +4,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.springframework.core.env.Environment;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import com.cmclinnovations.agent.model.response.UserProfile;
 import com.cmclinnovations.agent.utils.StringResource;
 
 @Service
@@ -41,6 +44,18 @@ public class AuthenticationService {
     });
 
     return userRoles;
+  }
+
+  /**
+   * Retrieves the user profile associated with the credentials.
+   */
+  public UserProfile getUserProfile() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+    if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+      return new UserProfile(jwt.getSubject(), jwt.getClaimAsString("name"));
+    }
+    return null;
   }
 
   /**

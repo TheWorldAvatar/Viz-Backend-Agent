@@ -178,6 +178,17 @@ public class QueryTemplateService {
   }
 
   /**
+   * Retrieves the query to extract the changelog for the target instance.
+   * 
+   * @param resourceID The target resource identifier.
+   * @param id         The target instance identifier.
+   */
+  public String getChangelogQuery(String resourceID, String id) {
+    String concept = this.fileService.getTargetIri(resourceID).getQueryString();
+    return this.fileService.getContentsWithReplacement(FileService.CHANGELOG_RESOURCE, concept, id);
+  }
+
+  /**
    * Generates the form template as a JSON object.
    * 
    * @param shaclFormInputs the form inputs queried from the SHACL restrictions.

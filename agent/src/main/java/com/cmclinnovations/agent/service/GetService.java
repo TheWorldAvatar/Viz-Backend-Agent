@@ -646,4 +646,18 @@ public class GetService {
     LOGGER.error(StringResource.INVALID_SHACL_ERROR_MSG);
     throw new IllegalStateException(StringResource.INVALID_SHACL_ERROR_MSG);
   }
+
+  /**
+   * Retrieve all the target instances and their information from the query input.
+   * 
+   * @param query Query for execution.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getChanges(String type, String id) {
+    String query = this.queryTemplateService.getChangelogQuery(type, id);
+    Queue<SparqlBinding> instances = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
+    return this.responseEntityBuilder.success(null,
+        instances.stream()
+            .map(SparqlBinding::get)
+            .toList());
+  }
 }

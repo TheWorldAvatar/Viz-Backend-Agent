@@ -1,0 +1,29 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": {
+    "@replace": "id",
+    "@type": "iri",
+    "prefix": "https://theworldavatar.io/kg/activity/"
+  },
+  "@type": "https://theworldavatar.io/kg/ontochangelog/Activity",
+  "http://purl.org/dc/terms/description": {
+    "@replace": "remarks",
+    "@type": "literal"
+  },
+  "https://theworldavatar.io/kg/ontochangelog/timestamp": {
+    "@replace": "timestamp",
+    "@type": "literal",
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
+  },
+  "https://theworldavatar.io/kg/ontochangelog/affected": {
+    "@replace": "iri",
+    "@type": "iri"
+  },
+  "https://theworldavatar.io/kg/ontochangelog/wasPerformedBy": {
+    "@replace": "agent",
+    "@type": "iri",
+    "@optional": true
+  }
+}

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
@@ -50,16 +51,17 @@ public class UpdateService {
    * @param resourceID       The resource identifier ie type for the instance.
    * @param successMessageId Successful message identifier.
    * @param editedParams     Edited parameters to replace the current values.
-   * @param branchName       The branch name to use for filtering (can be null).
+   * @param trackAction      The action required for tracking.
    */
   public ResponseEntity<StandardApiResponse<?>> update(String id, String resourceId, String successMessageId,
-      Map<String, Object> editedParams) {
+      Map<String, Object> editedParams, TrackActionType trackAction) {
     String branchDelete = (String) editedParams.get(QueryResource.DELETE_BRANCH_KEY);
     ResponseEntity<StandardApiResponse<?>> deleteResponse = this.deleteService.delete(resourceId, id, branchDelete);
 
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
       return this.addService.instantiate(resourceId, id, editedParams,
-          MessageFormat.format("{0} has been successfully updated for {1}", resourceId, id), successMessageId);
+          MessageFormat.format("{0} has been successfully updated for {1}", resourceId, id), successMessageId,
+          trackAction);
     } else {
       return deleteResponse;
     }
@@ -81,5 +83,4 @@ public class UpdateService {
         LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_SERVER_KEY),
         HttpStatus.INTERNAL_SERVER_ERROR);
   }
-
 }
