@@ -24,6 +24,7 @@ import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
@@ -272,7 +273,7 @@ public class VisBackendAgent {
       @RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to add one {}...", type);
     return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.addService.instantiate(type, instance, true);
+      return this.addService.instantiate(type, instance, TrackActionType.CREATION);
     });
   }
 

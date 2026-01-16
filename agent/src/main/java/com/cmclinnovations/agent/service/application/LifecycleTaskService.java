@@ -23,6 +23,7 @@ import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
+import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
@@ -457,7 +458,7 @@ public class LifecycleTaskService {
   public ResponseEntity<StandardApiResponse<?>> genOccurrence(String resourceId, Map<String, Object> params,
       LifecycleEventType eventType, String successLogMessage, String messageResource) {
     this.lifecycleQueryService.addOccurrenceParams(params, eventType);
-    return this.addService.instantiate(resourceId, params, successLogMessage, messageResource, false);
+    return this.addService.instantiate(resourceId, params, successLogMessage, messageResource, TrackActionType.IGNORED);
   }
 
   /**
@@ -545,7 +546,7 @@ public class LifecycleTaskService {
       params.put(LifecycleResource.DATE_TIME_KEY, occurrenceDate);
       try {
         // Error logs for any specified occurrence
-        this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, false);
+        this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, TrackActionType.IGNORED);
       } catch (IllegalStateException e) {
         LOGGER.error("Error encountered while creating order for {} on {}! Read error logs for more details",
             contract, occurrenceDate);
@@ -587,7 +588,7 @@ public class LifecycleTaskService {
     LifecycleResource.genIdAndInstanceParameters(defaultPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
 
     ResponseEntity<StandardApiResponse<?>> orderInstantiatedResponse = this.addService.instantiate(
-        LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, false);
+        LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, TrackActionType.IGNORED);
     if (orderInstantiatedResponse.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Retrieving the current dispatch details...");
       String prevDispatchId = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_ORDER_DISPATCHED);
@@ -608,7 +609,8 @@ public class LifecycleTaskService {
         LifecycleResource.genIdAndInstanceParameters(defaultPrefix, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
             params);
         params.put(LifecycleResource.ORDER_KEY, orderInstantiatedResponse.getBody().data().id());
-        return this.addService.instantiate(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), params, false);
+        return this.addService.instantiate(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), params,
+            TrackActionType.IGNORED);
       }
     }
     throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));

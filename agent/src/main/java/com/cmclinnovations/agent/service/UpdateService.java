@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
@@ -59,7 +60,8 @@ public class UpdateService {
 
     if (deleteResponse.getStatusCode().equals(HttpStatus.OK)) {
       return this.addService.instantiate(resourceId, id, editedParams,
-          MessageFormat.format("{0} has been successfully updated for {1}", resourceId, id), successMessageId, false);
+          MessageFormat.format("{0} has been successfully updated for {1}", resourceId, id), successMessageId,
+          TrackActionType.IGNORED);
     } else {
       return deleteResponse;
     }

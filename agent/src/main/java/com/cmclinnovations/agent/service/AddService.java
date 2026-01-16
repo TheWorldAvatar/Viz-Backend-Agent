@@ -28,6 +28,7 @@ import org.topbraid.shacl.rules.RuleUtil;
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.core.ChangelogService;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.service.core.KGService;
@@ -75,10 +76,10 @@ public class AddService {
    * 
    * @param resourceID  The target resource identifier for the instance.
    * @param param       Request parameters.
-   * @param trackAction Indicates if the action should be tracked.
+   * @param trackAction The action required for tracking.
    */
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, Map<String, Object> param,
-      boolean trackAction) {
+      TrackActionType trackAction) {
     return this.instantiate(resourceID, param, null, null, trackAction);
   }
 
@@ -89,10 +90,10 @@ public class AddService {
    * 
    * @param resourceID  The target resource identifier for the instance.
    * @param param       Request parameters.
-   * @param trackAction Indicates if the action should be tracked.
+   * @param trackAction The action required for tracking.
    */
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, Map<String, Object> param,
-      String successLogMessage, String messageResource, boolean trackAction) {
+      String successLogMessage, String messageResource, TrackActionType trackAction) {
     String id = param.getOrDefault(QueryResource.ID_KEY, UUID.randomUUID()).toString();
     return this.instantiate(resourceID, id, param, successLogMessage, messageResource, trackAction);
   }
@@ -104,10 +105,10 @@ public class AddService {
    * @param resourceID  The target resource identifier for the instance.
    * @param targetId    The target instance IRI.
    * @param param       Request parameters.
-   * @param trackAction Indicates if the action should be tracked.
+   * @param trackAction The action required for tracking.
    */
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, String targetId,
-      Map<String, Object> param, String successLogMessage, String messageResource, boolean trackAction) {
+      Map<String, Object> param, String successLogMessage, String messageResource, TrackActionType trackAction) {
     LOGGER.info("Instantiating an instance of {} ...", resourceID);
     // Update ID value to target ID
     param.put(QueryResource.ID_KEY, targetId);
@@ -129,10 +130,10 @@ public class AddService {
    * @param successLogMessage Optional log message on success.
    * @param messageResource   Optional resource id of the message to be displayed
    *                          when successful.
-   * @param trackAction       Indicates if the action should be tracked.
+   * @param trackAction       The action required for tracking.
    */
   private ResponseEntity<StandardApiResponse<?>> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID,
-      String successLogMessage, String messageResource, boolean trackAction) {
+      String successLogMessage, String messageResource, TrackActionType trackAction) {
     LOGGER.info("Adding instance to endpoint...");
     String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();
     String jsonString = jsonLdSchema.toString();
@@ -161,9 +162,10 @@ public class AddService {
 
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(successLogMessage == null ? "Instantiation is successful!" : successLogMessage);
-      if (trackAction) {
-        this.instantiate(QueryResource.HISTORY_ACTIVITY_RESOURCE, this.changelogService.logCreation(instanceIri),
-            false);
+      if (trackAction == TrackActionType.CREATION) {
+        this.instantiate(QueryResource.HISTORY_ACTIVITY_RESOURCE,
+            this.changelogService.logAction(instanceIri, trackAction),
+            TrackActionType.IGNORED);
       }
       return this.responseEntityBuilder.success(instanceIri,
           LocalisationTranslator

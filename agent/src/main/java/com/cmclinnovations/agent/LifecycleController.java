@@ -25,6 +25,7 @@ import com.cmclinnovations.agent.model.function.ContractOperation;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
+import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
@@ -92,7 +93,7 @@ public class LifecycleController {
     // Instantiates the lifecycle first before adding schedule parameters
     ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
         LifecycleResource.LIFECYCLE_RESOURCE, params, "The lifecycle of the contract has been successfully drafted!",
-        LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY, false);
+        LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY, TrackActionType.IGNORED);
     this.genContractSchedule(params);
     // Log out successful message, and return the original response
     LOGGER.info("Contract has been successfully drafted!");
@@ -197,7 +198,7 @@ public class LifecycleController {
         : LifecycleResource.SCHEDULE_RESOURCE;
     return this.addService.instantiate(scheduleResource,
         params, "Schedule has been successfully drafted for contract!",
-        LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY, false);
+        LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY, TrackActionType.IGNORED);
   }
 
   /**
@@ -238,7 +239,8 @@ public class LifecycleController {
   private void cloneDraftContract(String entityType, Map<String, Object> contractDetails,
       Map<String, Object> draftDetails) {
     // Generate new contract details from existing contract
-    StandardApiResponse<?> response = this.addService.instantiate(entityType, contractDetails, false).getBody();
+    StandardApiResponse<?> response = this.addService.instantiate(entityType, contractDetails, TrackActionType.IGNORED)
+        .getBody();
     // Generate the params to be sent to the draft route
     // ID should be side effect of instantiate
     draftDetails.put(QueryResource.ID_KEY, contractDetails.get(QueryResource.ID_KEY));
