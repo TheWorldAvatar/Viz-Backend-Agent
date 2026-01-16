@@ -613,17 +613,28 @@ public class LifecycleTaskService {
     }
     throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));
   }
+
   /**
    * Overwrite the date of order to a new specified date.
    * 
-   * @param params    Required parameters with configurable parameters to
-   *                  instantiate the occurrence.
+   * @param params Required parameters with configurable parameters to
+   *               instantiate the occurrence.
    */
   public ResponseEntity<StandardApiResponse<?>> rescheduleTask(Map<String, Object> params) {
     LOGGER.info("Successfuly reschedule task to new date!");
+    // query for existing order occurrence and related IRIs
     String id = this.getPreviousOccurrence(QueryResource.ID_KEY, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
     SparqlBinding result = this.lifecycleQueryService.getInstance(FileService.RESCHEDULE_QUERY_RESOURCE, id);
-    return this.responseEntityBuilder.success(null, "Under construction");
+    // parse related IRIs
+    String lifecycleStartDate = result.getFieldValue("lifecycle_start_date");
+    String lifecycleEndDate = result.getFieldValue("lifecycle_end_date");
+    String expireStage = result.getFieldValue("expire_stage");
+    String orderEvent = result.getFieldValue("order_event");
+    // new order date
+    String rescheduleDate = params.get(LifecycleResource.RESCHEDULE_DATE_KEY).toString();
+    String rescheduleDatetime = this.dateTimeService.getDateTimeFromDate(rescheduleDate);
+    String query = this.lifecycleQueryFactory.getRescheduleQuery(lifecycleStartDate, lifecycleEndDate, expireStage, orderEvent, rescheduleDate, rescheduleDatetime);
+    return this.responseEntityBuilder.success(null, query);
   }
 
   /**

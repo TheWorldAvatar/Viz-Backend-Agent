@@ -122,6 +122,29 @@ public class LifecycleQueryFactory {
         + latestDateVar + ")";
   }
 
+  public String getRescheduleQuery(String lifecycleStartDate,String lifecycleEndDate, String expireStage,
+    String orderEvent, String rescheduleDate,String rescheduleDatetime) {
+    return QueryResource.PREFIX_TEMPLATE
+        + "DELETE {\n"
+        + "  <" + lifecycleStartDate + "> cmns-dt:hasDateValue ?old_start .\n"
+        + "  <" + lifecycleEndDate + "> cmns-dt:hasDateValue ?old_end .\n"
+        + "  <" + expireStage + "> fibo-fnd-dt-oc:hasEventDate ?old_expire .\n"
+        + "  <" + orderEvent + "> fibo-fnd-dt-oc:hasEventDate ?old_order_dt .\n"
+        + "}\n"
+        + "INSERT {\n"
+        + "  <" + lifecycleStartDate + "> cmns-dt:hasDateValue \"" + rescheduleDate + "\"^^xsd:date .\n"
+        + "  <" + lifecycleEndDate + "> cmns-dt:hasDateValue \"" + rescheduleDate + "\"^^xsd:date .\n"
+        + "  <" + expireStage + "> fibo-fnd-dt-oc:hasEventDate \"" + rescheduleDate + "\"^^xsd:date .\n"
+        + "  <" + orderEvent + "> fibo-fnd-dt-oc:hasEventDate \"" + rescheduleDatetime + "\"^^xsd:dateTime .\n"
+        + "}\n"
+        + "WHERE {\n"
+        + "  OPTIONAL { <" + lifecycleStartDate + "> cmns-dt:hasDateValue ?old_start }\n"
+        + "  OPTIONAL { <" + lifecycleEndDate + "> cmns-dt:hasDateValue ?old_end }\n"
+        + "  OPTIONAL { <" + expireStage + "> fibo-fnd-dt-oc:hasEventDate ?old_expire }\n"
+        + "  OPTIONAL { <" + orderEvent + "> fibo-fnd-dt-oc:hasEventDate ?old_order_dt }\n"
+        + "}";
+  }
+
   /**
    * Retrieves the SPARQL query to get the service tasks for the specified
    * date and/or contract.
