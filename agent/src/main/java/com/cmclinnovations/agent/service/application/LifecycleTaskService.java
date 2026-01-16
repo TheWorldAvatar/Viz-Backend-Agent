@@ -630,11 +630,11 @@ public class LifecycleTaskService {
     try {
       SparqlBinding result = this.getService.getInstance(getQuery); // ensure single instance
       // parse related IRIs
-      String lifecycleStartDate = result.getFieldValue("lifecycle_start_date");
-      String lifecycleEndDate = result.getFieldValue("lifecycle_end_date");
-      String expireStage = result.getFieldValue("expire_stage");
-      String orderEvent = result.getFieldValue("order_event");
-      // new order date
+      String lifecycleStartDate = result.getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY).getVarName());
+      String lifecycleEndDate = result.getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY).getVarName());
+      String expireStage = result.getFieldValue(QueryResource.genVariable(LifecycleResource.STAGE_KEY).getVarName());
+      String orderEvent = result.getFieldValue(QueryResource.genVariable(LifecycleResource.EVENT_KEY).getVarName());
+      // new date
       String rescheduleDate = params.get(LifecycleResource.RESCHEDULE_DATE_KEY).toString();
       String rescheduleDatetime = this.dateTimeService.getDateTimeFromDate(rescheduleDate);
       // update database

@@ -11,15 +11,15 @@ PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTi
 PREFIX fibo-fnd-dt-oc: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/>
 PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>
 
-SELECT ?lifecycle_start_date ?lifecycle_end_date ?expire_stage ?order_event
+SELECT ?start_date ?end_date ?stage ?event
 WHERE {
-  ?order_event fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent;
+  ?event fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent;
                ^cmns-col:comprises ?service_stage ;
                dc-terms:identifier "[target]" .
   
-  ?service_stage cmns-dt:succeeds/cmns-pts:holdsDuring/cmns-dt:hasEndDate ?lifecycle_start_date ;
-                 cmns-pts:holdsDuring/cmns-dt:hasEndDate ?lifecycle_end_date ;
-                 ^cmns-dt:succeeds ?expire_stage .
+  ?service_stage cmns-dt:succeeds/cmns-pts:holdsDuring/cmns-dt:hasEndDate ?start_date ;
+                 cmns-pts:holdsDuring/cmns-dt:hasEndDate ?end_date ;
+                 ^cmns-dt:succeeds ?stage .
                  
   ?service_stage fibo-fnd-dt-fd:hasSchedule/fibo-fnd-dt-fd:hasRecurrenceInterval/cmns-dt:hasDurationValue ?recurrence .
   FILTER(?recurrence = "P1D")
