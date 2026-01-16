@@ -81,6 +81,7 @@ public class FileService {
   public static final String FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR
       + "fixed_date_schedule.sparql";
   public static final String TASK_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "task.sparql";
+  public static final String RESCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "reschedule.sparql";
 
   public static final String REPLACEMENT_TARGET = "\\[target\\]";
   public static final String REPLACEMENT_SHAPE = "[shape]";

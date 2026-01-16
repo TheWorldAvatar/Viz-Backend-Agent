@@ -613,6 +613,18 @@ public class LifecycleTaskService {
     }
     throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));
   }
+  /**
+   * Overwrite the date of order to a new specified date.
+   * 
+   * @param params    Required parameters with configurable parameters to
+   *                  instantiate the occurrence.
+   */
+  public ResponseEntity<StandardApiResponse<?>> rescheduleTask(Map<String, Object> params) {
+    LOGGER.info("Successfuly reschedule task to new date!");
+    String id = this.getPreviousOccurrence(QueryResource.ID_KEY, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
+    SparqlBinding result = this.lifecycleQueryService.getInstance(FileService.RESCHEDULE_QUERY_RESOURCE, id);
+    return this.responseEntityBuilder.success(null, "Under construction");
+  }
 
   /**
    * Generate an occurrence for the order dispatch or delivery event of a

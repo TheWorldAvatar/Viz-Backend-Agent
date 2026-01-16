@@ -365,6 +365,16 @@ public class LifecycleController {
     });
   }
 
+  @PutMapping("/service/reschedule")
+  public ResponseEntity<StandardApiResponse<?>> rescheduleTask(@RequestBody Map<String, Object> params) {
+    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
+    this.checkMissingParams(params, LifecycleResource.DATE_KEY);
+    this.checkMissingParams(params, LifecycleResource.RESCHEDULE_DATE_KEY);
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
+      return this.lifecycleTaskService.rescheduleTask(params);
+    });
+  }
+
   /**
    * Route to perform a service action on a specific service. Valid types include:
    * 1) report: Reports any unfulfilled service delivery
