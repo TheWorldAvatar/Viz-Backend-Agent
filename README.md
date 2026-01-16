@@ -22,6 +22,7 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
       - [2.5.2 Delete route](#252-delete-route)
       - [2.5.3 Update route](#253-update-route)
       - [2.5.4 Get route](#254-get-route)
+      - [2.5.5 Get changelog route](#255-get-changelog-route)
     - [2.6 Service Lifecycle Route](#26-service-lifecycle-route)
       - [2.6.1 Status route](#261-status-route)
       - [2.6.2 Draft route](#262-draft-route)
@@ -521,6 +522,16 @@ where `{type}`is the requested identifier that must correspond to a target class
   "parameter-two": "criteria-two"
 }
 ```
+
+#### 2.5.5 Get changelog route
+
+To get the changelog for a specific instance, users can send a `GET` request to
+
+```
+<baseURL>/vis-backend-agent/changes/{type}/{id}
+```
+
+where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, and `{id}` is the specific instance's identifier.
 
 ### 2.6 Service Lifecycle Route
 

@@ -204,6 +204,18 @@ public class VisBackendAgent {
   }
 
   /**
+   * Retrieve the changes associated with the target instance of the specified
+   * type in the knowledge graph.
+   */
+  @GetMapping("/changes/{type}/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getChangelog(@PathVariable String type, @PathVariable String id) {
+    LOGGER.info("Received request to get the changelog for the instance of type {}...", type);
+    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
+      return this.getService.getChanges(type, id);
+    });
+  }
+
+  /**
    * Retrieve the target instance of the specified type in the knowledge graph
    * with human readable properties.
    */

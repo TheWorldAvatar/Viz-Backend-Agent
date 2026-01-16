@@ -1,0 +1,11 @@
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX ontochangelog: <https://theworldavatar.io/kg/ontochangelog/>
+
+SELECT DISTINCT ?timestamp ?message WHERE { 
+  ?iri a [target] ;
+         dc-terms:identifier "[target]" .
+  ?activity ontochangelog:affected ?iri ;
+            ontochangelog:timestamp ?timestamp ;
+            dc-terms:description ?message .
+}
+ORDER BY ASC( ?timestamp )
