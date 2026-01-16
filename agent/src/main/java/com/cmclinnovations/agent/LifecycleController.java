@@ -350,25 +350,29 @@ public class LifecycleController {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
       LifecycleEventType eventType = null;
+      TrackActionType trackAction = null;
       switch (type.toLowerCase()) {
         case "complete":
           LOGGER.info("Received request to complete a service order with completion details...");
           params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS);
           eventType = LifecycleEventType.SERVICE_EXECUTION;
+          trackAction = TrackActionType.COMPLETION;
           break;
         case "dispatch":
           LOGGER.info("Received request to assign the dispatch details for a service order...");
           eventType = LifecycleEventType.SERVICE_ORDER_DISPATCHED;
+          trackAction = TrackActionType.ASSIGNMENT;
           break;
         case "saved":
           LOGGER.info("Received request to save a service order with completion details...");
           params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_PENDING_STATUS);
           eventType = LifecycleEventType.SERVICE_EXECUTION;
+          trackAction = TrackActionType.SAVED_COMPLETION;
           break;
         default:
           break;
       }
-      return this.lifecycleTaskService.genDispatchOrDeliveryOccurrence(params, eventType);
+      return this.lifecycleTaskService.genDispatchOrDeliveryOccurrence(params, eventType, trackAction);
     });
   }
 
@@ -822,7 +826,8 @@ public class LifecycleController {
         // Search for previous occurrence to retrieve
       } else {
         try {
-          occurrenceId = this.lifecycleTaskService.getPreviousOccurrence(id, orderTypeParams.eventType);
+          occurrenceId = this.lifecycleTaskService.getPreviousOccurrence(id, QueryResource.ID_KEY,
+              orderTypeParams.eventType);
         } catch (NullPointerException e) {
           // Fail silently to give blank form template given the missing previous
           occurrenceId = "form";

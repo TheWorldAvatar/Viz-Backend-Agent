@@ -591,7 +591,8 @@ public class LifecycleTaskService {
         LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, TrackActionType.IGNORED);
     if (orderInstantiatedResponse.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Retrieving the current dispatch details...");
-      String prevDispatchId = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+      String prevDispatchId = this.getPreviousOccurrence(taskId, QueryResource.ID_KEY,
+          LifecycleEventType.SERVICE_ORDER_DISPATCHED);
       ResponseEntity<StandardApiResponse<?>> response = this.getService.getInstance(prevDispatchId,
           LifecycleEventType.SERVICE_ORDER_DISPATCHED);
       if (response.getStatusCode() == HttpStatus.OK) {
@@ -625,7 +626,7 @@ public class LifecycleTaskService {
    * @param eventType Target event type.
    */
   public ResponseEntity<StandardApiResponse<?>> genDispatchOrDeliveryOccurrence(Map<String, Object> params,
-      LifecycleEventType eventType) {
+      LifecycleEventType eventType, TrackActionType action) {
     String remarksMsg;
     String successMsgId;
     LifecycleEventType succeedsEventType;
@@ -662,8 +663,14 @@ public class LifecycleTaskService {
     }
     params.put(LifecycleResource.ORDER_KEY,
         this.getPreviousOccurrence(QueryResource.IRI_KEY, succeedsEventType, params));
-
-    return this.updateService.update(occurrenceId, eventType.getId(), successMsgId, params, TrackActionType.IGNORED);
+    ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(occurrenceId, eventType.getId(),
+        successMsgId, params, TrackActionType.IGNORED);
+    if (response.getStatusCode() == HttpStatus.OK) {
+      String orderTask = this.getPreviousOccurrence(occurrenceId, QueryResource.IRI_KEY,
+          LifecycleEventType.SERVICE_ORDER_RECEIVED);
+      this.addService.logActivity(orderTask, action);
+    }
+    return response;
   }
 
   /**
@@ -672,12 +679,13 @@ public class LifecycleTaskService {
    * 
    * @param latestEventId The identifier of the latest event in the succeeds
    *                      chain.
+   * @param fieldKey      The field key to extract. Either id or iri.
    * @param eventType     Target event type to query for.
    */
-  public String getPreviousOccurrence(String latestEventId, LifecycleEventType eventType) {
+  public String getPreviousOccurrence(String latestEventId, String fieldKey, LifecycleEventType eventType) {
     return this.lifecycleQueryService
         .getInstance(FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, latestEventId, eventType.getEvent())
-        .getFieldValue(QueryResource.ID_KEY);
+        .getFieldValue(fieldKey);
   }
 
   /**
