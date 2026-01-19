@@ -135,20 +135,3 @@ base:ContractTerminationOccurrenceShape
     sh:minCount 0 ;
     sh:maxCount 1 ;
   ] .
-
-base:ServiceRescheduleOccurrenceShape
-  a sh:NodeShape ;
-  sh:targetClass fibo-fbc-pas-fpas:ContractLifecycleEventOccurrence ;
-  sh:property [
-    sh:path fibo-fnd-rel-rel:exemplifies ;
-    sh:hasValue oservice:OrderReceivedEvent ;
-  ] ; 
-  sh:property [
-    sh:name "reschedule date";
-    sh:description "The new scheduled date for the service to reach the service site.";
-    sh:order 1;
-    sh:path ontoservice:hasRescheduleDate ;
-    sh:datatype xsd:date ;
-    sh:minCount 1 ;
-    sh:maxCount 1 ;
-  ] .
