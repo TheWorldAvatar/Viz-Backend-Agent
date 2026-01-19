@@ -173,7 +173,7 @@ public class BillingService {
   private ResponseEntity<StandardApiResponse<?>> addCustomInstance(Map<String, Object> replacements) {
     // Instantiate the customer details based on the custom resource ID first
     String type = TypeCastUtils.castToObject(replacements.remove(StringResource.TYPE_REQUEST_PARAM), String.class);
-    return this.addService.instantiate(type, replacements, TrackActionType.IGNORED);
+    return this.addService.instantiate(type, replacements, TrackActionType.CREATION);
   }
 
   /**
