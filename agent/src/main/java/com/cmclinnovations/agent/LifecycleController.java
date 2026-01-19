@@ -239,7 +239,7 @@ public class LifecycleController {
   private void cloneDraftContract(String entityType, Map<String, Object> contractDetails,
       Map<String, Object> draftDetails) {
     // Generate new contract details from existing contract
-    StandardApiResponse<?> response = this.addService.instantiate(entityType, contractDetails, TrackActionType.IGNORED)
+    StandardApiResponse<?> response = this.addService.instantiate(entityType, contractDetails, TrackActionType.CREATION)
         .getBody();
     // Generate the params to be sent to the draft route
     // ID should be side effect of instantiate
