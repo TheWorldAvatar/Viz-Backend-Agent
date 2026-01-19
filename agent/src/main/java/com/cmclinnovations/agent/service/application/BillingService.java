@@ -133,7 +133,7 @@ public class BillingService {
    * @param instance   Request parameters containing the invoice parameters.
    */
   public ResponseEntity<StandardApiResponse<?>> genInvoiceInstance(String resourceId, Map<String, Object> instance) {
-    return this.addService.instantiate(resourceId, instance, TrackActionType.IGNORED);
+    return this.addService.instantiate(resourceId, instance, TrackActionType.CREATION);
   }
 
   /**
