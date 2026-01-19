@@ -6,8 +6,11 @@ public enum TrackActionType {
   CONTRACT_RESET_STATUS("Verified with client; Pending approval"),
   APPROVED("Approved"),
   ASSIGNMENT("Assigned"),
+  CANCELLATION("Cancelled"),
   COMPLETION("Completed"),
   SAVED_COMPLETION("Saved completion details"),
+  ISSUE_REPORT("Reported issue"),
+  RESCINDMENT("Rescinded"),
   IGNORED("");
 
   private final String message;

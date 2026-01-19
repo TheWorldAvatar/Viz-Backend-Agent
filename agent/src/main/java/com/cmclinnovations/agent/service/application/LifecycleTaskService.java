@@ -252,8 +252,8 @@ public class LifecycleTaskService {
           throw new IllegalArgumentException(
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
         }
-        return this.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params,
-            LifecycleEventType.SERVICE_CANCELLATION, "Task has been successfully cancelled!",
+        return this.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params, LifecycleEventType.SERVICE_CANCELLATION,
+            TrackActionType.CANCELLATION, "Task has been successfully cancelled!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
       case "report":
         LOGGER.info("Received request to report an unfulfilled service...");
@@ -262,8 +262,8 @@ public class LifecycleTaskService {
           throw new IllegalArgumentException(
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
         }
-        return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params,
-            LifecycleEventType.SERVICE_INCIDENT_REPORT, "Task has been successfully reported!",
+        return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params, LifecycleEventType.SERVICE_INCIDENT_REPORT,
+            TrackActionType.ISSUE_REPORT, "Task has been successfully reported!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
 
       default:
@@ -440,8 +440,8 @@ public class LifecycleTaskService {
    */
   public ResponseEntity<StandardApiResponse<?>> genOccurrence(Map<String, Object> params,
       LifecycleEventType eventType, String successLogMessage, String messageResource) {
-    return this.genOccurrence(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, eventType, successLogMessage,
-        messageResource);
+    return this.genOccurrence(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, eventType, TrackActionType.IGNORED,
+        successLogMessage, messageResource);
   }
 
   /**
@@ -451,14 +451,22 @@ public class LifecycleTaskService {
    * @param params            Existing configurable parameters that will be
    *                          amended to instantiate the occurrence.
    * @param eventType         Target event type.
+   * @param trackAction       The action required for tracking.
    * @param successLogMessage Optional log message on success.
    * @param messageResource   Optional resource id of the message to be displayed
    *                          when successful.
    */
   public ResponseEntity<StandardApiResponse<?>> genOccurrence(String resourceId, Map<String, Object> params,
-      LifecycleEventType eventType, String successLogMessage, String messageResource) {
+      LifecycleEventType eventType, TrackActionType action, String successLogMessage, String messageResource) {
     this.lifecycleQueryService.addOccurrenceParams(params, eventType);
-    return this.addService.instantiate(resourceId, params, successLogMessage, messageResource, TrackActionType.IGNORED);
+    ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(resourceId, params, successLogMessage,
+        messageResource, TrackActionType.IGNORED);
+    if (response.getStatusCode() == HttpStatus.OK && action != TrackActionType.IGNORED) {
+      String orderTask = this.getPreviousOccurrence(params.get(QueryResource.ID_KEY).toString(), QueryResource.IRI_KEY,
+          LifecycleEventType.SERVICE_ORDER_RECEIVED);
+      this.addService.logActivity(orderTask, action);
+    }
+    return response;
   }
 
   /**

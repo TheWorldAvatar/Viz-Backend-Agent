@@ -410,16 +410,19 @@ public class LifecycleController {
   @PostMapping("/archive/{action}")
   public ResponseEntity<StandardApiResponse<?>> rescindOrTerminateContract(@PathVariable String action,
       @RequestBody Map<String, Object> params) {
-    final record ServiceActionParams(String logSuccess, String messageSuccess, LifecycleEventType eventType) {
+    final record ServiceActionParams(String logSuccess, String messageSuccess, LifecycleEventType eventType,
+        TrackActionType action) {
     }
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     ServiceActionParams serviceActionParams = switch (action) {
       case "rescind" ->
         new ServiceActionParams("Contract has been successfully rescinded!",
-            LocalisationResource.SUCCESS_CONTRACT_RESCIND_KEY, LifecycleEventType.ARCHIVE_RESCINDMENT);
+            LocalisationResource.SUCCESS_CONTRACT_RESCIND_KEY, LifecycleEventType.ARCHIVE_RESCINDMENT,
+            TrackActionType.RESCINDMENT);
       case "terminate" -> new ServiceActionParams("Contract has been successfully terminated!",
-          LocalisationResource.SUCCESS_CONTRACT_TERMINATE_KEY, LifecycleEventType.ARCHIVE_TERMINATION);
+          LocalisationResource.SUCCESS_CONTRACT_TERMINATE_KEY, LifecycleEventType.ARCHIVE_TERMINATION,
+          TrackActionType.CANCELLATION);
       default -> throw new InvalidRouteException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, action));
     };
@@ -446,8 +449,12 @@ public class LifecycleController {
       }
       LOGGER.info("Successfully cancelled scheduled tasks of {} contract!", action);
       // update contract status
-      return this.lifecycleTaskService.genOccurrence(params, serviceActionParams.eventType,
-          serviceActionParams.logSuccess, serviceActionParams.messageSuccess);
+      ResponseEntity<StandardApiResponse<?>> response = this.lifecycleTaskService.genOccurrence(params,
+          serviceActionParams.eventType, serviceActionParams.logSuccess, serviceActionParams.messageSuccess);
+      if (response.getStatusCode() == HttpStatus.OK) {
+        this.lifecycleContractService.logContractActivity(contractId, serviceActionParams.action);
+      }
+      return response;
     });
   }
 
