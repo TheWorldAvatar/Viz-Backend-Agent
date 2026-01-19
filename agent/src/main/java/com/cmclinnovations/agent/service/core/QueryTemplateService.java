@@ -184,8 +184,12 @@ public class QueryTemplateService {
    * @param id         The target instance identifier.
    */
   public String getChangelogQuery(String resourceID, String id) {
-    String concept = this.fileService.getTargetIri(resourceID).getQueryString();
-    return this.fileService.getContentsWithReplacement(FileService.CHANGELOG_RESOURCE, concept, id);
+    if (resourceID.equals(LifecycleResource.TASK_RESOURCE)) {
+      return this.fileService.getContentsWithReplacement(FileService.CHANGELOG_TASK_RESOURCE, id);
+    } else {
+      String concept = this.fileService.getTargetIri(resourceID).getQueryString();
+      return this.fileService.getContentsWithReplacement(FileService.CHANGELOG_RESOURCE, concept, id);
+    }
   }
 
   /**
