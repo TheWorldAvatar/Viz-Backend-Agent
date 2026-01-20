@@ -1,0 +1,17 @@
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX cmns-dt: <https://www.omg.org/spec/Commons/DatesAndTimes/>
+PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+PREFIX ontochangelog: <https://theworldavatar.io/kg/ontochangelog/>
+PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>
+
+SELECT DISTINCT ?timestamp ?user ?message WHERE { 
+  ?iri a <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence> ;
+    cmns-dt:succeeds* ?order ;
+    dc-terms:identifier "[target]" .
+  ?order fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent .
+  ?activity ontochangelog:affected ?order ;
+    ontochangelog:timestamp ?timestamp ;
+    dc-terms:description ?message .
+  OPTIONAL{?activity ontochangelog:wasPerformedBy/rdfs:label ?user}
+}
+ORDER BY ASC( ?timestamp )

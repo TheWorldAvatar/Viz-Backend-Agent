@@ -24,6 +24,7 @@ import com.cmclinnovations.agent.template.FormTemplateFactory;
 import com.cmclinnovations.agent.template.query.DeleteQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.SearchQueryTemplateFactory;
+import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -175,6 +176,24 @@ public class QueryTemplateService {
       resourceID = this.fileService.getTargetIri(resourceID).getQueryString();
     }
     return this.fileService.getContentsWithReplacement(FileService.FORM_QUERY_RESOURCE, resourceID);
+  }
+
+  /**
+   * Retrieves the query to extract the changelog for the target instance.
+   * 
+   * @param resourceID The target resource identifier.
+   * @param id         The target instance identifier.
+   */
+  public String getChangelogQuery(String resourceID, String id) {
+    if (resourceID.equals(LifecycleResource.TASK_RESOURCE)) {
+      return this.fileService.getContentsWithReplacement(FileService.CHANGELOG_TASK_RESOURCE, id);
+    } else if (resourceID.equals(BillingResource.BILL_RESOURCE)) {
+      return this.fileService.getContentsWithReplacement(FileService.CHANGELOG_RESOURCE,
+          BillingResource.INDIVIDUAL_TRANSACTION_IRI.getQueryString(), id);
+    } else {
+      String concept = this.fileService.getTargetIri(resourceID).getQueryString();
+      return this.fileService.getContentsWithReplacement(FileService.CHANGELOG_RESOURCE, concept, id);
+    }
   }
 
   /**
