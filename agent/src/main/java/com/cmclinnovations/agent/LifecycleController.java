@@ -25,6 +25,7 @@ import com.cmclinnovations.agent.model.function.ContractOperation;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
+import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
@@ -92,7 +93,7 @@ public class LifecycleController {
     // Instantiates the lifecycle first before adding schedule parameters
     ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
         LifecycleResource.LIFECYCLE_RESOURCE, params, "The lifecycle of the contract has been successfully drafted!",
-        LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY);
+        LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY, TrackActionType.IGNORED);
     this.genContractSchedule(params);
     // Log out successful message, and return the original response
     LOGGER.info("Contract has been successfully drafted!");
@@ -121,7 +122,7 @@ public class LifecycleController {
       if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
         return this.updateService.update(
             targetId, LifecycleResource.LIFECYCLE_RESOURCE, LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY,
-            params);
+            params, TrackActionType.IGNORED);
       }
       return scheduleResponse;
     });
@@ -197,7 +198,7 @@ public class LifecycleController {
         : LifecycleResource.SCHEDULE_RESOURCE;
     return this.addService.instantiate(scheduleResource,
         params, "Schedule has been successfully drafted for contract!",
-        LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY);
+        LocalisationResource.SUCCESS_SCHEDULE_DRAFT_KEY, TrackActionType.IGNORED);
   }
 
   /**
@@ -238,7 +239,8 @@ public class LifecycleController {
   private void cloneDraftContract(String entityType, Map<String, Object> contractDetails,
       Map<String, Object> draftDetails) {
     // Generate new contract details from existing contract
-    StandardApiResponse<?> response = this.addService.instantiate(entityType, contractDetails).getBody();
+    StandardApiResponse<?> response = this.addService.instantiate(entityType, contractDetails, TrackActionType.CREATION)
+        .getBody();
     // Generate the params to be sent to the draft route
     // ID should be side effect of instantiate
     draftDetails.put(QueryResource.ID_KEY, contractDetails.get(QueryResource.ID_KEY));
@@ -321,9 +323,14 @@ public class LifecycleController {
     } else {
       LOGGER.info("All orders has been successfully received!");
       try {
-        return this.lifecycleTaskService.genOccurrence(params, LifecycleEventType.APPROVED,
+        ResponseEntity<StandardApiResponse<?>> response = this.lifecycleTaskService.genOccurrence(params,
+            LifecycleEventType.APPROVED,
             MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
             LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
+        if (response.getStatusCode() == HttpStatus.OK) {
+          this.lifecycleContractService.logContractActivity(contractId, TrackActionType.APPROVED);
+        }
+        return response;
       } catch (IllegalStateException e) {
         LOGGER.warn("Something went wrong with instantiating the approve event for {}!", contractId);
         throw e;
@@ -343,25 +350,29 @@ public class LifecycleController {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
       LifecycleEventType eventType = null;
+      TrackActionType trackAction = null;
       switch (type.toLowerCase()) {
         case "complete":
           LOGGER.info("Received request to complete a service order with completion details...");
           params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS);
           eventType = LifecycleEventType.SERVICE_EXECUTION;
+          trackAction = TrackActionType.COMPLETION;
           break;
         case "dispatch":
           LOGGER.info("Received request to assign the dispatch details for a service order...");
           eventType = LifecycleEventType.SERVICE_ORDER_DISPATCHED;
+          trackAction = TrackActionType.ASSIGNMENT;
           break;
         case "saved":
           LOGGER.info("Received request to save a service order with completion details...");
           params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_PENDING_STATUS);
           eventType = LifecycleEventType.SERVICE_EXECUTION;
+          trackAction = TrackActionType.SAVED_COMPLETION;
           break;
         default:
           break;
       }
-      return this.lifecycleTaskService.genDispatchOrDeliveryOccurrence(params, eventType);
+      return this.lifecycleTaskService.genDispatchOrDeliveryOccurrence(params, eventType, trackAction);
     });
   }
 
@@ -409,16 +420,19 @@ public class LifecycleController {
   @PostMapping("/archive/{action}")
   public ResponseEntity<StandardApiResponse<?>> rescindOrTerminateContract(@PathVariable String action,
       @RequestBody Map<String, Object> params) {
-    final record ServiceActionParams(String logSuccess, String messageSuccess, LifecycleEventType eventType) {
+    final record ServiceActionParams(String logSuccess, String messageSuccess, LifecycleEventType eventType,
+        TrackActionType action) {
     }
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     ServiceActionParams serviceActionParams = switch (action) {
       case "rescind" ->
         new ServiceActionParams("Contract has been successfully rescinded!",
-            LocalisationResource.SUCCESS_CONTRACT_RESCIND_KEY, LifecycleEventType.ARCHIVE_RESCINDMENT);
+            LocalisationResource.SUCCESS_CONTRACT_RESCIND_KEY, LifecycleEventType.ARCHIVE_RESCINDMENT,
+            TrackActionType.RESCINDMENT);
       case "terminate" -> new ServiceActionParams("Contract has been successfully terminated!",
-          LocalisationResource.SUCCESS_CONTRACT_TERMINATE_KEY, LifecycleEventType.ARCHIVE_TERMINATION);
+          LocalisationResource.SUCCESS_CONTRACT_TERMINATE_KEY, LifecycleEventType.ARCHIVE_TERMINATION,
+          TrackActionType.CANCELLATION);
       default -> throw new InvalidRouteException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, action));
     };
@@ -445,8 +459,12 @@ public class LifecycleController {
       }
       LOGGER.info("Successfully cancelled scheduled tasks of {} contract!", action);
       // update contract status
-      return this.lifecycleTaskService.genOccurrence(params, serviceActionParams.eventType,
-          serviceActionParams.logSuccess, serviceActionParams.messageSuccess);
+      ResponseEntity<StandardApiResponse<?>> response = this.lifecycleTaskService.genOccurrence(params,
+          serviceActionParams.eventType, serviceActionParams.logSuccess, serviceActionParams.messageSuccess);
+      if (response.getStatusCode() == HttpStatus.OK) {
+        this.lifecycleContractService.logContractActivity(contractId, serviceActionParams.action);
+      }
+      return response;
     });
   }
 
@@ -825,7 +843,8 @@ public class LifecycleController {
         // Search for previous occurrence to retrieve
       } else {
         try {
-          occurrenceId = this.lifecycleTaskService.getPreviousOccurrence(id, orderTypeParams.eventType);
+          occurrenceId = this.lifecycleTaskService.getPreviousOccurrence(id, QueryResource.ID_KEY,
+              orderTypeParams.eventType);
         } catch (NullPointerException e) {
           // Fail silently to give blank form template given the missing previous
           occurrenceId = "form";

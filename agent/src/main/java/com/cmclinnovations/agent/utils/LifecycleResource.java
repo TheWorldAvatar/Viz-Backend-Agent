@@ -159,6 +159,10 @@ public class LifecycleResource {
         return FileService.SCHEDULE_JSON_LD_RESOURCE;
       case LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE:
         return FileService.FIXED_DATE_SCHEDULE_JSON_LD_RESOURCE;
+      case QueryResource.HISTORY_ACTIVITY_RESOURCE:
+        return FileService.HISTORY_ACTIVITY_JSON_LD_RESOURCE;
+      case QueryResource.HISTORY_AGENT_RESOURCE:
+        return FileService.HISTORY_AGENT_JSON_LD_RESOURCE;
       default:
         return null;
     }
