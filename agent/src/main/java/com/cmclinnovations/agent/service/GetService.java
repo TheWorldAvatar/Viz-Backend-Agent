@@ -241,7 +241,7 @@ public class GetService {
     addStatements += this.getQueryStatementsForTargetFields(iri, pagination.getSortedFields(),
         pagination.getFilters());
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
-        pagination, true);
+        pagination, true, false);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> {
           String eventIdVar = QueryResource.EVENT_ID_VAR.getVarName();
@@ -265,7 +265,8 @@ public class GetService {
    */
   public List<String> getAllFilterOptionsAsStrings(String resourceID, String field, String addStatements,
       String search, Map<String, Set<String>> filters) {
-    return this.queryFilterOptions(resourceID, field, addStatements, search, filters, false).stream()
+    return this.queryFilterOptions(resourceID, field, addStatements, search, filters, false, false)
+        .stream()
         .map(binding -> binding.getFieldValue(field))
         .toList();
   }
@@ -279,9 +280,9 @@ public class GetService {
    * @param filters    Filters to further narrow filter scope.
    */
   public List<SelectOption> getAllFilterOptions(String resourceID, String search, Map<String, Set<String>> filters) {
-    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", search, filters, true).stream()
+    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", search, filters, false, true).stream()
         .map(binding -> new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
-            binding.getFieldValue(QueryResource.ID_KEY)))
+            binding.getFieldValue(QueryResource.IRI_KEY)))
         .toList();
   }
 
@@ -291,11 +292,13 @@ public class GetService {
    * 
    * @param resourceID Target resource identifier for the instance class.
    * @param search     String subset to narrow filter scope.
+   * @param isIri      Retrieves the IRI variable if true, else, retrieve the ID.
    */
-  public List<SelectOption> getAllFilterOptions(String resourceID, String search) {
-    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", search, new HashMap<>(), true).stream()
+  public List<SelectOption> getAllFilterOptions(String resourceID, String search, boolean isIri) {
+    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", search, new HashMap<>(), !isIri, isIri)
+        .stream()
         .map(binding -> new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
-            binding.getFieldValue(QueryResource.ID_KEY)))
+            binding.getFieldValue(isIri ? QueryResource.IRI_KEY : QueryResource.ID_KEY)))
         .toList();
   }
 
@@ -309,9 +312,10 @@ public class GetService {
    * @param search        String subset to narrow filter scope.
    * @param filters       Optional additional filters.
    * @param requireId     If the results should include ID.
+   * @param requireIri    If the results should include IRI variable.
    */
   private Queue<SparqlBinding> queryFilterOptions(String resourceID, String field, String addStatements,
-      String search, Map<String, Set<String>> filters, boolean requireId) {
+      String search, Map<String, Set<String>> filters, boolean requireId, boolean requireIri) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
     addStatements += this.getQueryStatementsForTargetFields(iri, new HashSet<>(Set.of(field)), filters);
@@ -327,7 +331,7 @@ public class GetService {
           + "\"))";
     }
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
-        new PaginationState(0, 21, "+" + field, new HashMap<>()), requireId);
+        new PaginationState(0, 21, "+" + field, new HashMap<>()), requireId, true);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED);
   }
 

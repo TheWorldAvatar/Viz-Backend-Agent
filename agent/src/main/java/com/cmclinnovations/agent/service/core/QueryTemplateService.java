@@ -104,9 +104,10 @@ public class QueryTemplateService {
    * @param pagination           Optional state containing the current page and
    *                             limit.
    * @param requireId            If the results should include ID.
+   * @param requireIri           If the results should include IRI variable.
    */
   public String getAllIdsQueryTemplate(String nodeShapeReplacement, String addQueryStatements,
-      PaginationState pagination, boolean requireId) {
+      PaginationState pagination, boolean requireId, boolean requireIri) {
     // If pagination is not given, no limits and offset should be set
     SelectQuery query = QueryResource.getSelectQuery(true, pagination.getLimit())
         .where(QueryResource.IRI_VAR.isA(Rdf.iri(
@@ -115,6 +116,9 @@ public class QueryTemplateService {
         .offset(pagination.getOffset());
     if (requireId) {
       query.select(QueryResource.ID_VAR);
+    }
+    if (requireIri) {
+      query.select(QueryResource.IRI_VAR);
     }
     Queue<SortDirective> sortDirectives = pagination.getSortDirectives();
     boolean hasNoIdToSort = sortDirectives.stream()
