@@ -23,6 +23,7 @@ import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
@@ -199,6 +200,18 @@ public class VisBackendAgent {
   }
 
   /**
+   * Retrieve the changes associated with the target instance of the specified
+   * type in the knowledge graph.
+   */
+  @GetMapping("/changes/{type}/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getChangelog(@PathVariable String type, @PathVariable String id) {
+    LOGGER.info("Received request to get the changelog for the instance of type {}...", type);
+    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
+      return this.getService.getChanges(type, id);
+    });
+  }
+
+  /**
    * Retrieve the target instance of the specified type in the knowledge graph
    * with human readable properties.
    */
@@ -268,7 +281,7 @@ public class VisBackendAgent {
       @RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to add one {}...", type);
     return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.addService.instantiate(type, instance);
+      return this.addService.instantiate(type, instance, TrackActionType.CREATION);
     });
   }
 
@@ -298,7 +311,8 @@ public class VisBackendAgent {
     LOGGER.info("Received request to update {}...", type);
 
     return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.updateService.update(id, type, LocalisationResource.SUCCESS_UPDATE_KEY, updatedEntity);
+      return this.updateService.update(id, type, LocalisationResource.SUCCESS_UPDATE_KEY, updatedEntity,
+          TrackActionType.MODIFICATION);
     });
   }
 }

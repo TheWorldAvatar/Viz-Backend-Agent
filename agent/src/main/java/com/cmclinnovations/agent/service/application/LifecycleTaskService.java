@@ -23,6 +23,7 @@ import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
+import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
@@ -251,8 +252,8 @@ public class LifecycleTaskService {
           throw new IllegalArgumentException(
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
         }
-        return this.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params,
-            LifecycleEventType.SERVICE_CANCELLATION, "Task has been successfully cancelled!",
+        return this.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params, LifecycleEventType.SERVICE_CANCELLATION,
+            TrackActionType.CANCELLATION, "Task has been successfully cancelled!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
       case "report":
         LOGGER.info("Received request to report an unfulfilled service...");
@@ -261,8 +262,8 @@ public class LifecycleTaskService {
           throw new IllegalArgumentException(
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
         }
-        return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params,
-            LifecycleEventType.SERVICE_INCIDENT_REPORT, "Task has been successfully reported!",
+        return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params, LifecycleEventType.SERVICE_INCIDENT_REPORT,
+            TrackActionType.ISSUE_REPORT, "Task has been successfully reported!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
 
       default:
@@ -439,8 +440,8 @@ public class LifecycleTaskService {
    */
   public ResponseEntity<StandardApiResponse<?>> genOccurrence(Map<String, Object> params,
       LifecycleEventType eventType, String successLogMessage, String messageResource) {
-    return this.genOccurrence(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, eventType, successLogMessage,
-        messageResource);
+    return this.genOccurrence(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, eventType, TrackActionType.IGNORED,
+        successLogMessage, messageResource);
   }
 
   /**
@@ -450,14 +451,22 @@ public class LifecycleTaskService {
    * @param params            Existing configurable parameters that will be
    *                          amended to instantiate the occurrence.
    * @param eventType         Target event type.
+   * @param trackAction       The action required for tracking.
    * @param successLogMessage Optional log message on success.
    * @param messageResource   Optional resource id of the message to be displayed
    *                          when successful.
    */
   public ResponseEntity<StandardApiResponse<?>> genOccurrence(String resourceId, Map<String, Object> params,
-      LifecycleEventType eventType, String successLogMessage, String messageResource) {
+      LifecycleEventType eventType, TrackActionType action, String successLogMessage, String messageResource) {
     this.lifecycleQueryService.addOccurrenceParams(params, eventType);
-    return this.addService.instantiate(resourceId, params, successLogMessage, messageResource);
+    ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(resourceId, params, successLogMessage,
+        messageResource, TrackActionType.IGNORED);
+    if (response.getStatusCode() == HttpStatus.OK && action != TrackActionType.IGNORED) {
+      String orderTask = this.getPreviousOccurrence(params.get(QueryResource.ID_KEY).toString(), QueryResource.IRI_KEY,
+          LifecycleEventType.SERVICE_ORDER_RECEIVED);
+      this.addService.logActivity(orderTask, action);
+    }
+    return response;
   }
 
   /**
@@ -544,8 +553,8 @@ public class LifecycleTaskService {
       LifecycleResource.genIdAndInstanceParameters(orderPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
       params.put(LifecycleResource.DATE_TIME_KEY, occurrenceDate);
       try {
+        this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, TrackActionType.CREATION);
         // Error logs for any specified occurrence
-        this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
       } catch (IllegalStateException e) {
         LOGGER.error("Error encountered while creating order for {} on {}! Read error logs for more details",
             contract, occurrenceDate);
@@ -587,10 +596,11 @@ public class LifecycleTaskService {
     LifecycleResource.genIdAndInstanceParameters(defaultPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
 
     ResponseEntity<StandardApiResponse<?>> orderInstantiatedResponse = this.addService.instantiate(
-        LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params);
+        LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, TrackActionType.IGNORED);
     if (orderInstantiatedResponse.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Retrieving the current dispatch details...");
-      String prevDispatchId = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+      String prevDispatchId = this.getPreviousOccurrence(taskId, QueryResource.ID_KEY,
+          LifecycleEventType.SERVICE_ORDER_DISPATCHED);
       ResponseEntity<StandardApiResponse<?>> response = this.getService.getInstance(prevDispatchId,
           LifecycleEventType.SERVICE_ORDER_DISPATCHED);
       if (response.getStatusCode() == HttpStatus.OK) {
@@ -608,7 +618,8 @@ public class LifecycleTaskService {
         LifecycleResource.genIdAndInstanceParameters(defaultPrefix, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
             params);
         params.put(LifecycleResource.ORDER_KEY, orderInstantiatedResponse.getBody().data().id());
-        return this.addService.instantiate(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), params);
+        return this.addService.instantiate(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), params,
+            TrackActionType.IGNORED);
       }
     }
     throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));
@@ -623,7 +634,7 @@ public class LifecycleTaskService {
    * @param eventType Target event type.
    */
   public ResponseEntity<StandardApiResponse<?>> genDispatchOrDeliveryOccurrence(Map<String, Object> params,
-      LifecycleEventType eventType) {
+      LifecycleEventType eventType, TrackActionType action) {
     String remarksMsg;
     String successMsgId;
     LifecycleEventType succeedsEventType;
@@ -660,8 +671,14 @@ public class LifecycleTaskService {
     }
     params.put(LifecycleResource.ORDER_KEY,
         this.getPreviousOccurrence(QueryResource.IRI_KEY, succeedsEventType, params));
-
-    return this.updateService.update(occurrenceId, eventType.getId(), successMsgId, params);
+    ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(occurrenceId, eventType.getId(),
+        successMsgId, params, TrackActionType.IGNORED);
+    if (response.getStatusCode() == HttpStatus.OK) {
+      String orderTask = this.getPreviousOccurrence(occurrenceId, QueryResource.IRI_KEY,
+          LifecycleEventType.SERVICE_ORDER_RECEIVED);
+      this.addService.logActivity(orderTask, action);
+    }
+    return response;
   }
 
   /**
@@ -670,12 +687,13 @@ public class LifecycleTaskService {
    * 
    * @param latestEventId The identifier of the latest event in the succeeds
    *                      chain.
+   * @param fieldKey      The field key to extract. Either id or iri.
    * @param eventType     Target event type to query for.
    */
-  public String getPreviousOccurrence(String latestEventId, LifecycleEventType eventType) {
+  public String getPreviousOccurrence(String latestEventId, String fieldKey, LifecycleEventType eventType) {
     return this.lifecycleQueryService
         .getInstance(FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, latestEventId, eventType.getEvent())
-        .getFieldValue(QueryResource.ID_KEY);
+        .getFieldValue(fieldKey);
   }
 
   /**

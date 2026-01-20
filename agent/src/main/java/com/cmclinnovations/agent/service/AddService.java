@@ -28,6 +28,8 @@ import org.topbraid.shacl.rules.RuleUtil;
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.TrackActionType;
+import com.cmclinnovations.agent.service.core.ChangelogService;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
@@ -41,6 +43,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class AddService {
+  private final ChangelogService changelogService;
   private final JsonLdService jsonLdService;
   private final KGService kgService;
   private final QueryTemplateService queryTemplateService;
@@ -56,8 +59,10 @@ public class AddService {
    * @param queryTemplateService  Service for generating query templates.
    * @param responseEntityBuilder A component to build the response entity.
    */
-  public AddService(JsonLdService jsonLdService, KGService kgService, QueryTemplateService queryTemplateService,
+  public AddService(ChangelogService changelogService, JsonLdService jsonLdService, KGService kgService,
+      QueryTemplateService queryTemplateService,
       ResponseEntityBuilder responseEntityBuilder) {
+    this.changelogService = changelogService;
     this.jsonLdService = jsonLdService;
     this.kgService = kgService;
     this.queryTemplateService = queryTemplateService;
@@ -69,11 +74,13 @@ public class AddService {
    * parameters. ID field will default to a random UUID if no id parameter is
    * sent. Ignores any custom message and defaults to default messages.
    * 
-   * @param resourceID The target resource identifier for the instance.
-   * @param param      Request parameters.
+   * @param resourceID  The target resource identifier for the instance.
+   * @param param       Request parameters.
+   * @param trackAction The action required for tracking.
    */
-  public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, Map<String, Object> param) {
-    return instantiate(resourceID, param, null, null);
+  public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, Map<String, Object> param,
+      TrackActionType trackAction) {
+    return this.instantiate(resourceID, param, null, null, trackAction);
   }
 
   /**
@@ -81,25 +88,27 @@ public class AddService {
    * parameters. ID field will default to a random UUID if no id parameter is
    * sent.
    * 
-   * @param resourceID The target resource identifier for the instance.
-   * @param param      Request parameters.
+   * @param resourceID  The target resource identifier for the instance.
+   * @param param       Request parameters.
+   * @param trackAction The action required for tracking.
    */
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, Map<String, Object> param,
-      String successLogMessage, String messageResource) {
+      String successLogMessage, String messageResource, TrackActionType trackAction) {
     String id = param.getOrDefault(QueryResource.ID_KEY, UUID.randomUUID()).toString();
-    return this.instantiate(resourceID, id, param, successLogMessage, messageResource);
+    return this.instantiate(resourceID, id, param, successLogMessage, messageResource, trackAction);
   }
 
   /**
    * Instantiates the target instance following the input parameters and the
    * target ID.
    * 
-   * @param resourceID The target resource identifier for the instance.
-   * @param targetId   The target instance IRI.
-   * @param param      Request parameters.
+   * @param resourceID  The target resource identifier for the instance.
+   * @param targetId    The target instance IRI.
+   * @param param       Request parameters.
+   * @param trackAction The action required for tracking.
    */
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, String targetId,
-      Map<String, Object> param, String successLogMessage, String messageResource) {
+      Map<String, Object> param, String successLogMessage, String messageResource, TrackActionType trackAction) {
     LOGGER.info("Instantiating an instance of {} ...", resourceID);
     // Update ID value to target ID
     param.put(QueryResource.ID_KEY, targetId);
@@ -110,7 +119,24 @@ public class AddService {
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
     // Add the static ID reference
     this.jsonLdService.appendId(addJsonSchema, targetId);
-    return this.instantiateJsonLd(addJsonSchema, resourceID, successLogMessage, messageResource);
+    return this.instantiateJsonLd(addJsonSchema, resourceID, successLogMessage, messageResource, trackAction);
+  }
+
+  /**
+   * Logs the activity for the target instance.
+   * 
+   * @param iri         The target instance IRI.
+   * @param trackAction The action required for tracking.
+   */
+  public void logActivity(String iri, TrackActionType trackAction) {
+    Map<String, Object> agentDetails = this.changelogService.setAgent();
+    Map<String, Object> actionDetails = this.changelogService.logAction(iri, trackAction);
+    if (!agentDetails.isEmpty()) {
+      String agentId = this.instantiate(QueryResource.HISTORY_AGENT_RESOURCE, agentDetails, TrackActionType.IGNORED)
+          .getBody().data().id();
+      actionDetails.put(QueryResource.HISTORY_AGENT_RESOURCE, agentId);
+    }
+    this.instantiate(QueryResource.HISTORY_ACTIVITY_RESOURCE, actionDetails, TrackActionType.IGNORED);
   }
 
   /**
@@ -121,9 +147,10 @@ public class AddService {
    * @param successLogMessage Optional log message on success.
    * @param messageResource   Optional resource id of the message to be displayed
    *                          when successful.
+   * @param trackAction       The action required for tracking.
    */
   private ResponseEntity<StandardApiResponse<?>> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID,
-      String successLogMessage, String messageResource) {
+      String successLogMessage, String messageResource, TrackActionType trackAction) {
     LOGGER.info("Adding instance to endpoint...");
     String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();
     String jsonString = jsonLdSchema.toString();
@@ -152,6 +179,9 @@ public class AddService {
 
     if (response.getStatusCode() == HttpStatus.OK) {
       LOGGER.info(successLogMessage == null ? "Instantiation is successful!" : successLogMessage);
+      if (trackAction != TrackActionType.IGNORED) {
+        this.logActivity(instanceIri, trackAction);
+      }
       return this.responseEntityBuilder.success(instanceIri,
           LocalisationTranslator
               .getMessage(messageResource == null ? LocalisationResource.SUCCESS_ADD_KEY : messageResource));

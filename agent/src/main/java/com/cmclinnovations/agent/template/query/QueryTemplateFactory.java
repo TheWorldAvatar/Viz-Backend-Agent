@@ -23,7 +23,6 @@ import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory {
-  private boolean hasEmptyBranches;
   private List<Variable> sortedVars;
   protected Set<Variable> variables;
   private Map<String, Set<String>> arrayVariables;
@@ -59,7 +58,6 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    * Retrieve the sequence of the variables.
    */
   protected void reset() {
-    this.hasEmptyBranches = false;
     this.sortedVars = new ArrayList<>();
     this.variables = new HashSet<>();
     this.arrayVariables = new HashMap<>();
@@ -136,7 +134,6 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
 
         // Skip this iteration if the results show an empty branch
         if (property == null) {
-          this.hasEmptyBranches = true;
           continue;
         }
 

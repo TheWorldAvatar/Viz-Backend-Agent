@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.31.0
+
+- Added capabilities to track modifications to the instances
+- Added route to get changelog for the instances
+
 ## 1.30.0
 
 - Closed tasks are based on closed date

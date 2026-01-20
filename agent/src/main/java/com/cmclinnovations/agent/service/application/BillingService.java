@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.InvoiceLine;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
@@ -109,7 +110,7 @@ public class BillingService {
         .getInstance(FileService.ACCOUNT_PRICING_QUERY_RESOURCE, pricingModel);
     instance.put(QueryResource.ACCOUNT_ID_KEY, accountInstance.getFieldValue(QueryResource.IRI_KEY));
     instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
-    return this.updateService.update(contractId, BillingResource.TRANSACTION_RECORD_RESOURCE, null, instance);
+    return this.updateService.update(contractId, BillingResource.TRANSACTION_RECORD_RESOURCE, null, instance, TrackActionType.IGNORED);
   }
 
   /**
@@ -132,7 +133,7 @@ public class BillingService {
    * @param instance   Request parameters containing the invoice parameters.
    */
   public ResponseEntity<StandardApiResponse<?>> genInvoiceInstance(String resourceId, Map<String, Object> instance) {
-    return this.addService.instantiate(resourceId, instance);
+    return this.addService.instantiate(resourceId, instance, TrackActionType.CREATION);
   }
 
   /**
@@ -172,7 +173,7 @@ public class BillingService {
   private ResponseEntity<StandardApiResponse<?>> addCustomInstance(Map<String, Object> replacements) {
     // Instantiate the customer details based on the custom resource ID first
     String type = TypeCastUtils.castToObject(replacements.remove(StringResource.TYPE_REQUEST_PARAM), String.class);
-    return this.addService.instantiate(type, replacements);
+    return this.addService.instantiate(type, replacements, TrackActionType.CREATION);
   }
 
   /**
@@ -188,6 +189,6 @@ public class BillingService {
     String id = TypeCastUtils.castToObject(idObj, String.class);
     accountParams.put(QueryResource.ID_KEY, id);
     accountParams.put(QueryResource.IRI_KEY, iri);
-    return this.addService.instantiate(resource, accountParams);
+    return this.addService.instantiate(resource, accountParams, TrackActionType.IGNORED);
   }
 }
