@@ -840,6 +840,19 @@ Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/ser
 }
 ```
 
+> Reschedule service tasks
+
+Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/reschedule` endpoint to reschedule an existing service task to a new date. This route updates the associated lifecycle event dates and order event dates to the specified new date. Note that this route does require the following `JSON` request parameters:
+
+```json
+{
+  /* parameters */
+  "contract": "The target contract IRI",
+  "date": "The current date in the YYYY-MM-DD format",
+  "reschedule date": "The new scheduled date for the service task in the Epoch second format"
+}
+```
+
 > Service completion
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/complete/{id}` endpoint to retrieve the form template associated with the service completion event, where `id` is either the identifier of the service completion occurrence of interest, or `form` for an empty form template. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ServiceOrderCompletedOccurrenceShape` is defined in `./resources/shacl.ttl`, which can be extended for your specific requirements. Note that if you require any form of computation for the completion details, it is recommended to define a separate group using `sh:node` as evident by `WeightLogShape`.

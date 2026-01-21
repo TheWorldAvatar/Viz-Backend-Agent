@@ -376,6 +376,10 @@ public class LifecycleController {
     });
   }
 
+  /**
+   * Reschedule a service task to a new date by updating the associated lifecycle
+   * events and dates.
+   */
   @PutMapping("/service/reschedule")
   public ResponseEntity<StandardApiResponse<?>> rescheduleTask(@RequestBody Map<String, Object> params) {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
