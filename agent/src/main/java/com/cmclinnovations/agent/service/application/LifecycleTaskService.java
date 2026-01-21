@@ -43,7 +43,6 @@ public class LifecycleTaskService {
   final DateTimeService dateTimeService;
   private final GetService getService;
   private final UpdateService updateService;
-  private final FileService fileService;
   public final LifecycleQueryService lifecycleQueryService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
@@ -64,13 +63,12 @@ public class LifecycleTaskService {
    * 
    */
   public LifecycleTaskService(AddService addService, DateTimeService dateTimeService, GetService getService,
-      UpdateService updateService, LifecycleQueryService lifecycleQueryService, FileService fileService,
+      UpdateService updateService, LifecycleQueryService lifecycleQueryService,
       ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
     this.getService = getService;
     this.updateService = updateService;
-    this.fileService = fileService;
     this.lifecycleQueryService = lifecycleQueryService;
     this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
@@ -637,7 +635,7 @@ public class LifecycleTaskService {
     LOGGER.info("Rescheduling task to new date...");
     // query for existing order occurrence and related IRIs
     String id = this.getPreviousOccurrence(QueryResource.ID_KEY, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
-    String getQuery = this.fileService.getContentsWithReplacement(FileService.RESCHEDULE_QUERY_RESOURCE, id);
+    String getQuery = this.lifecycleQueryService.getRescheduleQuery(id);
     try {
       SparqlBinding result = this.getService.getInstance(getQuery); // ensure single instance
       // parse related IRIs
