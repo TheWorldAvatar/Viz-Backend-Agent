@@ -138,10 +138,10 @@ public class LifecycleQueryFactory {
         + "  <" + orderEvent + "> fibo-fnd-dt-oc:hasEventDate \"" + rescheduleDatetime + "\"^^xsd:dateTime .\n"
         + "}\n"
         + "WHERE {\n"
-        + "  OPTIONAL { <" + lifecycleStartDate + "> cmns-dt:hasDateValue ?old_start }\n"
-        + "  OPTIONAL { <" + lifecycleEndDate + "> cmns-dt:hasDateValue ?old_end }\n"
-        + "  OPTIONAL { <" + expireStage + "> fibo-fnd-dt-oc:hasEventDate ?old_expire }\n"
-        + "  OPTIONAL { <" + orderEvent + "> fibo-fnd-dt-oc:hasEventDate ?old_order_dt }\n"
+        + "  <" + lifecycleStartDate + "> cmns-dt:hasDateValue ?old_start .\n"
+        + "  <" + lifecycleEndDate + "> cmns-dt:hasDateValue ?old_end .\n"
+        + "  <" + expireStage + "> fibo-fnd-dt-oc:hasEventDate ?old_expire .\n"
+        + "  <" + orderEvent + "> fibo-fnd-dt-oc:hasEventDate ?old_order_dt .\n"
         + "}";
   }
 
