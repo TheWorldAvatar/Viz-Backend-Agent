@@ -122,6 +122,18 @@ public class LifecycleQueryFactory {
         + latestDateVar + ")";
   }
 
+  /**
+   * Generates a SPARQL query to reschedule lifecycle events by updating dates.
+   * Deletes old lifecycle dates and event dates, then inserts new ones.
+   * 
+   * @param lifecycleStartDate The IRI of the lifecycle start date to update.
+   * @param lifecycleEndDate   The IRI of the lifecycle end date to update.
+   * @param expireStage        The IRI of the expiration stage event to update.
+   * @param orderEvent         The IRI of the order event to update.
+   * @param rescheduleDate     The new date in YYYY-MM-DD format for date values.
+   * @param rescheduleDatetime The new datetime in ISO format for dateTime values.
+   * @return A SPARQL DELETE/INSERT query string for rescheduling.
+   */
   public String getRescheduleQuery(String lifecycleStartDate,String lifecycleEndDate, String expireStage,
     String orderEvent, String rescheduleDate,String rescheduleDatetime) {
     return QueryResource.PREFIX_TEMPLATE
