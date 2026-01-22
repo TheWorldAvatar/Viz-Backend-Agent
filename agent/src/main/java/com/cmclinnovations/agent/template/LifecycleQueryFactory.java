@@ -123,6 +123,41 @@ public class LifecycleQueryFactory {
   }
 
   /**
+   * Generates a SPARQL query to reschedule lifecycle events by updating dates.
+   * Deletes old lifecycle dates and event dates, then inserts new ones.
+   * 
+   * @param lifecycleStartDate The IRI of the lifecycle start date to update.
+   * @param lifecycleEndDate   The IRI of the lifecycle end date to update.
+   * @param expireStage        The IRI of the expiration stage event to update.
+   * @param orderEvent         The IRI of the order event to update.
+   * @param rescheduleDate     The new date in YYYY-MM-DD format for date values.
+   * @param rescheduleDatetime The new datetime in ISO format for dateTime values.
+   * @return A SPARQL DELETE/INSERT query string for rescheduling.
+   */
+  public String getRescheduleQuery(String lifecycleStartDate,String lifecycleEndDate, String expireStage,
+    String orderEvent, String rescheduleDate,String rescheduleDatetime) {
+    return QueryResource.PREFIX_TEMPLATE
+        + "DELETE {\n"
+        + "  <" + lifecycleStartDate + "> cmns-dt:hasDateValue ?old_start .\n"
+        + "  <" + lifecycleEndDate + "> cmns-dt:hasDateValue ?old_end .\n"
+        + "  <" + expireStage + "> fibo-fnd-dt-oc:hasEventDate ?old_expire .\n"
+        + "  <" + orderEvent + "> fibo-fnd-dt-oc:hasEventDate ?old_order_dt .\n"
+        + "}\n"
+        + "INSERT {\n"
+        + "  <" + lifecycleStartDate + "> cmns-dt:hasDateValue \"" + rescheduleDate + "\"^^xsd:date .\n"
+        + "  <" + lifecycleEndDate + "> cmns-dt:hasDateValue \"" + rescheduleDate + "\"^^xsd:date .\n"
+        + "  <" + expireStage + "> fibo-fnd-dt-oc:hasEventDate \"" + rescheduleDate + "\"^^xsd:date .\n"
+        + "  <" + orderEvent + "> fibo-fnd-dt-oc:hasEventDate \"" + rescheduleDatetime + "\"^^xsd:dateTime .\n"
+        + "}\n"
+        + "WHERE {\n"
+        + "  <" + lifecycleStartDate + "> cmns-dt:hasDateValue ?old_start .\n"
+        + "  <" + lifecycleEndDate + "> cmns-dt:hasDateValue ?old_end .\n"
+        + "  <" + expireStage + "> fibo-fnd-dt-oc:hasEventDate ?old_expire .\n"
+        + "  <" + orderEvent + "> fibo-fnd-dt-oc:hasEventDate ?old_order_dt .\n"
+        + "}";
+  }
+
+  /**
    * Retrieves the SPARQL query to get the service tasks for the specified
    * date and/or contract.
    * 

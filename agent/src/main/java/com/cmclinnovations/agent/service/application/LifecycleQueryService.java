@@ -57,7 +57,8 @@ public class LifecycleQueryService {
    * @param replacements Replacements for at least one [target] value.
    */
   public SparqlBinding getInstance(String resourceId, String... replacements) {
-    return this.getInstances(resourceId, replacements).poll();
+    String query = this.fileService.getContentsWithReplacement(resourceId, replacements);
+    return this.getService.getInstance(query);
   }
 
   /**
@@ -220,6 +221,16 @@ public class LifecycleQueryService {
       return fixedDateScheduleInstance;
     }
     return result;
+  }
+
+  /**
+   * Retrieves the SPARQL query to reschedule a lifecycle task based on its
+   * ID.
+   * 
+   * @param id The identifier of the occurrence.
+   */
+  public String getRescheduleQuery(String id) {
+    return this.fileService.getContentsWithReplacement(FileService.RESCHEDULE_QUERY_RESOURCE, id);
   }
 
 }
