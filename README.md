@@ -847,8 +847,7 @@ Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/ser
 ```json
 {
   /* parameters */
-  "contract": "The target contract IRI",
-  "date": "The current date in the YYYY-MM-DD format",
+  "id": "The event ID",
   "reschedule date": "The new scheduled date for the service task in the Epoch second format"
 }
 ```
