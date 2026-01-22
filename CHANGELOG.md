@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.32.0
+
+- Added a route to reschedule tasks
+- Fix recurrence in task.sparql
+
 ## 1.31.0
 
 - Added capabilities to track modifications to the instances
