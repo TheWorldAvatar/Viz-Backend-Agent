@@ -634,32 +634,26 @@ public class LifecycleTaskService {
   public ResponseEntity<StandardApiResponse<?>> rescheduleTask(Map<String, Object> params) {
     LOGGER.info("Rescheduling task to new date...");
     // query for existing order occurrence and related IRIs
-    String id = this.getPreviousOccurrence(QueryResource.ID_KEY, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
-    String getQuery = this.lifecycleQueryService.getRescheduleQuery(id);
-    try {
-      SparqlBinding result = this.getService.getInstance(getQuery); // ensure single instance
-      // parse related IRIs
-      String lifecycleStartDate = result
-          .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY).getVarName());
-      String lifecycleEndDate = result
-          .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY).getVarName());
-      String expireStage = result.getFieldValue(QueryResource.genVariable(LifecycleResource.STAGE_KEY).getVarName());
-      String orderEvent = result.getFieldValue(QueryResource.genVariable(LifecycleResource.EVENT_KEY).getVarName());
-      // new date
-      String rescheduleDate = params.get(LifecycleResource.RESCHEDULE_DATE_KEY).toString();
-      String rescheduleDatetime = this.dateTimeService.getDateFromTimestamp(rescheduleDate);
-      // update database
-      String query = this.lifecycleQueryFactory.getRescheduleQuery(lifecycleStartDate, lifecycleEndDate, expireStage,
-          orderEvent, rescheduleDate, rescheduleDatetime);
-      ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(query);
-      if (response.getStatusCode() == HttpStatus.OK) {
-        this.addService.logActivity(orderEvent,TrackActionType.RESCHEDULED);
-      }
-      return response;
-    } catch (RuntimeException e) {
-      LOGGER.error("Error encountered when reschduling task: {}", e.getMessage());
-      return this.responseEntityBuilder.error("Fails to reschedule task!", HttpStatus.BAD_REQUEST);
+    SparqlBinding result = this.lifecycleQueryService.getInstance(FileService.RESCHEDULE_QUERY_RESOURCE,
+        params.get(QueryResource.ID_KEY).toString());
+    // parse related IRIs
+    String lifecycleStartDate = result
+        .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_START_DATE_KEY).getVarName());
+    String lifecycleEndDate = result
+        .getFieldValue(QueryResource.genVariable(LifecycleResource.SCHEDULE_END_DATE_KEY).getVarName());
+    String expireStage = result.getFieldValue(QueryResource.genVariable(LifecycleResource.STAGE_KEY).getVarName());
+    String orderEvent = result.getFieldValue(QueryResource.genVariable(LifecycleResource.EVENT_KEY).getVarName());
+    // new date
+    String rescheduleDate = params.get(LifecycleResource.RESCHEDULE_DATE_KEY).toString();
+    String rescheduleDatetime = this.dateTimeService.getDateFromTimestamp(rescheduleDate);
+    // update database
+    String query = this.lifecycleQueryFactory.getRescheduleQuery(lifecycleStartDate, lifecycleEndDate, expireStage,
+        orderEvent, rescheduleDate, rescheduleDatetime);
+    ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(query);
+    if (response.getStatusCode() == HttpStatus.OK) {
+      this.addService.logActivity(orderEvent, TrackActionType.RESCHEDULED);
     }
+    return response;
   }
 
   /**
