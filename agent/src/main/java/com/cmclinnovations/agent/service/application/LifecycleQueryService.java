@@ -57,7 +57,8 @@ public class LifecycleQueryService {
    * @param replacements Replacements for at least one [target] value.
    */
   public SparqlBinding getInstance(String resourceId, String... replacements) {
-    return this.getInstances(resourceId, replacements).poll();
+    String query = this.fileService.getContentsWithReplacement(resourceId, replacements);
+    return this.getService.getInstance(query);
   }
 
   /**
