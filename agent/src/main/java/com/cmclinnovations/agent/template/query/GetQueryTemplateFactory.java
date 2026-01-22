@@ -1,6 +1,5 @@
 package com.cmclinnovations.agent.template.query;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +15,6 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfLiteral.StringLiteral;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfObject;
 
-import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.ShaclPropertyBinding;
 import com.cmclinnovations.agent.model.SparqlBinding;
@@ -77,7 +75,7 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       super.setSequence(sortedSequence);
     }
 
-    String valuesClause = this.appendOptionalIdFilters(selectTemplate, params.targetIds(), params.parent());
+    String valuesClause = this.appendOptionalIdFilters(selectTemplate, params.targetIds());
     return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause);
   }
 
@@ -105,31 +103,12 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    * 
    * @param selectTemplate Target select query template.
    * @param filterIds      Optional param for target instances.
-   * @param parentField    An optional parent field to target the query with
-   *                       specific parents.
    * @return A string representing the VALUES clause if multiple IDs are given
    */
-  private String appendOptionalIdFilters(SelectQuery selectTemplate, Queue<List<String>> filterIds,
-      ParentField parentField) {
+  private String appendOptionalIdFilters(SelectQuery selectTemplate, Queue<List<String>> filterIds) {
     RdfObject object = QueryResource.ID_VAR;
     String valuesClause = "";
-    // Add filter clause for a parent field instead if available
-    if (parentField != null) {
-      Variable parsedField = null;
-      String normalizedParentFieldName = QueryResource.genVariable(parentField.name()).getVarName();
-      for (Variable variable : super.variables) {
-        if (variable.getVarName().endsWith(normalizedParentFieldName)) {
-          parsedField = variable;
-          break;
-        }
-      }
-      if (parsedField == null) {
-        LOGGER.error("Unable to find matching variable for parent field: {}", parentField.name());
-        throw new IllegalArgumentException(
-            MessageFormat.format("Unable to find matching variable for parent field: {0}", parentField.name()));
-      }
-      selectTemplate.where(parsedField.has(QueryResource.DC_TERM_ID, Rdf.literalOf(parentField.id())));
-    } else if (filterIds.size() == 1) {
+    if (filterIds.size() == 1) {
       List<String> currentIds = filterIds.poll();
       StringLiteral filter = Rdf.literalOf(currentIds.get(0));
       object = filter;

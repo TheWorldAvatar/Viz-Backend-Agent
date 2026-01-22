@@ -1,6 +1,5 @@
 package com.cmclinnovations.agent;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -20,9 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
-import com.cmclinnovations.agent.model.ParentField;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
+import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
@@ -95,20 +94,17 @@ public class VisBackendAgent {
 
   /**
    * Retrieves all instances belonging to the specified type in the knowledge
-   * graph.
+   * graph. By default, without a search parameter, this will return 21 instances.
+   * Matching search results for instances are given up to 21.
    */
   @GetMapping("/{type}")
   public ResponseEntity<StandardApiResponse<?>> getAllInstances(
-      @PathVariable(name = "type") String type) {
+      @PathVariable(name = "type") String type, @RequestParam(required = false) String search) {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, false, null,
-          new PaginationState(0, null, "", new HashMap<>()));
-      return this.responseEntityBuilder.success(null,
-          instances.stream()
-              .map(SparqlBinding::get)
-              .toList());
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, true);
+      return this.responseEntityBuilder.success(options);
     });
   }
 
@@ -141,7 +137,7 @@ public class VisBackendAgent {
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, true, null,
+      Queue<SparqlBinding> instances = this.getService.getInstances(type, true,
           new PaginationState(page, limit, sortBy, allRequestParams));
       return this.responseEntityBuilder.success(null,
           instances.stream()
@@ -174,21 +170,21 @@ public class VisBackendAgent {
   /**
    * Retrieves all instances belonging to the specified type and associated with a
    * parent in the knowledge graph. Assumes the field name is the same as the
-   * parent resource identifier.
+   * parent resource identifier. By default, without a search parameter, this will
+   * return 21 instances. Matching search results for instances are returned up to
+   * 21.
    */
   @GetMapping("/{parent}/{id}/{type}")
   public ResponseEntity<StandardApiResponse<?>> getAllInstancesWithParent(@PathVariable(name = "parent") String parent,
       @PathVariable(name = "id") String id,
-      @PathVariable(name = "type") String type) {
+      @PathVariable(name = "type") String type,
+      @RequestParam(required = false) String search) {
     LOGGER.info("Received request to get all instances of target {} associated with the parent type {}...", type,
         parent);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, false, new ParentField(id, parent),
-          new PaginationState(0, null, "", new HashMap<>()));
-      return this.responseEntityBuilder.success(null,
-          instances.stream()
-              .map(SparqlBinding::get)
-              .toList());
+      Map<String, Set<String>> parentFilter = this.getService.getParentFilter(parent, id);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, parentFilter);
+      return this.responseEntityBuilder.success(options);
     });
   }
 

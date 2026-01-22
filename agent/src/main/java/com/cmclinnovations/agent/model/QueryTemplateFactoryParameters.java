@@ -15,7 +15,6 @@ public record QueryTemplateFactoryParameters(
     Queue<Queue<SparqlBinding>> bindings,
     ObjectNode rootNode,
     Queue<List<String>> targetIds,
-    ParentField parent,
     Map<String, String> criterias,
     String addQueryStatements,
     Map<Variable, List<Integer>> addVars,
@@ -23,23 +22,24 @@ public record QueryTemplateFactoryParameters(
     Set<String> optVarNames) {
 
   public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId) {
-    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, null, null);
+    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, null);
   }
 
   public QueryTemplateFactoryParameters(Queue<Queue<SparqlBinding>> bindings, Map<String, String> criterias) {
-    this(bindings, null, new ArrayDeque<>(), null, criterias, null, null, null, null);
+    this(bindings, null, new ArrayDeque<>(), criterias, null, null, null, null);
   }
 
   public QueryTemplateFactoryParameters(Queue<Queue<SparqlBinding>> bindings, Queue<List<String>> targetIds,
-      ParentField parent, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
-    this(bindings, null, targetIds, parent, null, addQueryStatements, addVars, null, null);
+      String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+    this(bindings, null, targetIds, null, addQueryStatements, addVars, null, null);
   }
 
   public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId, String branchName) {
-    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, branchName, null);
+    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, branchName, null);
   }
 
-  public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId, String branchName, Set<String> optVarNames) {
-    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, null, branchName, optVarNames);
+  public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId, String branchName,
+      Set<String> optVarNames) {
+    this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, branchName, optVarNames);
   }
 }

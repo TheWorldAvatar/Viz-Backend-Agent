@@ -1,5 +1,0 @@
-SELECT DISTINCT ?iri ?id ?parent_field
-WHERE { ?iri a <http://example.com/Concept> .
-    ?iri <http://example.com/parentPath1> ?parent_field .
-    ?parent_field dc-terms:identifier "01j82" .
-    ?iri dc-terms:identifier ?id . }
