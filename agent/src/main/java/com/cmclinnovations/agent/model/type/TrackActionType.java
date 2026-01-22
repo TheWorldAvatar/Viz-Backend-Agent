@@ -11,6 +11,7 @@ public enum TrackActionType {
   SAVED_COMPLETION("Saved completion details"),
   ISSUE_REPORT("Reported issue"),
   RESCINDMENT("Rescinded"),
+  RESCHEDULED("Rescheduled"),
   IGNORED("");
 
   private final String message;
