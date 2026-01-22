@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.33.0
+
+- Extended get all instances route with pagination and search capabilities
+- Extended get all instances with a target parent route with pagination and search capabilities
+
 ## 1.32.0
 
 - Added a route to reschedule tasks
