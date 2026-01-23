@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.33.2
+
+- Fixed filter options query for account options to exclude iri variable
+
 ## 1.33.1
 
 - Fixed filter options query to exclude iri variable to allow unique results

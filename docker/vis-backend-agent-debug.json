@@ -3,7 +3,7 @@
     "Name": "vis-backend-agent",
     "TaskTemplate": {
       "ContainerSpec": {
-        "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.33.2-account-filters-SNAPSHOT",
+        "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.33.2",
         "Env": [
           "REDIS=redis://<STACK>-redis:6379",
           "KEYCLOAK_ISSUER_URI=http://<DOMAIN>/realms/<REALM>",
