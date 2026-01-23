@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.33.1
+
+- Fixed filter options query to exclude iri variable to allow unique results
+
 ## 1.33.0
 
 - Extended get all instances route with pagination and search capabilities
