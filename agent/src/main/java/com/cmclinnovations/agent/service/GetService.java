@@ -292,13 +292,12 @@ public class GetService {
    * 
    * @param resourceID Target resource identifier for the instance class.
    * @param search     String subset to narrow filter scope.
-   * @param isIri      Retrieves the IRI variable if true, else, retrieve the ID.
    */
-  public List<SelectOption> getAllFilterOptions(String resourceID, String search, boolean isIri) {
-    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", search, new HashMap<>(), !isIri, isIri)
+  public List<SelectOption> getAllFilterOptions(String resourceID, String search) {
+    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", search, new HashMap<>(), false, true)
         .stream()
         .map(binding -> new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
-            binding.getFieldValue(isIri ? QueryResource.IRI_KEY : QueryResource.ID_KEY)))
+            binding.getFieldValue(QueryResource.IRI_KEY)))
         .toList();
   }
 
