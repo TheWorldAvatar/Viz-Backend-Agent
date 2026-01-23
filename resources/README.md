@@ -436,7 +436,7 @@ base:PaymentObligationShape
     sh:path fibo-fnd-rel-rel:mandates ;
     sh:class fibo-fbc-fi-ip:PricingModel;
     twa:dependentOn base:PaymentObligationShape-requesting-party ;
-    sh:minCount 0 ;
+    sh:minCount 1 ;
     sh:maxCount 1 ;
   ] .
 
