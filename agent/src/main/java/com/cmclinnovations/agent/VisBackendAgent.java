@@ -103,7 +103,7 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, true);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search);
       return this.responseEntityBuilder.success(options);
     });
   }

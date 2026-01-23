@@ -116,7 +116,7 @@ public class ReportingController {
   public ResponseEntity<StandardApiResponse<?>> getAccounts(@RequestParam String type, @RequestParam String search) {
     LOGGER.info("Received request to get the customer accounts...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, false);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search);
       return this.responseEntityBuilder.success(options);
     });
   }
