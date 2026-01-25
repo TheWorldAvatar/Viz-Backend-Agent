@@ -295,10 +295,22 @@ public class VisBackendAgent {
 
   @DeleteMapping("/{type}/{id}")
   public ResponseEntity<StandardApiResponse<?>> removeEntity(@PathVariable String type, @PathVariable String id,
-      @RequestParam(name = "branch_delete", required = false) String branchDelete) {
+    @RequestParam Map<String, String> allParams) {
     LOGGER.info("Received request to delete {}...", type);
+    String snakeCase = allParams.get("branch_delete");
+    String camelCase = allParams.get("branchDelete");
+    String branchToUse;
+    // Logic: If both exist, they must match. If only one exists, use it. If none, null.
+    if (snakeCase != null && camelCase != null) {
+        if (!snakeCase.equals(camelCase)) {
+            throw new IllegalArgumentException("Conflict: 'branch_delete' and 'branchDelete' must be identical if both are provided.");
+        }
+        branchToUse = snakeCase;
+    } else {
+        branchToUse = (snakeCase != null) ? snakeCase : camelCase;
+    }
     return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.deleteService.delete(type, id, branchDelete);
+      return this.deleteService.delete(type, id, branchToUse);
     });
   }
 
