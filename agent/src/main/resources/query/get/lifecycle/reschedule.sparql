@@ -11,7 +11,7 @@ PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTi
 PREFIX fibo-fnd-dt-oc: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/>
 PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>
 
-SELECT ?start_date ?end_date ?stage ?event
+SELECT ?start_date ?end_date ?stage ?order_event
 WHERE {
 
   ?event dc-terms:identifier "[target]" ;
