@@ -209,8 +209,9 @@ public class LifecycleQueryService {
    */
   public SparqlBinding querySchedule(String contract) {
     // try query as regular schedule
-    SparqlBinding result = this.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,contract, contract);
-    if (result==null) {
+    try {
+      return this.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,contract, contract);
+    } catch (NullPointerException e) {
       // try query as fixed date schedule
       Queue<SparqlBinding> results = this.getInstances(FileService.FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE,contract, contract);
       SparqlBinding fixedDateScheduleInstance = results.poll();
@@ -220,7 +221,6 @@ public class LifecycleQueryService {
       });
       return fixedDateScheduleInstance;
     }
-    return result;
   }
 
   /**
