@@ -223,14 +223,4 @@ public class LifecycleQueryService {
     return result;
   }
 
-  /**
-   * Retrieves the SPARQL query to reschedule a lifecycle task based on its
-   * ID.
-   * 
-   * @param id The identifier of the occurrence.
-   */
-  public String getRescheduleQuery(String id) {
-    return this.fileService.getContentsWithReplacement(FileService.RESCHEDULE_QUERY_RESOURCE, id);
-  }
-
 }
