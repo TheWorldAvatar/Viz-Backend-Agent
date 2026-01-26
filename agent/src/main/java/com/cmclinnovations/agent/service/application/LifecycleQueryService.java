@@ -217,7 +217,7 @@ public class LifecycleQueryService {
       SparqlBinding fixedDateScheduleInstance = results.poll();
       // Iterate over results to get entry dates as an array
       results.stream().forEach(binding -> {
-        fixedDateScheduleInstance .addFieldArray(binding, FIXED_DATE_SCHEDULE_ARRAY_VARS);
+        fixedDateScheduleInstance.addFieldArray(binding, FIXED_DATE_SCHEDULE_ARRAY_VARS);
       });
       return fixedDateScheduleInstance;
     }
