@@ -16,6 +16,7 @@ import org.eclipse.rdf4j.federated.repository.FedXRepositoryConnection;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -37,6 +38,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Component
 public class KGRepository {
+    @Value("${SHACL_NAMESPACE}")
+    String shaclNamespace;
+
     private final RestClient client;
     private final ObjectMapper objectMapper;
     private final FileService fileService;
@@ -76,9 +80,13 @@ public class KGRepository {
         LOGGER.info("Cache Miss: retrieving available endpoints...");
         String query = this.fileService.getContentsWithReplacement(FileService.ENDPOINT_QUERY_RESOURCE,
                 endpointType.getIri());
+        String shaclEndpoint = BlazegraphClient.getInstance().getRemoteStoreClient(shaclNamespace)
+                .getQueryEndpoint();
         return this.query(query,
                 BlazegraphClient.getInstance().getRemoteStoreClient(KGRepository.DEFAULT_NAMESPACE)
-                        .getQueryEndpoint());
+                        .getQueryEndpoint())
+                .stream().filter(binding -> !binding.getFieldValue("endpoint").equals(shaclEndpoint))
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     /**
@@ -163,7 +171,8 @@ public class KGRepository {
      */
     @Cacheable(value = "shaclOptionalQuery", key = "#shaclReplacement.concat('-optional')")
     public List<SparqlBinding> execOptionalParamQuery(String shaclReplacement, List<String> endpoints) {
-        String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PROPERTY_OPTIONAL_RESOURCE, shaclReplacement);
+        String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PROPERTY_OPTIONAL_RESOURCE,
+                shaclReplacement);
         return this.query(query, endpoints);
     }
 
@@ -214,10 +223,8 @@ public class KGRepository {
      */
     private List<List<SparqlBinding>> queryNestedPredicates(String shaclPathQuery) {
         LOGGER.debug("Querying the knowledge graph for predicate paths and variables...");
-        // Retrieve all endpoints once
-        List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH).stream()
-                .map(binding -> binding.getFieldValue("endpoint"))
-                .toList();
+        String shaclEndpoint = BlazegraphClient.getInstance().getRemoteStoreClient(shaclNamespace)
+                .getQueryEndpoint();
         // Initialise a queue to store all values
         List<List<SparqlBinding>> results = new ArrayList<>();
         String replacementShapePath = ""; // Initial replacement string
@@ -240,15 +247,13 @@ public class KGRepository {
                         .replace(FileService.REPLACEMENT_FILTER, replacementFilterPath);
                 // SHACL restrictions are only found within one Blazegraph endpoint, and can be
                 // queried without using FedX
-                for (String endpoint : endpoints) {
-                    LOGGER.debug("Querying at the endpoint {}...", endpoint);
-                    List<SparqlBinding> queryResults = this.query(executableQuery, endpoint);
-                    if (!queryResults.isEmpty()) {
-                        LOGGER.debug("Found data at the endpoint {}...", endpoint);
-                        variablesAndPropertyPaths.addAll(queryResults);
-                        // Indicator should be marked if results are found
-                        hasResults = true;
-                    }
+                LOGGER.debug("Querying at the endpoint {}...", shaclEndpoint);
+                List<SparqlBinding> queryResults = this.query(executableQuery, shaclEndpoint);
+                if (!queryResults.isEmpty()) {
+                    LOGGER.debug("Found data at the endpoint {}...", shaclEndpoint);
+                    variablesAndPropertyPaths.addAll(queryResults);
+                    // Indicator should be marked if results are found
+                    hasResults = true;
                 }
 
                 if (hasResults) {
