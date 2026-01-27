@@ -149,9 +149,7 @@ public class KGService {
    * @return List of endpoints
    */
   public List<String> getEndpoints(SparqlEndpointType endpointType) {
-    return this.kgRepository.getEndpoints(endpointType).stream()
-        .map(binding -> binding.getFieldValue("endpoint"))
-        .toList();
+    return this.kgRepository.getEndpoints(endpointType);
   }
 
   /**

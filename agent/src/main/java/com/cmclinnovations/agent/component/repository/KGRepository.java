@@ -76,7 +76,7 @@ public class KGRepository {
      * @return List of endpoints
      */
     @Cacheable(value = "endpoint", key = "#endpointType.getIri()")
-    public List<SparqlBinding> getEndpoints(SparqlEndpointType endpointType) {
+    public List<String> getEndpoints(SparqlEndpointType endpointType) {
         LOGGER.info("Cache Miss: retrieving available endpoints...");
         String query = this.fileService.getContentsWithReplacement(FileService.ENDPOINT_QUERY_RESOURCE,
                 endpointType.getIri());
@@ -86,6 +86,7 @@ public class KGRepository {
                 BlazegraphClient.getInstance().getRemoteStoreClient(KGRepository.DEFAULT_NAMESPACE)
                         .getQueryEndpoint())
                 .stream().filter(binding -> !binding.getFieldValue("endpoint").equals(shaclEndpoint))
+                .map(binding -> binding.getFieldValue("endpoint"))
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
