@@ -80,14 +80,22 @@ public class KGRepository {
         LOGGER.info("Cache Miss: retrieving available endpoints...");
         String query = this.fileService.getContentsWithReplacement(FileService.ENDPOINT_QUERY_RESOURCE,
                 endpointType.getIri());
-        String shaclEndpoint = BlazegraphClient.getInstance().getRemoteStoreClient(shaclNamespace)
-                .getQueryEndpoint();
+        String shaclEndpoint = this.getShaclEndpoint();
         return this.query(query,
                 BlazegraphClient.getInstance().getRemoteStoreClient(KGRepository.DEFAULT_NAMESPACE)
                         .getQueryEndpoint())
                 .stream().filter(binding -> !binding.getFieldValue("endpoint").equals(shaclEndpoint))
                 .map(binding -> binding.getFieldValue("endpoint"))
                 .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    /**
+     * Retrieves the SHACL endpoint URL.
+     */
+    @Cacheable(value = "shaclendpoint")
+    public String getShaclEndpoint() {
+        return BlazegraphClient.getInstance().getRemoteStoreClient(this.shaclNamespace)
+                .getQueryEndpoint();
     }
 
     /**
@@ -224,8 +232,7 @@ public class KGRepository {
      */
     private List<List<SparqlBinding>> queryNestedPredicates(String shaclPathQuery) {
         LOGGER.debug("Querying the knowledge graph for predicate paths and variables...");
-        String shaclEndpoint = BlazegraphClient.getInstance().getRemoteStoreClient(shaclNamespace)
-                .getQueryEndpoint();
+        String shaclEndpoint = this.getShaclEndpoint();
         // Initialise a queue to store all values
         List<List<SparqlBinding>> results = new ArrayList<>();
         String replacementShapePath = ""; // Initial replacement string
