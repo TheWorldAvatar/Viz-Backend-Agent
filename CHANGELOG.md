@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.34.0
+
+- Fixed rescheule task route
+
 ## 1.33.3
 
 - Fixed approval of fixed date service
