@@ -149,9 +149,14 @@ public class KGService {
    * @return List of endpoints
    */
   public List<String> getEndpoints(SparqlEndpointType endpointType) {
-    return this.kgRepository.getEndpoints(endpointType).stream()
-        .map(binding -> binding.getFieldValue("endpoint"))
-        .toList();
+    return this.kgRepository.getEndpoints(endpointType);
+  }
+
+  /**
+   * Retrieves the SHACL endpoint URL.
+   */
+  public String getShaclEndpoint() {
+    return this.kgRepository.getShaclEndpoint();
   }
 
   /**

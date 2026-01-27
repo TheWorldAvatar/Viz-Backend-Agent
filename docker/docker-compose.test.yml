@@ -3,11 +3,12 @@ version: "3.9"
 services:
   agent:
     container_name: vis-backend-agent-test
-    image: ghcr.io/theworldavatar/vis-backend-agent-test:1.34.0
+    image: ghcr.io/theworldavatar/vis-backend-agent-test:1.35.0
     build:
       context: ..
       target: test
     environment:
       NAMESPACE: kb
+      SHACL_NAMESPACE: shacl
     ports:
       - "8080:8080"

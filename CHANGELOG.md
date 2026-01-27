@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.35.0
+
+- Breaking Change: split SHACL namespace as a standalone name from the other namespaces
+
 ## 1.34.0
 
 - Fixed rescheule task route

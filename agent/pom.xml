@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.cmclinnovations</groupId>
 	<artifactId>vis-backend-agent</artifactId>
-	<version>1.34.0</version>
+	<version>1.35.0</version>
 	<packaging>war</packaging>
 	<name>vis-backend-agent</name>
 	<url />
@@ -126,6 +126,9 @@
 				<configuration>
 					<environmentVariables>
 						<NAMESPACE>kb</NAMESPACE>
+					</environmentVariables>
+					<environmentVariables>
+						<SHACL_NAMESPACE>shacl</SHACL_NAMESPACE>
 					</environmentVariables>
 				</configuration>
 			</plugin>
