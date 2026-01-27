@@ -85,9 +85,14 @@ public class GetService {
   public ResponseEntity<StandardApiResponse<?>> getMatchingInstances(String resourceID, Map<String, String> criterias) {
     LOGGER.debug("Retrieving the form template for {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
+    // Parses the criteria keys to ensure it uses _ instead of white spaces
+    Map<String, String> parsedCriterias = criterias.entrySet().stream()
+        .collect(Collectors.toMap(
+            entry -> QueryResource.genVariable(entry.getKey()).getVarName(),
+            Map.Entry::getValue));
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService
         .getSparqlQueryConstructionParameters(iri, false);
-    String searchQuery = this.queryTemplateService.genSearchQuery(nestedVariablesAndPropertyPaths, criterias);
+    String searchQuery = this.queryTemplateService.genSearchQuery(nestedVariablesAndPropertyPaths, parsedCriterias);
     // Query for direct instances
     Queue<SparqlBinding> results = this.kgService.query(searchQuery, SparqlEndpointType.MIXED);
     LOGGER.info(SUCCESSFUL_REQUEST_MSG);
