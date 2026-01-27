@@ -644,8 +644,7 @@ public class LifecycleTaskService {
     String expireStage = result.getFieldValue(QueryResource.genVariable(LifecycleResource.STAGE_KEY).getVarName());
     String orderEvent = result.getFieldValue(QueryResource.genVariable(LifecycleResource.EVENT_KEY).getVarName());
     // new date
-    String rescheduleTimestamp = params.get(LifecycleResource.RESCHEDULE_DATE_KEY).toString();
-    String rescheduleDate = this.dateTimeService.getDateFromTimestamp(rescheduleTimestamp);
+    String rescheduleDate = params.get(LifecycleResource.RESCHEDULE_DATE_KEY).toString();
     String rescheduleDatetime = this.dateTimeService.getDateTimeFromDate(rescheduleDate);
     // update database
     String query = this.lifecycleQueryFactory.getRescheduleQuery(lifecycleStartDate, lifecycleEndDate, expireStage,
