@@ -9,5 +9,6 @@ services:
       target: test
     environment:
       NAMESPACE: kb
+      SHACL_NAMESPACE: shacl
     ports:
       - "8080:8080"

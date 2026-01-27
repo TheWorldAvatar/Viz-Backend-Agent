@@ -9,6 +9,7 @@ services:
       target: agent
     environment:
       NAMESPACE: kb
+      SHACL_NAMESPACE: shacl
     volumes:
       - ../resources/config:/usr/local/tomcat/resources
     ports:

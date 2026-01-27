@@ -8,6 +8,7 @@
           "REDIS=redis://<STACK>-redis:6379",
           "KEYCLOAK_ISSUER_URI=http://<DOMAIN>/realms/<REALM>",
           "NAMESPACE=kb",
+          "SHACL_NAMESPACE=shacl",
           "TASKS_ENABLED=false"
         ],
         "Mounts": [
