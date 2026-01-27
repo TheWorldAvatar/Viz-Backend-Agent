@@ -153,6 +153,13 @@ public class KGService {
   }
 
   /**
+   * Retrieves the SHACL endpoint URL.
+   */
+  public String getShaclEndpoint() {
+    return this.kgRepository.getShaclEndpoint();
+  }
+
+  /**
    * Executes the query at the target endpoint to retrieve JSON LD results.
    * 
    * @param query the query for execution.
