@@ -261,7 +261,6 @@ public class KGService {
         isSparqlConstructRules ? ";a <http://www.w3.org/ns/shacl#SPARQLRule>."
             : ".MINUS{?ruleShape a <http://www.w3.org/ns/shacl#SPARQLRule>}");
     String endpoint = this.getShaclEndpoint();
-    Model model = ModelFactory.createDefaultModel();
     LOGGER.debug("Querying at the endpoint {}...", endpoint);
     String results = this.client.post()
         .uri(endpoint)
@@ -270,9 +269,7 @@ public class KGService {
         .body(query)
         .retrieve()
         .body(String.class);
-    Model resultModel = this.readStringModel(results, Lang.TURTLE);
-    model.add(resultModel);
-    return model;
+    return this.readStringModel(results, Lang.TURTLE);
   }
 
   /**
