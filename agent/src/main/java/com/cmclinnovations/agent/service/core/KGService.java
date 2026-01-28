@@ -226,8 +226,7 @@ public class KGService {
             throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_DELETE_KEY));
           }
         }
-        List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
-        List<SparqlBinding> results = this.kgRepository.execOptionalParamQuery(target, endpoints);
+        List<SparqlBinding> results = this.kgRepository.execOptionalParamQuery(target);
         return results.stream()
             .map(x -> x.getFieldValue("name"))
             .collect(Collectors.toSet());
@@ -261,21 +260,16 @@ public class KGService {
     String query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target,
         isSparqlConstructRules ? ";a <http://www.w3.org/ns/shacl#SPARQLRule>."
             : ".MINUS{?ruleShape a <http://www.w3.org/ns/shacl#SPARQLRule>}");
-    List<String> endpoints = this.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
-    Model model = ModelFactory.createDefaultModel();
-    for (String endpoint : endpoints) {
-      LOGGER.debug("Querying at the endpoint {}...", endpoint);
-      String results = this.client.post()
-          .uri(endpoint)
-          .accept(QueryResource.TTL_MEDIA_TYPE)
-          .contentType(QueryResource.SPARQL_MEDIA_TYPE)
-          .body(query)
-          .retrieve()
-          .body(String.class);
-      Model resultModel = this.readStringModel(results, Lang.TURTLE);
-      model.add(resultModel);
-    }
-    return model;
+    String endpoint = this.getShaclEndpoint();
+    LOGGER.debug("Querying at the endpoint {}...", endpoint);
+    String results = this.client.post()
+        .uri(endpoint)
+        .accept(QueryResource.TTL_MEDIA_TYPE)
+        .contentType(QueryResource.SPARQL_MEDIA_TYPE)
+        .body(query)
+        .retrieve()
+        .body(String.class);
+    return this.readStringModel(results, Lang.TURTLE);
   }
 
   /**

@@ -179,10 +179,10 @@ public class KGRepository {
      * @param shaclReplacement The replacement value of the SHACL query target
      */
     @Cacheable(value = "shaclOptionalQuery", key = "#shaclReplacement.concat('-optional')")
-    public List<SparqlBinding> execOptionalParamQuery(String shaclReplacement, List<String> endpoints) {
+    public List<SparqlBinding> execOptionalParamQuery(String shaclReplacement) {
         String query = this.fileService.getContentsWithReplacement(FileService.SHACL_PROPERTY_OPTIONAL_RESOURCE,
                 shaclReplacement);
-        return this.query(query, endpoints);
+        return this.query(query, this.getShaclEndpoint());
     }
 
     /**
