@@ -20,6 +20,8 @@ This directory provides examples for different applications of the agent.
     - [2.1.2 Form Branch](#212-form-branch)
     - [2.1.3 Service Lifecycle](#213-service-lifecycle)
   - [2.2 Geocoding](#22-geocoding)
+- [3. Appendix](#3-appendix)
+  - [3.1 TWA-SHACL extension](#31-twa-shacl-extension)
 
 ## 1. SHACL Restrictions
 
@@ -120,10 +122,13 @@ The following SHACL value constraints will be extracted and present in the form 
 
 - When combined with the `sh:pattern` attribute, it enforces specific format requirements. For example, with the pattern `\.(00|15|30|45|60)$` and a `0.05` step, the field will increment to the nearest value matching the pattern within that step. Ensure the step value does not exceed the pattern's granularity; `0.15` steps would fail to meet the `\.(00|15|30|45|60)$` pattern, while `0.01` steps are inefficient.
 
-12. <https://theworldavatar.io/kg/form/singleLine>: A (`true`/`false`) boolean indicating if a text area input is required. MUST be used with a `sh:datatype xsd:string`.
+1. <https://theworldavatar.io/kg/form/singleLine>: A (`true`/`false`) boolean indicating if a text area input is required. MUST be used with a `sh:datatype xsd:string`.
 
 > [!IMPORTANT]  
 > There is no need to include an `id` property shape in the SHACL config, as the agent has its own mechanism to retrieve the identifier that is typically generated using the relationship `http://purl.org/dc/terms/identifier` IF the instance was added by the agent. If the instance was uploaded via other means, please ensure that the relevant instances contains the relationship so that the agent can return the right results when querying for specific instances.
+
+> [!NOTE]  
+> Read [this appendix](#31-twa-shacl-extension) for a complete list of `SHACL` properties that has been extended for TWA.
 
 ### 1.1.1 Branching Form
 
@@ -528,7 +533,7 @@ base:TransactionShape
       ?iri a fibo-fnd-pas-pas:ServiceAgreement;
         fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/cmns-col:comprises ?event_id;
         fibo-fnd-rel-rel:confers/fibo-fnd-rel-rel:mandates ?price_model.
-      ?event_id ^cmns-doc:refersTo/cmns-doc:records/cmns-qtu:hasQuantityValue	?weight;
+      ?event_id ^cmns-doc:refersTo/cmns-doc:records/cmns-qtu:hasQuantityValue ?weight;
         fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent;
         cmns-dsg:describes ontoservice:CompletedStatus .
       ?price_model cmns-qtu:hasArgument/fibo-fnd-acc-cur:hasAmount ?base_fee;
@@ -625,10 +630,10 @@ base:ConceptShape
   ].
 ```
 
-2. `sh:hasValue`: Optional parameter to restrict the output of the query to a specific instance. This is useful if the same predicate path points to multiple instances as a subject and cannot be differentiated otherwise. For example: `fibo-fnd-dt-fd:RegularSchedule` has predicates `fibo-fnd-dt-fd:hasRecurrenceInterval` that may target Monday to Sunday as their subject values.
-3. `sh:minCount`: Optional parameter to indicate that the variable is required in the template if set above one.
-4. `sh:datatype`: Required parameter to generate min-max search criteria based on integer or decimal settings
-5. `sh:property/sh:name "name"`: Optional `SHACL` property that provides property path(s) to the human-readable label of the field. This is required for any IRIs returned by any property if human-readable labels are necessary. This must be found in a property shape with `sh:targetClass` to function. Note that if your property is `sh:in` a (sub)class, the agent will automatically retrieve the `rdfs:label` of the associated class concept.
+1. `sh:hasValue`: Optional parameter to restrict the output of the query to a specific instance. This is useful if the same predicate path points to multiple instances as a subject and cannot be differentiated otherwise. For example: `fibo-fnd-dt-fd:RegularSchedule` has predicates `fibo-fnd-dt-fd:hasRecurrenceInterval` that may target Monday to Sunday as their subject values.
+2. `sh:minCount`: Optional parameter to indicate that the variable is required in the template if set above one.
+3. `sh:datatype`: Required parameter to generate min-max search criteria based on integer or decimal settings
+4. `sh:property/sh:name "name"`: Optional `SHACL` property that provides property path(s) to the human-readable label of the field. This is required for any IRIs returned by any property if human-readable labels are necessary. This must be found in a property shape with `sh:targetClass` to function. Note that if your property is `sh:in` a (sub)class, the agent will automatically retrieve the `rdfs:label` of the associated class concept.
 
 ## 1.3 SHACL Derivation
 
@@ -662,7 +667,7 @@ An example is provided below:
 }
 ```
 
-2. `SHACL` rule in ttl
+1. `SHACL` rule in ttl
 
 > [!IMPORTANT]
 > The `order` property is required to execute the rules in the desired sequence as rules may be dependent on each other.
@@ -671,9 +676,9 @@ An example is provided below:
 > `SPARQL` rules (using `sh:construct`) will be executed across all `SPARQL` endpoints, while Triple rules will only be executed on the instance being instantiated. It is recommended to use `SPARQL` rules if you require a derivation based on existing knowledge stored in the endpoints OR the derived triples are complex with nested and/or multiple statements.
 
 > [!IMPORTANT]
-> * The `WHERE` clause of the SHACL rule **must** explicitly reference the `?this` variable to avoid unexpected side effects.
-> * The individuals bound to `?this` must be instances of the `sh:targetClass` defined by the NodeShape.
-
+>
+> - The `WHERE` clause of the SHACL rule **must** explicitly reference the `?this` variable to avoid unexpected side effects.
+> - The individuals bound to `?this` must be instances of the `sh:targetClass` defined by the NodeShape.
 
 ```
 @prefix ex:   <http://example.org/> .
@@ -706,7 +711,7 @@ ex:CalculationShape a sh:NodeShape ;
   ] .
 ```
 
-3. `application-service.json`
+1. `application-service.json`
 
 ```json
 {
@@ -714,7 +719,7 @@ ex:CalculationShape a sh:NodeShape ;
 }
 ```
 
-4. `application-form.json`
+1. `application-form.json`
 
 ```json
 {
@@ -975,3 +980,14 @@ base:ServiceLocationShape
     sh:maxCount 1 ;
   ] .
 ```
+
+## 3. Appendix
+
+### 3.1 TWA-SHACL extension
+
+For this agent to function in the TWA ecosystem, there are some extensions to the SHACL ontology to enable more flexibility:
+
+1. <https://theworldavatar.io/kg/form/step>: Defines the increment between valid numbers for a numeric input field
+2. <https://theworldavatar.io/kg/form/singleLine>: A (`true`/`false`) boolean indicating if a text area input is required
+3. <https://theworldavatar.io/kg/form/dependentOn>: Sets up dependencies between form fields by targeting the independent form property (via the corresponding `PropertyShape`)
+4. <https://theworldavatar.io/kg/form/role>: Controls access to specific fields by setting to a list of permissible roles
