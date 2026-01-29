@@ -243,32 +243,10 @@ public class KGService {
    *                               else, retrieve all other rules.
    */
   public Model getShaclRules(String resourceId, boolean isSparqlConstructRules) {
-    LOGGER.debug("Retrieving SHACL rules for resource: {}", resourceId);
-    String target;
-    try {
-      target = this.fileService.getTargetIri(resourceId).getQueryString();
-    } catch (InvalidRouteException e) {
-      LifecycleEventType eventType = LifecycleEventType.fromId(resourceId);
-      if (eventType != null) {
-        target = eventType.getShaclReplacement();
-      } else {
-        // If no target is specified, return an empty model
-        LOGGER.warn("No target resource specified for SHACL rules retrieval. Returning an empty model.");
-        return ModelFactory.createDefaultModel();
-      }
+    String results = this.kgRepository.getShaclRules(resourceId, isSparqlConstructRules);
+    if (results.isBlank()) {
+      return ModelFactory.createDefaultModel();
     }
-    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target,
-        isSparqlConstructRules ? ";a <http://www.w3.org/ns/shacl#SPARQLRule>."
-            : ".MINUS{?ruleShape a <http://www.w3.org/ns/shacl#SPARQLRule>}");
-    String endpoint = this.getShaclEndpoint();
-    LOGGER.debug("Querying at the endpoint {}...", endpoint);
-    String results = this.client.post()
-        .uri(endpoint)
-        .accept(QueryResource.TTL_MEDIA_TYPE)
-        .contentType(QueryResource.SPARQL_MEDIA_TYPE)
-        .body(query)
-        .retrieve()
-        .body(String.class);
     return this.readStringModel(results, Lang.TURTLE);
   }
 
