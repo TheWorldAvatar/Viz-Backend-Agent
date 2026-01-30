@@ -31,6 +31,7 @@ import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
+import com.cmclinnovations.agent.model.type.ShaclRuleType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
@@ -237,14 +238,12 @@ public class KGService {
   /**
    * Retrieves the SHACL rules associated with the target resource.
    * 
-   * @param resourceID             The target resource identifier for the
-   *                               instance.
-   * @param isSparqlConstructRules Extract only SPARQL CONSTRUCT rules if true,
-   *                               else, retrieve all other rules.
+   * @param resourceID    The target resource identifier for the instance.
+   * @param shaclRuleType The specific shacl rule type.
    */
-  public Model getShaclRules(String resourceId, boolean isSparqlConstructRules) {
-    String results = this.kgRepository.getShaclRules(resourceId, isSparqlConstructRules);
-    if (results.isBlank()) {
+  public Model getShaclRules(String resourceId, ShaclRuleType shaclRuleType) {
+    String results = this.kgRepository.getShaclRules(resourceId, shaclRuleType);
+    if (results.isEmpty()) {
       return ModelFactory.createDefaultModel();
     }
     return this.readStringModel(results, Lang.TURTLE);

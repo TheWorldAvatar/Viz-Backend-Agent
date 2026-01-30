@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.federated.FedXFactory;
@@ -26,6 +24,7 @@ import org.springframework.web.client.RestClient;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
+import com.cmclinnovations.agent.model.type.ShaclRuleType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.LoggingService;
@@ -179,13 +178,11 @@ public class KGRepository {
     /**
      * Retrieves the SHACL rules associated with the target resource.
      * 
-     * @param resourceID             The target resource identifier for the
-     *                               instance.
-     * @param isSparqlConstructRules Extract only SPARQL CONSTRUCT rules if true,
-     *                               else, retrieve all other rules.
+     * @param resourceID    The target resource identifier for the instance.
+     * @param shaclRuleType The specific shacl rule type.
      */
-    @Cacheable(value = "shaclRule", key = "#resourceId.concat('-').concat(#isSparqlConstructRules)")
-    public String getShaclRules(String resourceId, boolean isSparqlConstructRules) {
+    @Cacheable(value = "shaclRule", key = "#resourceId.concat('-').concat(#shaclRuleType.getIri())")
+    public String getShaclRules(String resourceId, ShaclRuleType shaclRuleType) {
         LOGGER.info("Cache Miss: retrieving SHACL rules for resource: {}", resourceId);
         String target;
         try {
@@ -201,8 +198,7 @@ public class KGRepository {
             }
         }
         String query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target,
-                isSparqlConstructRules ? ";a <http://www.w3.org/ns/shacl#SPARQLRule>."
-                        : ".MINUS{?ruleShape a <http://www.w3.org/ns/shacl#SPARQLRule>}");
+                shaclRuleType.getIri());
         String endpoint = this.getShaclEndpoint();
         LOGGER.debug("Querying at the endpoint {}...", endpoint);
         return this.client.post()

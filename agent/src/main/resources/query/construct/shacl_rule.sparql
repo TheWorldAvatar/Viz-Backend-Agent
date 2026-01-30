@@ -5,14 +5,13 @@ CONSTRUCT {
          sh:targetClass ?target;
          sh:rule ?ruleShape .
   ?ruleShape a ?ruleType;
-               ?pred ?object.
-}
-WHERE {
+         ?pred ?object.
+} WHERE {
   ?shape a sh:NodeShape ;
        sh:targetClass ?target;
        sh:targetClass [target];
        sh:node*/sh:rule ?ruleShape .
   ?ruleShape a ?ruleType;
-       ?pred ?object
-       [target]
+       a [target];
+       ?pred ?object.
 }
