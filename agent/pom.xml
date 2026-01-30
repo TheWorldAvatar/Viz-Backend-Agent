@@ -127,6 +127,9 @@
 					<environmentVariables>
 						<NAMESPACE>kb</NAMESPACE>
 					</environmentVariables>
+					<environmentVariables>
+						<SHACL_NAMESPACE>shacl</SHACL_NAMESPACE>
+					</environmentVariables>
 				</configuration>
 			</plugin>
 		</plugins>

@@ -664,18 +664,15 @@ public class GetService {
       Map<String, Object> currentEntity) {
     LOGGER.debug("Retrieving the form template for {} ...", resourceID);
     String query = this.queryTemplateService.getFormQuery(resourceID, isReplacement);
-    // SHACL restrictions for generating the form template always stored on a
-    // blazegraph namespace
-    List<String> endpoints = this.kgService.getEndpoints(SparqlEndpointType.BLAZEGRAPH);
-    for (String endpoint : endpoints) {
-      LOGGER.debug("Querying at the endpoint {}...", endpoint);
-      // Execute the query on the current endpoint and get the result
-      ArrayNode formTemplateInputs = this.kgService.queryJsonLd(query, endpoint);
-      if (!formTemplateInputs.isEmpty()) {
-        Map<String, Object> results = this.queryTemplateService.genFormTemplate(formTemplateInputs, currentEntity);
-        LOGGER.info(SUCCESSFUL_REQUEST_MSG);
-        return this.responseEntityBuilder.success(null, results);
-      }
+    // SHACL restrictions are stored at a different endpoint
+    String endpoint = this.kgService.getShaclEndpoint();
+    LOGGER.debug("Querying at the endpoint {}...", endpoint);
+    // Execute the query on the current endpoint and get the result
+    ArrayNode formTemplateInputs = this.kgService.queryJsonLd(query, endpoint);
+    if (!formTemplateInputs.isEmpty()) {
+      Map<String, Object> results = this.queryTemplateService.genFormTemplate(formTemplateInputs, currentEntity);
+      LOGGER.info(SUCCESSFUL_REQUEST_MSG);
+      return this.responseEntityBuilder.success(null, results);
     }
     LOGGER.error(StringResource.INVALID_SHACL_ERROR_MSG);
     throw new IllegalStateException(StringResource.INVALID_SHACL_ERROR_MSG);

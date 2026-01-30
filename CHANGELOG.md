@@ -1,5 +1,17 @@
 # Change Log
 
+## 1.35.1
+
+- Fix remaining routes to fetch SHACL rules and shape from the standalone SHACL namespace
+
+## 1.35.0
+
+- Breaking Change: split SHACL namespace as a standalone name from the other namespaces
+
+## 1.34.0
+
+- Fixed rescheule task route
+
 ## 1.33.3
 
 - Fixed approval of fixed date service

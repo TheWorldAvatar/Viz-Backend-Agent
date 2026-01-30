@@ -62,11 +62,15 @@ which must have a 'scope' that [allows you to publish and install packages](http
 > [!IMPORTANT]  
 > Inference MUST be enabled in all SPARQL endpoints for them to function as expected.
 
+> [!IMPORTANT]  
+> A standalone namespace must be created for SHACL shapes that must not contain any other data. The agent will ignore the shacl namespace when querying for data and will ignore the other namespaces when querying for SHACL shapes. This can be set through the `SHACL_NAMESPACE` env variable.
+
 ##### Environment variables
 
 The agent requires the following environment variables. These variables must be set in their respective docker configuration files for the agent to function as intended.
 
 - `NAMESPACE`: Specifies the SPARQL namespace identifier containing the corresponding instances (default: kb)
+- `SHACL_NAMESPACE`: Specifies the SPARQL namespace identifier containing the SHACL restrictions; Note that the agent requires SHACL restrictions to be stored in a separate namespace from other data (default: shacl)
 - `TASKS_ENABLED`: Specifies if scheduled tasks must be executed. This is tentatively required only for lifecycle related tasks (default: false)
 - `REDIS`: The redis endpoint. Redis must be running to support the caching function of this agent. Format: `redis://<url>`; If redis is deployed within the same stack, `<url>` may be `<STACK>-redis:6379`
 - `KEYCLOAK_ISSUER_URI`: Optional parameter to enable web security via Keycloak. Format: `http://<DOMAIN>/realms/<REALM>`; To disable, either set an empty string or remove the variable entirely
@@ -848,7 +852,7 @@ Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/ser
 {
   /* parameters */
   "id": "The event ID",
-  "reschedule date": "The new scheduled date for the service task in the Epoch second format"
+  "reschedule date": "The new scheduled date for the service task in YYYY-MM-DD format"
 }
 ```
 
