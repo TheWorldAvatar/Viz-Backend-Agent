@@ -3,7 +3,9 @@ package com.cmclinnovations.agent.service.core;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -18,6 +20,8 @@ import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -277,6 +281,46 @@ public class KGService {
         this.executeUpdate(insertDataQuery);
       }
     }
+  }
+
+  /**
+   * Executes the SHACL SPARQL virtual rules on all available endpoints to get
+   * data at query time.
+   * 
+   * @param resourceID  The target resource identifier for the instance.
+   * @param instanceIri The instance IRI string.
+   */
+  public Map<String, SparqlBinding> execVirtualShaclRules(String resourceID, Queue<List<String>> ids) {
+    Model virtualRules = this.getShaclRules(resourceID, ShaclRuleType.SPARQL_VIRTUAL_RULE);
+    if (virtualRules.isEmpty()) {
+      return new HashMap<>();
+    }
+    List<String> targetIds = ids.stream()
+        .map(list -> Rdf.literalOf(list.get(0)).getQueryString())
+        .toList();
+    Queue<String> queries = this.shaclRuleProcesser.getVirtualQueries(virtualRules, targetIds);
+
+    Map<String, SparqlBinding> results = new HashMap<>();
+    while (!queries.isEmpty()) {
+      Queue<SparqlBinding> currentResults = this.query(queries.poll(), SparqlEndpointType.MIXED);
+      List<Variable> variables = new ArrayList<>();
+      while (!currentResults.isEmpty()) {
+        SparqlBinding currentBinding = currentResults.poll();
+        if (variables.isEmpty()) {
+          currentBinding.getFields().stream()
+              .filter(field -> field != QueryResource.ID_KEY)
+              .forEach(field -> variables.add(QueryResource.genVariable(field)));
+        }
+        currentBinding.addSequence(variables);
+        results.merge(currentBinding.getFieldValue(QueryResource.ID_KEY), currentBinding,
+            (existing, replacement) -> {
+              // If there is an existing mapping, merge the two
+              existing.merge(replacement);
+              return existing;
+            });
+      }
+    }
+    return results;
   }
 
   /**

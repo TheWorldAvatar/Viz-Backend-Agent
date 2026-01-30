@@ -14,6 +14,7 @@ This directory provides examples for different applications of the agent.
     - [1.1.6 Role-based data access](#116-role-based-data-access)
   - [1.2 Automated Data Retrieval](#12-automated-data-retrieval)
   - [1.3 SHACL Derivation](#13-shacl-derivation)
+    - [1.3.1 Virtual or persist derivation](#131-virtual-or-persist-derivation)
 - [2. Schemas](#2-schemas)
   - [2.1 Instantiation](#21-instantiation)
     - [2.1.1 Array](#211-array)
@@ -729,6 +730,35 @@ ex:CalculationShape a sh:NodeShape ;
 
 A `POST` request should be sent to `<baseURL>/vis-backend-agent/calculation` with the `id` and `weight` parameters in the request body.
 
+### 1.3.1 Virtual or persist derivation
+
+The `twa-form:SPARQLVirtualRule` is a custom extension of the `sh:SPARQLRule` class, that is designed for query-time derivation ie (display information temporarily without persistence in the triplestore). It requires only a `sh:select` property with the corresponding `SELECT` `SPARQL` query. The agent will return the `SELECT` variables.
+
+> [!CAUTION]
+> Like all SHACL rules, the variable `$this` is reserved for the current focus node. Your SPARQL string must utilise `$this` to ensure the rule scope is correctly applied to the individual instance being processed.
+
+```
+@prefix ex:         <http://example.org/> .
+@prefix sh:         <http://www.w3.org/ns/shacl#> .
+@prefix twa-form:   <https://theworldavatar.io/kg/form/> .
+
+ex:ExampleShape a sh:NodeShape ;
+  ...  
+  sh:rule [
+   a twa-form:SPARQLVirtualRule ;
+   sh:select """
+     prefix ex: <http://example.org/>
+     prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+     SELECT ?output
+     WHERE {
+      ?this ex:hasName ?name ;
+        ex:hasAge ?age .
+      BIND(CONCAT(?name, " is ", STR(?age)," old") AS ?output)
+     }
+   """
+  ] .
+```
+
 ## 2. Schemas
 
 ### 2.1 Instantiation
@@ -991,3 +1021,6 @@ For this agent to function in the TWA ecosystem, there are some extensions to th
 2. <https://theworldavatar.io/kg/form/singleLine>: A (`true`/`false`) boolean indicating if a text area input is required
 3. <https://theworldavatar.io/kg/form/dependentOn>: Sets up dependencies between form fields by targeting the independent form property (via the corresponding `PropertyShape`)
 4. <https://theworldavatar.io/kg/form/role>: Controls access to specific fields by setting to a list of permissible roles
+
+Class extensions:
+1. <https://theworldavatar.io/kg/form/SPARQLVirtualRule>: A derivation rule designed to be run at query time; Uses `sh:select`

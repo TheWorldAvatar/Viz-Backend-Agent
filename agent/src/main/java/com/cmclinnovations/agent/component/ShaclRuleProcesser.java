@@ -36,6 +36,9 @@ import com.cmclinnovations.agent.utils.StringResource;
 public class ShaclRuleProcesser {
     private final Property shaclOrder;
     private final Property shaclConstruct;
+    private final Property shaclSelect;
+    private static final String ID_TRIPLE_STATEMENT = QueryResource.genVariable(QueryResource.THIS_KEY)
+            .has(QueryResource.DC_TERM_ID, QueryResource.ID_VAR).getQueryString();
     private static final Logger LOGGER = LogManager.getLogger(ShaclRuleProcesser.class);
 
     /**
@@ -44,6 +47,35 @@ public class ShaclRuleProcesser {
     public ShaclRuleProcesser() {
         this.shaclOrder = ResourceFactory.createProperty("http://www.w3.org/ns/shacl#order");
         this.shaclConstruct = ResourceFactory.createProperty("http://www.w3.org/ns/shacl#construct");
+        this.shaclSelect = ResourceFactory.createProperty("http://www.w3.org/ns/shacl#select");
+    }
+
+    /**
+     * Retrieve all virtual queries to be executed at query time.
+     *
+     * @param rules The model containing SHACL rules.
+     * @param iris  The list of IRIs to be targeted.
+     */
+    public Queue<String> getVirtualQueries(Model rules, List<String> iris) {
+        LOGGER.debug("Retrieving SHACL virtual rules....");
+        Queue<String> queries = new ArrayDeque<>();
+        StmtIterator ruleStatements = rules.listStatements(null, RDF.type,
+                ShaclRuleType.SPARQL_VIRTUAL_RULE.getResource());
+        while (ruleStatements.hasNext()) {
+            Statement ruleStmt = ruleStatements.nextStatement();
+            Resource rule = ruleStmt.getSubject();
+            Statement selectStatement = rule.getProperty(this.shaclSelect);
+            // When there is a select statement, update the query with ID filters and variable
+            if (selectStatement != null) {
+                String selectQuery = QueryResource.DC_TERM.getQueryString() +
+                        selectStatement.getString()
+                                .replaceFirst("(?i)WHERE\\s*\\{",
+                                        "?id WHERE{" + ID_TRIPLE_STATEMENT
+                                                + this.getIriClause(QueryResource.ID_KEY, iris));
+                queries.offer(selectQuery);
+            }
+        }
+        return queries;
     }
 
     /**
