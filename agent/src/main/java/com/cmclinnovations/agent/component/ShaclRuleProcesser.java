@@ -28,12 +28,12 @@ import org.springframework.stereotype.Component;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
+import com.cmclinnovations.agent.model.type.ShaclRuleType;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 @Component
 public class ShaclRuleProcesser {
-    private final Resource shaclSparqlRule;
     private final Property shaclOrder;
     private final Property shaclConstruct;
     private static final Logger LOGGER = LogManager.getLogger(ShaclRuleProcesser.class);
@@ -42,7 +42,6 @@ public class ShaclRuleProcesser {
      * Constructs a new query processor.
      */
     public ShaclRuleProcesser() {
-        this.shaclSparqlRule = ResourceFactory.createResource("http://www.w3.org/ns/shacl#SPARQLRule");
         this.shaclOrder = ResourceFactory.createProperty("http://www.w3.org/ns/shacl#order");
         this.shaclConstruct = ResourceFactory.createProperty("http://www.w3.org/ns/shacl#construct");
     }
@@ -57,7 +56,7 @@ public class ShaclRuleProcesser {
         LOGGER.debug("Retrieving SPARQL Construct rules....");
         Map<Integer, List<String>> queryOrderMappings = new TreeMap<>();
 
-        StmtIterator ruleStatements = rules.listStatements(null, RDF.type, this.shaclSparqlRule);
+        StmtIterator ruleStatements = rules.listStatements(null, RDF.type, ShaclRuleType.SPARQL_RULE.getResource());
         while (ruleStatements.hasNext()) {
             Statement ruleStmt = ruleStatements.nextStatement();
 
@@ -211,7 +210,7 @@ public class ShaclRuleProcesser {
      * Return the variable name of a target Node.
      * If the target node is not a variable, it will reutrn null.
      *
-     * @param targetNode  The input node of interest.
+     * @param targetNode The input node of interest.
      */
 
     private String getVarName(Node targetNode) {
