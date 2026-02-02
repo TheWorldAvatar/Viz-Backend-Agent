@@ -123,7 +123,7 @@ The following SHACL value constraints will be extracted and present in the form 
 
 - When combined with the `sh:pattern` attribute, it enforces specific format requirements. For example, with the pattern `\.(00|15|30|45|60)$` and a `0.05` step, the field will increment to the nearest value matching the pattern within that step. Ensure the step value does not exceed the pattern's granularity; `0.15` steps would fail to meet the `\.(00|15|30|45|60)$` pattern, while `0.01` steps are inefficient.
 
-1. <https://theworldavatar.io/kg/form/singleLine>: A (`true`/`false`) boolean indicating if a text area input is required. MUST be used with a `sh:datatype xsd:string`.
+12. <https://theworldavatar.io/kg/form/singleLine>: A (`true`/`false`) boolean indicating if a text area input is required. MUST be used with a `sh:datatype xsd:string`.
 
 > [!IMPORTANT]  
 > There is no need to include an `id` property shape in the SHACL config, as the agent has its own mechanism to retrieve the identifier that is typically generated using the relationship `http://purl.org/dc/terms/identifier` IF the instance was added by the agent. If the instance was uploaded via other means, please ensure that the relevant instances contains the relationship so that the agent can return the right results when querying for specific instances.
@@ -605,7 +605,13 @@ This agent can dynamically query fields for different instances based on the `SH
 
 The query in (1) is available at `resources/query/get/property_path.sparql`. For more information on role-based data access, please read [this section](#116-role-based-data-access). This path specifically requires the following `SHACL` properties in order to function:
 
-1. `sh:path`: REQUIRED to generate the `SPARQL` query template. The subject of this predicate can either be one path IRI or a list of path IRI. An example in `TTL` is also available below:
+1. `sh:path`: REQUIRED to generate the `SPARQL` query template. The subject of this predicate can either be one path IRI or a list of path IRI. An example in `TTL` is also available below in example (1).
+2. `sh:hasValue`: Optional parameter to restrict the output of the query to a specific instance. This is useful if the same predicate path points to multiple instances as a subject and cannot be differentiated otherwise. For example: `fibo-fnd-dt-fd:RegularSchedule` has predicates `fibo-fnd-dt-fd:hasRecurrenceInterval` that may target Monday to Sunday as their subject values.
+3. `sh:minCount`: Optional parameter to indicate that the variable is required in the template if set above one.
+4. `sh:datatype`: Required parameter to generate min-max search criteria based on integer or decimal settings
+5. `sh:property/sh:name "name"`: Optional `SHACL` property that provides property path(s) to the human-readable label of the field. This is required for any IRIs returned by any property if human-readable labels are necessary. This must be found in a property shape with `sh:targetClass` to function. Note that if your property is `sh:in` a (sub)class, the agent will automatically retrieve the `rdfs:label` of the associated class concept.
+
+Example (1)
 
 ```
 base:ConceptShape
@@ -630,11 +636,6 @@ base:ConceptShape
     ...
   ].
 ```
-
-1. `sh:hasValue`: Optional parameter to restrict the output of the query to a specific instance. This is useful if the same predicate path points to multiple instances as a subject and cannot be differentiated otherwise. For example: `fibo-fnd-dt-fd:RegularSchedule` has predicates `fibo-fnd-dt-fd:hasRecurrenceInterval` that may target Monday to Sunday as their subject values.
-2. `sh:minCount`: Optional parameter to indicate that the variable is required in the template if set above one.
-3. `sh:datatype`: Required parameter to generate min-max search criteria based on integer or decimal settings
-4. `sh:property/sh:name "name"`: Optional `SHACL` property that provides property path(s) to the human-readable label of the field. This is required for any IRIs returned by any property if human-readable labels are necessary. This must be found in a property shape with `sh:targetClass` to function. Note that if your property is `sh:in` a (sub)class, the agent will automatically retrieve the `rdfs:label` of the associated class concept.
 
 ## 1.3 SHACL Derivation
 
@@ -668,7 +669,7 @@ An example is provided below:
 }
 ```
 
-1. `SHACL` rule in ttl
+2. `SHACL` rule in ttl
 
 > [!IMPORTANT]
 > The `order` property is required to execute the rules in the desired sequence as rules may be dependent on each other.
@@ -712,7 +713,7 @@ ex:CalculationShape a sh:NodeShape ;
   ] .
 ```
 
-1. `application-service.json`
+3. `application-service.json`
 
 ```json
 {
@@ -720,7 +721,7 @@ ex:CalculationShape a sh:NodeShape ;
 }
 ```
 
-1. `application-form.json`
+4. `application-form.json`
 
 ```json
 {
