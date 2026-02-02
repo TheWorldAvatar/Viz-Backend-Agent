@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.35.2
+
+- Fix white spaces in variables for search routes
+
 ## 1.35.1
 
 - Fix remaining routes to fetch SHACL rules and shape from the standalone SHACL namespace
