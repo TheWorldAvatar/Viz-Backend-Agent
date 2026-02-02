@@ -12,7 +12,6 @@ import java.util.Set;
 
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 
-import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;

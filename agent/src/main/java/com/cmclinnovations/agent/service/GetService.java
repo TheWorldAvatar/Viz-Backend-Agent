@@ -3,7 +3,6 @@ package com.cmclinnovations.agent.service;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,7 +12,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.jena.rdf.model.Model;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
@@ -26,14 +24,12 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
-import com.cmclinnovations.agent.component.ShaclRuleProcesser;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
-import com.cmclinnovations.agent.model.type.ShaclRuleType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
@@ -49,7 +45,6 @@ public class GetService {
   private final KGService kgService;
   private final QueryTemplateService queryTemplateService;
   private final ResponseEntityBuilder responseEntityBuilder;
-  private final ShaclRuleProcesser shaclRuleProcesser;
 
   private static final String SUCCESSFUL_REQUEST_MSG = "Request has been completed successfully!";
   private static final Logger LOGGER = LogManager.getLogger(GetService.class);
@@ -60,14 +55,12 @@ public class GetService {
    * @param kgService             KG service for performing the query.
    * @param queryTemplateService  Service for generating query templates.
    * @param responseEntityBuilder A component to build the response entity.
-   * @param shaclRuleProcesser    A component to process SHACL rules.
    */
   public GetService(KGService kgService, QueryTemplateService queryTemplateService,
-      ResponseEntityBuilder responseEntityBuilder, ShaclRuleProcesser shaclRuleProcesser) {
+      ResponseEntityBuilder responseEntityBuilder) {
     this.kgService = kgService;
     this.queryTemplateService = queryTemplateService;
     this.responseEntityBuilder = responseEntityBuilder;
-    this.shaclRuleProcesser = shaclRuleProcesser;
   }
 
   /**
