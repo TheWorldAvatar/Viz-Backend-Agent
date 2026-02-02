@@ -732,7 +732,7 @@ A `POST` request should be sent to `<baseURL>/vis-backend-agent/calculation` wit
 
 ### 1.3.1 Virtual or persist derivation
 
-The `twa-form:SPARQLVirtualRule` is a custom extension of the `sh:SPARQLRule` class, that is designed for query-time derivation ie (display information temporarily without persistence in the triplestore). It requires only a `sh:select` property with the corresponding `SELECT` `SPARQL` query. The agent will return the `SELECT` variables.
+The `twa-form:SPARQLVirtualRule` is a custom extension of the `sh:Rule` and `sh:SPARQLSelectExecutable` class, that is designed for query-time derivation ie display information temporarily without persistence in the triplestore. It requires only a `sh:select` property with the corresponding `SELECT` `SPARQL` query. The agent will return the `SELECT` variables.
 
 > [!CAUTION]
 > Like all SHACL rules, the variable `$this` is reserved for the current focus node. Your SPARQL string must utilise `$this` to ensure the rule scope is correctly applied to the individual instance being processed.
