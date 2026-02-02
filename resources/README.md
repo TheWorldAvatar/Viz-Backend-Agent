@@ -738,6 +738,9 @@ The `twa-form:SPARQLVirtualRule` is a custom extension of the `sh:Rule` and `sh:
 > [!CAUTION]
 > Like all SHACL rules, the variable `$this` is reserved for the current focus node. Your SPARQL string must utilise `$this` to ensure the rule scope is correctly applied to the individual instance being processed.
 
+> [!TIP]
+> The agent will include ids automatically via the `dc-term:identifier` property and transforming the select query. The data **MUST** contain this property. Users can choose to include this statement `GROUP BY ?id` when using aggregates instead of `?this` as the id variable is included by default.
+
 ```
 @prefix ex:         <http://example.org/> .
 @prefix sh:         <http://www.w3.org/ns/shacl#> .
