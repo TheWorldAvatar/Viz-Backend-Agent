@@ -373,7 +373,19 @@ public class GetService {
     if (ids.isEmpty()) {
       return new ArrayDeque<>();
     }
-    return this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
+    // Do not execute virtual rules if labels are not required
+    if (!requireLabel) {
+      return this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
+    }
+    Map<String, SparqlBinding> virtualResults = this.kgService.execVirtualShaclRules(resourceID, ids);
+    Queue<SparqlBinding> instances = this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
+    return instances.stream().map(instance -> {
+      String id = instance.getFieldValue(QueryResource.ID_KEY);
+      if (virtualResults.containsKey(id)) {
+        instance.merge(virtualResults.get(id));
+      }
+      return instance;
+    }).collect(Collectors.toCollection(ArrayDeque::new));
   }
 
   /**
