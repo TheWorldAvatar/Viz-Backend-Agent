@@ -6,22 +6,19 @@ PREFIX fibo-fnd-acc-cur:  <https://spec.edmcouncil.org/fibo/ontology/FND/Account
 PREFIX p2p-o-doc-line:    <https://purl.org/p2p-o/documentline#>
 PREFIX p2p-o-inv:         <https://purl.org/p2p-o/invoice#>
 
-SELECT DISTINCT ?price ?discount ?charge ?description ?amount
+SELECT DISTINCT ?discount ?charge ?description ?amount
 WHERE {
   ?iri a fibo-fbc-pas-caa:IndividualTransaction ;
     dc-terms:identifier "[target]" ;
     fibo-fnd-acc-cur:hasMonetaryAmount/fibo-fnd-acc-cur:hasAmount ?amount .
-  ?invoice cmns-doc:isAbout ?iri ;
-    p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasLineNetAmount/cmns-qtu:hasNumericValue ?price .
-  OPTIONAL{
-    {
-      ?invoice p2p-o-inv:hasInvoiceLine ?discountline .
-      ?discountline p2p-o-doc-line:hasPriceDiscountOfItem/cmns-qtu:hasNumericValue ?discount ;
-        p2p-o-doc-line:lineNote ?description .
-    } UNION {
-      ?invoice p2p-o-inv:hasInvoiceLine ?chargeline .
-      ?chargeline p2p-o-doc-line:hasGrosspriceOfItem/cmns-qtu:hasNumericValue ?charge ;
-        p2p-o-doc-line:lineNote ?description .
-    }
+  ?invoice cmns-doc:isAbout ?iri .
+  {
+    ?invoice p2p-o-inv:hasInvoiceLine ?discountline .
+    ?discountline p2p-o-doc-line:hasPriceDiscountOfItem/cmns-qtu:hasNumericValue ?discount ;
+      p2p-o-doc-line:lineNote ?description .
+  } UNION {
+    ?invoice p2p-o-inv:hasInvoiceLine ?chargeline .
+    ?chargeline p2p-o-doc-line:hasGrosspriceOfItem/cmns-qtu:hasNumericValue ?charge ;
+      p2p-o-doc-line:lineNote ?description .
   }
 }
