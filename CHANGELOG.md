@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.36.0
+
+- Extended SHACL derivation to enable virtual rules
+
 ## 1.35.2
 
 - Fix white spaces in variables for search routes
