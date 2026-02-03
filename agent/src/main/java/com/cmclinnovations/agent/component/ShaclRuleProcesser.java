@@ -71,12 +71,13 @@ public class ShaclRuleProcesser {
     }
 
     /**
-     * Retrieve the virtual query associated with the filter field.
+     * Retrieve the virtual queries associated with the fields.
      *
-     * @param rules       The model containing SHACL rules.
-     * @param filterField The field of interest.
+     * @param rules         The model containing SHACL rules.
+     * @param fields        The fields of interest.
+     * @param virtualFields Stores the fields that are in virtual queries.
      */
-    public String getVirtualQuery(Model rules, String filterField) {
+    public Queue<String> getVirtualQueries(Model rules, Set<String> fields, Set<String> virtualFields) {
         LOGGER.debug("Retrieving SHACL virtual rules....");
         Queue<String> queries = this.execVirtualQueryOperation(rules, (String selectStatement) -> {
             String selectQuery = QueryResource.DC_TERM.getQueryString() +
@@ -84,16 +85,20 @@ public class ShaclRuleProcesser {
                             "?id WHERE{" + ID_TRIPLE_STATEMENT);
             Query query = QueryFactory.create(selectQuery);
             List<Var> variables = query.getProjectVars();
-            // Skip this iteration if filter field is not present
+            // Skip this iteration if the field is not present
             if (variables.stream()
-                    .noneMatch(v -> v.getVarName().equals(filterField))) {
+                    .noneMatch(v -> fields.contains(v.getVarName()))) {
                 return null;
             }
+            // Filter out the variables in the current query that are present in the fields
+            variables.stream().filter(v -> fields.contains(v.getVarName()))
+                    // If so, add them to the virtual fields
+                    .forEach(v -> virtualFields.add(v.getVarName()));
             // Reset prefixes to use full IRIs
             query.getPrefixMapping().clearNsPrefixMap();
             return query.serialize();
         });
-        return queries.poll();
+        return queries;
     }
 
     /**

@@ -243,7 +243,7 @@ public class GetService {
   public Queue<List<String>> getAllIds(String resourceID, String addStatements, PaginationState pagination) {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    addStatements += this.getQueryStatementsForTargetFields(iri, pagination.getSortedFields(),
+    addStatements += this.getQueryStatementsForTargetFields(resourceID, iri, pagination.getSortedFields(),
         pagination.getFilters());
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
         pagination, true, false);
@@ -322,11 +322,8 @@ public class GetService {
       String search, Map<String, Set<String>> filters, boolean requireId, boolean requireIri) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    String filterStatement = this.getQueryStatementsForTargetFields(iri, new HashSet<>(Set.of(field)), filters);
-    if (filterStatement.isEmpty()) {
-      filterStatement = this.kgService.getVirtualQuery(resourceID, field);
-    }
-    addStatements += filterStatement;
+    addStatements += this.getQueryStatementsForTargetFields(resourceID, iri, new HashSet<>(Set.of(field)),
+        filters);
 
     if (search != null && !search.isBlank()) {
       String fieldVarString = QueryResource.genVariable(field).getQueryString();
@@ -468,7 +465,7 @@ public class GetService {
    * @param sortedFields     Set of fields for sorting that should be included.
    * @param filters          Filters with name and values.
    */
-  public String getQueryStatementsForTargetFields(String shaclReplacement, Set<String> sortedFields,
+  public String getQueryStatementsForTargetFields(String resourceId, String shaclReplacement, Set<String> sortedFields,
       Map<String, Set<String>> filters) {
     StringBuilder queryBuilder = new StringBuilder();
     Map<String, String> filteredStatementMappings = this.getStatementMappingsForTargetFields(shaclReplacement,
@@ -488,6 +485,23 @@ public class GetService {
     if (filters.containsKey(eventIdVar)) {
       QueryResource.genFilterStatements("?event_id dc-terms:identifier ?ori_event_id.",
           StringResource.ORIGINAL_PREFIX + eventIdVar, filters.get(eventIdVar), queryBuilder);
+    }
+
+    // Stores the virtual query fields that are detected
+    Set<String> virtualQueryFields = new HashSet<>();
+    // Check for virtual query fields
+    Set<String> checkFilterFieldsinVirtualQuery = new HashSet<>(filters.keySet());
+    checkFilterFieldsinVirtualQuery.addAll(sortedFields);
+    String virtualQueryStatements = this.kgService.getVirtualQueryStatements(resourceId,
+        checkFilterFieldsinVirtualQuery, virtualQueryFields);
+    // If there are any virtual query fields, add the query and their statements
+    if (!virtualQueryFields.isEmpty()) {
+      queryBuilder.append(virtualQueryStatements);
+      virtualQueryFields.forEach(field -> {
+        if (filters.containsKey(field)) {
+          QueryResource.genFilterStatements("", field, filters.get(field), queryBuilder);
+        }
+      });
     }
     return queryBuilder.toString();
   }

@@ -284,18 +284,24 @@ public class KGService {
   }
 
   /**
-   * Retrieve the SHACL SPARQL virtual rule for the specific field.
+   * Retrieve all the SHACL SPARQL virtual rules statements associated with the
+   * fields.
    * 
-   * @param resourceID  The target resource identifier.
-   * @param filterField The field of interest.
+   * @param resourceID    The target resource identifier.
+   * @param fields        The fields of interest.
+   * @param virtualFields Stores the fields that are in virtual queries.
    */
-  public String getVirtualQuery(String resourceID, String filterField) {
+  public String getVirtualQueryStatements(String resourceID, Set<String> fields, Set<String> virtualFields) {
     Model virtualRules = this.getShaclRules(resourceID, ShaclRuleType.SPARQL_VIRTUAL_RULE);
     if (virtualRules.isEmpty()) {
       return "";
     }
-
-    return "{" + this.shaclRuleProcesser.getVirtualQuery(virtualRules, filterField) + "}";
+    Queue<String> virtualQueries = this.shaclRuleProcesser.getVirtualQueries(virtualRules, fields, virtualFields);
+    StringBuilder virtualQueryStatements = new StringBuilder();
+    while (!virtualQueries.isEmpty()) {
+      virtualQueryStatements.append("{").append(virtualQueries.poll()).append("}\n");
+    }
+    return virtualQueryStatements.toString();
   }
 
   /**
