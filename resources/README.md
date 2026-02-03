@@ -466,6 +466,9 @@ This shape must include three Property Shapes to indicate the discounts, additio
 
 An example minimal shape is provided below. Users should only change the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge.
 
+> [!TIP]
+> Users can order the service charges by specifying an optional `p2p-o-doc-line:lineIdentifier` line attached to a number stored as a string literal. If there are multiple service charges, these can be ordered through this property.
+
 ```
 base:TransactionShape
   a sh:NodeShape ;
@@ -526,10 +529,12 @@ base:TransactionShape
       ?invoice p2p-o-inv:hasInvoiceLine ?invoice_line_base_instance;
         p2p-o-inv:hasInvoiceLine ?invoice_line_variable_instance.
       ?invoice_line_base_instance a p2p-o-doc-line:InvoiceLine;
+        p2p-o-doc-line:lineIdentifier "0"^^xsd:string;
         p2p-o-doc-line:lineNote ?base_fee_description;
         p2p-o-doc-line:hasGrosspriceOfItem ?invoice_line_base_amount_instance.
       ?invoice_line_base_amount_instance cmns-qtu:hasNumericValue ?base_fee.
       ?invoice_line_variable_instance a p2p-o-doc-line:InvoiceLine;
+        p2p-o-doc-line:lineIdentifier "1"^^xsd:string;
         p2p-o-doc-line:lineNote ?service_price_description;
         p2p-o-doc-line:hasGrosspriceOfItem ?invoice_line_variable_amount_instance.
       ?invoice_line_variable_amount_instance cmns-qtu:hasNumericValue ?var_price.

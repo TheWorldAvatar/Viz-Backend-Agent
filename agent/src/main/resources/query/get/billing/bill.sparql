@@ -20,5 +20,8 @@ WHERE {
     ?invoice p2p-o-inv:hasInvoiceLine ?chargeline .
     ?chargeline p2p-o-doc-line:hasGrosspriceOfItem/cmns-qtu:hasNumericValue ?charge ;
       p2p-o-doc-line:lineNote ?description .
+    OPTIONAL{?chargeline p2p-o-doc-line:lineIdentifier ?order_id.}
+    BIND(COALESCE(?order_id, "10000") AS ?order )
   }
 }
+ORDER BY ?order
