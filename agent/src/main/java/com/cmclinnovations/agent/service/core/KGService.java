@@ -284,17 +284,33 @@ public class KGService {
   }
 
   /**
+   * Retrieve the SHACL SPARQL virtual rule for the specific field.
+   * 
+   * @param resourceID  The target resource identifier.
+   * @param filterField The field of interest.
+   */
+  public String getVirtualQuery(String resourceID, String filterField) {
+    Model virtualRules = this.getShaclRules(resourceID, ShaclRuleType.SPARQL_VIRTUAL_RULE);
+    if (virtualRules.isEmpty()) {
+      return "";
+    }
+
+    return "{" + this.shaclRuleProcesser.getVirtualQuery(virtualRules, filterField) + "}";
+  }
+
+  /**
    * Executes the SHACL SPARQL virtual rules on all available endpoints to get
    * data at query time.
    * 
-   * @param resourceID  The target resource identifier for the instance.
-   * @param instanceIri The instance IRI string.
+   * @param resourceID The target resource identifier.
+   * @param ids        List of ids that are relevant to the query.
    */
   public Map<String, SparqlBinding> execVirtualShaclRules(String resourceID, Queue<List<String>> ids) {
     Model virtualRules = this.getShaclRules(resourceID, ShaclRuleType.SPARQL_VIRTUAL_RULE);
     if (virtualRules.isEmpty()) {
       return new HashMap<>();
     }
+    // Retrieve only the list for the first element, which is the ID
     List<String> targetIds = ids.stream()
         .map(list -> Rdf.literalOf(list.get(0)).getQueryString())
         .toList();

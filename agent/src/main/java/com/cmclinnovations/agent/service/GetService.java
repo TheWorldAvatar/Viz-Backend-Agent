@@ -322,7 +322,12 @@ public class GetService {
       String search, Map<String, Set<String>> filters, boolean requireId, boolean requireIri) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    addStatements += this.getQueryStatementsForTargetFields(iri, new HashSet<>(Set.of(field)), filters);
+    String filterStatement = this.getQueryStatementsForTargetFields(iri, new HashSet<>(Set.of(field)), filters);
+    if (filterStatement.isEmpty()) {
+      filterStatement = this.kgService.getVirtualQuery(resourceID, field);
+    }
+    addStatements += filterStatement;
+
     if (search != null && !search.isBlank()) {
       String fieldVarString = QueryResource.genVariable(field).getQueryString();
       if (field.equals(QueryResource.EVENT_ID_VAR.getVarName())) {

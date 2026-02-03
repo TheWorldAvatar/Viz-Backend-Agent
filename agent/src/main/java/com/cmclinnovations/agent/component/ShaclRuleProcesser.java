@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Function;
 
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
@@ -20,6 +21,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
+import org.apache.jena.sparql.core.Var;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,6 +60,52 @@ public class ShaclRuleProcesser {
      */
     public Queue<String> getVirtualQueries(Model rules, List<String> iris) {
         LOGGER.debug("Retrieving SHACL virtual rules....");
+        Queue<String> queries = this.execVirtualQueryOperation(rules, (String selectStatement) -> {
+            // Update the query with ID filters and variable
+            return QueryResource.DC_TERM.getQueryString() +
+                    selectStatement.replaceFirst("(?i)WHERE\\s*\\{",
+                            "?id WHERE{" + ID_TRIPLE_STATEMENT
+                                    + this.getIriClause(QueryResource.ID_KEY, iris));
+        });
+        return queries;
+    }
+
+    /**
+     * Retrieve the virtual query associated with the filter field.
+     *
+     * @param rules       The model containing SHACL rules.
+     * @param filterField The field of interest.
+     */
+    public String getVirtualQuery(Model rules, String filterField) {
+        LOGGER.debug("Retrieving SHACL virtual rules....");
+        Queue<String> queries = this.execVirtualQueryOperation(rules, (String selectStatement) -> {
+            String selectQuery = QueryResource.DC_TERM.getQueryString() +
+                    selectStatement.replaceFirst("(?i)WHERE\\s*\\{",
+                            "?id WHERE{" + ID_TRIPLE_STATEMENT);
+            Query query = QueryFactory.create(selectQuery);
+            List<Var> variables = query.getProjectVars();
+            // Skip this iteration if filter field is not present
+            if (variables.stream()
+                    .noneMatch(v -> v.getVarName().equals(filterField))) {
+                return null;
+            }
+            // Reset prefixes to use full IRIs
+            query.getPrefixMapping().clearNsPrefixMap();
+            return query.serialize();
+        });
+        return queries.poll();
+    }
+
+    /**
+     * Execute the operations to retrieve virtual queries based on the operation
+     * required.
+     *
+     * @param rules          The model containing SHACL rules.
+     * @param queryOperation The function to apply for each select query if it
+     *                       exists.
+     */
+    public Queue<String> execVirtualQueryOperation(Model rules, Function<String, String> queryOperation) {
+        LOGGER.debug("Retrieving SHACL virtual rules....");
         Queue<String> queries = new ArrayDeque<>();
         StmtIterator ruleStatements = rules.listStatements(null, RDF.type,
                 ShaclRuleType.SPARQL_VIRTUAL_RULE.getResource());
@@ -65,14 +113,11 @@ public class ShaclRuleProcesser {
             Statement ruleStmt = ruleStatements.nextStatement();
             Resource rule = ruleStmt.getSubject();
             Statement selectStatement = rule.getProperty(this.shaclSelect);
-            // When there is a select statement, update the query with ID filters and variable
             if (selectStatement != null) {
-                String selectQuery = QueryResource.DC_TERM.getQueryString() +
-                        selectStatement.getString()
-                                .replaceFirst("(?i)WHERE\\s*\\{",
-                                        "?id WHERE{" + ID_TRIPLE_STATEMENT
-                                                + this.getIriClause(QueryResource.ID_KEY, iris));
-                queries.offer(selectQuery);
+                String selectQuery = queryOperation.apply(selectStatement.getString());
+                if (selectQuery != null) {
+                    queries.offer(selectQuery);
+                }
             }
         }
         return queries;
