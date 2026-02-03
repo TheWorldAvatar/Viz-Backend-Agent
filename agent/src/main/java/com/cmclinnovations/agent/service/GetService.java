@@ -376,23 +376,7 @@ public class GetService {
   public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, Queue<List<String>> ids,
       String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
-    String iri = this.queryTemplateService.getIri(resourceID);
-    if (ids.isEmpty()) {
-      return new ArrayDeque<>();
-    }
-    // Do not execute virtual rules if labels are not required
-    if (!requireLabel) {
-      return this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
-    }
-    Map<String, SparqlBinding> virtualResults = this.kgService.execVirtualShaclRules(resourceID, ids);
-    Queue<SparqlBinding> instances = this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
-    return instances.stream().map(instance -> {
-      String id = instance.getFieldValue(QueryResource.ID_KEY);
-      if (virtualResults.containsKey(id)) {
-        instance.merge(virtualResults.get(id));
-      }
-      return instance;
-    }).collect(Collectors.toCollection(ArrayDeque::new));
+    return this.execGetInstancesWithVirtualResults(resourceID, requireLabel, ids, addQueryStatements, addVars);
   }
 
   /**
@@ -407,21 +391,8 @@ public class GetService {
    */
   public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, PaginationState pagination) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
-    String iri = this.queryTemplateService.getIri(resourceID);
     Queue<List<String>> ids = this.getAllIds(resourceID, "", pagination);
-    if (ids.isEmpty()) {
-      return new ArrayDeque<>();
-    }
-    // Execute virtual results first as IDs are removed on the actual execution
-    Map<String, SparqlBinding> virtualResults = this.kgService.execVirtualShaclRules(resourceID, ids);
-    Queue<SparqlBinding> instances = this.execGetInstances(iri, ids, requireLabel, "", new HashMap<>());
-    return instances.stream().map(instance -> {
-      String id = instance.getFieldValue(QueryResource.ID_KEY);
-      if (virtualResults.containsKey(id)) {
-        instance.merge(virtualResults.get(id));
-      }
-      return instance;
-    }).collect(Collectors.toCollection(ArrayDeque::new));
+    return this.execGetInstancesWithVirtualResults(resourceID, requireLabel, ids, "", new HashMap<>());
   }
 
   /**
@@ -600,6 +571,42 @@ public class GetService {
       outputMappings.put(key, clause);
     });
     return outputMappings;
+  }
+
+  /**
+   * Executes the operation to retrieve all the target instances and their
+   * information as well as any virtual derivation results.
+   * 
+   * @param resourceID         The target resource identifier for the instance
+   *                           class.
+   * @param requireLabel       Indicates if labels should be returned for all
+   *                           the fields that are IRIs.
+   * @param ids                List of IDs to retrieve.
+   * @param addQueryStatements Additional query statements to be added
+   * @param addVars            Optional additional variables to be included in
+   *                           the query, along with their order sequence.
+   */
+  private Queue<SparqlBinding> execGetInstancesWithVirtualResults(String resourceID, boolean requireLabel,
+      Queue<List<String>> ids, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+    if (ids.isEmpty()) {
+      return new ArrayDeque<>();
+    }
+    String iri = this.queryTemplateService.getIri(resourceID);
+
+    // Do not execute virtual rules if labels are not required
+    if (!requireLabel) {
+      return this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
+    }
+    // Execute virtual results first as IDs are removed on the actual execution
+    Map<String, SparqlBinding> virtualResults = this.kgService.execVirtualShaclRules(resourceID, ids);
+    Queue<SparqlBinding> instances = this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
+    return instances.stream().map(instance -> {
+      String id = instance.getFieldValue(QueryResource.ID_KEY);
+      if (virtualResults.containsKey(id)) {
+        instance.merge(virtualResults.get(id));
+      }
+      return instance;
+    }).collect(Collectors.toCollection(ArrayDeque::new));
   }
 
   /**
