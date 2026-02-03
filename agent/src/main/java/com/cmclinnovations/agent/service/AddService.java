@@ -28,6 +28,7 @@ import org.topbraid.shacl.rules.RuleUtil;
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.ShaclRuleType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.core.ChangelogService;
 import com.cmclinnovations.agent.service.core.JsonLdService;
@@ -157,8 +158,8 @@ public class AddService {
 
     ResponseEntity<String> response = this.kgService.add(jsonString);
 
-    Model sparqlConstructRules = this.kgService.getShaclRules(resourceID, true);
-    Model otherRules = this.kgService.getShaclRules(resourceID, false);
+    Model sparqlConstructRules = this.kgService.getShaclRules(resourceID, ShaclRuleType.SPARQL_RULE);
+    Model otherRules = this.kgService.getShaclRules(resourceID, ShaclRuleType.TRIPLE_RULE);
     if (response.getStatusCode() == HttpStatus.OK && (!sparqlConstructRules.isEmpty() || !otherRules.isEmpty())) {
       LOGGER.info("Detected rules! Instantiating inferred instances to endpoint...");
       this.kgService.execShaclRules(sparqlConstructRules, Rdf.iri(instanceIri).getQueryString());

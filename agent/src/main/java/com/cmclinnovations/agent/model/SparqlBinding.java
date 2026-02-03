@@ -15,6 +15,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
+import com.cmclinnovations.agent.utils.TypeCastUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -186,12 +187,36 @@ public class SparqlBinding {
   }
 
   /**
+   * Retrieve the sequence.
+   */
+  public List<Variable> getSequence() {
+    return this.sequence;
+  }
+
+  /**
    * Verify if the bindings have the specified field
    * 
    * @param field Field of interest
    */
   public boolean containsField(String field) {
     return this.bindings.containsKey(field) && this.bindings.get(field) != null;
+  }
+
+  /**
+   * Merges with the other sparqlbinding. WARNING: Overrides existing fields.
+   * 
+   * @param other Target binding to merge.
+   */
+  public void merge(SparqlBinding other) {
+    Map<String, Object> otherValues = other.get();
+    otherValues.forEach((key, value) -> {
+      if (value instanceof List<?>) {
+        this.bindingList.put(key, TypeCastUtils.castToListObject(value, SparqlResponseField.class));
+      } else {
+        this.bindings.put(key, TypeCastUtils.castToObject(value, SparqlResponseField.class));
+      }
+    });
+    this.sequence.addAll(other.getSequence());
   }
 
   @Override

@@ -21,7 +21,10 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.type.LifecycleEventType;
+import com.cmclinnovations.agent.model.type.ShaclRuleType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.LoggingService;
@@ -170,6 +173,41 @@ public class KGRepository {
             boolean requireLabel) {
         String query = this.queryTemplateService.getShaclQuery(shaclReplacement, requireLabel);
         return this.queryNestedPredicates(query);
+    }
+
+    /**
+     * Retrieves the SHACL rules associated with the target resource.
+     * 
+     * @param resourceID    The target resource identifier for the instance.
+     * @param shaclRuleType The specific shacl rule type.
+     */
+    @Cacheable(value = "shaclRule", key = "#resourceId.concat('-').concat(#shaclRuleType.getIri())")
+    public String getShaclRules(String resourceId, ShaclRuleType shaclRuleType) {
+        LOGGER.info("Cache Miss: retrieving SHACL rules for resource: {}", resourceId);
+        String target;
+        try {
+            target = this.fileService.getTargetIri(resourceId).getQueryString();
+        } catch (InvalidRouteException e) {
+            LifecycleEventType eventType = LifecycleEventType.fromId(resourceId);
+            if (eventType != null) {
+                target = eventType.getShaclReplacement();
+            } else {
+                // If no target is specified, return an empty model
+                LOGGER.warn("No target resource specified for SHACL rules retrieval. Returning an empty model.");
+                return "";
+            }
+        }
+        String query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target,
+                shaclRuleType.getIri());
+        String endpoint = this.getShaclEndpoint();
+        LOGGER.debug("Querying at the endpoint {}...", endpoint);
+        return this.client.post()
+                .uri(endpoint)
+                .accept(QueryResource.TTL_MEDIA_TYPE)
+                .contentType(QueryResource.SPARQL_MEDIA_TYPE)
+                .body(query)
+                .retrieve()
+                .body(String.class);
     }
 
     /**

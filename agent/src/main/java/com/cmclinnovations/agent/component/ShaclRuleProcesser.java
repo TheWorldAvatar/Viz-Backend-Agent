@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Function;
 
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
@@ -20,6 +21,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
+import org.apache.jena.sparql.core.Var;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,23 +30,102 @@ import org.springframework.stereotype.Component;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
+import com.cmclinnovations.agent.model.type.ShaclRuleType;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 @Component
 public class ShaclRuleProcesser {
-    private final Resource shaclSparqlRule;
     private final Property shaclOrder;
     private final Property shaclConstruct;
+    private final Property shaclSelect;
+    private static final String ID_TRIPLE_STATEMENT = QueryResource.genVariable(QueryResource.THIS_KEY)
+            .has(QueryResource.DC_TERM_ID, QueryResource.ID_VAR).getQueryString();
     private static final Logger LOGGER = LogManager.getLogger(ShaclRuleProcesser.class);
 
     /**
      * Constructs a new query processor.
      */
     public ShaclRuleProcesser() {
-        this.shaclSparqlRule = ResourceFactory.createResource("http://www.w3.org/ns/shacl#SPARQLRule");
         this.shaclOrder = ResourceFactory.createProperty("http://www.w3.org/ns/shacl#order");
         this.shaclConstruct = ResourceFactory.createProperty("http://www.w3.org/ns/shacl#construct");
+        this.shaclSelect = ResourceFactory.createProperty("http://www.w3.org/ns/shacl#select");
+    }
+
+    /**
+     * Retrieve all virtual queries to be executed at query time.
+     *
+     * @param rules The model containing SHACL rules.
+     * @param iris  The list of IRIs to be targeted.
+     */
+    public Queue<String> getVirtualQueries(Model rules, List<String> iris) {
+        LOGGER.debug("Retrieving SHACL virtual rules....");
+        Queue<String> queries = this.execVirtualQueryOperation(rules, (String selectStatement) -> {
+            // Update the query with ID filters and variable
+            return QueryResource.DC_TERM.getQueryString() +
+                    selectStatement.replaceFirst("(?i)WHERE\\s*\\{",
+                            "?id WHERE{" + ID_TRIPLE_STATEMENT
+                                    + this.getIriClause(QueryResource.ID_KEY, iris));
+        });
+        return queries;
+    }
+
+    /**
+     * Retrieve the virtual queries associated with the fields.
+     *
+     * @param rules         The model containing SHACL rules.
+     * @param fields        The fields of interest.
+     * @param virtualFields Stores the fields that are in virtual queries.
+     */
+    public Queue<String> getVirtualQueries(Model rules, Set<String> fields, Set<String> virtualFields) {
+        LOGGER.debug("Retrieving SHACL virtual rules....");
+        Queue<String> queries = this.execVirtualQueryOperation(rules, (String selectStatement) -> {
+            String selectQuery = QueryResource.DC_TERM.getQueryString() +
+                    selectStatement.replaceFirst("(?i)WHERE\\s*\\{",
+                            "?id WHERE{" + ID_TRIPLE_STATEMENT);
+            Query query = QueryFactory.create(selectQuery);
+            List<Var> variables = query.getProjectVars();
+            // Skip this iteration if the field is not present
+            if (variables.stream()
+                    .noneMatch(v -> fields.contains(v.getVarName()))) {
+                return null;
+            }
+            // Filter out the variables in the current query that are present in the fields
+            variables.stream().filter(v -> fields.contains(v.getVarName()))
+                    // If so, add them to the virtual fields
+                    .forEach(v -> virtualFields.add(v.getVarName()));
+            // Reset prefixes to use full IRIs
+            query.getPrefixMapping().clearNsPrefixMap();
+            return query.serialize();
+        });
+        return queries;
+    }
+
+    /**
+     * Execute the operations to retrieve virtual queries based on the operation
+     * required.
+     *
+     * @param rules          The model containing SHACL rules.
+     * @param queryOperation The function to apply for each select query if it
+     *                       exists.
+     */
+    public Queue<String> execVirtualQueryOperation(Model rules, Function<String, String> queryOperation) {
+        LOGGER.debug("Retrieving SHACL virtual rules....");
+        Queue<String> queries = new ArrayDeque<>();
+        StmtIterator ruleStatements = rules.listStatements(null, RDF.type,
+                ShaclRuleType.SPARQL_VIRTUAL_RULE.getResource());
+        while (ruleStatements.hasNext()) {
+            Statement ruleStmt = ruleStatements.nextStatement();
+            Resource rule = ruleStmt.getSubject();
+            Statement selectStatement = rule.getProperty(this.shaclSelect);
+            if (selectStatement != null) {
+                String selectQuery = queryOperation.apply(selectStatement.getString());
+                if (selectQuery != null) {
+                    queries.offer(selectQuery);
+                }
+            }
+        }
+        return queries;
     }
 
     /**
@@ -57,7 +138,7 @@ public class ShaclRuleProcesser {
         LOGGER.debug("Retrieving SPARQL Construct rules....");
         Map<Integer, List<String>> queryOrderMappings = new TreeMap<>();
 
-        StmtIterator ruleStatements = rules.listStatements(null, RDF.type, this.shaclSparqlRule);
+        StmtIterator ruleStatements = rules.listStatements(null, RDF.type, ShaclRuleType.SPARQL_RULE.getResource());
         while (ruleStatements.hasNext()) {
             Statement ruleStmt = ruleStatements.nextStatement();
 
@@ -211,7 +292,7 @@ public class ShaclRuleProcesser {
      * Return the variable name of a target Node.
      * If the target node is not a variable, it will reutrn null.
      *
-     * @param targetNode  The input node of interest.
+     * @param targetNode The input node of interest.
      */
 
     private String getVarName(Node targetNode) {

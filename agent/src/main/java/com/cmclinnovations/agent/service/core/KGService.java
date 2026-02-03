@@ -3,7 +3,9 @@ package com.cmclinnovations.agent.service.core;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -18,6 +20,8 @@ import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -31,6 +35,7 @@ import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
+import com.cmclinnovations.agent.model.type.ShaclRuleType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
@@ -237,38 +242,14 @@ public class KGService {
   /**
    * Retrieves the SHACL rules associated with the target resource.
    * 
-   * @param resourceID             The target resource identifier for the
-   *                               instance.
-   * @param isSparqlConstructRules Extract only SPARQL CONSTRUCT rules if true,
-   *                               else, retrieve all other rules.
+   * @param resourceID    The target resource identifier for the instance.
+   * @param shaclRuleType The specific shacl rule type.
    */
-  public Model getShaclRules(String resourceId, boolean isSparqlConstructRules) {
-    LOGGER.debug("Retrieving SHACL rules for resource: {}", resourceId);
-    String target;
-    try {
-      target = this.fileService.getTargetIri(resourceId).getQueryString();
-    } catch (InvalidRouteException e) {
-      LifecycleEventType eventType = LifecycleEventType.fromId(resourceId);
-      if (eventType != null) {
-        target = eventType.getShaclReplacement();
-      } else {
-        // If no target is specified, return an empty model
-        LOGGER.warn("No target resource specified for SHACL rules retrieval. Returning an empty model.");
-        return ModelFactory.createDefaultModel();
-      }
+  public Model getShaclRules(String resourceId, ShaclRuleType shaclRuleType) {
+    String results = this.kgRepository.getShaclRules(resourceId, shaclRuleType);
+    if (results.isEmpty()) {
+      return ModelFactory.createDefaultModel();
     }
-    String query = this.fileService.getContentsWithReplacement(FileService.SHACL_RULE_QUERY_RESOURCE, target,
-        isSparqlConstructRules ? ";a <http://www.w3.org/ns/shacl#SPARQLRule>."
-            : ".MINUS{?ruleShape a <http://www.w3.org/ns/shacl#SPARQLRule>}");
-    String endpoint = this.getShaclEndpoint();
-    LOGGER.debug("Querying at the endpoint {}...", endpoint);
-    String results = this.client.post()
-        .uri(endpoint)
-        .accept(QueryResource.TTL_MEDIA_TYPE)
-        .contentType(QueryResource.SPARQL_MEDIA_TYPE)
-        .body(query)
-        .retrieve()
-        .body(String.class);
     return this.readStringModel(results, Lang.TURTLE);
   }
 
@@ -300,6 +281,68 @@ public class KGService {
         this.executeUpdate(insertDataQuery);
       }
     }
+  }
+
+  /**
+   * Retrieve all the SHACL SPARQL virtual rules statements associated with the
+   * fields.
+   * 
+   * @param resourceID    The target resource identifier.
+   * @param fields        The fields of interest.
+   * @param virtualFields Stores the fields that are in virtual queries.
+   */
+  public String getVirtualQueryStatements(String resourceID, Set<String> fields, Set<String> virtualFields) {
+    Model virtualRules = this.getShaclRules(resourceID, ShaclRuleType.SPARQL_VIRTUAL_RULE);
+    if (virtualRules.isEmpty()) {
+      return "";
+    }
+    Queue<String> virtualQueries = this.shaclRuleProcesser.getVirtualQueries(virtualRules, fields, virtualFields);
+    StringBuilder virtualQueryStatements = new StringBuilder();
+    while (!virtualQueries.isEmpty()) {
+      virtualQueryStatements.append("{").append(virtualQueries.poll()).append("}\n");
+    }
+    return virtualQueryStatements.toString();
+  }
+
+  /**
+   * Executes the SHACL SPARQL virtual rules on all available endpoints to get
+   * data at query time.
+   * 
+   * @param resourceID The target resource identifier.
+   * @param ids        List of ids that are relevant to the query.
+   */
+  public Map<String, SparqlBinding> execVirtualShaclRules(String resourceID, Queue<List<String>> ids) {
+    Model virtualRules = this.getShaclRules(resourceID, ShaclRuleType.SPARQL_VIRTUAL_RULE);
+    if (virtualRules.isEmpty()) {
+      return new HashMap<>();
+    }
+    // Retrieve only the list for the first element, which is the ID
+    List<String> targetIds = ids.stream()
+        .map(list -> Rdf.literalOf(list.get(0)).getQueryString())
+        .toList();
+    Queue<String> queries = this.shaclRuleProcesser.getVirtualQueries(virtualRules, targetIds);
+
+    Map<String, SparqlBinding> results = new HashMap<>();
+    while (!queries.isEmpty()) {
+      Queue<SparqlBinding> currentResults = this.query(queries.poll(), SparqlEndpointType.MIXED);
+      List<Variable> variables = new ArrayList<>();
+      while (!currentResults.isEmpty()) {
+        SparqlBinding currentBinding = currentResults.poll();
+        if (variables.isEmpty()) {
+          currentBinding.getFields().stream()
+              .filter(field -> field != QueryResource.ID_KEY)
+              .forEach(field -> variables.add(QueryResource.genVariable(field)));
+        }
+        currentBinding.addSequence(variables);
+        results.merge(currentBinding.getFieldValue(QueryResource.ID_KEY), currentBinding,
+            (existing, replacement) -> {
+              // If there is an existing mapping, merge the two
+              existing.merge(replacement);
+              return existing;
+            });
+      }
+    }
+    return results;
   }
 
   /**

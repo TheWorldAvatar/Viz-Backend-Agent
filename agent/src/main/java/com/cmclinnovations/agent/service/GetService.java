@@ -243,7 +243,7 @@ public class GetService {
   public Queue<List<String>> getAllIds(String resourceID, String addStatements, PaginationState pagination) {
     LOGGER.info("Retrieving all ids...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    addStatements += this.getQueryStatementsForTargetFields(iri, pagination.getSortedFields(),
+    addStatements += this.getQueryStatementsForTargetFields(resourceID, iri, pagination.getSortedFields(),
         pagination.getFilters());
     String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
         pagination, true, false);
@@ -322,7 +322,9 @@ public class GetService {
       String search, Map<String, Set<String>> filters, boolean requireId, boolean requireIri) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    addStatements += this.getQueryStatementsForTargetFields(iri, new HashSet<>(Set.of(field)), filters);
+    addStatements += this.getQueryStatementsForTargetFields(resourceID, iri, new HashSet<>(Set.of(field)),
+        filters);
+
     if (search != null && !search.isBlank()) {
       String fieldVarString = QueryResource.genVariable(field).getQueryString();
       if (field.equals(QueryResource.EVENT_ID_VAR.getVarName())) {
@@ -374,11 +376,7 @@ public class GetService {
   public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, Queue<List<String>> ids,
       String addQueryStatements, Map<Variable, List<Integer>> addVars) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
-    String iri = this.queryTemplateService.getIri(resourceID);
-    if (ids.isEmpty()) {
-      return new ArrayDeque<>();
-    }
-    return this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
+    return this.execGetInstancesWithVirtualResults(resourceID, requireLabel, ids, addQueryStatements, addVars);
   }
 
   /**
@@ -393,12 +391,8 @@ public class GetService {
    */
   public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, PaginationState pagination) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
-    String iri = this.queryTemplateService.getIri(resourceID);
     Queue<List<String>> ids = this.getAllIds(resourceID, "", pagination);
-    if (ids.isEmpty()) {
-      return new ArrayDeque<>();
-    }
-    return this.execGetInstances(iri, ids, requireLabel, "", new HashMap<>());
+    return this.execGetInstancesWithVirtualResults(resourceID, requireLabel, ids, "", new HashMap<>());
   }
 
   /**
@@ -442,7 +436,7 @@ public class GetService {
    * @param sortedFields     Set of fields for sorting that should be included.
    * @param filters          Filters with name and values.
    */
-  public String getQueryStatementsForTargetFields(String shaclReplacement, Set<String> sortedFields,
+  public String getQueryStatementsForTargetFields(String resourceId, String shaclReplacement, Set<String> sortedFields,
       Map<String, Set<String>> filters) {
     StringBuilder queryBuilder = new StringBuilder();
     Map<String, String> filteredStatementMappings = this.getStatementMappingsForTargetFields(shaclReplacement,
@@ -462,6 +456,23 @@ public class GetService {
     if (filters.containsKey(eventIdVar)) {
       QueryResource.genFilterStatements("?event_id dc-terms:identifier ?ori_event_id.",
           StringResource.ORIGINAL_PREFIX + eventIdVar, filters.get(eventIdVar), queryBuilder);
+    }
+
+    // Stores the virtual query fields that are detected
+    Set<String> virtualQueryFields = new HashSet<>();
+    // Check for virtual query fields
+    Set<String> checkFilterFieldsinVirtualQuery = new HashSet<>(filters.keySet());
+    checkFilterFieldsinVirtualQuery.addAll(sortedFields);
+    String virtualQueryStatements = this.kgService.getVirtualQueryStatements(resourceId,
+        checkFilterFieldsinVirtualQuery, virtualQueryFields);
+    // If there are any virtual query fields, add the query and their statements
+    if (!virtualQueryFields.isEmpty()) {
+      queryBuilder.append(virtualQueryStatements);
+      virtualQueryFields.forEach(field -> {
+        if (filters.containsKey(field)) {
+          QueryResource.genFilterStatements("", field, filters.get(field), queryBuilder);
+        }
+      });
     }
     return queryBuilder.toString();
   }
@@ -563,6 +574,42 @@ public class GetService {
   }
 
   /**
+   * Executes the operation to retrieve all the target instances and their
+   * information as well as any virtual derivation results.
+   * 
+   * @param resourceID         The target resource identifier for the instance
+   *                           class.
+   * @param requireLabel       Indicates if labels should be returned for all
+   *                           the fields that are IRIs.
+   * @param ids                List of IDs to retrieve.
+   * @param addQueryStatements Additional query statements to be added
+   * @param addVars            Optional additional variables to be included in
+   *                           the query, along with their order sequence.
+   */
+  private Queue<SparqlBinding> execGetInstancesWithVirtualResults(String resourceID, boolean requireLabel,
+      Queue<List<String>> ids, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+    if (ids.isEmpty()) {
+      return new ArrayDeque<>();
+    }
+    String iri = this.queryTemplateService.getIri(resourceID);
+
+    // Do not execute virtual rules if labels are not required
+    if (!requireLabel) {
+      return this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
+    }
+    // Execute virtual results first as IDs are removed on the actual execution
+    Map<String, SparqlBinding> virtualResults = this.kgService.execVirtualShaclRules(resourceID, ids);
+    Queue<SparqlBinding> instances = this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
+    return instances.stream().map(instance -> {
+      String id = instance.getFieldValue(QueryResource.ID_KEY);
+      if (virtualResults.containsKey(id)) {
+        instance.merge(virtualResults.get(id));
+      }
+      return instance;
+    }).collect(Collectors.toCollection(ArrayDeque::new));
+  }
+
+  /**
    * Retrieve only the specific instance and its information. This overloaded
    * method will retrieve the replacement value required from the resource ID.
    * 
@@ -576,7 +623,6 @@ public class GetService {
    */
   private Queue<SparqlBinding> execGetInstances(String nodeShapeReplacement, Queue<List<String>> targetIds,
       boolean requireLabel, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
-
     Queue<Queue<SparqlBinding>> queryVarsAndPaths = this.kgService.getSparqlQueryConstructionParameters(
         nodeShapeReplacement, requireLabel);
     String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetIds,
