@@ -560,11 +560,11 @@ base:TransactionShape
       BIND(IF(BOUND(?status),
         ?var_fee * IF(?weight > ?lower_bound, ?weight - ?lower_bound, 0.0),
         "0"^^xsd:decimal) AS ?var_price)
-      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/base/",?id)) AS ?invoice_line_base_instance)
-      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/base/amount/",?id)) AS ?invoice_line_base_amount_instance)
-      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/var/",?id)) AS ?invoice_line_variable_instance)
-      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/var/amount/",?id)) AS ?invoice_line_variable_amount_instance)
-      BIND(CONCAT("Variable fee charge - Rate: $",STR(?var_fee),"/ton; From: ",  STR(?lower_bound), "tons; Total weight: ", STR(?weight), "tons") AS ?service_price_description)
+      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/base/",?id)) AS ?invoice_line_base_instance)
+      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/base/amount/",?id)) AS ?invoice_line_base_amount_instance)
+      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/var/",?id)) AS ?invoice_line_variable_instance)
+      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/var/amount/",?id)) AS ?invoice_line_variable_amount_instance)
+      BIND(CONCAT("Variable fee charge - Rate: $",STR(?var_fee),"/kg; From: ",  STR(?lower_bound), "tons; Total weight: ", STR(?weight), "kg") AS ?service_price_description)
     }
     """
   ] ;
