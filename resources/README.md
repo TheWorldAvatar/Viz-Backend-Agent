@@ -466,6 +466,12 @@ This shape must include three Property Shapes to indicate the discounts, additio
 
 An example minimal shape is provided below. Users should only change the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge.
 
+> [!NOTE]
+> Users can apply bold formatting to the description of service charges by wrapping their strings with `<b>` html tags.
+
+> [!TIP]
+> Users can order the service charges by specifying an optional `p2p-o-doc-line:lineIdentifier` line attached to a number stored as a string literal. If there are multiple service charges, these can be ordered through this property.
+
 ```
 base:TransactionShape
   a sh:NodeShape ;
@@ -523,10 +529,18 @@ base:TransactionShape
     PREFIX xsd:              <http://www.w3.org/2001/XMLSchema#>
 
     CONSTRUCT {
-      ?invoice p2p-o-inv:hasInvoiceLine ?invoice_line_instance.
-      ?invoice_line_instance p2p-o-doc-line:lineNote "Service"^^xsd:string;
-        p2p-o-doc-line:hasLineNetAmount ?invoice_line_amount_instance.
-      ?invoice_line_amount_instance cmns-qtu:hasNumericValue ?service_price.
+      ?invoice p2p-o-inv:hasInvoiceLine ?invoice_line_base_instance;
+        p2p-o-inv:hasInvoiceLine ?invoice_line_variable_instance.
+      ?invoice_line_base_instance a p2p-o-doc-line:InvoiceLine;
+        p2p-o-doc-line:lineIdentifier "0"^^xsd:string;
+        p2p-o-doc-line:lineNote "Base fee charge"^^xsd:string;
+        p2p-o-doc-line:hasGrosspriceOfItem ?invoice_line_base_amount_instance.
+      ?invoice_line_base_amount_instance cmns-qtu:hasNumericValue ?base_fee.
+      ?invoice_line_variable_instance a p2p-o-doc-line:InvoiceLine;
+        p2p-o-doc-line:lineIdentifier "1"^^xsd:string;
+        p2p-o-doc-line:lineNote ?service_price_description;
+        p2p-o-doc-line:hasGrosspriceOfItem ?invoice_line_variable_amount_instance.
+      ?invoice_line_variable_amount_instance cmns-qtu:hasNumericValue ?var_price.
     } WHERE { 
       ?this fibo-fnd-rel-rel:involves ?event_id;
         dc-terms:identifier ?id.
@@ -543,10 +557,14 @@ base:TransactionShape
       ?var_fee_instance a ontoservice:VariableFee;
         fibo-fnd-acc-cur:hasAmount ?var_fee;
         cmns-qtu:hasLowerBound/cmns-qtu:hasNumericValue ?lower_bound.
-      BIND((?base_fee+(?weight-?lower_bound)*?var_fee) AS ?service_price)
-
-      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/",?id)) AS ?invoice_line_instance)
-      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/amount/",?id)) AS ?invoice_line_amount_instance)
+      BIND(IF(BOUND(?status),
+        ?var_fee * IF(?weight > ?lower_bound, ?weight - ?lower_bound, 0.0),
+        "0"^^xsd:decimal) AS ?var_price)
+      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/base/",?id)) AS ?invoice_line_base_instance)
+      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/base/amount/",?id)) AS ?invoice_line_base_amount_instance)
+      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/var/",?id)) AS ?invoice_line_variable_instance)
+      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/var/amount/",?id)) AS ?invoice_line_variable_amount_instance)
+      BIND(CONCAT("Variable fee charge - Rate: $",STR(?var_fee),"/kg; From: ",  STR(?lower_bound), "tons; Total weight: ", STR(?weight), "kg") AS ?service_price_description)
     }
     """
   ] ;
@@ -571,10 +589,7 @@ base:TransactionShape
     } WHERE { 
       ?this fibo-fnd-rel-rel:involves ?event_id;
         dc-terms:identifier ?id.
-      ?invoice cmns-doc:isAbout ?this;
-        p2p-o-inv:hasInvoiceLine ?invoice_line_instance.
-      ?invoice_line_instance p2p-o-doc-line:lineNote "Service"^^xsd:string;
-        p2p-o-doc-line:hasLineNetAmount/cmns-qtu:hasNumericValue ?service_price.
+      ?invoice cmns-doc:isAbout ?this.
       OPTIONAL{
         SELECT ?invoice (SUM(?charge) AS ?temp_add_charges) WHERE {
           ?invoice cmns-doc:isAbout ?this;
@@ -588,7 +603,7 @@ base:TransactionShape
             p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasPriceDiscountOfItem/cmns-qtu:hasNumericValue ?charge .
         } GROUP BY ?invoice }
       BIND(COALESCE(?temp_discount,0) AS ?discount)
-      BIND(?service_price+?add_charges-?discount AS ?total)
+      BIND(?add_charges-?discount AS ?total)
       BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/total/",?id)) AS ?total_instance)
     }
     """
@@ -1027,4 +1042,5 @@ For this agent to function in the TWA ecosystem, there are some extensions to th
 4. <https://theworldavatar.io/kg/form/role>: Controls access to specific fields by setting to a list of permissible roles
 
 Class extensions:
+
 1. <https://theworldavatar.io/kg/form/SPARQLVirtualRule>: A derivation rule designed to be run at query time; Uses `sh:select`

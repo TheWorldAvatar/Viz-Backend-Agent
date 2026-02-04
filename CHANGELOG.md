@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.37.0
+
+- Modified the required bill setup
+- Modified the response for bills to only reflect charges and discounts
+- Added ordering capabilities for bill charges
+
 ## 1.36.0
 
 - Extended SHACL derivation to enable virtual rules

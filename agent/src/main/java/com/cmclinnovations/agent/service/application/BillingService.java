@@ -147,7 +147,6 @@ public class BillingService {
     Map<String, Object> billItems = new HashMap<>();
     while (!billItemsInstances.isEmpty()) {
       SparqlBinding currentBillItem = billItemsInstances.poll();
-      billItems.putIfAbsent(BillingResource.PRICE_KEY, currentBillItem.getFieldValue(BillingResource.PRICE_KEY));
       billItems.putIfAbsent(BillingResource.AMOUNT_KEY, currentBillItem.getFieldValue(BillingResource.AMOUNT_KEY));
       if (currentBillItem.containsField(BillingResource.CHARGE_KEY)
           || currentBillItem.containsField(BillingResource.DISCOUNT_KEY)) {
