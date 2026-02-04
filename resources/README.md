@@ -466,6 +466,9 @@ This shape must include three Property Shapes to indicate the discounts, additio
 
 An example minimal shape is provided below. Users should only change the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge.
 
+> [!NOTE]
+> Users can apply bold formatting to the description of service charges by wrapping their strings with `<b>` html tags.
+
 > [!TIP]
 > Users can order the service charges by specifying an optional `p2p-o-doc-line:lineIdentifier` line attached to a number stored as a string literal. If there are multiple service charges, these can be ordered through this property.
 
@@ -530,7 +533,7 @@ base:TransactionShape
         p2p-o-inv:hasInvoiceLine ?invoice_line_variable_instance.
       ?invoice_line_base_instance a p2p-o-doc-line:InvoiceLine;
         p2p-o-doc-line:lineIdentifier "0"^^xsd:string;
-        p2p-o-doc-line:lineNote ?base_fee_description;
+        p2p-o-doc-line:lineNote "Base fee charge"^^xsd:string;
         p2p-o-doc-line:hasGrosspriceOfItem ?invoice_line_base_amount_instance.
       ?invoice_line_base_amount_instance cmns-qtu:hasNumericValue ?base_fee.
       ?invoice_line_variable_instance a p2p-o-doc-line:InvoiceLine;
@@ -559,11 +562,9 @@ base:TransactionShape
         "0"^^xsd:decimal) AS ?var_price)
       BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/base/",?id)) AS ?invoice_line_base_instance)
       BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/base/amount/",?id)) AS ?invoice_line_base_amount_instance)
-      BIND(CONCAT("Base fee charge: $",STR(?base_fee)) AS ?base_fee_description)
       BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/var/",?id)) AS ?invoice_line_variable_instance)
       BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/var/amount/",?id)) AS ?invoice_line_variable_amount_instance)
-      BIND(CONCAT("Variable fee charge: $", STR(?var_price), "; Rate: $",STR(?var_fee),"/ton; From: ",  STR(?lower_bound), "tons; Total weight: ", STR(?weight), "tons") AS ?service_price_description)
-
+      BIND(CONCAT("Variable fee charge - Rate: $",STR(?var_fee),"/ton; From: ",  STR(?lower_bound), "tons; Total weight: ", STR(?weight), "tons") AS ?service_price_description)
     }
     """
   ] ;
