@@ -84,15 +84,16 @@ public class ShaclRuleProcesser {
                     selectStatement.replaceFirst("(?i)WHERE\\s*\\{",
                             "?id WHERE{" + ID_TRIPLE_STATEMENT);
             Query query = QueryFactory.create(selectQuery);
-            List<Var> variables = query.getProjectVars();
+            List<Var> variables = query.getProjectVars().stream()
+                    // Filter out ID variable and if the fields does not contain the variable
+                    .filter(v -> !v.getVarName().equals(QueryResource.ID_KEY) && fields.contains(v.getVarName()))
+                    .toList();
             // Skip this iteration if the field is not present
-            if (variables.stream()
-                    .noneMatch(v -> fields.contains(v.getVarName()))) {
+            if (variables.isEmpty()) {
                 return null;
             }
-            // Filter out the variables in the current query that are present in the fields
-            variables.stream().filter(v -> fields.contains(v.getVarName()))
-                    // If so, add them to the virtual fields
+            // For each variable present, append to the virtual fields
+            variables.stream()
                     .forEach(v -> virtualFields.add(v.getVarName()));
             // Reset prefixes to use full IRIs
             query.getPrefixMapping().clearNsPrefixMap();
