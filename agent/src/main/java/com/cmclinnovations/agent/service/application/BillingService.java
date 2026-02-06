@@ -110,7 +110,8 @@ public class BillingService {
         .getInstance(FileService.ACCOUNT_PRICING_QUERY_RESOURCE, pricingModel);
     instance.put(QueryResource.ACCOUNT_ID_KEY, accountInstance.getFieldValue(QueryResource.IRI_KEY));
     instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
-    return this.updateService.update(contractId, BillingResource.TRANSACTION_RECORD_RESOURCE, null, instance, TrackActionType.IGNORED);
+    return this.updateService.update(contractId, BillingResource.TRANSACTION_RECORD_RESOURCE, null, instance,
+        TrackActionType.IGNORED);
   }
 
   /**
@@ -133,7 +134,8 @@ public class BillingService {
    * @param instance   Request parameters containing the invoice parameters.
    */
   public ResponseEntity<StandardApiResponse<?>> genInvoiceInstance(String resourceId, Map<String, Object> instance) {
-    return this.addService.instantiate(resourceId, instance, TrackActionType.CREATION);
+    return this.updateService.update(instance.get(QueryResource.ID_KEY).toString(), resourceId, null, instance,
+        TrackActionType.MODIFICATION);
   }
 
   /**

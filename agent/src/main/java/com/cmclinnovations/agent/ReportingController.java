@@ -206,7 +206,7 @@ public class ReportingController {
   /**
    * Creates an invoice instance along with a transaction record.
    */
-  @PostMapping("/transaction/invoice")
+  @PutMapping("/transaction/invoice")
   public ResponseEntity<StandardApiResponse<?>> createInvoice(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to create a new invoice and transaction...");
     return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
