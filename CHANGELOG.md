@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.37.1
+
+- Ignores the default id when checking if variable exist in virtual query
+- Simplify variable checks for virtual query inclusion
+
 ## 1.37.0
 
 - Modified the required bill setup
