@@ -3,7 +3,7 @@ version: "3.9"
 services:
   agent:
     container_name: vis-backend-agent-test
-    image: ghcr.io/theworldavatar/vis-backend-agent-test:1.37.1-redundant-id-virtual-query-SNAPSHOT
+    image: ghcr.io/theworldavatar/vis-backend-agent-test:1.37.1
     build:
       context: ..
       target: test
