@@ -147,12 +147,13 @@ public class ReportingController {
 
   /**
    * Retrieves the form template for a transaction invoice.
+   * If the invoice already exists, the form will be pre-filled with the invoice details.
    */
-  @GetMapping("/transaction/invoice")
-  public ResponseEntity<StandardApiResponse<?>> getTransactionInvoiceFormTemplate() {
+  @GetMapping("/transaction/invoice/form/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getTransactionInvoiceFormTemplate(@PathVariable String id) {
     LOGGER.info("Received request to get the form template for a transaction invoice...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
-      return this.getService.getForm(BillingResource.TRANSACTION_BILL_RESOURCE, false);
+      return this.getService.getForm(id, BillingResource.TRANSACTION_BILL_RESOURCE, false, null);
     });
   }
 
