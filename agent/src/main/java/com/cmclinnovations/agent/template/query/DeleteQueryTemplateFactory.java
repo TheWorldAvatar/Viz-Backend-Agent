@@ -228,6 +228,21 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    */
   private void parseFieldNode(JsonNode idNode, JsonNode objectNode, RdfSubject subject, Iri predicate,
       ModifyQuery deleteTemplate, Queue<GraphPattern> whereBranchPatterns, String branch, Set<String> optVarNames) {
+    // Check if this field is optional - only check object nodes or ID node if
+    // present
+    boolean isOptional = false;
+    if (objectNode.isObject()) {
+      isOptional = optVarNames.contains(objectNode.path(ShaclResource.REPLACE_KEY).asText()) || // literal
+          optVarNames.contains(objectNode.path(ShaclResource.ID_KEY).path(ShaclResource.REPLACE_KEY).asText()); // IRI
+    }
+
+    // create queues to collect all patterns and deletes related to optional variables
+    Queue<TriplePattern> deletePatternQueue = new ArrayDeque<>();
+    Queue<GraphPattern> optionalPatternQueue = new ArrayDeque<>();
+
+    // Determine which queues to use for collecting patterns
+    Queue<GraphPattern> subPatternQueue = isOptional ? optionalPatternQueue : whereBranchPatterns;
+
     // For object field node
     if (objectNode.isObject()) {
       JsonNode targetTripleObjectNode = objectNode.has(ShaclResource.REPLACE_KEY)
@@ -244,19 +259,16 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
 
       // Add the triple statement directly to DELETE clause
       TriplePattern tripleStatement = subject.has(predicate, sparqlObject);
-      deleteTemplate.delete(tripleStatement);
-
-      GraphPattern wherePattern = tripleStatement;
-
-      // But add optional clause when required for where clause
-
-      if (optVarNames.contains(objectNode.path(ShaclResource.REPLACE_KEY).asText()) || // literal
-          optVarNames.contains(objectNode.path(ShaclResource.ID_KEY).path(ShaclResource.REPLACE_KEY).asText()) // IRI
-        ) {
-        wherePattern = GraphPatterns.optional(tripleStatement);
+      if (isOptional) {
+        // If optional, add the triple pattern to a temporary template and collect the
+        // pattern in the queue, but do not add to the main template yet
+        deletePatternQueue.offer(tripleStatement);
+        optionalPatternQueue.offer(tripleStatement);
+      } else {
+        // If not optional, add the triple pattern directly to the delete template
+        deleteTemplate.delete(tripleStatement);
+        this.updateWherePatterns(tripleStatement, deleteTemplate, subPatternQueue);
       }
-      this.updateWherePatterns(wherePattern, deleteTemplate, whereBranchPatterns);
-
       // Further processing for array type
       if (objectNode.has(ShaclResource.REPLACE_KEY)
           && objectNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)
@@ -265,25 +277,45 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
         ObjectNode arrayContents = this.getArrayReplacementContents(
             this.jsonLdService.getObjectNode(objectNode.path(ShaclResource.CONTENTS_KEY)),
             objectNode.path(ShaclResource.REPLACE_KEY).asText());
-        this.recursiveParseNode(deleteTemplate, whereBranchPatterns, arrayContents, branch, optVarNames);
+        this.recursiveParseNode(deleteTemplate, subPatternQueue, arrayContents, branch, optVarNames);
       }
       // No further processing required for objects intended for replacement, @value,
       if (!objectNode.has(ShaclResource.REPLACE_KEY) && !objectNode.has(ShaclResource.VAL_KEY) &&
       // or a one line instance link to a TextNode eg: "@id" : "instanceIri"
           !(objectNode.has(ShaclResource.ID_KEY) && objectNode.size() == 1
               && objectNode.path(ShaclResource.ID_KEY).isTextual())) {
-        this.recursiveParseNode(deleteTemplate, whereBranchPatterns, (ObjectNode) objectNode, branch, optVarNames);
+        this.recursiveParseNode(deleteTemplate, subPatternQueue, (ObjectNode) objectNode, branch, optVarNames);
       }
       // For arrays,iterate through each object and parse the nested node
     } else if (objectNode.isArray()) {
       ArrayNode fieldArray = (ArrayNode) objectNode;
       for (JsonNode tripleObjNode : fieldArray) {
-        this.parseNestedNode(idNode, tripleObjNode, predicate, deleteTemplate, whereBranchPatterns, branch, false, optVarNames);
+        this.parseNestedNode(idNode, tripleObjNode, predicate, deleteTemplate, subPatternQueue, branch, false,
+            optVarNames);
       }
     } else {
       TriplePattern triplePattern = subject.has(predicate, Rdf.literalOf(((TextNode) objectNode).textValue()));
       deleteTemplate.delete(triplePattern);
-      this.updateWherePatterns(triplePattern, deleteTemplate, whereBranchPatterns);
+      this.updateWherePatterns(triplePattern, deleteTemplate, subPatternQueue);
+    }
+
+    // If we collected optional patterns, wrap them all in a single OPTIONAL and add
+    // all deletes
+    if (isOptional && !optionalPatternQueue.isEmpty() && !deletePatternQueue.isEmpty()) {
+      // Add all collected DELETE patterns to the main template
+      for (TriplePattern pattern : deletePatternQueue) {
+        deleteTemplate.delete(pattern);
+      }
+
+      // Wrap WHERE patterns in OPTIONAL
+      GraphPattern[] patterns = optionalPatternQueue.toArray(new GraphPattern[0]);
+      GraphPattern wrappedOptional = GraphPatterns.optional(patterns);
+
+      if (whereBranchPatterns != null) {
+        whereBranchPatterns.offer(wrappedOptional);
+      } else {
+        deleteTemplate.where(wrappedOptional);
+      }
     }
   }
 
@@ -304,7 +336,8 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    * @param optVarNames         Set of names of optional variables.
    */
   private void parseNestedNode(JsonNode idNode, JsonNode objectNode, Iri predicatePath,
-      ModifyQuery deleteTemplate, Queue<GraphPattern> whereBranchPatterns, String branch, boolean isReverse, Set<String> optVarNames) {
+      ModifyQuery deleteTemplate, Queue<GraphPattern> whereBranchPatterns, String branch, boolean isReverse,
+      Set<String> optVarNames) {
     if (isReverse) {
       if (objectNode.isObject()) {
         // A reverse node indicates that the replacement object should now be the
