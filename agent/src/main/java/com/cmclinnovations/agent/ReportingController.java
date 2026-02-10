@@ -207,10 +207,10 @@ public class ReportingController {
    * Creates an invoice instance along with a transaction record.
    */
   @PutMapping("/transaction/invoice")
-  public ResponseEntity<StandardApiResponse<?>> createInvoice(@RequestBody Map<String, Object> instance) {
-    LOGGER.info("Received request to create a new invoice and transaction...");
+  public ResponseEntity<StandardApiResponse<?>> updateInvoice(@RequestBody Map<String, Object> instance) {
+    LOGGER.info("Received request to update an existing invoice and transaction...");
     return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
-      return this.billingService.genInvoiceInstance(BillingResource.TRANSACTION_BILL_RESOURCE, instance);
+      return this.billingService.updateInvoiceInstance(BillingResource.TRANSACTION_BILL_RESOURCE, instance);
     });
   }
 
@@ -222,7 +222,7 @@ public class ReportingController {
   public ResponseEntity<StandardApiResponse<?>> createNonBillableInvoice(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to create a non-billable invoice and transaction...");
     return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
-      return this.billingService.genInvoiceInstance(BillingResource.TRANSACTION_NONBILLABLE_BILL_RESOURCE, instance);
+      return this.billingService.updateInvoiceInstance(BillingResource.TRANSACTION_NONBILLABLE_BILL_RESOURCE, instance);
     });
   }
 }

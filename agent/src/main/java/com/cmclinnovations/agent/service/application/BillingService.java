@@ -133,7 +133,7 @@ public class BillingService {
    *                   transaction.
    * @param instance   Request parameters containing the invoice parameters.
    */
-  public ResponseEntity<StandardApiResponse<?>> genInvoiceInstance(String resourceId, Map<String, Object> instance) {
+  public ResponseEntity<StandardApiResponse<?>> updateInvoiceInstance(String resourceId, Map<String, Object> instance) {
     return this.updateService.update(instance.get(QueryResource.ID_KEY).toString(), resourceId, null, instance,
         TrackActionType.MODIFICATION);
   }
