@@ -110,7 +110,7 @@ public class BillingService {
         .getInstance(FileService.ACCOUNT_PRICING_QUERY_RESOURCE, pricingModel);
     instance.put(QueryResource.ACCOUNT_ID_KEY, accountInstance.getFieldValue(QueryResource.IRI_KEY));
     instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
-    return this.updateService.update(contractId, BillingResource.TRANSACTION_RECORD_RESOURCE, null, instance,
+    return this.updateService.update(contractId, BillingResource.FINANCIAL_RECORD_RESOURCE, null, instance,
         TrackActionType.IGNORED);
   }
 

@@ -7,7 +7,7 @@
     "@type": "iri",
     "prefix": "https://theworldavatar.io/kg/account/record/"
   },
-  "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/TransactionRecord",
+  "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Documents/FinancialRecord",
   "https://www.omg.org/spec/Commons/Documents/isAbout": {
     "@id": {
       "@replace": "contract",
