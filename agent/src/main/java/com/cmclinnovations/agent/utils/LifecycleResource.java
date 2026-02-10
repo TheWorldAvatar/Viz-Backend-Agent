@@ -150,8 +150,6 @@ public class LifecycleResource {
         return FileService.TRANSACTION_RECORD_JSON_LD_RESOURCE;
       case BillingResource.TRANSACTION_BILL_RESOURCE:
         return FileService.TRANSACTION_INVOICE_JSON_LD_RESOURCE;
-      case BillingResource.TRANSACTION_NONBILLABLE_BILL_RESOURCE:
-        return FileService.NON_BILLABLE_INVOICE_JSON_LD_RESOURCE;
       case LifecycleResource.CANCEL_RESOURCE:
       case LifecycleResource.REPORT_RESOURCE:
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;

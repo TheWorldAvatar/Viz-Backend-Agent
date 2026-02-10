@@ -990,8 +990,6 @@ To generate the invoice for a specific task, users must send a `POST` request wi
 }
 ```
 
-Users can also send  a `POST` request to `<baseURL>/vis-backend-agent/report/transaction/nonbillable` to exclude a transaction from billing, which will require the `event` key along with the corresponding closed event instance.
-
 #### 2.7.2.2 Bills
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/invoice/{id}` endpoint to get the bill details for the target task, where `id` is the task's identifier. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1172-individualtransaction).

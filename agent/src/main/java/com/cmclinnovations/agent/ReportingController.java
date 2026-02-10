@@ -146,16 +146,4 @@ public class ReportingController {
       return this.billingService.updateInvoiceInstance(BillingResource.TRANSACTION_BILL_RESOURCE, instance);
     });
   }
-
-  /**
-   * Creates an invoice instance along with a transaction record for non-billable
-   * transactions.
-   */
-  @PostMapping("/transaction/nonbillable")
-  public ResponseEntity<StandardApiResponse<?>> createNonBillableInvoice(@RequestBody Map<String, Object> instance) {
-    LOGGER.info("Received request to create a non-billable invoice and transaction...");
-    return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
-      return this.billingService.updateInvoiceInstance(BillingResource.TRANSACTION_NONBILLABLE_BILL_RESOURCE, instance);
-    });
-  }
 }
