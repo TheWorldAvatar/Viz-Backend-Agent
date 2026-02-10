@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 
@@ -114,7 +115,10 @@ public class SparqlBinding {
    */
   @JsonIgnore
   public Set<String> getFields() {
-    return this.bindings.keySet();
+    return this.bindings.entrySet().stream()
+        .filter(entry -> entry.getValue() != null)
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toSet());
   }
 
   public List<SparqlResponseField> getList(String field) {

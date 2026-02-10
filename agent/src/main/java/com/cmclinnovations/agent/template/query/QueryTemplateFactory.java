@@ -249,6 +249,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
 
     // Handle group query parsing
     Map<String, GraphPattern> arrayStatementsMap = new HashMap<>();
+    Map<String, Boolean> arrayGroupOptionalityMap = new HashMap<>(); // this tracks if all array insides are optional
     propertyShapeMap.get(ShaclResource.GROUP_PROPERTY).forEach((key, propBinding) -> {
       List<GraphPattern> content = propBinding.write(true);
       content.addAll(accumulatedStatementsByGroup.get(key));
@@ -262,6 +263,9 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
             ? GraphPatterns.union(arrayStatementsMap.get(propKey), graphPatterns)
             : graphPatterns;
         arrayStatementsMap.put(propKey, currentArrayPatterns);
+        // Initial entry takes its own optionality. Subsequent entries use logical AND.
+        arrayGroupOptionalityMap.put(propKey, 
+            arrayGroupOptionalityMap.getOrDefault(propKey, true) && propBinding.isOptional());
         return; // End loop early for arrays
       }
       // Optional clauses only for groups
@@ -285,10 +289,14 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     });
     // Handle array parsing
     arrayStatementsMap.forEach((key, contents) -> {
+      // If all arrays in this group were optional, wrap the whole union/and block in OPTIONAL
+      GraphPattern finalPattern = arrayGroupOptionalityMap.getOrDefault(key, false)
+          ? GraphPatterns.optional(contents)
+          : contents;
       if (key.equals(ShaclResource.PROPERTY_PROPERTY)) {
-        selectTemplate.where(contents);
+        selectTemplate.where(finalPattern);
       } else {
-        branchStatementMap.computeIfAbsent(key, k -> new ArrayList<>()).add(contents);
+        branchStatementMap.computeIfAbsent(key, k -> new ArrayList<>()).add(finalPattern);
       }
     });
 

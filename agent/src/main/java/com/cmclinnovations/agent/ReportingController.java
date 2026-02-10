@@ -147,12 +147,13 @@ public class ReportingController {
 
   /**
    * Retrieves the form template for a transaction invoice.
+   * If the invoice already exists, the form will be pre-filled with the invoice details.
    */
-  @GetMapping("/transaction/invoice")
-  public ResponseEntity<StandardApiResponse<?>> getTransactionInvoiceFormTemplate() {
+  @GetMapping("/transaction/invoice/form/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getTransactionInvoiceFormTemplate(@PathVariable String id) {
     LOGGER.info("Received request to get the form template for a transaction invoice...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
-      return this.getService.getForm(BillingResource.TRANSACTION_BILL_RESOURCE, false);
+      return this.getService.getForm(id, BillingResource.TRANSACTION_BILL_RESOURCE, false, null);
     });
   }
 
@@ -203,13 +204,13 @@ public class ReportingController {
   }
 
   /**
-   * Creates an invoice instance along with a transaction record.
+   * Update an invoice instance along with a transaction record.
    */
-  @PostMapping("/transaction/invoice")
-  public ResponseEntity<StandardApiResponse<?>> createInvoice(@RequestBody Map<String, Object> instance) {
-    LOGGER.info("Received request to create a new invoice and transaction...");
+  @PutMapping("/transaction/invoice")
+  public ResponseEntity<StandardApiResponse<?>> updateInvoice(@RequestBody Map<String, Object> instance) {
+    LOGGER.info("Received request to update an existing invoice and transaction...");
     return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
-      return this.billingService.genInvoiceInstance(BillingResource.TRANSACTION_BILL_RESOURCE, instance);
+      return this.billingService.updateInvoiceInstance(BillingResource.TRANSACTION_BILL_RESOURCE, instance);
     });
   }
 
@@ -221,7 +222,7 @@ public class ReportingController {
   public ResponseEntity<StandardApiResponse<?>> createNonBillableInvoice(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to create a non-billable invoice and transaction...");
     return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
-      return this.billingService.genInvoiceInstance(BillingResource.TRANSACTION_NONBILLABLE_BILL_RESOURCE, instance);
+      return this.billingService.updateInvoiceInstance(BillingResource.TRANSACTION_NONBILLABLE_BILL_RESOURCE, instance);
     });
   }
 }

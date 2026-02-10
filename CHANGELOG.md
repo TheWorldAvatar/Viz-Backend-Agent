@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.38.0
+
+- Modified invoice form route to always expect ID
+- Modiifed invoice creation route to invoice update route (POST to PUT)
+- Modified SHACL array variable handling
+
 ## 1.37.1
 
 - Ignores the default id when checking if variable exist in virtual query
