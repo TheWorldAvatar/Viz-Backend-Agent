@@ -3,7 +3,7 @@
     "Name": "vis-backend-agent",
     "TaskTemplate": {
       "ContainerSpec": {
-        "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.38.0",
+        "Image": "ghcr.io/theworldavatar/vis-backend-agent:1.39.0-migrate-bill-activities-to-closed-SNAPSHOT",
         "Env": [
           "REDIS=redis://<STACK>-redis:6379",
           "KEYCLOAK_ISSUER_URI=http://<DOMAIN>/realms/<REALM>",
