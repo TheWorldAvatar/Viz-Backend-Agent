@@ -539,8 +539,6 @@ where `{type}`is the requested identifier that must correspond to a target class
 
 Users can get the changelog for tasks at this route `<baseURL>/vis-backend-agent/changes/task/{id}`, where `{id}` is the specific instance's identifier.
 
-Users can get the changelog for bills at this route `<baseURL>/vis-backend-agent/changes/bill/{id}`, where `{id}` is the specific instance's identifier.
-
 ### 2.6 Service Lifecycle Route
 
 This `<baseURL>/vis-backend-agent/contracts/` route serves as an endpoint to manage the lifecycle of contracts and their associated services. Note that the following scheduled tasks are available and will occur at 6am everyday if `TASKS_ENABLED` is true:
