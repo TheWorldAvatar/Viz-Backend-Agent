@@ -204,7 +204,7 @@ public class ReportingController {
   }
 
   /**
-   * Creates an invoice instance along with a transaction record.
+   * Update an invoice instance along with a transaction record.
    */
   @PutMapping("/transaction/invoice")
   public ResponseEntity<StandardApiResponse<?>> updateInvoice(@RequestBody Map<String, Object> instance) {
