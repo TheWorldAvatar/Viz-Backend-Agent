@@ -88,14 +88,13 @@ public class LifecycleTaskService {
    * @param startTimestamp Start timestamp in UNIX format.
    * @param endTimestamp   End timestamp in UNIX format.
    * @param isClosed       Indicates whether to retrieve closed tasks.
-   * @param isBilling      Indicates whether this query should cater to billing.
    * @param filters        Mappings between filter fields and their values.
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrenceCount(String resourceID, String startTimestamp,
-      String endTimestamp, boolean isClosed, boolean isBilling, Map<String, String> filters) {
+      String endTimestamp, boolean isClosed, Map<String, String> filters) {
     Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, IS_CONTRACT);
     String[] queryStatement = this.genLifecycleStatements(startTimestamp, endTimestamp, new HashSet<>(), parsedFilters,
-        "", isClosed, isBilling, false);
+        "", isClosed, false);
     return this.responseEntityBuilder.success(null,
         String.valueOf(
             this.getService.getCount(resourceID, queryStatement[0], LifecycleResource.TASK_ID_SORT_BY_PARAMS, filters,
@@ -111,23 +110,20 @@ public class LifecycleTaskService {
    * @param startTimestamp Start timestamp in UNIX format.
    * @param endTimestamp   End timestamp in UNIX format.
    * @param isClosed       Indicates whether to retrieve closed tasks.
-   * @param isBilling      Indicates whether this query should cater to billing.
    * @param filters        Optional additional filters.
    */
   public List<String> getFilterOptions(String resourceID, String field, String search, String startTimestamp,
-      String endTimestamp, boolean isClosed, boolean isBilling, Map<String, String> filters) {
+      String endTimestamp, boolean isClosed, Map<String, String> filters) {
     String originalField = LifecycleResource.revertLifecycleSpecialFields(field, IS_CONTRACT);
     Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, IS_CONTRACT);
     parsedFilters.remove(originalField);
     String[] queryStatement = this.genLifecycleStatements(startTimestamp, endTimestamp, new HashSet<>(), parsedFilters,
-        originalField, isClosed, isBilling, false);
+        originalField, isClosed, false);
     List<String> options = this.getService.getAllFilterOptionsAsStrings(resourceID, originalField, queryStatement[0],
         search,
         parsedFilters);
     if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
       return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();
-    } else if (field.equals(BillingResource.BILLING_STATUS_KEY)) {
-      return options.stream().map(option -> LocalisationTranslator.getBillingStatus(option)).toList();
     } else if (originalField.equals(LifecycleResource.EVENT_KEY)) {
       return options.stream().map(option -> LocalisationTranslator.getEvent(option)).toList();
     }
@@ -162,13 +158,12 @@ public class LifecycleTaskService {
    * @param endTimestamp   End timestamp in UNIX format.
    * @param entityType     Target resource ID.
    * @param isClosed       Indicates whether to retrieve closed tasks.
-   * @param isBilling      Indicates whether this query should cater to billing.
    * @param pagination     Pagination state to filter results.
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String startTimestamp, String endTimestamp,
-      String entityType, boolean isClosed, boolean isBilling, PaginationState pagination) {
+      String entityType, boolean isClosed, PaginationState pagination) {
     List<Map<String, Object>> occurrences = this.queryOccurrences(startTimestamp, endTimestamp,
-        entityType, isClosed, isBilling, pagination);
+        entityType, isClosed, pagination);
     LOGGER.info("Successfuly retrieved tasks!");
     return this.responseEntityBuilder.success(null, occurrences);
   }
@@ -181,14 +176,13 @@ public class LifecycleTaskService {
    * @param endTimestamp   End timestamp in UNIX format.
    * @param entityType     Target resource ID.
    * @param isClosed       Indicates whether to retrieve closed tasks.
-   * @param isBilling      Indicates whether this query should cater to billing.
    * @param pagination     Pagination state to filter results.
    */
   private List<Map<String, Object>> queryOccurrences(String startTimestamp, String endTimestamp,
-      String entityType, boolean isClosed, boolean isBilling, PaginationState pagination) {
+      String entityType, boolean isClosed, PaginationState pagination) {
     String[] lifecycleStatements = this.genLifecycleStatements(startTimestamp, endTimestamp,
-        pagination.getSortedFields(), pagination.getFilters(), "", isClosed, isBilling, true);
-    return this.executeOccurrenceQuery(entityType, lifecycleStatements, isClosed, isBilling, pagination);
+        pagination.getSortedFields(), pagination.getFilters(), "", isClosed, true);
+    return this.executeOccurrenceQuery(entityType, lifecycleStatements, isClosed, pagination);
   }
 
   /**
@@ -208,7 +202,7 @@ public class LifecycleTaskService {
     PaginationState pagination = new PaginationState(0, null,
         StringResource.DEFAULT_SORT_BY + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, filter);
     List<Map<String, Object>> occurrences = this.queryOccurrences(startTimestamp, endTimestamp,
-        entityType, isClosed, false, pagination);
+        entityType, isClosed, pagination);
     return occurrences.stream().filter(occurrenceMap -> occurrenceMap.containsKey(LifecycleResource.DATE_KEY))
         .map(occurrenceMap -> (SparqlResponseField) occurrenceMap.get(LifecycleResource.DATE_KEY))
         .map(SparqlResponseField::value)
@@ -283,11 +277,10 @@ public class LifecycleTaskService {
    * @param field            Optional target to include the corresponding filter
    *                         statements.
    * @param isClosed         Indicates whether to retrieve closed tasks.
-   * @param isBilling        Indicates whether this query should cater to billing.
    * @param reqOriStatements Requires that the original statements are present.
    */
   private String[] genLifecycleStatements(String startTimestamp, String endTimestamp, Set<String> sortedFields,
-      Map<String, Set<String>> filters, String field, boolean isClosed, boolean isBilling, boolean reqOriStatements) {
+      Map<String, Set<String>> filters, String field, boolean isClosed, boolean reqOriStatements) {
     String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp, isClosed);
     Map<String, String> statementMappings = this.lifecycleQueryFactory.getServiceTasksQuery(null,
         targetStartEndDates[0], targetStartEndDates[1], isClosed);
@@ -297,15 +290,8 @@ public class LifecycleTaskService {
       // Override the field value for filter options, as it should ignore them
       serviceEventFilters.put(field, new HashSet<>());
     }
-    String addFilterQueries = "";
-    // Billing does not require dispatch information but requires additional
-    // variables
-    if (isBilling) {
-      statementMappings = this.lifecycleQueryFactory.addBillMappings(statementMappings);
-    } else {
-      addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-          sortedFields, serviceEventFilters, filterExpressions);
-    }
+    String addFilterQueries = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+        sortedFields, serviceEventFilters, filterExpressions);
     // Get statements for dispatch events that matches any sort/filter criteria
     // Non-closed tasks should not have the closed related statements
     if (isClosed) {
@@ -339,21 +325,14 @@ public class LifecycleTaskService {
    * @param entityType    Target resource ID.
    * @param queryMappings Additional query statements to be added if any.
    * @param isClosed      Indicates whether to retrieve closed tasks.
-   * @param isBilling     Indicates whether this query should cater to billing.
    * @param pagination    Pagination state to filter results.
    */
   private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String[] lifecycleStatements,
-      Boolean isClosed, boolean isBilling, PaginationState pagination) {
+      Boolean isClosed, PaginationState pagination) {
     Queue<List<String>> ids = this.getService.getAllIds(entityType, lifecycleStatements[0], pagination);
     Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
     String addQuery = lifecycleStatements[1];
-    // Billing requires the extra variable but does not need dispatch details
-    if (isBilling) {
-      varSequences.put(QueryResource.BILLING_STATUS_VAR, List.of(MIN_INDEX, 4));
-      varSequences.put(QueryResource.AMOUNT_VAR, List.of(MIN_INDEX, 5));
-    } else {
-      addQuery += this.parseEventOccurrenceQuery(-4, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
-    }
+    addQuery += this.parseEventOccurrenceQuery(-4, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
     if (isClosed) {
       addQuery += this.parseEventOccurrenceQuery(-3, LifecycleEventType.SERVICE_EXECUTION, varSequences);
       addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_CANCELLATION, varSequences);

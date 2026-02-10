@@ -11,7 +11,6 @@ public class BillingResource {
   public static final String TRANSACTION_NONBILLABLE_BILL_RESOURCE = "nonbillable transaction";
 
   public static final String AMOUNT_KEY = "amount";
-  public static final String BILLING_STATUS_KEY = "billingStatus";
   public static final String CHARGE_KEY = "charge";
   public static final String DISCOUNT_KEY = "discount";
 

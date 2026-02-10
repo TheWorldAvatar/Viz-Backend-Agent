@@ -16,16 +16,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
-import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.BillingService;
-import com.cmclinnovations.agent.service.application.LifecycleTaskService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.BillingResource;
-import com.cmclinnovations.agent.utils.LifecycleResource;
-import com.cmclinnovations.agent.utils.StringResource;
 
 @RestController
 @RequestMapping("/report")
@@ -34,79 +30,15 @@ public class ReportingController {
   private final ResponseEntityBuilder responseEntityBuilder;
   private final GetService getService;
   private final BillingService billingService;
-  private final LifecycleTaskService lifecycleTaskService;
 
   private static final Logger LOGGER = LogManager.getLogger(ReportingController.class);
 
-  private final boolean IS_CLOSED = true;
-  private final boolean IS_BILLING = true;
-
   public ReportingController(ConcurrencyService concurrencyService, ResponseEntityBuilder responseEntityBuilder,
-      GetService getService, BillingService billingService, LifecycleTaskService lifecycleTaskService) {
+      GetService getService, BillingService billingService) {
     this.concurrencyService = concurrencyService;
     this.responseEntityBuilder = responseEntityBuilder;
     this.billingService = billingService;
     this.getService = getService;
-    this.lifecycleTaskService = lifecycleTaskService;
-  }
-
-  /**
-   * Retrieve the count of all closed tasks for the specified date range in UNIX
-   * timestamp.
-   */
-  @GetMapping("/bill/count")
-  public ResponseEntity<StandardApiResponse<?>> getClosedTaskCount(
-      @RequestParam Map<String, String> allRequestParams) {
-    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
-    String startTimestamp = allRequestParams.remove(StringResource.START_TIMESTAMP_REQUEST_PARAM);
-    String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
-    LOGGER.info("Received request to retrieve number of scheduled contract task...");
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrenceCount(type, startTimestamp, endTimestamp, this.IS_CLOSED,
-          this.IS_BILLING, allRequestParams);
-    });
-  }
-
-  /**
-   * Retrieve all closed tasks for the specified date range in UNIX timestamp.
-   */
-  @GetMapping("/bill")
-  public ResponseEntity<StandardApiResponse<?>> getAllClosedTasks(
-      @RequestParam Map<String, String> allRequestParams) {
-    LOGGER.info("Received request to retrieve closed tasks for the specified dates...");
-    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
-    String startTimestamp = allRequestParams.remove(StringResource.START_TIMESTAMP_REQUEST_PARAM);
-    String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
-    Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
-    Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
-    String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
-    allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, this.IS_CLOSED,
-          this.IS_BILLING,
-          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
-    });
-  }
-
-  /**
-   * Retrieve the filter options for the completed or problematic tasks on the
-   * specified date(s).
-   */
-  @GetMapping("/bill/filter")
-  public ResponseEntity<StandardApiResponse<?>> getClosedTaskFilters(
-      @RequestParam Map<String, String> allRequestParams) {
-    LOGGER.info("Received request to retrieve filter options for contracts in progress...");
-    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
-    String field = allRequestParams.remove(StringResource.FIELD_REQUEST_PARAM);
-    String search = allRequestParams.getOrDefault(StringResource.SEARCH_REQUEST_PARAM, "");
-    allRequestParams.remove(StringResource.SEARCH_REQUEST_PARAM);
-    String startTimestamp = allRequestParams.remove(StringResource.START_TIMESTAMP_REQUEST_PARAM);
-    String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> options = this.lifecycleTaskService.getFilterOptions(type, field,
-          search, startTimestamp, endTimestamp, this.IS_CLOSED, this.IS_BILLING, allRequestParams);
-      return this.responseEntityBuilder.success(options);
-    });
   }
 
   /**
@@ -147,7 +79,8 @@ public class ReportingController {
 
   /**
    * Retrieves the form template for a transaction invoice.
-   * If the invoice already exists, the form will be pre-filled with the invoice details.
+   * If the invoice already exists, the form will be pre-filled with the invoice
+   * details.
    */
   @GetMapping("/transaction/invoice/form/{id}")
   public ResponseEntity<StandardApiResponse<?>> getTransactionInvoiceFormTemplate(@PathVariable String id) {

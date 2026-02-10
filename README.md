@@ -33,7 +33,6 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
   - [2.7 Service Reporting Route](#27-service-reporting-route)
     - [2.7.1 Customer account route](#271-customer-account)
     - [2.7.2 Transaction record route](#272-transaction-record-route)
-    - [2.7.3 Closed activities route](#273-closed-activities)
 
 ## 1. Agent Deployment
 
@@ -996,17 +995,3 @@ Users can also send  a `POST` request to `<baseURL>/vis-backend-agent/report/tra
 #### 2.7.2.2 Bills
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/invoice/{id}` endpoint to get the bill details for the target task, where `id` is the task's identifier. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1172-individualtransaction).
-
-#### 2.7.3 Closed activities
-
-This endpoint serves to retrieve all closed activities within the target date range for the purpose of billing. Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/bill?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}&sort_by={sortby}` endpoint, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
-
-> [!TIP]  
-> `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
-
-> [!IMPORTANT]  
-> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
-
-To get the count of closed activities, users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/bill/count?type={contractType}}&startTimestamp={start}&endTimestamp={end}` endpoint.
-
-Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/report/bill/filter?type={type}&field={field}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all the distinct field options for a specific field on all closed activities, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{field}` is the target field, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. Users can also include an optional `search` parameter as well as any active filters.
