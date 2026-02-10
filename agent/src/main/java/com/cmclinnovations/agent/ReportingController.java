@@ -22,6 +22,7 @@ import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.BillingService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.BillingResource;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 
 @RestController
 @RequestMapping("/report")
@@ -78,25 +79,12 @@ public class ReportingController {
   }
 
   /**
-   * Retrieves the form template for a transaction invoice.
-   * If the invoice already exists, the form will be pre-filled with the invoice
-   * details.
-   */
-  @GetMapping("/transaction/invoice/form/{id}")
-  public ResponseEntity<StandardApiResponse<?>> getTransactionInvoiceFormTemplate(@PathVariable String id) {
-    LOGGER.info("Received request to get the form template for a transaction invoice...");
-    return this.concurrencyService.executeInOptimisticReadLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
-      return this.getService.getForm(id, BillingResource.TRANSACTION_BILL_RESOURCE, false, null);
-    });
-  }
-
-  /**
    * Retrieves the bill for the target task.
    */
   @GetMapping("/transaction/invoice/{id}")
   public ResponseEntity<StandardApiResponse<?>> getBill(@PathVariable String id) {
     LOGGER.info("Received request to get the bill for a task...");
-    return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.responseEntityBuilder.success(
           List.of(this.billingService.getBill(id)));
     });
@@ -133,17 +121,6 @@ public class ReportingController {
     LOGGER.info("Received request to update pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
       return this.billingService.assignPricingPlanToContract(instance);
-    });
-  }
-
-  /**
-   * Update an invoice instance along with a transaction record.
-   */
-  @PutMapping("/transaction/invoice")
-  public ResponseEntity<StandardApiResponse<?>> updateInvoice(@RequestBody Map<String, Object> instance) {
-    LOGGER.info("Received request to update an existing invoice and transaction...");
-    return this.concurrencyService.executeInWriteLock(BillingResource.TRANSACTION_BILL_RESOURCE, () -> {
-      return this.billingService.updateInvoiceInstance(BillingResource.TRANSACTION_BILL_RESOURCE, instance);
     });
   }
 }

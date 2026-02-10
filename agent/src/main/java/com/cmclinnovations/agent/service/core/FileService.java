@@ -60,8 +60,6 @@ public class FileService {
       + "jsonld/accounts/account_pricing.jsonld";
   public static final String FINANCIAL_RECORD_JSON_LD_RESOURCE = CLASS_PATH_DIR
       + "jsonld/accounts/financial_record.jsonld";
-  public static final String TRANSACTION_INVOICE_JSON_LD_RESOURCE = CLASS_PATH_DIR
-      + "jsonld/accounts/individual_transaction.jsonld";
   public static final String OCCURRENCE_INSTANT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_instant.jsonld";
   public static final String OCCURRENCE_LINK_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_link.jsonld";
   public static final String SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/schedule.jsonld";
@@ -181,9 +179,7 @@ public class FileService {
       return Rdf.iri(LifecycleResource.EVENT_OCCURRENCE_IRI);
     } else if (resourceID.equals(BillingResource.FINANCIAL_RECORD_RESOURCE)) {
       return BillingResource.PAYMENT_OBLIGATION_IRI;
-    } else if (resourceID.equals(BillingResource.TRANSACTION_BILL_RESOURCE)) {
-      return BillingResource.INDIVIDUAL_TRANSACTION_IRI;
-    }
+    } 
     String targetClass = this.getResourceTarget(resourceID,
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_FORM_RESOURCE);
     // Handle invalid target type

@@ -12,6 +12,7 @@ This directory provides examples for different applications of the agent.
     - [1.1.4 Array Field](#114-array-field)
     - [1.1.5 Lifecycle-specific Feature](#115-lifecycle-specific-feature)
     - [1.1.6 Role-based data access](#116-role-based-data-access)
+    - [1.1.7 Billing-specific Feature](#117-billing-specific-feature)
   - [1.2 Automated Data Retrieval](#12-automated-data-retrieval)
   - [1.3 SHACL Derivation](#13-shacl-derivation)
     - [1.3.1 Virtual or persist derivation](#131-virtual-or-persist-derivation)
@@ -419,7 +420,7 @@ base:ConceptShape
 
 ### 1.1.7 Billing-specific Feature
 
-When billing is required, users must define a `SHACL` shape for `https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation` and `https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/IndividualTransaction`.
+When billing is required, users must define a `SHACL` shape for `https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation` and the `ServiceAccrualEvent`.
 
 #### 1.1.7.1 PaymentObligation
 
@@ -457,7 +458,7 @@ base:PaymentObligationShape-requesting-party
   sh:maxCount 1 .
 ```
 
-#### 1.1.7.2 IndividualTransaction
+#### 1.1.7.2 ServiceAccrualEvent
 
 This shape must include three Property Shapes to indicate the discounts, additional charges, and chargeable waiting time, and this MUST not be changed. However, users must also include two SHACL rules to:
 
@@ -473,15 +474,19 @@ An example minimal shape is provided below. Users should only change the WHERE c
 > Users can order the service charges by specifying an optional `p2p-o-doc-line:lineIdentifier` line attached to a number stored as a string literal. If there are multiple service charges, these can be ordered through this property.
 
 ```
-base:TransactionShape
+base:ServiceAccrualOccurrenceShape
   a sh:NodeShape ;
-  sh:targetClass fibo-fbc-pas-caa:IndividualTransaction ;
+  sh:targetClass fibo-fbc-pas-fpas:ContractLifecycleEventOccurrence ;
+  sh:property [
+    sh:path fibo-fnd-rel-rel:exemplifies ;
+    sh:hasValue ontoservice:ServiceAccrualEvent ;
+  ] ; 
   sh:property [
     sh:name "chargeable waiting time" ;
     sh:description "Waiting time to be charged" ;
     sh:order 1;
     sh:path (
-      cmns-doc:isAbout
+      [sh:inversePath cmns-doc:isAbout]
     ) ;
     sh:datatype xsd:decimal ;
     sh:minCount 1 ;
@@ -492,7 +497,7 @@ base:TransactionShape
     sh:description "Discounts to be subtracted from the total charge." ;
     sh:order 2;
     sh:path (
-      cmns-doc:isAbout
+      [sh:inversePath cmns-doc:isAbout]
       p2p-o-inv:hasInvoiceLine
     ) ;
     sh:node base:DiscountInvoiceLineShape ;
@@ -503,7 +508,7 @@ base:TransactionShape
     sh:description "Additional charges to be added to total charge." ;
     sh:order 3;
     sh:path (
-      cmns-doc:isAbout
+      [sh:inversePath cmns-doc:isAbout]
       p2p-o-inv:hasInvoiceLine
     ) ;
     sh:node base:AddChargeInvoiceLineShape ;
@@ -543,8 +548,8 @@ base:TransactionShape
       ?invoice_line_variable_amount_instance cmns-qtu:hasNumericValue ?var_price.
     } WHERE { 
       ?this fibo-fnd-rel-rel:involves ?event_id;
-        dc-terms:identifier ?id.
-      ?invoice cmns-doc:isAbout ?this.
+        dc-terms:identifier ?id;
+        cmns-doc:isAbout ?invoice.
       ?iri a fibo-fnd-pas-pas:ServiceAgreement;
         fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/cmns-col:comprises ?event_id;
         fibo-fnd-rel-rel:confers/fibo-fnd-rel-rel:mandates ?price_model.
@@ -588,19 +593,19 @@ base:TransactionShape
         fibo-fnd-acc-cur:hasAmount ?total.
     } WHERE { 
       ?this fibo-fnd-rel-rel:involves ?event_id;
-        dc-terms:identifier ?id.
-      ?invoice cmns-doc:isAbout ?this.
+        dc-terms:identifier ?id;
+        cmns-doc:isAbout ?invoice.
       OPTIONAL{
         SELECT ?invoice (SUM(?charge) AS ?temp_add_charges) WHERE {
-          ?invoice cmns-doc:isAbout ?this;
-            p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasGrosspriceOfItem/cmns-qtu:hasNumericValue ?charge .
+        ?this cmns-doc:isAbout ?invoice.
+          ?invoice p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasGrosspriceOfItem/cmns-qtu:hasNumericValue ?charge .
         } GROUP BY ?invoice 
       }
       BIND(COALESCE(?temp_add_charges,0) AS ?add_charges)
       OPTIONAL{ 
         SELECT ?invoice (SUM(?charge) AS ?temp_discount) WHERE {
-          ?invoice cmns-doc:isAbout ?this;
-            p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasPriceDiscountOfItem/cmns-qtu:hasNumericValue ?charge .
+        ?this cmns-doc:isAbout ?invoice.
+          ?invoice p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasPriceDiscountOfItem/cmns-qtu:hasNumericValue ?charge .
         } GROUP BY ?invoice }
       BIND(COALESCE(?temp_discount,0) AS ?discount)
       BIND(?add_charges-?discount AS ?total)

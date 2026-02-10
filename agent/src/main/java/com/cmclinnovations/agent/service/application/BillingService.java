@@ -126,19 +126,6 @@ public class BillingService {
   }
 
   /**
-   * Creates an instance for the invoice and individual transaction with the
-   * required details.
-   * 
-   * @param resourceId Resource should either be generic or nonbillable
-   *                   transaction.
-   * @param instance   Request parameters containing the invoice parameters.
-   */
-  public ResponseEntity<StandardApiResponse<?>> updateInvoiceInstance(String resourceId, Map<String, Object> instance) {
-    return this.updateService.update(instance.get(QueryResource.ID_KEY).toString(), resourceId, null, instance,
-        TrackActionType.MODIFICATION);
-  }
-
-  /**
    * Retrieves the bill for the specific task.
    * 
    * @param id Target task ID.
