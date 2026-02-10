@@ -816,8 +816,9 @@ public class LifecycleController {
    * 2) service stage - complete: Completes a specific service order
    * 3) service stage - report: Reports an issue with the service order
    * 4) service stage - cancel: Cancels the upcoming service order
-   * 5) archive stage - rescind: Rescind the entire contract
-   * 6) archive stage - terminate: Terminates the entire contract
+   * 5) service stage - accrual: Accrues the billables for the service order
+   * 6) archive stage - rescind: Rescind the entire contract
+   * 7) archive stage - terminate: Terminates the entire contract
    * 
    * The id represents the specific instance if required, else default to form.
    */
@@ -833,6 +834,7 @@ public class LifecycleController {
         case "service;dispatch" -> new OrderType("for order dispatch", LifecycleEventType.SERVICE_ORDER_DISPATCHED);
         case "service;report" -> new OrderType("to report the order", LifecycleEventType.SERVICE_INCIDENT_REPORT);
         case "service;cancel" -> new OrderType("to cancel the order", LifecycleEventType.SERVICE_CANCELLATION);
+        case "service;accrual" -> new OrderType("to accrue the billables on the order", LifecycleEventType.SERVICE_ACCRUAL);
         case "archive;rescind" -> new OrderType("to rescind the contract", LifecycleEventType.ARCHIVE_RESCINDMENT);
         case "archive;terminate" -> new OrderType("to terminate the contract", LifecycleEventType.ARCHIVE_TERMINATION);
         default -> throw new IllegalArgumentException(

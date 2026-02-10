@@ -896,6 +896,10 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/se
 }
 ```
 
+> Service accrual
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/accrual/{id}` endpoint to retrieve the form template associated with the accrual event, where `id` is either the identifier of the occurrence of interest, which may be a accrual instance, or `form` for an empty form template. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ServicAccrualOccurrenceShape` is defined in `./resources/shacl.ttl`, which can be extended for your specific requirements.
+
 #### 2.6.6 Archive contract route
 
 The endpoint serves to archive in progress contracts as well as retrieve all contracts that have expired and are in archive.

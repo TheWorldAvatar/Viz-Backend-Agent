@@ -9,6 +9,8 @@
 @prefix fibo-fbc-pas-fpas:  <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/> .
 @prefix fibo-fnd-dt-oc:     <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/> .
 @prefix fibo-fnd-rel-rel:   <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/> .
+@prefix p2p-o-inv:          <https://purl.org/p2p-o/invoice#> .
+@prefix p2p-o-doc-line:     <https://purl.org/p2p-o/documentline#> .
 
 base:ServiceDispatchOccurrenceShape
   a sh:NodeShape ;
@@ -99,6 +101,62 @@ base:ServiceReportOccurrenceShape
     sh:path rdfs:comment ;
     sh:datatype xsd:string ;
     sh:minCount 0 ;
+    sh:maxCount 1 ;
+  ] .
+
+base:ServicAccrualOccurrenceShape
+  a sh:NodeShape ;
+  sh:targetClass fibo-fbc-pas-fpas:ContractLifecycleEventOccurrence ;
+  sh:property [
+    sh:path fibo-fnd-rel-rel:exemplifies ;
+    sh:hasValue ontoservice:ServiceAccrualEvent ;
+  ] ; 
+  sh:property [
+    sh:name "po";
+    sh:description "The purchase order number";
+    sh:order 0;
+    sh:path (
+      [sh:inversePath cmns-doc:isAbout]
+      p2p-o-inv:invoiceObjectIdentifier
+    ) ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:name "additional charges" ;
+    sh:description "Additional charges to be added to total charge." ;
+    sh:order 1;
+    sh:path (
+      [sh:inversePath cmns-doc:isAbout]
+      p2p-o-inv:hasInvoiceLine
+    ) ;
+    sh:node base:AddChargeInvoiceLineShape ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] .
+
+base:AddChargeInvoiceLineShape
+	a sh:NodeShape ;
+  sh:property [
+    sh:name "amount" ;
+    sh:description "Amount of charges to be added." ;
+    sh:order 0;
+    sh:path (
+      p2p-o-doc-line:hasGrosspriceOfItem 
+      cmns-qtu:hasNumericValue
+      ) ;
+    sh:datatype xsd:decimal ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:name "description" ;
+    sh:description "Describes the nature of the charges." ;
+    sh:order 1;
+    sh:path p2p-o-doc-line:lineNote ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
     sh:maxCount 1 ;
   ] .
 

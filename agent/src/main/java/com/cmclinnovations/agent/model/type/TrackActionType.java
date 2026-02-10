@@ -12,6 +12,7 @@ public enum TrackActionType {
   ISSUE_REPORT("Reported issue"),
   RESCINDMENT("Rescinded"),
   RESCHEDULED("Rescheduled"),
+  ACCRUAL("Accrued billables"),
   IGNORED("");
 
   private final String message;

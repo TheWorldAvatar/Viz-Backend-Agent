@@ -365,7 +365,7 @@ base:ExampleContactGroup
 ### 1.1.5 Lifecycle-specific Feature
 
 > [!IMPORTANT]
-> For any lifecycle form, users will be required to configure the event occurrences using `SHACL` restrictions. Typically, `TerminatedServiceEvent`, `IncidentReportEvent`, `ContractRescission`, and `ContractTermination` can only accommodate a remarks property. For the `ServiceDispatchEvent`, users may assign additional dispatch details through defining more `SHACL` properties. Note that an id field must be included for a `ServiceDispatchEvent`. A sample file has been created in `./shacl.ttl`
+> For any lifecycle form, users will be required to configure the event occurrences using `SHACL` restrictions. Typically, `ContractRescission`, and `ContractTermination` can only accommodate a remarks property. For the `ServiceDispatchEvent`,`ServiceDeliveryEvent`, `TerminatedServiceEvent`, `IncidentReportEvent`, and `ServiceAccrualEvent`, users may assign additional details through defining more `SHACL` properties. A sample file has been created in `./shacl.ttl`
 
 > [!IMPORTANT]
 > Users can configure a pricing model for the agreement following the sample SHACL in `./pricing.ttl`. This will have to be used alongside the corresponding `JSON-LD` at `./jsonld/pricing.jsonld`. Users must update the possible list of classes in line 85 of the SHACL constraints. No modifications are required for the `JSON-LD` file.
@@ -891,6 +891,12 @@ Form branches adapt to selected categories by displaying different field sets. D
 
 > [!IMPORTANT]
 > Users will be required to add a `JSON-LD` for the `ServiceDeliveryEvent`. This event should execute upon completion of the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/complete.jsonld`, and users must not modify line 1 - 41. The relevant route(s) is found in the `Service completion` section [over here](../README.md#265-service-order-route).
+
+> [!IMPORTANT]
+> Users will be required to add a `JSON-LD` for the `ServiceAccrualEvent`. This event should execute after the completion, cancellation, or reported issue for the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/accrual.jsonld`, and users must not modify line 1 - 41. The relevant route(s) is found in the `Service accrual` section [over here](../README.md#265-service-order-route).
+
+> [!TIP]
+> Users can include an optional `JSON-LD` for the `TerminatedServiceEvent` or `IncidentReportEvent`. This event should execute before completion of the service order to cancel or report the service, and can contain additional properties/details following the user's input. Users can reference this file `./jsonld/complete.jsonld` from line 1 - 41, but they must be called `cancel` and `report` respectively.
 
 ### 2.2 Geocoding
 
