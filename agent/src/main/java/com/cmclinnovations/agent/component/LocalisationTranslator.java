@@ -89,6 +89,14 @@ public class LocalisationTranslator {
             .getQueryString() + " " + Rdf.literalOf(LifecycleResource.EVENT_DISPATCH).getQueryString();
       case LocalisationResource.EVENT_STATUS_NEW_KEY:
         yield Rdf.literalOf(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString();
+      case LocalisationResource.EVENT_STATUS_BILLABLE_COMPLETED_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_DELIVERY).getQueryString();
+      case LocalisationResource.EVENT_STATUS_BILLABLE_CANCELLED_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_CANCELLATION)
+            .getQueryString();
+      case LocalisationResource.EVENT_STATUS_BILLABLE_ISSUE_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_INCIDENT_REPORT)
+            .getQueryString();
       default:
         throw new IllegalArgumentException("Unknown event key: " + eventStatusLocalisedKey);
     };
