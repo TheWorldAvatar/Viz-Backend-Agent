@@ -665,7 +665,7 @@ public class LifecycleTaskService {
         break;
       case LifecycleEventType.SERVICE_ACCRUAL:
         remarksMsg = ORDER_ACCRUAL_MESSAGE;
-        successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_ASSIGN_KEY;
+        successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_ACCRUAL_KEY;
         fallbackEvents.add(LifecycleEventType.SERVICE_EXECUTION);
         fallbackEvents.add(LifecycleEventType.SERVICE_CANCELLATION);
         fallbackEvents.add(LifecycleEventType.SERVICE_INCIDENT_REPORT);

@@ -27,6 +27,7 @@ public class LocalisationResource {
   public static final String SUCCESS_CONTRACT_TASK_COMPLETE_KEY = SUCCESS_CONTRACT_PREFIX + "task.complete";
   public static final String SUCCESS_CONTRACT_TASK_CANCEL_KEY = SUCCESS_CONTRACT_PREFIX + "task.cancel";
   public static final String SUCCESS_CONTRACT_TASK_REPORT_KEY = SUCCESS_CONTRACT_PREFIX + "task.report";
+  public static final String SUCCESS_CONTRACT_TASK_ACCRUAL_KEY = SUCCESS_CONTRACT_PREFIX + "task.accrual";
   public static final String SUCCESS_DELETE_KEY = SUCCESS_PREFIX + "delete";
   public static final String SUCCESS_UPDATE_KEY = SUCCESS_PREFIX + "update";
   public static final String ERROR_ADD_KEY = ERROR_PREFIX + "add";
