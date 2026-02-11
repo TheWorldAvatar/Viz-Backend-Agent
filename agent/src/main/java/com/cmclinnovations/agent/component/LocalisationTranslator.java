@@ -56,6 +56,7 @@ public class LocalisationTranslator {
         yield LocalisationResource.EVENT_STATUS_ASSIGNED_KEY;
       case LifecycleResource.EVENT_ORDER_RECEIVED:
         yield LocalisationResource.EVENT_STATUS_NEW_KEY;
+      case LifecycleResource.EVENT_ACCRUAL: // Set a default for event accrual itself
       case LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_DELIVERY:
         yield LocalisationResource.EVENT_STATUS_BILLABLE_COMPLETED_KEY;
       case LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_CANCELLATION:
