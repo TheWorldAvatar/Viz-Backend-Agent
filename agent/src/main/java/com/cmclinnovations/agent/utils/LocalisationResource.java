@@ -61,6 +61,9 @@ public class LocalisationResource {
   public static final String EVENT_STATUS_COMPLETED_KEY = "completed";
   public static final String EVENT_STATUS_ISSUE_KEY = "issue";
   public static final String EVENT_STATUS_NEW_KEY = "new";
+  public static final String EVENT_STATUS_BILLABLE_CANCELLED_KEY = "billableCancelled";
+  public static final String EVENT_STATUS_BILLABLE_COMPLETED_KEY = "billableCompleted";
+  public static final String EVENT_STATUS_BILLABLE_ISSUE_KEY = "billableIssue";
 
   // Private constructor to prevent instantiation
   private LocalisationResource() {

@@ -56,6 +56,12 @@ public class LocalisationTranslator {
         yield LocalisationResource.EVENT_STATUS_ASSIGNED_KEY;
       case LifecycleResource.EVENT_ORDER_RECEIVED:
         yield LocalisationResource.EVENT_STATUS_NEW_KEY;
+      case LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_DELIVERY:
+        yield LocalisationResource.EVENT_STATUS_BILLABLE_COMPLETED_KEY;
+      case LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_CANCELLATION:
+        yield LocalisationResource.EVENT_STATUS_BILLABLE_CANCELLED_KEY;
+      case LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_INCIDENT_REPORT:
+        yield LocalisationResource.EVENT_STATUS_BILLABLE_ISSUE_KEY;
       default:
         throw new IllegalArgumentException("Unknown event: " + event);
     };
