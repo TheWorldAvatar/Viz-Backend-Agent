@@ -30,6 +30,7 @@ import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
@@ -45,7 +46,6 @@ public class LifecycleContractService {
 
   private final LifecycleQueryFactory lifecycleQueryFactory;
   private final Map<Variable, List<Integer>> lifecycleVarSequence = new HashMap<>();
-  private static final String SERVICE_DISCHARGE_MESSAGE = "Service has been completed successfully.";
   private static final Logger LOGGER = LogManager.getLogger(LifecycleContractService.class);
 
   private static final boolean IS_CONTRACT = true;
@@ -313,7 +313,8 @@ public class LifecycleContractService {
     String query = this.lifecycleQueryFactory.getExpiredActiveContractQuery();
     Queue<SparqlBinding> results = this.getService.getInstances(query);
     Map<String, Object> paramTemplate = new HashMap<>();
-    paramTemplate.put(LifecycleResource.REMARKS_KEY, SERVICE_DISCHARGE_MESSAGE);
+    paramTemplate.put(LifecycleResource.REMARKS_KEY,
+        LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_TASK_COMPLETE_KEY));
     LOGGER.debug("Instanting completed occurrences for these contracts...");
     while (!results.isEmpty()) {
       Map<String, Object> params = new HashMap<>(paramTemplate);
