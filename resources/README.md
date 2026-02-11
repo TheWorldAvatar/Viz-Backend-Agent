@@ -460,120 +460,17 @@ base:PaymentObligationShape-requesting-party
 
 #### 1.1.7.2 ServiceAccrualEvent
 
-This shape must include three Property Shapes to indicate the discounts, additional charges, and chargeable waiting time, and this MUST not be changed. However, users must also include one SHACL rules to:
+This shape must include three Property Shapes to indicate the discounts and additional charges, and this MUST not be changed. However, users must also include one SHACL rules to:
 
 1. Derive the service charges for the event
 
-An example minimal shape is provided below. Users should only change the `sh:path` for each property shape and the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge.
+An example minimal shape is provided in the `ServiceAccrualOccurrenceShape` within the `shacl.ttl`. Users should only change the `sh:path` for each property shape and the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge.
 
 > [!NOTE]
 > Users can apply bold formatting to the description of service charges by wrapping their strings with `<b>` html tags.
 
 > [!TIP]
 > Users can order the service charges by specifying an optional `p2p-o-doc-line:lineIdentifier` line attached to a number stored as a string literal. If there are multiple service charges, these can be ordered through this property.
-
-```
-base:ServiceAccrualOccurrenceShape
-  a sh:NodeShape ;
-  sh:targetClass fibo-fbc-pas-fpas:ContractLifecycleEventOccurrence ;
-  sh:property [
-    sh:path fibo-fnd-rel-rel:exemplifies ;
-    sh:hasValue ontoservice:ServiceAccrualEvent ;
-  ] ; 
-  sh:property [
-    sh:name "chargeable waiting time" ;
-    sh:description "Waiting time to be charged" ;
-    sh:order 1;
-    sh:path (
-      [sh:inversePath cmns-doc:isAbout]
-    ) ;
-    sh:datatype xsd:decimal ;
-    sh:minCount 1 ;
-    sh:maxCount 1 ;
-  ] ;
-  sh:property [
-    sh:name "discounts" ;
-    sh:description "Discounts to be subtracted from the total charge." ;
-    sh:order 2;
-    sh:path (
-      [sh:inversePath cmns-doc:isAbout]
-      p2p-o-inv:hasInvoiceLine
-    ) ;
-    sh:node base:DiscountInvoiceLineShape ;
-    sh:minCount 0 ;
-  ] ;
-  sh:property [
-    sh:name "additional charges" ;
-    sh:description "Additional charges to be added to total charge." ;
-    sh:order 3;
-    sh:path (
-      [sh:inversePath cmns-doc:isAbout]
-      p2p-o-inv:hasInvoiceLine
-    ) ;
-    sh:node base:AddChargeInvoiceLineShape ;
-    sh:minCount 0 ;
-  ] ;
-  sh:rule [
-    a sh:SPARQLRule ;
-    sh:order 0 ;
-    sh:construct """
-    PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>
-    PREFIX cmns-doc: <https://www.omg.org/spec/Commons/Documents/>
-    PREFIX cmns-dsg: <https://www.omg.org/spec/Commons/Designators/>
-    PREFIX cmns-dt:  <https://www.omg.org/spec/Commons/DatesAndTimes/>
-    PREFIX cmns-qtu: <https://www.omg.org/spec/Commons/QuantitiesAndUnits/>
-    PREFIX dc-terms: <http://purl.org/dc/terms/>
-
-    PREFIX fibo-fnd-acc-cur: <https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/>
-    PREFIX fibo-fnd-arr-lif: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/>
-    PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
-    PREFIX fibo-fnd-pas-pas: <https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/>
-    PREFIX p2p-o-doc-line:   <https://purl.org/p2p-o/documentline#>
-    PREFIX p2p-o-inv:        <https://purl.org/p2p-o/invoice#>
-    PREFIX ontoservice:      <https://www.theworldavatar.com/kg/ontoservice/>
-    PREFIX xsd:              <http://www.w3.org/2001/XMLSchema#>
-
-    CONSTRUCT {
-      ?invoice p2p-o-inv:hasInvoiceLine ?invoice_line_base_instance;
-        p2p-o-inv:hasInvoiceLine ?invoice_line_variable_instance.
-      ?invoice_line_base_instance a p2p-o-doc-line:InvoiceLine;
-        p2p-o-doc-line:lineIdentifier "0"^^xsd:string;
-        p2p-o-doc-line:lineNote "Base fee charge"^^xsd:string;
-        p2p-o-doc-line:hasGrosspriceOfItem ?invoice_line_base_amount_instance.
-      ?invoice_line_base_amount_instance cmns-qtu:hasNumericValue ?base_fee.
-      ?invoice_line_variable_instance a p2p-o-doc-line:InvoiceLine;
-        p2p-o-doc-line:lineIdentifier "1"^^xsd:string;
-        p2p-o-doc-line:lineNote ?service_price_description;
-        p2p-o-doc-line:hasGrosspriceOfItem ?invoice_line_variable_amount_instance.
-      ?invoice_line_variable_amount_instance cmns-qtu:hasNumericValue ?var_price.
-    } WHERE { 
-      ?this cmns-dt:succeeds ?event_id;
-        dc-terms:identifier ?id.
-      ?invoice cmns-doc:isAbout ?this.
-      ?iri a fibo-fnd-pas-pas:ServiceAgreement;
-        fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/cmns-col:comprises ?event_id;
-        fibo-fnd-rel-rel:confers/fibo-fnd-rel-rel:mandates ?price_model.
-      ?event_id ^cmns-doc:refersTo/cmns-doc:records/cmns-qtu:hasQuantityValue ?weight;
-        fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent;
-        cmns-dsg:describes ontoservice:CompletedStatus .
-      ?price_model cmns-qtu:hasArgument/fibo-fnd-acc-cur:hasAmount ?base_fee;
-        cmns-qtu:hasArgument ?var_fee_instance.
-      ?base_fee ^fibo-fnd-acc-cur:hasAmount/a ontoservice:BaseFee.
-      ?var_fee_instance a ontoservice:VariableFee;
-        fibo-fnd-acc-cur:hasAmount ?var_fee;
-        cmns-qtu:hasLowerBound/cmns-qtu:hasNumericValue ?lower_bound.
-      BIND(IF(BOUND(?status),
-        ?var_fee * IF(?weight > ?lower_bound, ?weight - ?lower_bound, 0.0),
-        "0"^^xsd:decimal) AS ?var_price)
-      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/base/",?id)) AS ?invoice_line_base_instance)
-      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/base/amount/",?id)) AS ?invoice_line_base_amount_instance)
-      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/var/",?id)) AS ?invoice_line_variable_instance)
-      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/var/amount/",?id)) AS ?invoice_line_variable_amount_instance)
-      BIND(CONCAT("Variable fee charge - Rate: $",STR(?var_fee),"/kg; From: ",  STR(?lower_bound), "tons; Total weight: ", STR(?weight), "kg") AS ?service_price_description)
-    }
-    """
-  ] .
-```
 
 ### 1.2 Automated Data Retrieval
 

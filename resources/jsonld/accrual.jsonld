@@ -80,9 +80,17 @@
               "prefix": "https://theworldavatar.io/kg/account/invoice/charges/"
             },
             "@type": "https://purl.org/p2p-o/documentline#InvoiceLine",
-            "https://purl.org/p2p-o/documentline#lineNote": {
-              "@replace": "description",
-              "@type": "literal"
+            "https://purl.org/p2p-o/item#hasItem": {
+              "@id": {
+                "@replace": "id",
+                "@type": "iri",
+                "prefix": "https://theworldavatar.io/kg/account/invoice/additional/charges/item/"
+              },
+              "@type": "https://purl.org/p2p-o/item#Item",
+              "https://purl.org/p2p-o/item#itemDescription": {
+                "@replace": "description",
+                "@type": "literal"
+              }
             },
             "https://purl.org/p2p-o/documentline#hasGrosspriceOfItem": {
               "@id": {
