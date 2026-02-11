@@ -339,13 +339,14 @@ public class LifecycleController {
   }
 
   /**
-   * Updates a completed, saved, or dispatch event. Valid types include:
+   * Updates a completed, saved, dispatch, or accrual event. Valid types include:
    * 1) dispatch: Assign dispatch details for the specified event
    * 2) saved: Saves a completed records in a pending state
    * 3) complete: Completes a specific service order
+   * 4) accrual: Accrues the billables for a specific service order
    */
   @PutMapping("/service/{type}")
-  public ResponseEntity<StandardApiResponse<?>> assignDispatchDetails(@PathVariable String type,
+  public ResponseEntity<StandardApiResponse<?>> updateTaskEventDetails(@PathVariable String type,
       @RequestBody Map<String, Object> params) {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
@@ -369,10 +370,15 @@ public class LifecycleController {
           eventType = LifecycleEventType.SERVICE_EXECUTION;
           trackAction = TrackActionType.SAVED_COMPLETION;
           break;
+        case "accrual":
+          LOGGER.info("Received request to accrue the billable details for a service order...");
+          eventType = LifecycleEventType.SERVICE_ACCRUAL;
+          trackAction = TrackActionType.ACCRUAL;
+          break;
         default:
           break;
       }
-      return this.lifecycleTaskService.genDispatchOrDeliveryOccurrence(params, eventType, trackAction);
+      return this.lifecycleTaskService.genServiceEventOccurrence(params, eventType, trackAction);
     });
   }
 
@@ -834,7 +840,8 @@ public class LifecycleController {
         case "service;dispatch" -> new OrderType("for order dispatch", LifecycleEventType.SERVICE_ORDER_DISPATCHED);
         case "service;report" -> new OrderType("to report the order", LifecycleEventType.SERVICE_INCIDENT_REPORT);
         case "service;cancel" -> new OrderType("to cancel the order", LifecycleEventType.SERVICE_CANCELLATION);
-        case "service;accrual" -> new OrderType("to accrue the billables on the order", LifecycleEventType.SERVICE_ACCRUAL);
+        case "service;accrual" ->
+          new OrderType("to accrue the billables on the order", LifecycleEventType.SERVICE_ACCRUAL);
         case "archive;rescind" -> new OrderType("to rescind the contract", LifecycleEventType.ARCHIVE_RESCINDMENT);
         case "archive;terminate" -> new OrderType("to terminate the contract", LifecycleEventType.ARCHIVE_TERMINATION);
         default -> throw new IllegalArgumentException(

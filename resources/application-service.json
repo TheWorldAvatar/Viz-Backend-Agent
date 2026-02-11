@@ -1,6 +1,7 @@
 {
   "identifier": "jsonld_file_name",
   "idtwo": "jsonld_file_name_two",
+  "accrual": "accrual",
   "complete": "complete",
   "dispatch": "dispatch",
   "pricing": "pricing",

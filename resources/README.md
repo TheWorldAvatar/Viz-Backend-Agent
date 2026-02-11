@@ -460,12 +460,11 @@ base:PaymentObligationShape-requesting-party
 
 #### 1.1.7.2 ServiceAccrualEvent
 
-This shape must include three Property Shapes to indicate the discounts, additional charges, and chargeable waiting time, and this MUST not be changed. However, users must also include two SHACL rules to:
+This shape must include three Property Shapes to indicate the discounts, additional charges, and chargeable waiting time, and this MUST not be changed. However, users must also include one SHACL rules to:
 
 1. Derive the service charges for the event
-2. Derive the total bill amount from the service price, discounts, and additional charges for that event
 
-An example minimal shape is provided below. Users should only change the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge.
+An example minimal shape is provided below. Users should only change the `sh:path` for each property shape and the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge.
 
 > [!NOTE]
 > Users can apply bold formatting to the description of service charges by wrapping their strings with `<b>` html tags.
@@ -521,6 +520,7 @@ base:ServiceAccrualOccurrenceShape
     PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>
     PREFIX cmns-doc: <https://www.omg.org/spec/Commons/Documents/>
     PREFIX cmns-dsg: <https://www.omg.org/spec/Commons/Designators/>
+    PREFIX cmns-dt:  <https://www.omg.org/spec/Commons/DatesAndTimes/>
     PREFIX cmns-qtu: <https://www.omg.org/spec/Commons/QuantitiesAndUnits/>
     PREFIX dc-terms: <http://purl.org/dc/terms/>
 
@@ -547,9 +547,9 @@ base:ServiceAccrualOccurrenceShape
         p2p-o-doc-line:hasGrosspriceOfItem ?invoice_line_variable_amount_instance.
       ?invoice_line_variable_amount_instance cmns-qtu:hasNumericValue ?var_price.
     } WHERE { 
-      ?this fibo-fnd-rel-rel:involves ?event_id;
-        dc-terms:identifier ?id;
-        cmns-doc:isAbout ?invoice.
+      ?this cmns-dt:succeeds ?event_id;
+        dc-terms:identifier ?id.
+      ?invoice cmns-doc:isAbout ?this.
       ?iri a fibo-fnd-pas-pas:ServiceAgreement;
         fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/cmns-col:comprises ?event_id;
         fibo-fnd-rel-rel:confers/fibo-fnd-rel-rel:mandates ?price_model.
@@ -570,46 +570,6 @@ base:ServiceAccrualOccurrenceShape
       BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/var/",?id)) AS ?invoice_line_variable_instance)
       BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/var/amount/",?id)) AS ?invoice_line_variable_amount_instance)
       BIND(CONCAT("Variable fee charge - Rate: $",STR(?var_fee),"/kg; From: ",  STR(?lower_bound), "tons; Total weight: ", STR(?weight), "kg") AS ?service_price_description)
-    }
-    """
-  ] ;
-  sh:rule [
-    a sh:SPARQLRule ;
-    sh:order 1 ;
-    sh:construct """
-    PREFIX cmns-doc:        <https://www.omg.org/spec/Commons/Documents/>
-    PREFIX cmns-qtu:        <https://www.omg.org/spec/Commons/QuantitiesAndUnits/>
-    PREFIX dc-terms:        <http://purl.org/dc/terms/>
-    PREFIX fibo-fnd-acc-cur:<https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/>
-    PREFIX fibo-fnd-rel-rel:<https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
-    PREFIX p2p-o-doc-line:  <https://purl.org/p2p-o/documentline#>
-    PREFIX p2p-o-inv:       <https://purl.org/p2p-o/invoice#>
-    PREFIX ontoservice:     <https://www.theworldavatar.com/kg/ontoservice/>
-    PREFIX xsd:             <http://www.w3.org/2001/XMLSchema#>
-
-    CONSTRUCT {
-      ?this fibo-fnd-acc-cur:hasMonetaryAmount ?total_instance.
-      ?total_instance a fibo-fnd-acc-cur:CalculatedPrice; 
-        fibo-fnd-acc-cur:hasAmount ?total.
-    } WHERE { 
-      ?this fibo-fnd-rel-rel:involves ?event_id;
-        dc-terms:identifier ?id;
-        cmns-doc:isAbout ?invoice.
-      OPTIONAL{
-        SELECT ?invoice (SUM(?charge) AS ?temp_add_charges) WHERE {
-        ?this cmns-doc:isAbout ?invoice.
-          ?invoice p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasGrosspriceOfItem/cmns-qtu:hasNumericValue ?charge .
-        } GROUP BY ?invoice 
-      }
-      BIND(COALESCE(?temp_add_charges,0) AS ?add_charges)
-      OPTIONAL{ 
-        SELECT ?invoice (SUM(?charge) AS ?temp_discount) WHERE {
-        ?this cmns-doc:isAbout ?invoice.
-          ?invoice p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasPriceDiscountOfItem/cmns-qtu:hasNumericValue ?charge .
-        } GROUP BY ?invoice }
-      BIND(COALESCE(?temp_discount,0) AS ?discount)
-      BIND(?add_charges-?discount AS ?total)
-      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/total/",?id)) AS ?total_instance)
     }
     """
   ] .
@@ -898,7 +858,7 @@ Form branches adapt to selected categories by displaying different field sets. D
 > Users will be required to add a `JSON-LD` for the `ServiceDeliveryEvent`. This event should execute upon completion of the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/complete.jsonld`, and users must not modify line 1 - 41. The relevant route(s) is found in the `Service completion` section [over here](../README.md#265-service-order-route).
 
 > [!IMPORTANT]
-> Users will be required to add a `JSON-LD` for the `ServiceAccrualEvent`. This event should execute after the completion, cancellation, or reported issue for the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/accrual.jsonld`, and users must not modify line 1 - 41. The relevant route(s) is found in the `Service accrual` section [over here](../README.md#265-service-order-route).
+> Users will be required to add a `JSON-LD` for the `ServiceAccrualEvent`. This event should execute after the completion, cancellation, or reported issue for the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/accrual.jsonld`, and users must not modify line 1 - 31. The relevant route(s) is found in the `Service accrual` section [over here](../README.md#265-service-order-route).
 
 > [!TIP]
 > Users can include an optional `JSON-LD` for the `TerminatedServiceEvent` or `IncidentReportEvent`. This event should execute before completion of the service order to cancel or report the service, and can contain additional properties/details following the user's input. Users can reference this file `./jsonld/complete.jsonld` from line 1 - 41, but they must be called `cancel` and `report` respectively.

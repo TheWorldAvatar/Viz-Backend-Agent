@@ -900,13 +900,12 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/se
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/accrual/{id}` endpoint to retrieve the form template associated with the accrual event, where `id` is either the identifier of the occurrence of interest, which may be a accrual instance, or `form` for an empty form template. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ServicAccrualOccurrenceShape` is defined in `./resources/shacl.ttl`, which can be extended for your specific requirements. Please also read [this section for shape definition](./resources/README.md#1172-serviceaccrualevent).
 
-Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/dispatch` endpoint to assign dispatch details for a target order. The details are configurable using the `ServicAccrualOccurrenceShape` and an additional `dispatch.jsonld` file with the corresponding identifier as `dispatch` in the `application-service.json`. A sample file is defined in `./resources/jsonld/dispatch.jsonld`, with line 1 - 32 being required. It is recommended that the id field comes with a prefix, following the frontend actions. Note that this route does require the following `JSON` request parameters:
+Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/accrual` endpoint to assign billable details for a target order. The details are configurable using the `ServiceAccrualOccurrenceShape` and an additional `accrual.jsonld` file with the corresponding identifier as `accrual` in the `application-service.json`. A sample file is defined in `./resources/jsonld/accrual.jsonld`, with line 1 - 31 being required. It is recommended that the id field comes with a prefix, following the frontend actions. Note that this route does require the following `JSON` request parameters:
 
 ```json
 {
   /* parameters */
   "contract": "The target contract IRI",
-  "order": "The target order IRI",
   "date": "Scheduled date of the order delivery in the YYYY-MM-DD format"
 }
 ```

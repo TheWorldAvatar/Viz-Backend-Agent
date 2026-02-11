@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.service.application;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,6 +53,7 @@ public class LifecycleTaskService {
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
   private static final String ORDER_COMPLETE_MESSAGE = "Order has been completed successfully.";
+  private static final String ORDER_ACCRUAL_MESSAGE = "Billables have been accrued successfully.";
   private static final int MIN_INDEX = -5;
   private static final int NUM_DAY_ORDER_GEN = 30;
   static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
@@ -636,29 +638,37 @@ public class LifecycleTaskService {
   }
 
   /**
-   * Generate an occurrence for the order dispatch or delivery event of a
-   * specified contract.
+   * Generate an occurrence for the order dispatch, delivery, or accrual event of
+   * a specified contract.
    * 
-   * @param params    Required parameters with configurable parameters to
-   *                  instantiate the occurrence.
-   * @param eventType Target event type.
+   * @param params      Required parameters with configurable parameters to
+   *                    instantiate the occurrence.
+   * @param eventType   Target event type.
+   * @param trackAction The action required for tracking.
    */
-  public ResponseEntity<StandardApiResponse<?>> genDispatchOrDeliveryOccurrence(Map<String, Object> params,
+  public ResponseEntity<StandardApiResponse<?>> genServiceEventOccurrence(Map<String, Object> params,
       LifecycleEventType eventType, TrackActionType action) {
     String remarksMsg;
     String successMsgId;
-    LifecycleEventType succeedsEventType;
+    List<LifecycleEventType> fallbackEvents = new ArrayList<>();
     params.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
     switch (eventType) {
       case LifecycleEventType.SERVICE_EXECUTION:
         remarksMsg = ORDER_COMPLETE_MESSAGE;
         successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_COMPLETE_KEY;
-        succeedsEventType = LifecycleEventType.SERVICE_ORDER_DISPATCHED;
+        fallbackEvents.add(LifecycleEventType.SERVICE_ORDER_DISPATCHED);
         break;
       case LifecycleEventType.SERVICE_ORDER_DISPATCHED:
         remarksMsg = ORDER_DISPATCH_MESSAGE;
         successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_ASSIGN_KEY;
-        succeedsEventType = LifecycleEventType.SERVICE_ORDER_RECEIVED;
+        fallbackEvents.add(LifecycleEventType.SERVICE_ORDER_RECEIVED);
+        break;
+      case LifecycleEventType.SERVICE_ACCRUAL:
+        remarksMsg = ORDER_ACCRUAL_MESSAGE;
+        successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_ASSIGN_KEY;
+        fallbackEvents.add(LifecycleEventType.SERVICE_EXECUTION);
+        fallbackEvents.add(LifecycleEventType.SERVICE_CANCELLATION);
+        fallbackEvents.add(LifecycleEventType.SERVICE_INCIDENT_REPORT);
         break;
       default:
         throw new IllegalStateException(
@@ -671,16 +681,23 @@ public class LifecycleTaskService {
     params.put(LifecycleResource.STAGE_KEY, stage);
     params.put(LifecycleResource.REMARKS_KEY, remarksMsg);
     String occurrenceId = params.get(QueryResource.ID_KEY).toString();
-    try {
-      // Get previous occurrence ID for the same event type if they exist
-      occurrenceId = this.getPreviousOccurrence(QueryResource.ID_KEY, eventType, params);
-      params.put(QueryResource.ID_KEY, occurrenceId);
-    } catch (NullPointerException e) {
-      // Fail silently as there is no previous occurrence and we should create a new
-      // occurrence accordingly
+    // Get previous occurrence ID for the same event type if they exist and update
+    // it; Can fail this silently
+    String currentOccurrenceId = this.getPreviousOccurrence(QueryResource.ID_KEY, eventType, params);
+    if (currentOccurrenceId != null) {
+      params.put(QueryResource.ID_KEY, currentOccurrenceId);
     }
-    params.put(LifecycleResource.ORDER_KEY,
-        this.getPreviousOccurrence(QueryResource.IRI_KEY, succeedsEventType, params));
+    String previousOccurrenceId = null;
+    for (LifecycleEventType fallbackEvent : fallbackEvents) {
+      previousOccurrenceId = this.getPreviousOccurrence(QueryResource.IRI_KEY, fallbackEvent, params);
+      if (previousOccurrenceId != null) {
+        break;
+      }
+    }
+    if (previousOccurrenceId == null) {
+      throw new NullPointerException("No valid previous occurrence found!");
+    }
+    params.put(LifecycleResource.ORDER_KEY, previousOccurrenceId);
     ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(occurrenceId, eventType.getId(),
         successMsgId, params, TrackActionType.IGNORED);
     if (response.getStatusCode() == HttpStatus.OK) {
@@ -715,10 +732,13 @@ public class LifecycleTaskService {
    *                  query.
    */
   private String getPreviousOccurrence(String field, LifecycleEventType eventType, Map<String, Object> params) {
-    return this.lifecycleQueryService
+    Queue<SparqlBinding> results = this.lifecycleQueryService
         .getContractEventQuery(params.get(LifecycleResource.CONTRACT_KEY).toString(),
-            params.get(LifecycleResource.DATE_KEY).toString(), eventType)
-        .poll().getFieldValue(field);
+            params.get(LifecycleResource.DATE_KEY).toString(), eventType);
+    if (results.isEmpty()) {
+      return null;
+    }
+    return results.poll().getFieldValue(field);
   }
 
   /**
@@ -727,11 +747,10 @@ public class LifecycleTaskService {
    * @param params Mappings containing the contract and date value for the query.
    */
   public String getPreviousOccurrenceEnum(Map<String, Object> params) {
-    try {
-      // try getting dispatch event first
-      this.getPreviousOccurrence(QueryResource.IRI_KEY, LifecycleEventType.SERVICE_ORDER_DISPATCHED, params);
+    // try getting dispatch event first
+    if (this.getPreviousOccurrence(QueryResource.IRI_KEY, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+        params) != null) {
       return "1";
-    } catch (NullPointerException e) {
     }
     return "0";
   }
