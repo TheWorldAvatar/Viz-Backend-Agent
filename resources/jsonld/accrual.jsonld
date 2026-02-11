@@ -33,7 +33,7 @@
       "@id": {
         "@replace": "id",
         "@type": "iri",
-        "prefix": "https://theworldavatar.io/kg/account/invoice/"
+        "prefix": "https://www.example.com/account/invoice/"
       },
       "@type": "https://purl.org/p2p-o/document#E-Invoice",
       "https://www.theworldavatar.com/kg/bnl/hasChargeableWaitingTime": {
@@ -49,7 +49,7 @@
             "@id": {
               "@replace": "id",
               "@type": "iri",
-              "prefix": "https://theworldavatar.io/kg/account/invoice/discount/"
+              "prefix": "https://www.example.com/account/invoice/discount/"
             },
             "@type": "https://purl.org/p2p-o/documentline#InvoiceLine",
             "https://purl.org/p2p-o/documentline#lineNote": {
@@ -60,7 +60,7 @@
               "@id": {
                 "@replace": "id",
                 "@type": "iri",
-                "prefix": "https://theworldavatar.io/kg/account/invoice/discount/amount/"
+                "prefix": "https://www.example.com/account/invoice/discount/amount/"
               },
               "https://www.omg.org/spec/Commons/QuantitiesAndUnits/hasNumericValue": {
                 "@replace": "discount",
@@ -77,14 +77,14 @@
             "@id": {
               "@replace": "id",
               "@type": "iri",
-              "prefix": "https://theworldavatar.io/kg/account/invoice/charges/"
+              "prefix": "https://www.example.com/account/invoice/charges/"
             },
             "@type": "https://purl.org/p2p-o/documentline#InvoiceLine",
             "https://purl.org/p2p-o/item#hasItem": {
               "@id": {
                 "@replace": "id",
                 "@type": "iri",
-                "prefix": "https://theworldavatar.io/kg/account/invoice/additional/charges/item/"
+                "prefix": "https://www.example.com/account/invoice/additional/charges/item/"
               },
               "@type": "https://purl.org/p2p-o/item#Item",
               "https://purl.org/p2p-o/item#itemDescription": {
@@ -96,7 +96,7 @@
               "@id": {
                 "@replace": "id",
                 "@type": "iri",
-                "prefix": "https://theworldavatar.io/kg/account/invoice/additional/charges/amount/"
+                "prefix": "https://www.example.com/account/invoice/additional/charges/amount/"
               },
               "https://www.omg.org/spec/Commons/QuantitiesAndUnits/hasNumericValue": {
                 "@replace": "amount",
