@@ -1,9 +1,16 @@
 # Change Log
 
+## 1.39.0
+
+- Removed billing activities, non-billable, billable changelog routes
+- Added a service task route to accrue billable details
+- Updated the billable details to follow the latest ontology representation
+- Fix to exclude unbound variables in SHACL derivation using CONSTRUCT
+
 ## 1.38.0
 
 - Modified invoice form route to always expect ID
-- Modiifed invoice creation route to invoice update route (POST to PUT)
+- Modified invoice creation route to invoice update route (POST to PUT)
 - Modified SHACL array variable handling
 
 ## 1.37.1
