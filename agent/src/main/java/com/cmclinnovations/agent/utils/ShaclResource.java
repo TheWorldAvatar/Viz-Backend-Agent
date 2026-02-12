@@ -41,6 +41,7 @@ public class ShaclResource {
   public static final String ORDER_PROPERTY = "order";
   public static final String SHACL_ORDER_PROPERTY = SHACL_PREFIX + ORDER_PROPERTY;
   public static final String GROUP_PROPERTY = "group";
+  public static final String SHACL_GROUP_PROPERTY = SHACL_PREFIX + GROUP_PROPERTY;
   public static final String PROPERTY_PROPERTY = "property";
   public static final String DEFAULT_VAL_PROPERTY = "defaultValue";
   public static final String SHACL_DEFAULT_VAL_PROPERTY = SHACL_PREFIX + DEFAULT_VAL_PROPERTY;
@@ -121,13 +122,13 @@ public class ShaclResource {
   }
 
   /**
-   * Find the best matching fields in the mappings based on the field list.
+   * Find the best matching array group in the mappings based on the field list.
    * 
    * @param fields           Full list of fields.
    * @param arrayVarsMapping Mappings between a group and their fields.
    */
-  public static Set<String> findBestMatchingGroup(Set<String> fields, Map<String, Set<String>> arrayVarsMapping) {
-    String bestMatchGroup = arrayVarsMapping.entrySet().stream().map(entry -> {
+  public static String findBestMatchingGroup(Set<String> fields, Map<String, Set<String>> arrayVarsMapping) {
+    return arrayVarsMapping.entrySet().stream().map(entry -> {
       // Extract matching number of fields
       Set<String> intersection = new HashSet<>(entry.getValue());
       intersection.retainAll(fields);
@@ -136,6 +137,5 @@ public class ShaclResource {
         // Retrieve the group with the most matches
         .max(Comparator.comparingInt(Map.Entry::getValue))
         .map(Map.Entry::getKey).orElse(null);
-    return arrayVarsMapping.getOrDefault(bestMatchGroup, new HashSet<>());
   }
 }

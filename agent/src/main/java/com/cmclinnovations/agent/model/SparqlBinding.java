@@ -36,7 +36,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 public class SparqlBinding {
   private Map<String, SparqlResponseField> bindings;
-  private Map<String, List<SparqlResponseField>> bindingList;
+  private Map<String, List<Map<String, SparqlResponseField>>> arrayBindingFields;
   private List<Variable> sequence;
 
   /**
@@ -46,7 +46,7 @@ public class SparqlBinding {
    */
   public SparqlBinding() {
     this.bindings = new HashMap<>();
-    this.bindingList = new HashMap<>();
+    this.arrayBindingFields = new HashMap<>();
     this.sequence = new ArrayList<>();
   }
 
@@ -84,28 +84,31 @@ public class SparqlBinding {
    *         List<SparqlResponseField> as its values.
    */
   public Map<String, Object> get() {
-    Map<String, Object> resultBindings = new HashMap<>();
-    // When there are array results,
-    if (!this.bindingList.isEmpty()) {
-      // Append array results to the result mappings
-      this.bindingList.keySet().forEach(arrayField -> {
-        resultBindings.put(arrayField,
-            this.bindingList.get(arrayField));
-        // Remove the existing mapping, so that it is not overwritten
-        this.bindings.remove(arrayField);
-      });
-    }
-    // Place the remaining bindings that exclude any array fields
-    resultBindings.putAll(this.bindings);
     // Return unsorted bindings if not required
     if (this.sequence.isEmpty()) {
+      Map<String, Object> resultBindings = new HashMap<>();
+      resultBindings.putAll(this.bindings);
+      resultBindings.putAll(this.arrayBindingFields);
       return resultBindings;
     }
-    // Else, sort the map if there is a sequence
+    // Else, iterate through the variable sequence
     Map<String, Object> sortedBindings = new LinkedHashMap<>();
     this.sequence.forEach(variable -> {
       String field = variable.getVarName();
-      sortedBindings.put(field, resultBindings.get(field));
+      // Attempt to retrieve the field directly from the bindings for sorting
+      if (this.bindings.containsKey(field)) {
+        sortedBindings.put(field, this.bindings.get(field));
+        // Search through the array if no direct field is found
+      } else if (!this.arrayBindingFields.isEmpty()) {
+        // Append array results to the result mappings
+        this.arrayBindingFields.keySet().forEach(arrayField -> {
+          List<Map<String, SparqlResponseField>> arrayFieldList = this.arrayBindingFields.get(arrayField);
+          // Add array results if it has not been added and contains the current field
+          if (!sortedBindings.containsKey(arrayField) && arrayFieldList.get(0).containsKey(field)) {
+            sortedBindings.put(arrayField, arrayFieldList);
+          }
+        });
+      }
     });
     return sortedBindings;
   }
@@ -121,8 +124,8 @@ public class SparqlBinding {
         .collect(Collectors.toSet());
   }
 
-  public List<SparqlResponseField> getList(String field) {
-    return this.bindingList.get(QueryResource.genVariable(field).getVarName());
+  public List<Map<String, SparqlResponseField>> getList(String field) {
+    return this.arrayBindingFields.get(QueryResource.genVariable(field).getVarName());
   }
 
   /**
@@ -135,6 +138,29 @@ public class SparqlBinding {
   }
 
   /**
+   * Inits any field arrays.
+   * 
+   * @param arrayVars Mappings between each array group and their individual
+   *                  fields.
+   */
+  public void initArray(Map<String, Set<String>> arrayVars) {
+    if (this.arrayBindingFields.isEmpty() && !arrayVars.isEmpty()) {
+      String bestMatchGroup = ShaclResource.findBestMatchingGroup(this.getFields(), arrayVars);
+      List<Map<String, SparqlResponseField>> currentArrayGroup = new ArrayList<>();
+      Map<String, SparqlResponseField> currentArrayFields = new HashMap<>();
+
+      if (bestMatchGroup != null) {
+        arrayVars.get(bestMatchGroup).forEach((field) -> {
+          currentArrayFields.put(QueryResource.genVariable(field).getVarName(), this.getFieldResponse(field));
+          this.bindings.remove(field); // Remove field from bindings as they should now be an array
+        });
+        currentArrayGroup.add(currentArrayFields);
+        this.arrayBindingFields.put(bestMatchGroup, currentArrayGroup);
+      }
+    }
+  }
+
+  /**
    * Add fields as an array only if there are distinct values.
    * 
    * @param secBinding The secondary binding for checking.
@@ -142,20 +168,14 @@ public class SparqlBinding {
    *                   fields.
    */
   public void addFieldArray(SparqlBinding secBinding, Map<String, Set<String>> arrayVars) {
-    if (this.bindingList.isEmpty()) {
-      Set<String> bestMatchFields = ShaclResource.findBestMatchingGroup(this.getFields(), arrayVars);
-      bestMatchFields.forEach((field) -> {
-        List<SparqlResponseField> initFields = new ArrayList<>();
-        initFields.add(this.getFieldResponse(field));
-        this.bindingList.put(QueryResource.genVariable(field).getVarName(), initFields);
-      });
-    }
-    Set<String> bestMatchFields = ShaclResource.findBestMatchingGroup(secBinding.getFields(), arrayVars);
-    bestMatchFields.forEach((field) -> {
-      List<SparqlResponseField> fields = this.bindingList.computeIfAbsent(QueryResource.genVariable(field).getVarName(),
-          k -> new ArrayList<>());
-      fields.add(secBinding.getFieldResponse(field));
+    String bestMatchGroup = ShaclResource.findBestMatchingGroup(secBinding.getFields(), arrayVars);
+    Map<String, SparqlResponseField> targetMergedArrayFields = new HashMap<>();
+    arrayVars.get(bestMatchGroup).forEach((field) -> {
+      targetMergedArrayFields.put(QueryResource.genVariable(field).getVarName(), secBinding.getFieldResponse(field));
+      this.bindings.remove(field); // Remove field from bindings as they should now be an array
     });
+    this.arrayBindingFields.computeIfAbsent(bestMatchGroup, k -> new ArrayList<>())
+        .add(targetMergedArrayFields);
   }
 
   /**
@@ -213,11 +233,12 @@ public class SparqlBinding {
    */
   public void merge(SparqlBinding other) {
     Map<String, Object> otherValues = other.get();
-    otherValues.forEach((key, value) -> {
+    otherValues.forEach((field, value) -> {
       if (value instanceof List<?>) {
-        this.bindingList.put(key, TypeCastUtils.castToListObject(value, SparqlResponseField.class));
+        this.arrayBindingFields.computeIfAbsent(field, k -> new ArrayList<>())
+            .addAll((List<Map<String, SparqlResponseField>>) value);
       } else {
-        this.bindings.put(key, TypeCastUtils.castToObject(value, SparqlResponseField.class));
+        this.bindings.put(field, TypeCastUtils.castToObject(value, SparqlResponseField.class));
       }
     });
     this.sequence.addAll(other.getSequence());

@@ -167,8 +167,10 @@ public class LifecycleContractService {
     draftDetails.put("time slot end", rawSchedule.getFieldValue(QueryResource.SCHEDULE_END_TIME_VAR.getVarName()));
     // handle fixed date schedule separately
     if (rawSchedule.containsField(QueryResource.FIXED_DATE_DATE_KEY)) {
-      List<SparqlResponseField> dateFields = rawSchedule.getList(QueryResource.FIXED_DATE_DATE_KEY);
-      List<String> entryDateList = dateFields.stream().map(SparqlResponseField::value).collect(Collectors.toList());
+      List<Map<String, SparqlResponseField>> dateFields = rawSchedule.getList(QueryResource.FIXED_DATE_DATE_KEY);
+      List<String> entryDateList = dateFields.stream()
+          .map(entryDate -> entryDate.get(QueryResource.FIXED_DATE_DATE_KEY).value())
+          .collect(Collectors.toList());
       // sort list of dates and filter out past dates
       List<String> sortedDateList = this.dateTimeService.getSortedUptoDayDates(entryDateList);
       draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, sortedDateList.get(0));

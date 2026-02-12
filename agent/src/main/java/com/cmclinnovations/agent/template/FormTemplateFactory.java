@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -258,7 +259,7 @@ public class FormTemplateFactory {
       List<Map<String, Object>> groupProperties = (List<Map<String, Object>>) group
           .getOrDefault(ShaclResource.PROPERTY_PROPERTY, new ArrayList<>());
       // Add new property
-      groupProperties.add(parseInputModel(property, defaultVals));
+      groupProperties.add(this.parseInputModel(property, defaultVals));
       // Update the results
       group.put(ShaclResource.PROPERTY_PROPERTY, groupProperties);
       resultMappings.put(groupId, group);
@@ -301,7 +302,25 @@ public class FormTemplateFactory {
           if (!defaultVals.isEmpty()) {
             String parsedField = nameLiteral.get(ShaclResource.VAL_KEY).toString().replace(ShaclResource.WHITE_SPACE,
                 "_");
-            inputModel.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultVals.get(parsedField));
+            // Retrieve field directly
+            if (defaultVals.containsKey(parsedField)) {
+              inputModel.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultVals.get(parsedField));
+              // Retrieve field from array group if not found
+            } else {
+              String groupId = input.get(ShaclResource.SHACL_GROUP_PROPERTY).get(0).get(ShaclResource.ID_KEY).asText();
+              String groupName = this.groups.get(groupId).get(ShaclResource.RDFS_PREFIX + ShaclResource.LABEL_PROPERTY)
+                  .get(0)
+                  .get(ShaclResource.VAL_KEY).asText()
+                  .replace(ShaclResource.WHITE_SPACE, "_");
+              if (defaultVals.containsKey(groupName)) {
+                List<Map<String, SparqlResponseField>> defaultArrayVals = (List<Map<String, SparqlResponseField>>) defaultVals
+                    .get(groupName);
+                inputModel.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultArrayVals.stream()
+                    .map(map -> map.get(parsedField))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList()));
+              }
+            }
           }
           break;
         case ShaclResource.SHACL_DEFAULT_VAL_PROPERTY:
