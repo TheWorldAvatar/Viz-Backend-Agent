@@ -339,13 +339,14 @@ public class LifecycleController {
   }
 
   /**
-   * Updates a completed, saved, or dispatch event. Valid types include:
+   * Updates a completed, saved, dispatch, or accrual event. Valid types include:
    * 1) dispatch: Assign dispatch details for the specified event
    * 2) saved: Saves a completed records in a pending state
    * 3) complete: Completes a specific service order
+   * 4) accrual: Accrues the billables for a specific service order
    */
   @PutMapping("/service/{type}")
-  public ResponseEntity<StandardApiResponse<?>> assignDispatchDetails(@PathVariable String type,
+  public ResponseEntity<StandardApiResponse<?>> updateTaskEventDetails(@PathVariable String type,
       @RequestBody Map<String, Object> params) {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
@@ -369,10 +370,15 @@ public class LifecycleController {
           eventType = LifecycleEventType.SERVICE_EXECUTION;
           trackAction = TrackActionType.SAVED_COMPLETION;
           break;
+        case "accrual":
+          LOGGER.info("Received request to accrue the billable details for a service order...");
+          eventType = LifecycleEventType.SERVICE_ACCRUAL;
+          trackAction = TrackActionType.ACCRUAL;
+          break;
         default:
           break;
       }
-      return this.lifecycleTaskService.genDispatchOrDeliveryOccurrence(params, eventType, trackAction);
+      return this.lifecycleTaskService.genServiceEventOccurrence(params, eventType, trackAction);
     });
   }
 
@@ -650,7 +656,7 @@ public class LifecycleController {
     LOGGER.info("Received request to retrieve number of outstanding tasks...");
     String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrenceCount(type, null, null, false, false, allRequestParams);
+      return this.lifecycleTaskService.getOccurrenceCount(type, null, null, false, allRequestParams);
     });
   }
 
@@ -667,7 +673,7 @@ public class LifecycleController {
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrences(null, null, type, false, false,
+      return this.lifecycleTaskService.getOccurrences(null, null, type, false,
           new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
     });
   }
@@ -682,7 +688,7 @@ public class LifecycleController {
     String[] filterOptionParams = this.getFilterOptionParams(allRequestParams);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> options = this.lifecycleTaskService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
-          filterOptionParams[2], null, null, false, false, allRequestParams);
+          filterOptionParams[2], null, null, false, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -713,7 +719,7 @@ public class LifecycleController {
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     };
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrenceCount(type, startTimestamp, endTimestamp, isClosed, false,
+      return this.lifecycleTaskService.getOccurrenceCount(type, startTimestamp, endTimestamp, isClosed,
           allRequestParams);
     });
   }
@@ -733,7 +739,7 @@ public class LifecycleController {
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, false, false,
+      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, false,
           new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
     });
   }
@@ -753,7 +759,7 @@ public class LifecycleController {
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, true, false,
+      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type, true,
           new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
     });
   }
@@ -774,7 +780,7 @@ public class LifecycleController {
     String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> options = this.lifecycleTaskService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
-          filterOptionParams[2], startTimestamp, endTimestamp, taskType.equals("closed"), false, allRequestParams);
+          filterOptionParams[2], startTimestamp, endTimestamp, taskType.equals("closed"), allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -816,8 +822,9 @@ public class LifecycleController {
    * 2) service stage - complete: Completes a specific service order
    * 3) service stage - report: Reports an issue with the service order
    * 4) service stage - cancel: Cancels the upcoming service order
-   * 5) archive stage - rescind: Rescind the entire contract
-   * 6) archive stage - terminate: Terminates the entire contract
+   * 5) service stage - accrual: Accrues the billables for the service order
+   * 6) archive stage - rescind: Rescind the entire contract
+   * 7) archive stage - terminate: Terminates the entire contract
    * 
    * The id represents the specific instance if required, else default to form.
    */
@@ -833,6 +840,8 @@ public class LifecycleController {
         case "service;dispatch" -> new OrderType("for order dispatch", LifecycleEventType.SERVICE_ORDER_DISPATCHED);
         case "service;report" -> new OrderType("to report the order", LifecycleEventType.SERVICE_INCIDENT_REPORT);
         case "service;cancel" -> new OrderType("to cancel the order", LifecycleEventType.SERVICE_CANCELLATION);
+        case "service;accrual" ->
+          new OrderType("to accrue the billables on the order", LifecycleEventType.SERVICE_ACCRUAL);
         case "archive;rescind" -> new OrderType("to rescind the contract", LifecycleEventType.ARCHIVE_RESCINDMENT);
         case "archive;terminate" -> new OrderType("to terminate the contract", LifecycleEventType.ARCHIVE_TERMINATION);
         default -> throw new IllegalArgumentException(

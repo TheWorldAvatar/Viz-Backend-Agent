@@ -32,8 +32,7 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
       - [2.6.6 Archive contract route](#266-archive-contract-route)
   - [2.7 Service Reporting Route](#27-service-reporting-route)
     - [2.7.1 Customer account route](#271-customer-account)
-    - [2.7.2 Transaction record route](#272-transaction-record-route)
-    - [2.7.3 Closed activities route](#273-closed-activities)
+    - [2.7.2 Financial record route](#272-financial-record-route)
 
 ## 1. Agent Deployment
 
@@ -539,8 +538,6 @@ where `{type}`is the requested identifier that must correspond to a target class
 
 Users can get the changelog for tasks at this route `<baseURL>/vis-backend-agent/changes/task/{id}`, where `{id}` is the specific instance's identifier.
 
-Users can get the changelog for bills at this route `<baseURL>/vis-backend-agent/changes/bill/{id}`, where `{id}` is the specific instance's identifier.
-
 ### 2.6 Service Lifecycle Route
 
 This `<baseURL>/vis-backend-agent/contracts/` route serves as an endpoint to manage the lifecycle of contracts and their associated services. Note that the following scheduled tasks are available and will occur at 6am everyday if `TASKS_ENABLED` is true:
@@ -899,6 +896,20 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/se
 }
 ```
 
+> Service accrual
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/accrual/{id}` endpoint to retrieve the form template associated with the accrual event, where `id` is either the identifier of the occurrence of interest, which may be a accrual instance, or `form` for an empty form template. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ServicAccrualOccurrenceShape` is defined in `./resources/shacl.ttl`, which can be extended for your specific requirements. Please also read [this section for shape definition](./resources/README.md#1172-serviceaccrualevent).
+
+Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/accrual` endpoint to assign billable details for a target order. The details are configurable using the `ServiceAccrualOccurrenceShape` and an additional `accrual.jsonld` file with the corresponding identifier as `accrual` in the `application-service.json`. A sample file is defined in `./resources/jsonld/accrual.jsonld`, with line 1 - 31 being required. It is recommended that the id field comes with a prefix, following the frontend actions. Note that this route does require the following `JSON` request parameters:
+
+```json
+{
+  /* parameters */
+  "contract": "The target contract IRI",
+  "date": "Scheduled date of the order delivery in the YYYY-MM-DD format"
+}
+```
+
 #### 2.6.6 Archive contract route
 
 The endpoint serves to archive in progress contracts as well as retrieve all contracts that have expired and are in archive.
@@ -962,15 +973,15 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/report/accou
 > [!IMPORTANT]  
 > Users must include a `type` in the request parameter that corresponds to the pricing model's custom resource ID specified in the `application-service.json`
 
-#### 2.7.2 Transaction record route
+#### 2.7.2 Financial record route
 
-These endpoints allow users to view and update the transaction record and pricing model associated with a specific contract or task. Before using these endpoints, please read the corresponding required definitions for a **[Payment Obligation](https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation)** concept in the [`SHACL` shapes](./resources/README.md#1171-paymentobligation) section.
+These endpoints allow users to view and update the financial record and pricing model associated with a specific contract or task. Before using these endpoints, please read the corresponding required definitions for a **[Payment Obligation](https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation)** concept in the [`SHACL` shapes](./resources/README.md#1171-paymentobligation) section.
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/model/{id}` endpoint to get the form template of the transaction record and pricing model associated with the target contract, where `id` is the identifier for the target contract. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1171-paymentobligation).
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/model/{id}` endpoint to get the form template of the payment obligation and pricing model associated with the target contract, where `id` is the identifier for the target contract. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1171-paymentobligation).
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/contract/{id}` endpoint to check if a pricing model has been assigned to the target contract, where `id` is the identifier for the target contract.
 
-To update the pricing model and transaction record of a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/transaction/model`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
+To update the pricing model of a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/transaction/model`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
 
 ```json
 {
@@ -979,36 +990,6 @@ To update the pricing model and transaction record of a specific contract, users
 }
 ```
 
-#### 2.7.2.1 Individual transactions
-
-These endpoints allow users to view and create new invoices for a specific tasks. Before using these endpoints, please read the corresponding required definitions for a **[IndividualTransaction](https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/IndividualTransaction)** concept in the [`SHACL` shapes](./resources/README.md#1172-individualtransaction) section.
-
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/invoice` endpoint to get the form template of the invoice to include discounts, additional charges, and waiting time charges. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1172-individualtransaction).
-
-To generate the invoice for a specific task, users must send a `POST` request with their corresponding parameters from the above template to `<baseURL>/vis-backend-agent/report/transaction/invoice`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
-
-```json
-{
-  "event": "closed event instance"
-}
-```
-
-Users can also send  a `POST` request to `<baseURL>/vis-backend-agent/report/transaction/nonbillable` to exclude a transaction from billing, which will require the `event` key along with the corresponding closed event instance.
-
-#### 2.7.2.2 Bills
+#### 2.7.2.1 Bills
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/invoice/{id}` endpoint to get the bill details for the target task, where `id` is the task's identifier. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1172-individualtransaction).
-
-#### 2.7.3 Closed activities
-
-This endpoint serves to retrieve all closed activities within the target date range for the purpose of billing. Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/bill?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}&sort_by={sortby}` endpoint, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
-
-> [!TIP]  
-> `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
-
-> [!IMPORTANT]  
-> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
-
-To get the count of closed activities, users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/bill/count?type={contractType}}&startTimestamp={start}&endTimestamp={end}` endpoint.
-
-Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/report/bill/filter?type={type}&field={field}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all the distinct field options for a specific field on all closed activities, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{field}` is the target field, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. Users can also include an optional `search` parameter as well as any active filters.

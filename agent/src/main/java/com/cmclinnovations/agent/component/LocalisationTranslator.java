@@ -39,22 +39,6 @@ public class LocalisationTranslator {
   }
 
   /**
-   * Retrieves the localised billing status.
-   *
-   * @param amountVal The value of the bill amount.
-   */
-  public static String getBillingStatus(String amountVal) {
-    return switch (amountVal) {
-      case "-":
-        yield LocalisationResource.BILLING_STATUS_PENDING_APPROVAL_KEY;
-      case "N/A":
-        yield LocalisationResource.BILLING_STATUS_NON_BILLABLE_KEY;
-      default:
-        yield LocalisationResource.BILLING_STATUS_READY_FOR_PAYMENT_KEY;
-    };
-  }
-
-  /**
    * Retrieves the localised event status.
    *
    * @param event The event of interest.
@@ -72,6 +56,13 @@ public class LocalisationTranslator {
         yield LocalisationResource.EVENT_STATUS_ASSIGNED_KEY;
       case LifecycleResource.EVENT_ORDER_RECEIVED:
         yield LocalisationResource.EVENT_STATUS_NEW_KEY;
+      case LifecycleResource.EVENT_ACCRUAL: // Set a default for event accrual itself
+      case LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_DELIVERY:
+        yield LocalisationResource.EVENT_STATUS_BILLABLE_COMPLETED_KEY;
+      case LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_CANCELLATION:
+        yield LocalisationResource.EVENT_STATUS_BILLABLE_CANCELLED_KEY;
+      case LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_INCIDENT_REPORT:
+        yield LocalisationResource.EVENT_STATUS_BILLABLE_ISSUE_KEY;
       default:
         throw new IllegalArgumentException("Unknown event: " + event);
     };
@@ -99,6 +90,14 @@ public class LocalisationTranslator {
             .getQueryString() + " " + Rdf.literalOf(LifecycleResource.EVENT_DISPATCH).getQueryString();
       case LocalisationResource.EVENT_STATUS_NEW_KEY:
         yield Rdf.literalOf(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString();
+      case LocalisationResource.EVENT_STATUS_BILLABLE_COMPLETED_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_DELIVERY).getQueryString();
+      case LocalisationResource.EVENT_STATUS_BILLABLE_CANCELLED_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_CANCELLATION)
+            .getQueryString();
+      case LocalisationResource.EVENT_STATUS_BILLABLE_ISSUE_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_INCIDENT_REPORT)
+            .getQueryString();
       default:
         throw new IllegalArgumentException("Unknown event key: " + eventStatusLocalisedKey);
     };

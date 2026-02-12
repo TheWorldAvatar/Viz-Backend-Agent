@@ -103,14 +103,8 @@ public class BillingService {
     // Query for the contract IRI from the contract ID
     String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
     SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
-    // Query for the account IRI from the pricing model's IRI
-    String pricingModel = TypeCastUtils.castToObject(instance.get(QueryResource.PRICING_MODEL_VAR.getVarName()),
-        String.class);
-    SparqlBinding accountInstance = this.lifecycleQueryService
-        .getInstance(FileService.ACCOUNT_PRICING_QUERY_RESOURCE, pricingModel);
-    instance.put(QueryResource.ACCOUNT_ID_KEY, accountInstance.getFieldValue(QueryResource.IRI_KEY));
     instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
-    return this.updateService.update(contractId, BillingResource.TRANSACTION_RECORD_RESOURCE, null, instance,
+    return this.updateService.update(contractId, BillingResource.CONTRACT_PRICING_RESOURCE, null, instance,
         TrackActionType.IGNORED);
   }
 
@@ -123,19 +117,6 @@ public class BillingService {
     Queue<SparqlBinding> instance = this.lifecycleQueryService.getInstances(FileService.CONTRACT_PRICING_QUERY_RESOURCE,
         id);
     return instance.size() == 1;
-  }
-
-  /**
-   * Creates an instance for the invoice and individual transaction with the
-   * required details.
-   * 
-   * @param resourceId Resource should either be generic or nonbillable
-   *                   transaction.
-   * @param instance   Request parameters containing the invoice parameters.
-   */
-  public ResponseEntity<StandardApiResponse<?>> updateInvoiceInstance(String resourceId, Map<String, Object> instance) {
-    return this.updateService.update(instance.get(QueryResource.ID_KEY).toString(), resourceId, null, instance,
-        TrackActionType.MODIFICATION);
   }
 
   /**
@@ -156,8 +137,8 @@ public class BillingService {
             : BillingResource.DISCOUNT_KEY;
         // List in map should be updated in place, and type cast may create a copy that
         // overwrites this behavior
-        List<InvoiceLine> chargesLines = (List<InvoiceLine>) billItems.computeIfAbsent(chargeType,
-            k -> new ArrayList<>());
+        List<InvoiceLine> chargesLines = TypeCastUtils.castToListObject(billItems.computeIfAbsent(chargeType,
+            k -> new ArrayList<>()), InvoiceLine.class);
         InvoiceLine line = new InvoiceLine(currentBillItem.getFieldValue(chargeType),
             currentBillItem.getFieldValue(ShaclResource.DESCRIPTION_PROPERTY));
         chargesLines.add(line);

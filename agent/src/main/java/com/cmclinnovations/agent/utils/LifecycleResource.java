@@ -72,6 +72,7 @@ public class LifecycleResource {
   public static final String EVENT_DELIVERY = "https://www.theworldavatar.com/kg/ontoservice/ServiceDeliveryEvent";
   public static final String EVENT_CANCELLATION = "https://www.theworldavatar.com/kg/ontoservice/TerminatedServiceEvent";
   public static final String EVENT_INCIDENT_REPORT = "https://www.theworldavatar.com/kg/ontoservice/IncidentReportEvent";
+  public static final String EVENT_ACCRUAL = "https://www.theworldavatar.com/kg/ontoservice/ServiceAccrualEvent";
   public static final String EVENT_CONTRACT_COMPLETION = "https://www.theworldavatar.com/kg/ontoservice/ContractDischarge";
   public static final String EVENT_CONTRACT_RESCISSION = "https://www.theworldavatar.com/kg/ontoservice/ContractRescission";
   public static final String EVENT_CONTRACT_TERMINATION = "https://www.theworldavatar.com/kg/ontoservice/ContractTermination";
@@ -146,12 +147,8 @@ public class LifecycleResource {
         return FileService.ACCOUNT_PRICING_JSON_LD_RESOURCE;
       case LifecycleResource.OCCURRENCE_INSTANT_RESOURCE:
         return FileService.OCCURRENCE_INSTANT_JSON_LD_RESOURCE;
-      case BillingResource.TRANSACTION_RECORD_RESOURCE:
-        return FileService.TRANSACTION_RECORD_JSON_LD_RESOURCE;
-      case BillingResource.TRANSACTION_BILL_RESOURCE:
-        return FileService.TRANSACTION_INVOICE_JSON_LD_RESOURCE;
-      case BillingResource.TRANSACTION_NONBILLABLE_BILL_RESOURCE:
-        return FileService.NON_BILLABLE_INVOICE_JSON_LD_RESOURCE;
+      case BillingResource.CONTRACT_PRICING_RESOURCE:
+        return FileService.CONTRACT_PRICING_JSON_LD_RESOURCE;
       case LifecycleResource.CANCEL_RESOURCE:
       case LifecycleResource.REPORT_RESOURCE:
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
@@ -260,8 +257,6 @@ public class LifecycleResource {
     String lowerCaseField = field.toLowerCase();
     if (lowerCaseField.equals(STATUS_KEY)) {
       return isContract ? STATUS_KEY : EVENT_KEY;
-    } else if (lowerCaseField.equals(BillingResource.BILLING_STATUS_KEY.toLowerCase())) {
-      return BillingResource.AMOUNT_KEY;
     } else if (lowerCaseField.equals(SCHEDULE_TYPE_KEY.toLowerCase())) {
       return SCHEDULE_RECURRENCE_KEY;
     }

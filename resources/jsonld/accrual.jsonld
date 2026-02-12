@@ -5,23 +5,42 @@
   "@id": {
     "@replace": "id",
     "@type": "iri",
-    "prefix": "https://theworldavatar.io/kg/account/record/transaction/"
+    "prefix": "https://www.example.com/kg/accrual/"
   },
-  "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/IndividualTransaction",
-  "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/involves": {
+  "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence",
+  "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate": {
+    "@replace": "dateTime",
+    "@type": "literal",
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
+  },
+  "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies": {
+    "@id": "https://www.theworldavatar.com/kg/ontoservice/ServiceAccrualEvent"
+  },
+  "https://www.omg.org/spec/Commons/DatesAndTimes/succeeds": {
     "@id": {
-      "@replace": "event",
+      "@replace": "order",
       "@type": "iri"
     }
   },
   "@reverse": {
+    "https://www.omg.org/spec/Commons/Collections/comprises": {
+      "@id": {
+        "@replace": "stage",
+        "@type": "iri"
+      }
+    },
     "https://www.omg.org/spec/Commons/Documents/isAbout": {
       "@id": {
         "@replace": "id",
         "@type": "iri",
-        "prefix": "https://theworldavatar.io/kg/account/invoice/"
+        "prefix": "https://www.example.com/account/invoice/"
       },
       "@type": "https://purl.org/p2p-o/document#E-Invoice",
+      "https://www.theworldavatar.com/kg/bnl/hasChargeableWaitingTime": {
+        "@replace": "waiting time",
+        "@type": "literal",
+        "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+      },
       "https://purl.org/p2p-o/invoice#hasInvoiceLine": [
         {
           "@replace": "discounts",
@@ -30,7 +49,7 @@
             "@id": {
               "@replace": "id",
               "@type": "iri",
-              "prefix": "https://theworldavatar.io/kg/account/invoice/discount/"
+              "prefix": "https://www.example.com/account/invoice/discount/"
             },
             "@type": "https://purl.org/p2p-o/documentline#InvoiceLine",
             "https://purl.org/p2p-o/documentline#lineNote": {
@@ -41,7 +60,7 @@
               "@id": {
                 "@replace": "id",
                 "@type": "iri",
-                "prefix": "https://theworldavatar.io/kg/account/invoice/discount/amount/"
+                "prefix": "https://www.example.com/account/invoice/discount/amount/"
               },
               "https://www.omg.org/spec/Commons/QuantitiesAndUnits/hasNumericValue": {
                 "@replace": "discount",
@@ -58,18 +77,26 @@
             "@id": {
               "@replace": "id",
               "@type": "iri",
-              "prefix": "https://theworldavatar.io/kg/account/invoice/charges/"
+              "prefix": "https://www.example.com/account/invoice/charges/"
             },
             "@type": "https://purl.org/p2p-o/documentline#InvoiceLine",
-            "https://purl.org/p2p-o/documentline#lineNote": {
-              "@replace": "description",
-              "@type": "literal"
+            "https://purl.org/p2p-o/item#hasItem": {
+              "@id": {
+                "@replace": "id",
+                "@type": "iri",
+                "prefix": "https://www.example.com/account/invoice/additional/charges/item/"
+              },
+              "@type": "https://purl.org/p2p-o/item#Item",
+              "https://purl.org/p2p-o/item#itemDescription": {
+                "@replace": "description",
+                "@type": "literal"
+              }
             },
             "https://purl.org/p2p-o/documentline#hasGrosspriceOfItem": {
               "@id": {
                 "@replace": "id",
                 "@type": "iri",
-                "prefix": "https://theworldavatar.io/kg/account/invoice/additional/charges/amount/"
+                "prefix": "https://www.example.com/account/invoice/additional/charges/amount/"
               },
               "https://www.omg.org/spec/Commons/QuantitiesAndUnits/hasNumericValue": {
                 "@replace": "amount",
