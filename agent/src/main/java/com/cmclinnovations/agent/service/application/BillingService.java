@@ -137,8 +137,8 @@ public class BillingService {
             : BillingResource.DISCOUNT_KEY;
         // List in map should be updated in place, and type cast may create a copy that
         // overwrites this behavior
-        List<InvoiceLine> chargesLines = (List<InvoiceLine>) billItems.computeIfAbsent(chargeType,
-            k -> new ArrayList<>());
+        List<InvoiceLine> chargesLines = TypeCastUtils.castToListObject(billItems.computeIfAbsent(chargeType,
+            k -> new ArrayList<>()), InvoiceLine.class);
         InvoiceLine line = new InvoiceLine(currentBillItem.getFieldValue(chargeType),
             currentBillItem.getFieldValue(ShaclResource.DESCRIPTION_PROPERTY));
         chargesLines.add(line);
