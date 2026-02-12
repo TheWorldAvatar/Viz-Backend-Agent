@@ -223,8 +223,11 @@ public class ShaclRuleProcesser {
                 Node subject = triple.getSubject();
                 Node pred = triple.getPredicate();
                 Node object = triple.getObject();
-                StringResource.appendTriple(insertBuilder, parseNode(subject, currentData),
-                        parseNode(pred, currentData), parseNode(object, currentData));
+                String querySubject = this.parseNode(subject, currentData);
+                String queryObject = this.parseNode(object, currentData);
+                if (!querySubject.isEmpty() && !queryObject.isEmpty())
+                    StringResource.appendTriple(insertBuilder, querySubject,
+                            parseNode(pred, currentData), queryObject);
             });
         }
         insertBuilder.append("}");
@@ -328,6 +331,10 @@ public class ShaclRuleProcesser {
                 return QueryResource.genVariable(varName).getQueryString();
             }
             SparqlResponseField field = currentData.getFieldResponse(varName);
+            // If the var name does not exist, it should return an empty string
+            if (field == null) {
+                return "";
+            }
             if (field.type().equals("uri")) {
                 return Rdf.iri(field.value()).getQueryString();
             }
