@@ -190,9 +190,6 @@ public class QueryTemplateService {
   public String getChangelogQuery(String resourceID, String id) {
     if (resourceID.equals(LifecycleResource.TASK_RESOURCE)) {
       return this.fileService.getContentsWithReplacement(FileService.CHANGELOG_TASK_RESOURCE, id);
-    } else if (resourceID.equals(BillingResource.BILL_RESOURCE)) {
-      return this.fileService.getContentsWithReplacement(FileService.CHANGELOG_RESOURCE,
-          BillingResource.INDIVIDUAL_TRANSACTION_IRI.getQueryString(), id);
     } else {
       String concept = this.fileService.getTargetIri(resourceID).getQueryString();
       return this.fileService.getContentsWithReplacement(FileService.CHANGELOG_RESOURCE, concept, id);

@@ -5,28 +5,28 @@
   "@id": {
     "@replace": "id",
     "@type": "iri",
-    "prefix": "https://www.theworldavatar.io/kg/agreement/payment/obligation/"
+    "prefix": "https://www.example.com/agreement/payment/obligation/"
   },
   "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation",
   "@reverse": {
     "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/confers": {
       "@replace": "id",
       "@type": "iri",
-      "prefix": "https://www.theworldavatar.io/kg/agreement/"
+      "prefix": "https://www.example.com/agreement/"
     }
   },
   "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/mandates": {
     "@id": {
       "@replace": "id",
       "@type": "iri",
-      "prefix": "https://www.theworldavatar.io/kg/agreement/payment/model/"
+      "prefix": "https://www.example.com/agreement/payment/model/"
     },
     "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/InstrumentPricing/PricingModel",
     "https://www.omg.org/spec/Commons/QuantitiesAndUnits/hasArgument": {
       "@id": {
         "@replace": "id",
         "@type": "iri",
-        "prefix": "https://www.theworldavatar.io/kg/agreement/payment/base/fee/"
+        "prefix": "https://www.example.com/agreement/payment/base/fee/"
       },
       "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/MonetaryPrice",
       "http://www.w3.org/2000/01/rdf-schema#label": "Base Fee",
@@ -46,7 +46,7 @@
               "@id": {
                 "@replace": "id",
                 "@type": "iri",
-                "prefix": "https://www.theworldavatar.io/kg/agreement/payment/variable/fee/"
+                "prefix": "https://www.example.com/agreement/payment/variable/fee/"
               },
               "@type": "https://www.theworldavatar.com/kg/ontoservice/VariableFee",
               "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasAmount": {
@@ -57,7 +57,7 @@
                 "@id": {
                   "@replace": "id",
                   "@type": "iri",
-                  "prefix": "https://www.theworldavatar.io/kg/agreement/payment/variable/fee/lower/bound/"
+                  "prefix": "https://www.example.com/agreement/payment/variable/fee/lower/bound/"
                 },
                 "@type": {
                   "@replace": "unit",
@@ -72,7 +72,7 @@
                 "@id": {
                   "@replace": "id",
                   "@type": "iri",
-                  "prefix": "https://www.theworldavatar.io/kg/agreement/payment/variable/fee/upper/bound/"
+                  "prefix": "https://www.example.com/agreement/payment/variable/fee/upper/bound/"
                 },
                 "@type": {
                   "@replace": "unit",

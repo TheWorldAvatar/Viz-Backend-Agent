@@ -13,18 +13,18 @@ import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
-import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 
 public class LifecycleQueryFactory {
-  private static final String CLOSED_QUERY_STATEMENTS = "{?iri fibo-fnd-rel-rel:exemplifies ontoservice:TerminatedServiceEvent .}UNION"
-      + "{?iri fibo-fnd-rel-rel:exemplifies ontoservice:IncidentReportEvent .}UNION"
-      + "{?iri fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent ; cmns-dsg:describes ontoservice:CompletedStatus .}";
-  private static final String UNCLOSED_QUERY_STATEMENTS = "{?iri fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent .}UNION"
-      + "{?iri fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDispatchEvent .}UNION"
-      + "{?iri fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent ; cmns-dsg:describes ontoservice:PendingStatus .}";
+  private static final String CLOSED_QUERY_STATEMENTS = "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:TerminatedServiceEvent .}UNION"
+      + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:IncidentReportEvent .}UNION"
+      + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent ; cmns-dsg:describes ontoservice:CompletedStatus .}UNION"
+      + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceAccrualEvent;cmns-dt:succeeds/fibo-fnd-rel-rel:exemplifies ?prev_event}";
+  private static final String UNCLOSED_QUERY_STATEMENTS = "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent .}UNION"
+      + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDispatchEvent .}UNION"
+      + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent ; cmns-dsg:describes ontoservice:PendingStatus .}";
   private static final Map<String, String> SCHEDULE_QUERY_MAPPINGS;
   private static final Map<String, String> SCHEDULE_CONTRACT_FILTER_QUERY_MAPPINGS;
 
@@ -134,8 +134,8 @@ public class LifecycleQueryFactory {
    * @param rescheduleDatetime The new datetime in ISO format for dateTime values.
    * @return A SPARQL DELETE/INSERT query string for rescheduling.
    */
-  public String getRescheduleQuery(String lifecycleStartDate,String lifecycleEndDate, String expireStage,
-    String orderEvent, String rescheduleDate,String rescheduleDatetime) {
+  public String getRescheduleQuery(String lifecycleStartDate, String lifecycleEndDate, String expireStage,
+      String orderEvent, String rescheduleDate, String rescheduleDatetime) {
     return QueryResource.PREFIX_TEMPLATE
         + "DELETE {\n"
         + "  <" + lifecycleStartDate + "> cmns-dt:hasDateValue ?old_start .\n"
@@ -195,13 +195,11 @@ public class LifecycleQueryFactory {
     if (isClosed == null) {
       eventTargetStatements = "";
     } else if (isClosed) {
-      eventTargetStatements = CLOSED_QUERY_STATEMENTS.replace(QueryResource.IRI_KEY,
-          QueryResource.EVENT_ID_VAR.getVarName());
+      eventTargetStatements = CLOSED_QUERY_STATEMENTS;
       eventTargetStatements += "?event_id <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder."
           + "BIND(xsd:date(?closed_date_placeholder) AS " + closedDateVar + ")";
     } else {
-      eventTargetStatements = UNCLOSED_QUERY_STATEMENTS.replace(QueryResource.IRI_KEY,
-          QueryResource.EVENT_ID_VAR.getVarName());
+      eventTargetStatements = UNCLOSED_QUERY_STATEMENTS;
     }
     results.put(LifecycleResource.LIFECYCLE_RESOURCE,
         "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
@@ -221,8 +219,8 @@ public class LifecycleQueryFactory {
     results.put(LifecycleResource.EVENT_KEY,
         eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> ?temp_event."
             + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar
-            + "} BIND(CONCAT(STR(?temp_event),IF(BOUND(?event_status),CONCAT(\";\",STR(?event_status)),\"\")) AS "
-            + eventVar + ")");
+            + "} BIND(CONCAT(STR(?temp_event),IF(BOUND(?event_status),CONCAT(\";\",STR(?event_status)),"
+            + "IF(BOUND(?prev_event),CONCAT(\";\",STR(?prev_event)),\"\"))) AS " + eventVar + ")");
     results.put(LifecycleResource.LAST_MODIFIED_KEY, eventIdVar
         + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
         + lastModifiedVar + ShaclResource.FULL_STOP);
@@ -330,20 +328,6 @@ public class LifecycleQueryFactory {
     }
     statementMappings.put(LifecycleResource.LIFECYCLE_RESOURCE, coreQueryBuilder.toString());
     return statementMappings;
-  }
-
-  /**
-   * Insert mappings for billing matters.
-   * 
-   * @param queryMappings Target mappings containing the existing statements.
-   */
-  public Map<String, String> addBillMappings(Map<String, String> queryMappings) {
-    queryMappings.put(BillingResource.AMOUNT_KEY,
-        "OPTIONAL{?event_id ^fibo-fnd-rel-rel:involves/fibo-fnd-acc-cur:hasMonetaryAmount/fibo-fnd-acc-cur:hasAmount ?bill.}"
-            + "BIND(IF(BOUND(?bill),IF(?bill=0,\"N/A\", ?bill),\"-\") AS ?amount)\n"
-            + "BIND(IF(BOUND(?bill),IF(?bill=0,\"nonBillable\", \"readyForPayment\"),\"pendingApproval\") AS ?"
-            + BillingResource.BILLING_STATUS_KEY + ")");
-    return queryMappings;
   }
 
   /**

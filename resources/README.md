@@ -12,6 +12,7 @@ This directory provides examples for different applications of the agent.
     - [1.1.4 Array Field](#114-array-field)
     - [1.1.5 Lifecycle-specific Feature](#115-lifecycle-specific-feature)
     - [1.1.6 Role-based data access](#116-role-based-data-access)
+    - [1.1.7 Billing-specific Feature](#117-billing-specific-feature)
   - [1.2 Automated Data Retrieval](#12-automated-data-retrieval)
   - [1.3 SHACL Derivation](#13-shacl-derivation)
     - [1.3.1 Virtual or persist derivation](#131-virtual-or-persist-derivation)
@@ -365,7 +366,7 @@ base:ExampleContactGroup
 ### 1.1.5 Lifecycle-specific Feature
 
 > [!IMPORTANT]
-> For any lifecycle form, users will be required to configure the event occurrences using `SHACL` restrictions. Typically, `TerminatedServiceEvent`, `IncidentReportEvent`, `ContractRescission`, and `ContractTermination` can only accommodate a remarks property. For the `ServiceDispatchEvent`, users may assign additional dispatch details through defining more `SHACL` properties. Note that an id field must be included for a `ServiceDispatchEvent`. A sample file has been created in `./shacl.ttl`
+> For any lifecycle form, users will be required to configure the event occurrences using `SHACL` restrictions. Typically, `ContractRescission`, and `ContractTermination` can only accommodate a remarks property. For the `ServiceDispatchEvent`,`ServiceDeliveryEvent`, `TerminatedServiceEvent`, `IncidentReportEvent`, and `ServiceAccrualEvent`, users may assign additional details through defining more `SHACL` properties. A sample file has been created in `./shacl.ttl`
 
 > [!IMPORTANT]
 > Users can configure a pricing model for the agreement following the sample SHACL in `./pricing.ttl`. This will have to be used alongside the corresponding `JSON-LD` at `./jsonld/pricing.jsonld`. Users must update the possible list of classes in line 85 of the SHACL constraints. No modifications are required for the `JSON-LD` file.
@@ -419,7 +420,7 @@ base:ConceptShape
 
 ### 1.1.7 Billing-specific Feature
 
-When billing is required, users must define a `SHACL` shape for `https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation` and `https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/IndividualTransaction`.
+When billing is required, users must define a `SHACL` shape for `https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation` and the `ServiceAccrualEvent`.
 
 #### 1.1.7.1 PaymentObligation
 
@@ -457,158 +458,19 @@ base:PaymentObligationShape-requesting-party
   sh:maxCount 1 .
 ```
 
-#### 1.1.7.2 IndividualTransaction
+#### 1.1.7.2 ServiceAccrualEvent
 
-This shape must include three Property Shapes to indicate the discounts, additional charges, and chargeable waiting time, and this MUST not be changed. However, users must also include two SHACL rules to:
+This shape must include three Property Shapes to indicate the discounts and additional charges, and this MUST not be changed. However, users must also include one SHACL rules to:
 
 1. Derive the service charges for the event
-2. Derive the total bill amount from the service price, discounts, and additional charges for that event
 
-An example minimal shape is provided below. Users should only change the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge.
+An example minimal shape is provided in the `ServiceAccrualOccurrenceShape` within the `shacl.ttl`. Users should only change the `sh:path` for each property shape and the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge.
 
 > [!NOTE]
 > Users can apply bold formatting to the description of service charges by wrapping their strings with `<b>` html tags.
 
 > [!TIP]
 > Users can order the service charges by specifying an optional `p2p-o-doc-line:lineIdentifier` line attached to a number stored as a string literal. If there are multiple service charges, these can be ordered through this property.
-
-```
-base:TransactionShape
-  a sh:NodeShape ;
-  sh:targetClass fibo-fbc-pas-caa:IndividualTransaction ;
-  sh:property [
-    sh:name "chargeable waiting time" ;
-    sh:description "Waiting time to be charged" ;
-    sh:order 1;
-    sh:path (
-      cmns-doc:isAbout
-    ) ;
-    sh:datatype xsd:decimal ;
-    sh:minCount 1 ;
-    sh:maxCount 1 ;
-  ] ;
-  sh:property [
-    sh:name "discounts" ;
-    sh:description "Discounts to be subtracted from the total charge." ;
-    sh:order 2;
-    sh:path (
-      cmns-doc:isAbout
-      p2p-o-inv:hasInvoiceLine
-    ) ;
-    sh:node base:DiscountInvoiceLineShape ;
-    sh:minCount 0 ;
-  ] ;
-  sh:property [
-    sh:name "additional charges" ;
-    sh:description "Additional charges to be added to total charge." ;
-    sh:order 3;
-    sh:path (
-      cmns-doc:isAbout
-      p2p-o-inv:hasInvoiceLine
-    ) ;
-    sh:node base:AddChargeInvoiceLineShape ;
-    sh:minCount 0 ;
-  ] ;
-  sh:rule [
-    a sh:SPARQLRule ;
-    sh:order 0 ;
-    sh:construct """
-    PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>
-    PREFIX cmns-doc: <https://www.omg.org/spec/Commons/Documents/>
-    PREFIX cmns-dsg: <https://www.omg.org/spec/Commons/Designators/>
-    PREFIX cmns-qtu: <https://www.omg.org/spec/Commons/QuantitiesAndUnits/>
-    PREFIX dc-terms: <http://purl.org/dc/terms/>
-
-    PREFIX fibo-fnd-acc-cur: <https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/>
-    PREFIX fibo-fnd-arr-lif: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/>
-    PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
-    PREFIX fibo-fnd-pas-pas: <https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/>
-    PREFIX p2p-o-doc-line:   <https://purl.org/p2p-o/documentline#>
-    PREFIX p2p-o-inv:        <https://purl.org/p2p-o/invoice#>
-    PREFIX ontoservice:      <https://www.theworldavatar.com/kg/ontoservice/>
-    PREFIX xsd:              <http://www.w3.org/2001/XMLSchema#>
-
-    CONSTRUCT {
-      ?invoice p2p-o-inv:hasInvoiceLine ?invoice_line_base_instance;
-        p2p-o-inv:hasInvoiceLine ?invoice_line_variable_instance.
-      ?invoice_line_base_instance a p2p-o-doc-line:InvoiceLine;
-        p2p-o-doc-line:lineIdentifier "0"^^xsd:string;
-        p2p-o-doc-line:lineNote "Base fee charge"^^xsd:string;
-        p2p-o-doc-line:hasGrosspriceOfItem ?invoice_line_base_amount_instance.
-      ?invoice_line_base_amount_instance cmns-qtu:hasNumericValue ?base_fee.
-      ?invoice_line_variable_instance a p2p-o-doc-line:InvoiceLine;
-        p2p-o-doc-line:lineIdentifier "1"^^xsd:string;
-        p2p-o-doc-line:lineNote ?service_price_description;
-        p2p-o-doc-line:hasGrosspriceOfItem ?invoice_line_variable_amount_instance.
-      ?invoice_line_variable_amount_instance cmns-qtu:hasNumericValue ?var_price.
-    } WHERE { 
-      ?this fibo-fnd-rel-rel:involves ?event_id;
-        dc-terms:identifier ?id.
-      ?invoice cmns-doc:isAbout ?this.
-      ?iri a fibo-fnd-pas-pas:ServiceAgreement;
-        fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/cmns-col:comprises ?event_id;
-        fibo-fnd-rel-rel:confers/fibo-fnd-rel-rel:mandates ?price_model.
-      ?event_id ^cmns-doc:refersTo/cmns-doc:records/cmns-qtu:hasQuantityValue ?weight;
-        fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent;
-        cmns-dsg:describes ontoservice:CompletedStatus .
-      ?price_model cmns-qtu:hasArgument/fibo-fnd-acc-cur:hasAmount ?base_fee;
-        cmns-qtu:hasArgument ?var_fee_instance.
-      ?base_fee ^fibo-fnd-acc-cur:hasAmount/a ontoservice:BaseFee.
-      ?var_fee_instance a ontoservice:VariableFee;
-        fibo-fnd-acc-cur:hasAmount ?var_fee;
-        cmns-qtu:hasLowerBound/cmns-qtu:hasNumericValue ?lower_bound.
-      BIND(IF(BOUND(?status),
-        ?var_fee * IF(?weight > ?lower_bound, ?weight - ?lower_bound, 0.0),
-        "0"^^xsd:decimal) AS ?var_price)
-      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/base/",?id)) AS ?invoice_line_base_instance)
-      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/base/amount/",?id)) AS ?invoice_line_base_amount_instance)
-      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/var/",?id)) AS ?invoice_line_variable_instance)
-      BIND(IRI(CONCAT("http://example.org/account/transaction/invoice/line/var/amount/",?id)) AS ?invoice_line_variable_amount_instance)
-      BIND(CONCAT("Variable fee charge - Rate: $",STR(?var_fee),"/kg; From: ",  STR(?lower_bound), "tons; Total weight: ", STR(?weight), "kg") AS ?service_price_description)
-    }
-    """
-  ] ;
-  sh:rule [
-    a sh:SPARQLRule ;
-    sh:order 1 ;
-    sh:construct """
-    PREFIX cmns-doc:        <https://www.omg.org/spec/Commons/Documents/>
-    PREFIX cmns-qtu:        <https://www.omg.org/spec/Commons/QuantitiesAndUnits/>
-    PREFIX dc-terms:        <http://purl.org/dc/terms/>
-    PREFIX fibo-fnd-acc-cur:<https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/>
-    PREFIX fibo-fnd-rel-rel:<https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
-    PREFIX p2p-o-doc-line:  <https://purl.org/p2p-o/documentline#>
-    PREFIX p2p-o-inv:       <https://purl.org/p2p-o/invoice#>
-    PREFIX ontoservice:     <https://www.theworldavatar.com/kg/ontoservice/>
-    PREFIX xsd:             <http://www.w3.org/2001/XMLSchema#>
-
-    CONSTRUCT {
-      ?this fibo-fnd-acc-cur:hasMonetaryAmount ?total_instance.
-      ?total_instance a fibo-fnd-acc-cur:CalculatedPrice; 
-        fibo-fnd-acc-cur:hasAmount ?total.
-    } WHERE { 
-      ?this fibo-fnd-rel-rel:involves ?event_id;
-        dc-terms:identifier ?id.
-      ?invoice cmns-doc:isAbout ?this.
-      OPTIONAL{
-        SELECT ?invoice (SUM(?charge) AS ?temp_add_charges) WHERE {
-          ?invoice cmns-doc:isAbout ?this;
-            p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasGrosspriceOfItem/cmns-qtu:hasNumericValue ?charge .
-        } GROUP BY ?invoice 
-      }
-      BIND(COALESCE(?temp_add_charges,0) AS ?add_charges)
-      OPTIONAL{ 
-        SELECT ?invoice (SUM(?charge) AS ?temp_discount) WHERE {
-          ?invoice cmns-doc:isAbout ?this;
-            p2p-o-inv:hasInvoiceLine/p2p-o-doc-line:hasPriceDiscountOfItem/cmns-qtu:hasNumericValue ?charge .
-        } GROUP BY ?invoice }
-      BIND(COALESCE(?temp_discount,0) AS ?discount)
-      BIND(?add_charges-?discount AS ?total)
-      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/total/",?id)) AS ?total_instance)
-    }
-    """
-  ] .
-```
 
 ### 1.2 Automated Data Retrieval
 
@@ -891,6 +753,12 @@ Form branches adapt to selected categories by displaying different field sets. D
 
 > [!IMPORTANT]
 > Users will be required to add a `JSON-LD` for the `ServiceDeliveryEvent`. This event should execute upon completion of the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/complete.jsonld`, and users must not modify line 1 - 41. The relevant route(s) is found in the `Service completion` section [over here](../README.md#265-service-order-route).
+
+> [!IMPORTANT]
+> Users will be required to add a `JSON-LD` for the `ServiceAccrualEvent`. This event should execute after the completion, cancellation, or reported issue for the service order, and can contain additional properties/details following the user's input. A sample file has been created in `./jsonld/accrual.jsonld`, and users must not modify line 1 - 31. The relevant route(s) is found in the `Service accrual` section [over here](../README.md#265-service-order-route).
+
+> [!TIP]
+> Users can include an optional `JSON-LD` for the `TerminatedServiceEvent` or `IncidentReportEvent`. This event should execute before completion of the service order to cancel or report the service, and can contain additional properties/details following the user's input. Users can reference this file `./jsonld/complete.jsonld` from line 1 - 41, but they must be called `cancel` and `report` respectively.
 
 ### 2.2 Geocoding
 
