@@ -74,7 +74,7 @@ public class ReportingController {
   public ResponseEntity<StandardApiResponse<?>> getPricingForm(@PathVariable String id) {
     LOGGER.info("Received request to get the form template for pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
-      return this.getService.getForm(id, BillingResource.FINANCIAL_RECORD_RESOURCE, false, null);
+      return this.getService.getForm(id, BillingResource.CONTRACT_PRICING_RESOURCE, false, null);
     });
   }
 

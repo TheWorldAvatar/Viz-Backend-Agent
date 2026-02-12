@@ -147,8 +147,8 @@ public class LifecycleResource {
         return FileService.ACCOUNT_PRICING_JSON_LD_RESOURCE;
       case LifecycleResource.OCCURRENCE_INSTANT_RESOURCE:
         return FileService.OCCURRENCE_INSTANT_JSON_LD_RESOURCE;
-      case BillingResource.FINANCIAL_RECORD_RESOURCE:
-        return FileService.FINANCIAL_RECORD_JSON_LD_RESOURCE;
+      case BillingResource.CONTRACT_PRICING_RESOURCE:
+        return FileService.CONTRACT_PRICING_JSON_LD_RESOURCE;
       case LifecycleResource.CANCEL_RESOURCE:
       case LifecycleResource.REPORT_RESOURCE:
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;

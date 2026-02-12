@@ -103,14 +103,8 @@ public class BillingService {
     // Query for the contract IRI from the contract ID
     String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
     SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
-    // Query for the account IRI from the pricing model's IRI
-    String pricingModel = TypeCastUtils.castToObject(instance.get(QueryResource.PRICING_MODEL_VAR.getVarName()),
-        String.class);
-    SparqlBinding accountInstance = this.lifecycleQueryService
-        .getInstance(FileService.ACCOUNT_PRICING_QUERY_RESOURCE, pricingModel);
-    instance.put(QueryResource.ACCOUNT_ID_KEY, accountInstance.getFieldValue(QueryResource.IRI_KEY));
     instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
-    return this.updateService.update(contractId, BillingResource.FINANCIAL_RECORD_RESOURCE, null, instance,
+    return this.updateService.update(contractId, BillingResource.CONTRACT_PRICING_RESOURCE, null, instance,
         TrackActionType.IGNORED);
   }
 

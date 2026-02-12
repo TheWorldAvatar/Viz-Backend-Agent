@@ -25,6 +25,14 @@
           "@replace": "id",
           "@type": "literal"
         },
+        "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Documents/hasRecord": {
+          "@id": {
+            "@replace": "id",
+            "@type": "iri",
+            "prefix": "https://theworldavatar.io/kg/account/record/"
+          },
+          "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Documents/FinancialRecord"
+        },
         "https://www.omg.org/spec/Commons/Designators/isDefinedIn": {
           "@id": {
             "@replace": "id",

@@ -1,9 +1,0 @@
-PREFIX cmns-dsg:          <https://www.omg.org/spec/Commons/Designators/>
-PREFIX fibo-fbc-pas-caa:  <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/>
-PREFIX fibo-fnd-rel-rel:  <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
-
-SELECT DISTINCT ?iri
-WHERE{
-  ?iri a fibo-fbc-pas-caa:CustomerAccount;
-  cmns-dsg:isDefinedIn/fibo-fnd-rel-rel:confers/fibo-fnd-rel-rel:mandates <[target]>.
-}

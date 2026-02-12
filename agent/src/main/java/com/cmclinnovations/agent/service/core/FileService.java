@@ -58,8 +58,8 @@ public class FileService {
       + "jsonld/accounts/customer_account.jsonld";
   public static final String ACCOUNT_PRICING_JSON_LD_RESOURCE = CLASS_PATH_DIR
       + "jsonld/accounts/account_pricing.jsonld";
-  public static final String FINANCIAL_RECORD_JSON_LD_RESOURCE = CLASS_PATH_DIR
-      + "jsonld/accounts/financial_record.jsonld";
+  public static final String CONTRACT_PRICING_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/accounts/payment_obligation.jsonld";
   public static final String OCCURRENCE_INSTANT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_instant.jsonld";
   public static final String OCCURRENCE_LINK_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_link.jsonld";
   public static final String SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/schedule.jsonld";
@@ -71,7 +71,6 @@ public class FileService {
       + "jsonld/history/agent.jsonld";
 
   public static final String ACCOUNT_AGREEMENT_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_agreement.sparql";
-  public static final String ACCOUNT_PRICING_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_pricing.sparql";
   public static final String ACCOUNT_BILL_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "bill.sparql";
   public static final String CONTRACT_PRICING_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "contract_pricing.sparql";
   public static final String CONTRACT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract.sparql";
@@ -177,7 +176,7 @@ public class FileService {
     LOGGER.debug("Retrieving the target class associated with the resource identifier: {} ...", resourceID);
     if (resourceID.equals(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE)) {
       return Rdf.iri(LifecycleResource.EVENT_OCCURRENCE_IRI);
-    } else if (resourceID.equals(BillingResource.FINANCIAL_RECORD_RESOURCE)) {
+    } else if (resourceID.equals(BillingResource.CONTRACT_PRICING_RESOURCE)) {
       return BillingResource.PAYMENT_OBLIGATION_IRI;
     } 
     String targetClass = this.getResourceTarget(resourceID,
