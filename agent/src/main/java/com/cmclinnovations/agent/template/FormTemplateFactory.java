@@ -306,7 +306,7 @@ public class FormTemplateFactory {
             if (defaultVals.containsKey(parsedField)) {
               inputModel.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultVals.get(parsedField));
               // Retrieve field from array group if not found
-            } else {
+            } else if (input.has(ShaclResource.SHACL_GROUP_PROPERTY)) {
               String groupId = input.get(ShaclResource.SHACL_GROUP_PROPERTY).get(0).get(ShaclResource.ID_KEY).asText();
               String groupName = this.groups.get(groupId).get(ShaclResource.RDFS_PREFIX + ShaclResource.LABEL_PROPERTY)
                   .get(0)
