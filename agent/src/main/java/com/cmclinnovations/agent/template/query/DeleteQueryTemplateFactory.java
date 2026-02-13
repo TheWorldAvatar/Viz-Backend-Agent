@@ -58,7 +58,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetIds().poll().get(0),
         this.parseVariable((ObjectNode) params.rootNode().path(ShaclResource.ID_KEY)));
     this.recursiveParseNode(deleteTemplate, null, params.rootNode(), params.branchName(), params.optVarNames());
-    return this.appendArrayStatements(deleteTemplate.getQueryString());
+    return this.appendArrayStatements(deleteTemplate.getQueryString(), params.optVarNames());
   }
 
   protected void reset() {
@@ -377,11 +377,15 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    * Appends array statements if available.
    * 
    * @param deleteQuery The target DELETE query.
+   * @param optFields   A set of optional fields.
    */
-  private String appendArrayStatements(String deleteQuery) {
+  private String appendArrayStatements(String deleteQuery, Set<String> optFields) {
     if (!this.arrayPatternsMap.isEmpty()) {
+      Boolean isAllArraysOptional = null;
       List<String> arrayStatements = new ArrayList<>();
-      this.arrayPatternsMap.forEach((arrayGroup, patterns) -> {
+      for (Map.Entry<String, Queue<GraphPattern>> entry : this.arrayPatternsMap.entrySet()) {
+        String arrayGroup = entry.getKey();
+        Queue<GraphPattern> patterns = entry.getValue();
         StringBuilder currentArrayGroupStatements = new StringBuilder();
         while (!patterns.isEmpty()) {
           String currentTriplePattern = patterns.poll().getQueryString();
@@ -390,13 +394,21 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
         // Only add if there are statements to append
         if (!currentArrayGroupStatements.isEmpty()) {
           arrayStatements.add(currentArrayGroupStatements.toString());
+          // Update boolean on first run, and only if previous arrays are all optional
+          if (isAllArraysOptional == null || isAllArraysOptional) {
+            isAllArraysOptional = optFields.contains(arrayGroup);
+          }
         }
-      });
+      }
+
       if (!arrayStatements.isEmpty()) {
         String allArrayStatements = arrayStatements.size() == 1 ? arrayStatements.get(0)
             : QueryResource.union(arrayStatements.get(0), arrayStatements.stream()
                 .skip(1)
                 .toArray(String[]::new));
+        if (isAllArraysOptional != null && isAllArraysOptional) {
+          allArrayStatements = QueryResource.optional(allArrayStatements);
+        }
         return deleteQuery.substring(0, deleteQuery.length() - 1) + allArrayStatements + "}";
       }
     }
