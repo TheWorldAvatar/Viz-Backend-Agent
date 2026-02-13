@@ -257,7 +257,6 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       ) {
         wherePattern = GraphPatterns.optional(tripleStatement);
       }
-      this.updateWherePatterns(wherePattern, deleteTemplate, whereBranchPatterns);
       // Further processing for array replacement types
       if (objectNode.has(ShaclResource.REPLACE_KEY)
           && objectNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)
@@ -269,8 +268,13 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
         Queue<GraphPattern> arrayGraphPatterns = this.arrayPatternsMap.computeIfAbsent(
             objectNode.path(ShaclResource.REPLACE_KEY).asText(),
             v -> new ArrayDeque<>());
+        // Add where pattern grouped within array statements
+        arrayGraphPatterns.offer(wherePattern);
         this.recursiveParseNode(deleteTemplate, arrayGraphPatterns, arrayContents, branch, optVarNames);
+      } else {
+        this.updateWherePatterns(wherePattern, deleteTemplate, whereBranchPatterns);
       }
+
       // No further processing required for objects intended for replacement, @value,
       if (!objectNode.has(ShaclResource.REPLACE_KEY) && !objectNode.has(ShaclResource.VAL_KEY) &&
       // or a one line instance link to a TextNode eg: "@id" : "instanceIri"
@@ -319,10 +323,6 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
           && objectNode.has(ShaclResource.CONTENTS_KEY)) {
         // First add the subject to array group statement
         RdfSubject reversedObjVar = this.parseVariable((ObjectNode) objectNode);
-        // Explicitly only using the current subject as the reversed object, and the
-        // current array ID as the reversed subject
-        this.parseFieldNode(null, idNode, reversedObjVar, predicatePath,
-            deleteTemplate, whereBranchPatterns, branch, optVarNames);
         // Apply array generation directly, as parse field node will skip this out due
         // to reversal
         ObjectNode arrayContents = this.getArrayReplacementContents(
@@ -331,6 +331,11 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
         Queue<GraphPattern> arrayGraphPatterns = this.arrayPatternsMap.computeIfAbsent(
             objectNode.path(ShaclResource.REPLACE_KEY).asText(),
             v -> new ArrayDeque<>());
+        // Explicitly only using the current subject as the reversed object, and the
+        // current array ID as the reversed subject
+        this.parseFieldNode(null, idNode, reversedObjVar, predicatePath, deleteTemplate, arrayGraphPatterns, branch,
+            optVarNames);
+        // Add array contents
         this.recursiveParseNode(deleteTemplate, arrayGraphPatterns, arrayContents, branch, optVarNames);
       } else if (objectNode.isObject()) {
         // A reverse node indicates that the replacement object should now be the
