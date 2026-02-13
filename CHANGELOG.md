@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.39.1
+
+- Fixed retrieval of array fields for multiple array groups
+- Fixed deletion of array fields for multiple array groups
+- Fixed service cost breakdown not having any invoice lines
+
 ## 1.39.0
 
 - Removed billing activities, non-billable, billable changelog routes
