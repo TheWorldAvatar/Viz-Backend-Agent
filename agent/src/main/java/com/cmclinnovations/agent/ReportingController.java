@@ -57,7 +57,7 @@ public class ReportingController {
   /**
    * Verifies if the pricing model has been assigned to the contract.
    */
-  @GetMapping("/transaction/contract/{id}")
+  @GetMapping("/contract/pricing/{id}")
   public ResponseEntity<StandardApiResponse<?>> checkHasContractPricingModel(@PathVariable String id) {
     LOGGER.info("Received request to get the customer accounts...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.PAYMENT_OBLIGATION, () -> {
@@ -70,7 +70,7 @@ public class ReportingController {
    * Retrieves the form template for the pricing model for the target task if
    * available.
    */
-  @GetMapping("/transaction/model/{id}")
+  @GetMapping("/contract/pricing/form/{id}")
   public ResponseEntity<StandardApiResponse<?>> getPricingForm(@PathVariable String id) {
     LOGGER.info("Received request to get the form template for pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
@@ -81,12 +81,12 @@ public class ReportingController {
   /**
    * Retrieves the bill for the target task.
    */
-  @GetMapping("/transaction/invoice/{id}")
-  public ResponseEntity<StandardApiResponse<?>> getBill(@PathVariable String id) {
-    LOGGER.info("Received request to get the bill for a task...");
+  @GetMapping("/service/charge/{id}")
+  public ResponseEntity<StandardApiResponse<?>> getServiceCharges(@PathVariable String id) {
+    LOGGER.info("Received request to get the service charges for a task...");
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.responseEntityBuilder.success(
-          List.of(this.billingService.getBill(id)));
+          List.of(this.billingService.getServiceCharges(id)));
     });
   }
 
@@ -113,10 +113,9 @@ public class ReportingController {
   }
 
   /**
-   * Updates the pricing model and create a transaction record for the specified
-   * contract.
+   * Updates the pricing model for the specified contract.
    */
-  @PutMapping("/transaction/model")
+  @PutMapping("/contract/pricing")
   public ResponseEntity<StandardApiResponse<?>> assignPricingToContract(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to update pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {

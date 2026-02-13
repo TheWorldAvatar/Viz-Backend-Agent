@@ -120,31 +120,31 @@ public class BillingService {
   }
 
   /**
-   * Retrieves the bill for the specific task.
+   * Retrieves the service charges for the specific task.
    * 
    * @param id Target task ID.
    */
-  public Map<String, Object> getBill(String id) {
-    Queue<SparqlBinding> billItemsInstances = this.lifecycleQueryService.getInstances(
+  public Map<String, Object> getServiceCharges(String id) {
+    Queue<SparqlBinding> serviceChargesInstances = this.lifecycleQueryService.getInstances(
         FileService.ACCOUNT_BILL_QUERY_RESOURCE, id);
-    Map<String, Object> billItems = new HashMap<>();
-    while (!billItemsInstances.isEmpty()) {
-      SparqlBinding currentBillItem = billItemsInstances.poll();
-      billItems.putIfAbsent(BillingResource.AMOUNT_KEY, currentBillItem.getFieldValue(BillingResource.AMOUNT_KEY));
-      if (currentBillItem.containsField(BillingResource.CHARGE_KEY)
-          || currentBillItem.containsField(BillingResource.DISCOUNT_KEY)) {
-        String chargeType = currentBillItem.containsField(BillingResource.CHARGE_KEY) ? BillingResource.CHARGE_KEY
+    Map<String, Object> serviceCharges = new HashMap<>();
+    while (!serviceChargesInstances.isEmpty()) {
+      SparqlBinding currentCharge = serviceChargesInstances.poll();
+      serviceCharges.putIfAbsent(BillingResource.AMOUNT_KEY, currentCharge.getFieldValue(BillingResource.AMOUNT_KEY));
+      if (currentCharge.containsField(BillingResource.CHARGE_KEY)
+          || currentCharge.containsField(BillingResource.DISCOUNT_KEY)) {
+        String chargeType = currentCharge.containsField(BillingResource.CHARGE_KEY) ? BillingResource.CHARGE_KEY
             : BillingResource.DISCOUNT_KEY;
         // List in map should be updated in place - DO NOT fix type casting, as the code
         // creates a copy that will cause it NOT to be updated in place
-        List<InvoiceLine> chargesLines = (List<InvoiceLine>) billItems.computeIfAbsent(chargeType,
+        List<InvoiceLine> chargesLines = (List<InvoiceLine>) serviceCharges.computeIfAbsent(chargeType,
             k -> new ArrayList<>());
-        InvoiceLine line = new InvoiceLine(currentBillItem.getFieldValue(chargeType),
-            currentBillItem.getFieldValue(ShaclResource.DESCRIPTION_PROPERTY));
+        InvoiceLine line = new InvoiceLine(currentCharge.getFieldValue(chargeType),
+            currentCharge.getFieldValue(ShaclResource.DESCRIPTION_PROPERTY));
         chargesLines.add(line);
       }
     }
-    return billItems;
+    return serviceCharges;
   }
 
   /**
