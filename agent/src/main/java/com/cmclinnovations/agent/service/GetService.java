@@ -136,6 +136,7 @@ public class GetService {
       SparqlBinding firstInstance = results.poll();
       // Iterate over each result binding to append arrays if required
       results.stream().forEach(result -> {
+        // No need to initialise arrays as no array vars can be passed
         firstInstance.addFieldArray(result, new HashMap<>());
       });
       return firstInstance;

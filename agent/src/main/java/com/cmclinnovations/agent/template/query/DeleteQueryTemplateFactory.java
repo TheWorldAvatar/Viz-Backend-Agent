@@ -1,8 +1,10 @@
 package com.cmclinnovations.agent.template.query;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -30,6 +32,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 
 public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
   private Map<String, String> anonymousVariableMappings;
+  private Map<String, Queue<GraphPattern>> arrayPatternsMap;
   private final JsonLdService jsonLdService;
   private static final Logger LOGGER = LogManager.getLogger(DeleteQueryTemplateFactory.class);
 
@@ -55,11 +58,12 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetIds().poll().get(0),
         this.parseVariable((ObjectNode) params.rootNode().path(ShaclResource.ID_KEY)));
     this.recursiveParseNode(deleteTemplate, null, params.rootNode(), params.branchName(), params.optVarNames());
-    return deleteTemplate.getQueryString();
+    return this.appendArrayStatements(deleteTemplate.getQueryString(), params.optVarNames());
   }
 
   protected void reset() {
     this.anonymousVariableMappings = new HashMap<>();
+    this.arrayPatternsMap = new HashMap<>();
   }
 
   /**
@@ -245,19 +249,16 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       // Add the triple statement directly to DELETE clause
       TriplePattern tripleStatement = subject.has(predicate, sparqlObject);
       deleteTemplate.delete(tripleStatement);
-
       GraphPattern wherePattern = tripleStatement;
 
       // But add optional clause when required for where clause
-
       if (optVarNames.contains(objectNode.path(ShaclResource.REPLACE_KEY).asText()) || // literal
           optVarNames.contains(objectNode.path(ShaclResource.ID_KEY).path(ShaclResource.REPLACE_KEY).asText()) // IRI
-        ) {
+      ) {
         wherePattern = GraphPatterns.optional(tripleStatement);
       }
       this.updateWherePatterns(wherePattern, deleteTemplate, whereBranchPatterns);
-
-      // Further processing for array type
+      // Further processing for array replacement types
       if (objectNode.has(ShaclResource.REPLACE_KEY)
           && objectNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)
           && objectNode.has(ShaclResource.CONTENTS_KEY)) {
@@ -265,7 +266,10 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
         ObjectNode arrayContents = this.getArrayReplacementContents(
             this.jsonLdService.getObjectNode(objectNode.path(ShaclResource.CONTENTS_KEY)),
             objectNode.path(ShaclResource.REPLACE_KEY).asText());
-        this.recursiveParseNode(deleteTemplate, whereBranchPatterns, arrayContents, branch, optVarNames);
+        Queue<GraphPattern> arrayGraphPatterns = this.arrayPatternsMap.computeIfAbsent(
+            objectNode.path(ShaclResource.REPLACE_KEY).asText(),
+            v -> new ArrayDeque<>());
+        this.recursiveParseNode(deleteTemplate, arrayGraphPatterns, arrayContents, branch, optVarNames);
       }
       // No further processing required for objects intended for replacement, @value,
       if (!objectNode.has(ShaclResource.REPLACE_KEY) && !objectNode.has(ShaclResource.VAL_KEY) &&
@@ -274,11 +278,13 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
               && objectNode.path(ShaclResource.ID_KEY).isTextual())) {
         this.recursiveParseNode(deleteTemplate, whereBranchPatterns, (ObjectNode) objectNode, branch, optVarNames);
       }
-      // For arrays,iterate through each object and parse the nested node
+      // For json arrays ie different objects with the same predicate, iterate through
+      // each object and parse the nested node
     } else if (objectNode.isArray()) {
       ArrayNode fieldArray = (ArrayNode) objectNode;
       for (JsonNode tripleObjNode : fieldArray) {
-        this.parseNestedNode(idNode, tripleObjNode, predicate, deleteTemplate, whereBranchPatterns, branch, false, optVarNames);
+        this.parseNestedNode(idNode, tripleObjNode, predicate, deleteTemplate, whereBranchPatterns, branch, false,
+            optVarNames);
       }
     } else {
       TriplePattern triplePattern = subject.has(predicate, Rdf.literalOf(((TextNode) objectNode).textValue()));
@@ -304,9 +310,29 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    * @param optVarNames         Set of names of optional variables.
    */
   private void parseNestedNode(JsonNode idNode, JsonNode objectNode, Iri predicatePath,
-      ModifyQuery deleteTemplate, Queue<GraphPattern> whereBranchPatterns, String branch, boolean isReverse, Set<String> optVarNames) {
+      ModifyQuery deleteTemplate, Queue<GraphPattern> whereBranchPatterns, String branch, boolean isReverse,
+      Set<String> optVarNames) {
     if (isReverse) {
-      if (objectNode.isObject()) {
+      // For an reverse array
+      if (objectNode.isObject() && objectNode.has(ShaclResource.REPLACE_KEY)
+          && objectNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)
+          && objectNode.has(ShaclResource.CONTENTS_KEY)) {
+        // First add the subject to array group statement
+        RdfSubject reversedObjVar = this.parseVariable((ObjectNode) objectNode);
+        // Explicitly only using the current subject as the reversed object, and the
+        // current array ID as the reversed subject
+        this.parseFieldNode(null, idNode, reversedObjVar, predicatePath,
+            deleteTemplate, whereBranchPatterns, branch, optVarNames);
+        // Apply array generation directly, as parse field node will skip this out due
+        // to reversal
+        ObjectNode arrayContents = this.getArrayReplacementContents(
+            this.jsonLdService.getObjectNode(objectNode.path(ShaclResource.CONTENTS_KEY)),
+            objectNode.path(ShaclResource.REPLACE_KEY).asText());
+        Queue<GraphPattern> arrayGraphPatterns = this.arrayPatternsMap.computeIfAbsent(
+            objectNode.path(ShaclResource.REPLACE_KEY).asText(),
+            v -> new ArrayDeque<>());
+        this.recursiveParseNode(deleteTemplate, arrayGraphPatterns, arrayContents, branch, optVarNames);
+      } else if (objectNode.isObject()) {
         // A reverse node indicates that the replacement object should now be the
         // subject and the Id Node should become the object
         if (objectNode.has(ShaclResource.REPLACE_KEY)) {
@@ -364,5 +390,47 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     blankNode.put(ShaclResource.REPLACE_KEY, String.valueOf(this.anonymousVariableMappings.size()));
     blankNode.put(ShaclResource.TYPE_KEY, QueryResource.IRI_KEY);
     return blankNode;
+  }
+
+  /**
+   * Appends array statements if available.
+   * 
+   * @param deleteQuery The target DELETE query.
+   * @param optFields   A set of optional fields.
+   */
+  private String appendArrayStatements(String deleteQuery, Set<String> optFields) {
+    if (!this.arrayPatternsMap.isEmpty()) {
+      Boolean isAllArraysOptional = null;
+      List<String> arrayStatements = new ArrayList<>();
+      for (Map.Entry<String, Queue<GraphPattern>> entry : this.arrayPatternsMap.entrySet()) {
+        String arrayGroup = entry.getKey();
+        Queue<GraphPattern> patterns = entry.getValue();
+        StringBuilder currentArrayGroupStatements = new StringBuilder();
+        while (!patterns.isEmpty()) {
+          String currentTriplePattern = patterns.poll().getQueryString();
+          currentArrayGroupStatements.append(currentTriplePattern);
+        }
+        // Only add if there are statements to append
+        if (!currentArrayGroupStatements.isEmpty()) {
+          arrayStatements.add(currentArrayGroupStatements.toString());
+          // Update boolean on first run, and only if previous arrays are all optional
+          if (isAllArraysOptional == null || isAllArraysOptional) {
+            isAllArraysOptional = optFields.contains(arrayGroup);
+          }
+        }
+      }
+
+      if (!arrayStatements.isEmpty()) {
+        String allArrayStatements = arrayStatements.size() == 1 ? arrayStatements.get(0)
+            : QueryResource.union(arrayStatements.get(0), arrayStatements.stream()
+                .skip(1)
+                .toArray(String[]::new));
+        if (isAllArraysOptional != null && isAllArraysOptional) {
+          allArrayStatements = QueryResource.optional(allArrayStatements);
+        }
+        return deleteQuery.substring(0, deleteQuery.length() - 1) + allArrayStatements + "}";
+      }
+    }
+    return deleteQuery;
   }
 }

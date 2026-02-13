@@ -387,6 +387,7 @@ public class KGService {
         return;
       }
       SparqlBinding firstBinding = groupedBinding.get(0);
+      firstBinding.initArray(arrayVars);
       if (groupedBinding.size() > 1 && !arrayVars.isEmpty()) {
         for (int i = 1; i < groupedBinding.size(); i++) {
           firstBinding.addFieldArray(groupedBinding.get(i), arrayVars);
