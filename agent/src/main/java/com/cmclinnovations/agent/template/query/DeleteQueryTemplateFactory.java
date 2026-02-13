@@ -58,29 +58,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetIds().poll().get(0),
         this.parseVariable((ObjectNode) params.rootNode().path(ShaclResource.ID_KEY)));
     this.recursiveParseNode(deleteTemplate, null, params.rootNode(), params.branchName(), params.optVarNames());
-    String deleteQuery = deleteTemplate.getQueryString();
-    if (!this.arrayPatternsMap.isEmpty()) {
-      List<String> arrayStatements = new ArrayList<>();
-      this.arrayPatternsMap.forEach((arrayGroup, patterns) -> {
-        StringBuilder currentArrayGroupStatements = new StringBuilder();
-        while (!patterns.isEmpty()) {
-          String currentTriplePattern = patterns.poll().getQueryString();
-          currentArrayGroupStatements.append(currentTriplePattern);
-        }
-        // Only add if there are statements to append
-        if (!currentArrayGroupStatements.isEmpty()) {
-          arrayStatements.add(currentArrayGroupStatements.toString());
-        }
-      });
-      if (!arrayStatements.isEmpty()) {
-        String allArrayStatements = arrayStatements.size() == 1 ? arrayStatements.get(0)
-            : QueryResource.union(arrayStatements.get(0), arrayStatements.stream()
-                .skip(1)
-                .toArray(String[]::new));
-        return deleteQuery.substring(0, deleteQuery.length() - 1) + allArrayStatements + "}";
-      }
-    }
-    return deleteQuery;
+    return this.appendArrayStatements(deleteTemplate.getQueryString());
   }
 
   protected void reset() {
@@ -393,5 +371,35 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     blankNode.put(ShaclResource.REPLACE_KEY, String.valueOf(this.anonymousVariableMappings.size()));
     blankNode.put(ShaclResource.TYPE_KEY, QueryResource.IRI_KEY);
     return blankNode;
+  }
+
+  /**
+   * Appends array statements if available.
+   * 
+   * @param deleteQuery The target DELETE query.
+   */
+  private String appendArrayStatements(String deleteQuery) {
+    if (!this.arrayPatternsMap.isEmpty()) {
+      List<String> arrayStatements = new ArrayList<>();
+      this.arrayPatternsMap.forEach((arrayGroup, patterns) -> {
+        StringBuilder currentArrayGroupStatements = new StringBuilder();
+        while (!patterns.isEmpty()) {
+          String currentTriplePattern = patterns.poll().getQueryString();
+          currentArrayGroupStatements.append(currentTriplePattern);
+        }
+        // Only add if there are statements to append
+        if (!currentArrayGroupStatements.isEmpty()) {
+          arrayStatements.add(currentArrayGroupStatements.toString());
+        }
+      });
+      if (!arrayStatements.isEmpty()) {
+        String allArrayStatements = arrayStatements.size() == 1 ? arrayStatements.get(0)
+            : QueryResource.union(arrayStatements.get(0), arrayStatements.stream()
+                .skip(1)
+                .toArray(String[]::new));
+        return deleteQuery.substring(0, deleteQuery.length() - 1) + allArrayStatements + "}";
+      }
+    }
+    return deleteQuery;
   }
 }
