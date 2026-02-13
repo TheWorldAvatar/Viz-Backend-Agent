@@ -135,10 +135,10 @@ public class BillingService {
           || currentBillItem.containsField(BillingResource.DISCOUNT_KEY)) {
         String chargeType = currentBillItem.containsField(BillingResource.CHARGE_KEY) ? BillingResource.CHARGE_KEY
             : BillingResource.DISCOUNT_KEY;
-        // List in map should be updated in place, and type cast may create a copy that
-        // overwrites this behavior
-        List<InvoiceLine> chargesLines = TypeCastUtils.castToListObject(billItems.computeIfAbsent(chargeType,
-            k -> new ArrayList<>()), InvoiceLine.class);
+        // List in map should be updated in place - DO NOT fix type casting, as the code
+        // creates a copy that will cause it NOT to be updated in place
+        List<InvoiceLine> chargesLines = (List<InvoiceLine>) billItems.computeIfAbsent(chargeType,
+            k -> new ArrayList<>());
         InvoiceLine line = new InvoiceLine(currentBillItem.getFieldValue(chargeType),
             currentBillItem.getFieldValue(ShaclResource.DESCRIPTION_PROPERTY));
         chargesLines.add(line);
