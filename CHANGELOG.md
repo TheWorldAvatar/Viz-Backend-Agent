@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.39.2
+
+- Fixed deletion of array fields so that the statements linking to main instance is grouped together
+
 ## 1.39.1
 
 - Fixed retrieval of array fields for multiple array groups

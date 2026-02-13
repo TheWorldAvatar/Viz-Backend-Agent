@@ -25,7 +25,7 @@ class AgentApplicationTests {
   @Autowired
   private MockMvc mockMvc;
 
-  private static final String API_VERSION = "1.39.2-shacl-rule-deletion";
+  private static final String API_VERSION = "1.39.2";
   private static final String STATUS_MESSAGE_EN = "Agent is ready to receive requests.";
   private static final String STATUS_MESSAGE_DE = "Agent ist bereit, Anfragen zu empfangen.";
   private static final String INVALID_GEOCODING_MESSAGE_EN = "Invalid geocoding parameters! Detected a block number but no street is provided!";
