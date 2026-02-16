@@ -152,7 +152,18 @@ public class BillingService {
   }
 
   /**
-   * Retrieve all billable tasks related occurrences to a target account.
+   * Retrieve the number of billable tasks for a target account.
+   * 
+   * @param entityType Target resource ID.
+   * @param filters    Filters for count.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getBillableCount(String entityType, Map<String, String> filters) {
+    return this.lifecycleTaskService.getOccurrenceCount(entityType, null, null, LifecycleEventType.SERVICE_ACCRUAL,
+        filters);
+  }
+
+  /**
+   * Retrieve all billable tasks for a target account.
    * 
    * @param entityType Target resource ID.
    * @param pagination Pagination state to filter results.
@@ -160,6 +171,20 @@ public class BillingService {
   public ResponseEntity<StandardApiResponse<?>> getBillableOccurrences(String entityType, PaginationState pagination) {
     return this.lifecycleTaskService.getOccurrences(null, null, entityType,
         LifecycleEventType.SERVICE_ACCRUAL, pagination);
+  }
+
+  /**
+   * Retrieve all billable tasks related occurrences to a target account.
+   * 
+   * @param allRequestParams All parameters sent through the request.
+   */
+  public List<String> getBillableFilters(Map<String, String> allRequestParams) {
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    String field = allRequestParams.remove(StringResource.FIELD_REQUEST_PARAM);
+    String search = allRequestParams.getOrDefault(StringResource.SEARCH_REQUEST_PARAM, "");
+    allRequestParams.remove(StringResource.SEARCH_REQUEST_PARAM);
+    return this.lifecycleTaskService.getFilterOptions(type, field,
+        search, null, null, LifecycleEventType.SERVICE_ACCRUAL, allRequestParams);
   }
 
   /**

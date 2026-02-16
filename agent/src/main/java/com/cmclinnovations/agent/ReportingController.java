@@ -94,6 +94,20 @@ public class ReportingController {
   }
 
   /**
+   * Retrieves the count of all the billable tasks associated with the target
+   * account.
+   */
+  @GetMapping("/account/tasks/count")
+  public ResponseEntity<StandardApiResponse<?>> getBillableTasksCount(
+      @RequestParam Map<String, String> allRequestParams) {
+    LOGGER.info("Received request to get the number of billable tasks for an account...");
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
+      return this.billingService.getBillableCount(type, allRequestParams);
+    });
+  }
+
+  /**
    * Retrieves all the billable tasks associated with the target account.
    */
   @GetMapping("/account/tasks")
@@ -108,6 +122,19 @@ public class ReportingController {
       return this.billingService.getBillableOccurrences(type,
           // Target account field will be included directly in the filter parameters
           new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
+    });
+  }
+
+  /**
+   * Retrieves the filter options for the billable tasks associated with the
+   * target account.
+   */
+  @GetMapping("/account/tasks/filter")
+  public ResponseEntity<StandardApiResponse<?>> getBillableTaskFilters(
+      @RequestParam Map<String, String> allRequestParams) {
+    LOGGER.info("Received request to retrieve filter options for billable tasks...");
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
+      return this.responseEntityBuilder.success(this.billingService.getBillableFilters(allRequestParams));
     });
   }
 
