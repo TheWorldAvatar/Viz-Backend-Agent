@@ -1,4 +1,5 @@
 {
   "identifier": "https://www.example.org/kg/ClassName",
-  "idtwo": "https://www.example.org/kg/ClassTwo"
+  "idtwo": "https://www.example.org/kg/ClassTwo",
+  "invoice": "https://purl.org/p2p-o/document#E-Invoice"
 }

@@ -33,6 +33,7 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
   - [2.7 Service Reporting Route](#27-service-reporting-route)
     - [2.7.1 Customer account route](#271-customer-account)
     - [2.7.2 Financial record route](#272-financial-record-route)
+    - [2.7.3 Invoice route](#273-invoice-route)
 
 ## 1. Agent Deployment
 
@@ -993,3 +994,7 @@ To update the pricing model of a specific contract, users must send a `PUT` requ
 #### 2.7.2.1 Service charges
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/service/charge/{id}` endpoint to get the service charge details for the target task, where `id` is the task's identifier. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1172-serviceaccrualevent).
+
+#### 2.7.3 Invoice route
+
+These endpoints allow users to add and view invoices, along with retrieval of billable tasks associated with a specific account. When adding an invoice, users can create a custom form template through using the `invoice` identifier. Users must include the invoice identifier in `application-form.json` and have a `SHACL` shape targeting a `https://purl.org/p2p-o/document#E-Invoice`.
