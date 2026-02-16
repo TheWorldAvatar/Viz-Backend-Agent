@@ -296,11 +296,13 @@ public class LifecycleTaskService {
       // Override the field value for filter options, as it should ignore them
       serviceEventFilters.put(field, new HashSet<>());
     }
-    // Get statements for dispatch events that matches any sort/filter criteria
-    String addFilterQueries = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-        sortedFields, serviceEventFilters, filterExpressions);
+    // Only get statements for dispatch events that matches any sort/filter criteria
+    // if it is not at billable state
+    String addFilterQueries = eventType.equals(LifecycleEventType.SERVICE_ACCRUAL) ? ""
+        : this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+            sortedFields, serviceEventFilters, filterExpressions);
     // Non-closed tasks should not have the closed related statements
-    if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE)) {
+    if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
       addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
           sortedFields, serviceEventFilters, filterExpressions);
       addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,

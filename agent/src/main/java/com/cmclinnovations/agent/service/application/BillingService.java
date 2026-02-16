@@ -13,8 +13,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.InvoiceLine;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.UpdateService;
@@ -33,6 +35,7 @@ public class BillingService {
   private final UpdateService updateService;
   final DateTimeService dateTimeService;
   public final LifecycleQueryService lifecycleQueryService;
+  public final LifecycleTaskService lifecycleTaskService;
 
   static final Logger LOGGER = LogManager.getLogger(BillingService.class);
 
@@ -40,11 +43,12 @@ public class BillingService {
    * Constructs a new service with the following dependencies.
    */
   public BillingService(AddService addService, UpdateService updateService, DateTimeService dateTimeService,
-      LifecycleQueryService lifecycleQueryService) {
+      LifecycleQueryService lifecycleQueryService, LifecycleTaskService lifecycleTaskService) {
     this.addService = addService;
     this.updateService = updateService;
     this.dateTimeService = dateTimeService;
     this.lifecycleQueryService = lifecycleQueryService;
+    this.lifecycleTaskService = lifecycleTaskService;
   }
 
   /**
@@ -145,6 +149,17 @@ public class BillingService {
       }
     }
     return serviceCharges;
+  }
+
+  /**
+   * Retrieve all billable tasks related occurrences to a target account.
+   * 
+   * @param entityType Target resource ID.
+   * @param pagination Pagination state to filter results.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getBillableOccurrences(String entityType, PaginationState pagination) {
+    return this.lifecycleTaskService.getOccurrences(null, null, entityType,
+        LifecycleEventType.SERVICE_ACCRUAL, pagination);
   }
 
   /**

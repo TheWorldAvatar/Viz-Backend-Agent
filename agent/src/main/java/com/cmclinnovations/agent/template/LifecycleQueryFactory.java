@@ -18,10 +18,11 @@ import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 
 public class LifecycleQueryFactory {
+  private static final String BILLABLE_QUERY_STATEMENTS = "?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceAccrualEvent;cmns-dt:succeeds/fibo-fnd-rel-rel:exemplifies ?prev_event.";
   private static final String CLOSED_QUERY_STATEMENTS = "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:TerminatedServiceEvent .}UNION"
       + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:IncidentReportEvent .}UNION"
       + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent ; cmns-dsg:describes ontoservice:CompletedStatus .}UNION"
-      + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceAccrualEvent;cmns-dt:succeeds/fibo-fnd-rel-rel:exemplifies ?prev_event}";
+      + "{" + BILLABLE_QUERY_STATEMENTS + "}";
   private static final String UNCLOSED_QUERY_STATEMENTS = "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent .}UNION"
       + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDispatchEvent .}UNION"
       + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent ; cmns-dsg:describes ontoservice:PendingStatus .}";
@@ -183,7 +184,8 @@ public class LifecycleQueryFactory {
     String filterContractStatement = contract != null ? "?iri dc-terms:identifier \"" + contract + "\"." : "";
     // Dates must be included in the template to sort out different task status
     String filterDateStatement = "";
-    if (contract == null && endDate != null) {
+    // Date filters should not be added when retrieving just billable tasks
+    if (contract == null && endDate != null && !eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
       String dateFilterVar = eventType.equals(LifecycleEventType.ACTIVE_SERVICE) ? closedDateVar : eventDateVar;
       // For outstanding tasks, start dates are omitted
       if (!startDate.isEmpty()) {
@@ -198,6 +200,8 @@ public class LifecycleQueryFactory {
       eventTargetStatements = CLOSED_QUERY_STATEMENTS;
       eventTargetStatements += "?event_id <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder."
           + "BIND(xsd:date(?closed_date_placeholder) AS " + closedDateVar + ")";
+    } else if (eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
+      eventTargetStatements = BILLABLE_QUERY_STATEMENTS;
     } else {
       eventTargetStatements = UNCLOSED_QUERY_STATEMENTS;
     }

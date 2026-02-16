@@ -16,13 +16,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.BillingService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.StringResource;
 
 @RestController
 @RequestMapping("/report")
@@ -87,6 +90,24 @@ public class ReportingController {
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.responseEntityBuilder.success(
           List.of(this.billingService.getServiceCharges(id)));
+    });
+  }
+
+  /**
+   * Retrieves all the billable tasks associated with the target account.
+   */
+  @GetMapping("/account/tasks")
+  public ResponseEntity<StandardApiResponse<?>> getBillableTasks(@RequestParam Map<String, String> allRequestParams) {
+    LOGGER.info("Received request to get all the billable tasks for an account...");
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
+    Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
+    String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
+    allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
+      return this.billingService.getBillableOccurrences(type,
+          // Target account field will be included directly in the filter parameters
+          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
     });
   }
 
