@@ -166,9 +166,11 @@ public class LifecycleQueryFactory {
    *                  passed.
    * @param endDate   Target end date in YYYY-MM-DD format. Optional if null is
    *                  passed.
-   * @param isClosed  Indicates whether to retrieve closed tasks.
+   * @param eventType The current event type, affecting the query for
+   *                  execution. Closed should be completed.
    */
-  public Map<String, String> getServiceTasksQuery(String contract, String startDate, String endDate, Boolean isClosed) {
+  public Map<String, String> getServiceTasksQuery(String contract, String startDate, String endDate,
+      LifecycleEventType eventType) {
     String eventDateVar = QueryResource.genVariable(LifecycleResource.DATE_KEY).getQueryString();
     String closedDateVar = QueryResource.genVariable(LifecycleResource.CLOSED_DATE_KEY).getQueryString();
     String eventDatePlaceholderVar = QueryResource.genVariable("event_date").getQueryString();
@@ -182,7 +184,7 @@ public class LifecycleQueryFactory {
     // Dates must be included in the template to sort out different task status
     String filterDateStatement = "";
     if (contract == null && endDate != null) {
-      String dateFilterVar = isClosed ? closedDateVar : eventDateVar;
+      String dateFilterVar = eventType.equals(LifecycleEventType.ACTIVE_SERVICE) ? closedDateVar : eventDateVar;
       // For outstanding tasks, start dates are omitted
       if (!startDate.isEmpty()) {
         filterDateStatement = dateFilterVar + ">=\"" + startDate + "\"^^xsd:date && ";
@@ -192,9 +194,7 @@ public class LifecycleQueryFactory {
     }
     // Generates query statements to target specific events based on closed status
     String eventTargetStatements;
-    if (isClosed == null) {
-      eventTargetStatements = "";
-    } else if (isClosed) {
+    if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE)) {
       eventTargetStatements = CLOSED_QUERY_STATEMENTS;
       eventTargetStatements += "?event_id <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder."
           + "BIND(xsd:date(?closed_date_placeholder) AS " + closedDateVar + ")";
@@ -215,7 +215,8 @@ public class LifecycleQueryFactory {
             + eventIdVar + " <https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
             + eventTargetStatements + filterContractStatement
             // Event must be the last in the chain ie no other events will succeed it
-            + "MINUS{" + eventIdVar + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}");
+            + "MINUS{" + eventIdVar
+            + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}");
     results.put(LifecycleResource.EVENT_KEY,
         eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> ?temp_event."
             + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar
@@ -293,7 +294,8 @@ public class LifecycleQueryFactory {
       case LifecycleEventType.APPROVED:
         // for pending contract, look for creation event
         String creationEventStatement = eventVar
-            .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, QueryResource.ONTOSERVICE.iri("ContractCreation"))
+            .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+                QueryResource.ONTOSERVICE.iri("ContractCreation"))
             .andHas(p -> p.pred(QueryResource.CMNS_DSG_DESCRIBES).then(RDFS.LABEL),
                 QueryResource.genVariable(LifecycleResource.STATUS_KEY))
             .getQueryString();
@@ -395,7 +397,8 @@ public class LifecycleQueryFactory {
         stageVar);
     // stage exemplifies expiration stage
     TriplePattern stageConditionsPattern = stageVar
-        .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES, Rdf.iri(LifecycleEventType.ARCHIVE_COMPLETION.getStage()))
+        .has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
+            Rdf.iri(LifecycleEventType.ARCHIVE_COMPLETION.getStage()))
         .andHas(QueryResource.CMNS_COL_COMPRISES, archiveEeventVar);
     GraphPatternNotTriples combinedPattern = GraphPatterns.and(iriToStagePattern, stageConditionsPattern);
     GraphPatternNotTriples filterClause = QueryResource.genFilterExists(combinedPattern, exists);
