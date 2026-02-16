@@ -998,3 +998,15 @@ Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/servic
 #### 2.7.3 Invoice route
 
 These endpoints allow users to add and view invoices, along with retrieval of billable tasks associated with a specific account. When adding an invoice, users can create a custom form template through using the `invoice` identifier. Users must include the invoice identifier in `application-form.json` and have a `SHACL` shape targeting a `https://purl.org/p2p-o/document#E-Invoice`.
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks?type={contractType}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all billable tasks, where `contractType` is the resource ID of the contract type, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. To target a specific account, users must include the account field as a filter parameter.
+
+> [!TIP]  
+> `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
+
+> [!IMPORTANT]  
+> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
+
+To get the count of closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks/count?type={contractType}` endpoint.
+
+Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on the billable tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, and `{field}` is the target field. Users can also include an optional `search` parameter as well as any active filters.
