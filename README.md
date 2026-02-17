@@ -1010,3 +1010,16 @@ Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/accoun
 To get the count of closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks/count?type={contractType}` endpoint.
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on the billable tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, and `{field}` is the target field. Users can also include an optional `search` parameter as well as any active filters.
+
+#### 2.7.3.1 Add invoice
+
+Users can send a `POST` request to the `<baseURL>/vis-backend-agent/report/account/invoice` endpoint to create a new invoice using default and custom templates. Users must add a custom template with an `@id` using `invoice.jsonld` and an associated mapping in the `application-service.json` typically `"invoice": "invoice"`. This route will require the following `JSON` request parameters:
+
+```json
+{
+  /* parameters */
+  "id": "The invoice ID",
+  "account": "The ID of the customer account",
+  "task": ["List of task ID for the invoice" ],
+}
+```
