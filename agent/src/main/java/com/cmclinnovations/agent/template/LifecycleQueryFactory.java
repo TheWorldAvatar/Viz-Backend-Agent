@@ -13,17 +13,23 @@ import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
+import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 
 public class LifecycleQueryFactory {
-  private static final String BILLABLE_QUERY_STATEMENTS = "?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceAccrualEvent;cmns-dt:succeeds/fibo-fnd-rel-rel:exemplifies ?prev_event.";
+  private static final String ACCRUAL_EVENT_QUERY_STATEMENT = "?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceAccrualEvent";
   private static final String INVOICED_QUERY_STATEMENTS = "?invoice <https://purl.org/p2p-o/invoice#hasInvoiceReference>/<https://www.omg.org/spec/Commons/Documents/isAbout> ?event_id";
   private static final String CLOSED_QUERY_STATEMENTS = "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:TerminatedServiceEvent .}UNION"
       + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:IncidentReportEvent .}UNION"
       + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent ; cmns-dsg:describes ontoservice:CompletedStatus .}UNION"
-      + "{" + BILLABLE_QUERY_STATEMENTS + "}";
+      // Billable status
+      + "{" + ACCRUAL_EVENT_QUERY_STATEMENT + ";cmns-dt:succeeds/fibo-fnd-rel-rel:exemplifies ?prev_event. "
+      + QueryResource.minus(INVOICED_QUERY_STATEMENTS) + "}UNION"
+      // Invoiced status
+      + "{" + ACCRUAL_EVENT_QUERY_STATEMENT + "." + INVOICED_QUERY_STATEMENTS + ".BIND(\""
+      + BillingResource.INVOICE_RESOURCE + "\" AS ?prev_event)}";
   private static final String UNCLOSED_QUERY_STATEMENTS = "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent .}UNION"
       + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDispatchEvent .}UNION"
       + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent ; cmns-dsg:describes ontoservice:PendingStatus .}";
@@ -202,7 +208,7 @@ public class LifecycleQueryFactory {
       eventTargetStatements += "?event_id <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder."
           + "BIND(xsd:date(?closed_date_placeholder) AS " + closedDateVar + ")";
     } else if (eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
-      eventTargetStatements = BILLABLE_QUERY_STATEMENTS + QueryResource.minus(INVOICED_QUERY_STATEMENTS);
+      eventTargetStatements = ACCRUAL_EVENT_QUERY_STATEMENT + ". " + QueryResource.minus(INVOICED_QUERY_STATEMENTS);
     } else {
       eventTargetStatements = UNCLOSED_QUERY_STATEMENTS;
     }

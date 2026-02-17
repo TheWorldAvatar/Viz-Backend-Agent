@@ -7,6 +7,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 
+import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 
@@ -63,6 +64,8 @@ public class LocalisationTranslator {
         yield LocalisationResource.EVENT_STATUS_BILLABLE_CANCELLED_KEY;
       case LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_INCIDENT_REPORT:
         yield LocalisationResource.EVENT_STATUS_BILLABLE_ISSUE_KEY;
+      case LifecycleResource.EVENT_ACCRUAL + ";" + BillingResource.INVOICE_RESOURCE:
+        yield LocalisationResource.EVENT_STATUS_INVOICED_KEY;
       default:
         throw new IllegalArgumentException("Unknown event: " + event);
     };
@@ -97,6 +100,9 @@ public class LocalisationTranslator {
             .getQueryString();
       case LocalisationResource.EVENT_STATUS_BILLABLE_ISSUE_KEY:
         yield Rdf.literalOf(LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_INCIDENT_REPORT)
+            .getQueryString();
+      case LocalisationResource.EVENT_STATUS_INVOICED_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_ACCRUAL + ";" + BillingResource.INVOICE_RESOURCE)
             .getQueryString();
       default:
         throw new IllegalArgumentException("Unknown event key: " + eventStatusLocalisedKey);
