@@ -19,6 +19,7 @@ import com.cmclinnovations.agent.utils.ShaclResource;
 
 public class LifecycleQueryFactory {
   private static final String BILLABLE_QUERY_STATEMENTS = "?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceAccrualEvent;cmns-dt:succeeds/fibo-fnd-rel-rel:exemplifies ?prev_event.";
+  private static final String INVOICED_QUERY_STATEMENTS = "?invoice <https://purl.org/p2p-o/invoice#hasInvoiceReference>/<https://www.omg.org/spec/Commons/Documents/isAbout> ?event_id";
   private static final String CLOSED_QUERY_STATEMENTS = "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:TerminatedServiceEvent .}UNION"
       + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:IncidentReportEvent .}UNION"
       + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent ; cmns-dsg:describes ontoservice:CompletedStatus .}UNION"
@@ -201,7 +202,7 @@ public class LifecycleQueryFactory {
       eventTargetStatements += "?event_id <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder."
           + "BIND(xsd:date(?closed_date_placeholder) AS " + closedDateVar + ")";
     } else if (eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
-      eventTargetStatements = BILLABLE_QUERY_STATEMENTS;
+      eventTargetStatements = BILLABLE_QUERY_STATEMENTS + QueryResource.minus(INVOICED_QUERY_STATEMENTS);
     } else {
       eventTargetStatements = UNCLOSED_QUERY_STATEMENTS;
     }
@@ -222,8 +223,10 @@ public class LifecycleQueryFactory {
             + "MINUS{" + eventIdVar
             + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}");
     results.put(LifecycleResource.EVENT_KEY,
-        eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> ?temp_event."
-            + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> " + eventStatusVar
+        eventIdVar
+            + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> ?temp_event."
+            + "OPTIONAL{" + eventIdVar + " <https://www.omg.org/spec/Commons/Designators/describes> "
+            + eventStatusVar
             + "} BIND(CONCAT(STR(?temp_event),IF(BOUND(?event_status),CONCAT(\";\",STR(?event_status)),"
             + "IF(BOUND(?prev_event),CONCAT(\";\",STR(?prev_event)),\"\"))) AS " + eventVar + ")");
     results.put(LifecycleResource.LAST_MODIFIED_KEY, eventIdVar
