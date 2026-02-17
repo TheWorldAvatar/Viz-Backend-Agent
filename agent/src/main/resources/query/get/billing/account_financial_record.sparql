@@ -1,0 +1,10 @@
+PREFIX dc-term: 		     <http://purl.org/dc/terms/>
+PREFIX fibo-fbc-pas-caa: <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/> 
+PREFIX fibo-fnd-arr-doc: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Documents/>
+
+SELECT ?iri WHERE {
+  ?account a fibo-fbc-pas-caa:CustomerAccount;
+    dc-term:identifier "[target]";
+    fibo-fnd-arr-doc:hasRecord ?iri.
+  ?iri a fibo-fnd-arr-doc:FinancialRecord .
+}

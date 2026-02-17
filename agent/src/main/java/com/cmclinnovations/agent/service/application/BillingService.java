@@ -113,6 +113,49 @@ public class BillingService {
   }
 
   /**
+   * Generates an account invoice based on the custom requirements, as well as
+   * defaults for involved tasks and financial record.
+   * 
+   * @param instance Request parameters containing the parameters to generate the
+   *                 invoice.
+   */
+  public ResponseEntity<StandardApiResponse<?>> genAccountInvoice(Map<String, Object> instance) {
+    // Generate the custom invoice resource first
+    ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
+        BillingResource.INVOICE_RESOURCE, instance, TrackActionType.CREATION);
+    // If successful, generate the agent compliant requirements
+    if (response.getStatusCode() == HttpStatus.OK) {
+      // Retain iri of invoice following custom requirements
+      String invoiceIri = response.getBody().data().id();
+      instance.put(QueryResource.IRI_KEY, invoiceIri);
+
+      // Get and set financial record associated with the account field
+      String accountId = TypeCastUtils.castToObject(instance.get(QueryResource.ACCOUNT_ID_KEY), String.class);
+      SparqlBinding accountFinancialRecordInstance = this.lifecycleQueryService
+          .getInstance(FileService.ACCOUNT_FINANCIAL_RECORD_QUERY_RESOURCE, accountId);
+      instance.put(BillingResource.CUSTOMER_ACCOUNT_RESOURCE,
+          accountFinancialRecordInstance.getFieldValue(QueryResource.IRI_KEY));
+
+      // Retrieve all task invoices as an array
+      List<String> taskIds = TypeCastUtils.castToListObject(instance.get(LifecycleResource.TASK_RESOURCE),
+          String.class);
+      List<Map<String, String>> taskInvoiceIris = new ArrayList<>();
+      taskIds.forEach(taskId -> {
+        Map<String, String> currentResults = new HashMap<>();
+        SparqlBinding taskInvoiceInstance = this.lifecycleQueryService
+            .getInstance(FileService.TASK_INVOICE_QUERY_RESOURCE, taskId);
+        currentResults.put(BillingResource.INVOICE_RESOURCE, taskInvoiceInstance.getFieldValue(QueryResource.IRI_KEY));
+        taskInvoiceIris.add(currentResults);
+      });
+      instance.put(LifecycleResource.TASK_RESOURCE, taskInvoiceIris);
+
+      response = this.addService.instantiate(
+          BillingResource.CUSTOMER_ACCOUNT_INVOICE_RESOURCE, instance, TrackActionType.CREATION);
+    }
+    return response;
+  }
+
+  /**
    * Checks if a pricing model has been assigned to the specified contract.
    * 
    * @param id Contract ID.

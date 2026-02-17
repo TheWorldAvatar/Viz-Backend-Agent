@@ -20,6 +20,7 @@ import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
+import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.BillingService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
@@ -157,6 +158,17 @@ public class ReportingController {
     LOGGER.info("Received request to assign pricing model to account...");
     return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
       return this.billingService.assignPricingPlansToAccount(instance);
+    });
+  }
+
+  /**
+   * Generates an invoice for the customer account.
+   */
+  @PostMapping("/account/invoice")
+  public ResponseEntity<StandardApiResponse<?>> createInvoice(@RequestBody Map<String, Object> instance) {
+    LOGGER.info("Received request to create a new invoice for a customer...");
+    return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
+      return this.billingService.genAccountInvoice(instance);
     });
   }
 

@@ -1,0 +1,14 @@
+PREFIX cmns-doc:          <https://www.omg.org/spec/Commons/Documents/>
+PREFIX dc-term:           <http://purl.org/dc/terms/>
+PREFIX fibo-fbc-pas-fpas: <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/>
+PREFIX fibo-fnd-rel-rel:  <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+PREFIX ontoservice:       <https://www.theworldavatar.com/kg/ontoservice/>
+PREFIX p2p-o-doc:         <https://purl.org/p2p-o/document#>
+
+SELECT ?iri WHERE {
+  ?event a fibo-fbc-pas-fpas:ContractLifecycleEventOccurrence ;
+    dc-term:identifier "[target]" ;
+    fibo-fnd-rel-rel:exemplifies ontoservice:ServiceAccrualEvent .
+  ?iri a p2p-o-doc:E-Invoice ;
+    cmns-doc:isAbout ?event.
+}

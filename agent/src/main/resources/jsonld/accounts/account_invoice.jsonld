@@ -1,0 +1,25 @@
+{
+  "@id": {
+    "@replace": "iri",
+    "@type": "iri"
+  },
+  "@type": "https://purl.org/p2p-o/document#E-Invoice",
+  "https://purl.org/p2p-o/invoice#hasInvoiceReference": {
+    "@replace": "task",
+    "@type": "array",
+    "@contents": {
+      "@id": {
+        "@replace": "invoice",
+        "@type": "iri"
+      }
+    }
+  },
+  "@reverse": {
+    "https://www.omg.org/spec/Commons/Collections/comprises": {
+      "@id": {
+        "@replace": "customer account",
+        "@type": "iri"
+      }
+    }
+  }
+}

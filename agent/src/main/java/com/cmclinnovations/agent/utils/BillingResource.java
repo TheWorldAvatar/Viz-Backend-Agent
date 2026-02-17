@@ -6,7 +6,9 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 public class BillingResource {
   public static final String CUSTOMER_ACCOUNT_RESOURCE = "customer account";
   public static final String CUSTOMER_ACCOUNT_PRICING_RESOURCE = "customer pricing plans";
+  public static final String CUSTOMER_ACCOUNT_INVOICE_RESOURCE = "account invoice";
   public static final String CONTRACT_PRICING_RESOURCE = "customer pricing contract";
+  public static final String INVOICE_RESOURCE = "invoice";
 
   public static final String AMOUNT_KEY = "amount";
   public static final String CHARGE_KEY = "charge";
