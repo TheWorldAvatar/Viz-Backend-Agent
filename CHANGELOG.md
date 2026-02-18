@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.40.0
+
+- Simplify naming conventions for existing reporting routes
+- Added a route to get billable tasks for invoice generation
+- Added a route to submit invoice form to generate invoice instance
+- Extended an invoiced status for billable tasks that are included in an invoice
+- Document the recommendation for a invoice shape
+
 ## 1.39.2
 
 - Fixed deletion of array fields so that the statements linking to main instance is grouped together

@@ -143,6 +143,8 @@ public class LifecycleResource {
         return FileService.LIFECYCLE_JSON_LD_RESOURCE;
       case BillingResource.CUSTOMER_ACCOUNT_RESOURCE:
         return FileService.CUSTOMER_ACCOUNT_JSON_LD_RESOURCE;
+      case BillingResource.CUSTOMER_ACCOUNT_INVOICE_RESOURCE:
+        return FileService.ACCOUNT_INVOICE_JSON_LD_RESOURCE;
       case BillingResource.CUSTOMER_ACCOUNT_PRICING_RESOURCE:
         return FileService.ACCOUNT_PRICING_JSON_LD_RESOURCE;
       case LifecycleResource.OCCURRENCE_INSTANT_RESOURCE:

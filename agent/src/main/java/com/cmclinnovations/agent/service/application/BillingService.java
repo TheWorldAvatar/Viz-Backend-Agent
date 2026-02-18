@@ -13,8 +13,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.InvoiceLine;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.UpdateService;
@@ -33,6 +35,7 @@ public class BillingService {
   private final UpdateService updateService;
   final DateTimeService dateTimeService;
   public final LifecycleQueryService lifecycleQueryService;
+  public final LifecycleTaskService lifecycleTaskService;
 
   static final Logger LOGGER = LogManager.getLogger(BillingService.class);
 
@@ -40,11 +43,12 @@ public class BillingService {
    * Constructs a new service with the following dependencies.
    */
   public BillingService(AddService addService, UpdateService updateService, DateTimeService dateTimeService,
-      LifecycleQueryService lifecycleQueryService) {
+      LifecycleQueryService lifecycleQueryService, LifecycleTaskService lifecycleTaskService) {
     this.addService = addService;
     this.updateService = updateService;
     this.dateTimeService = dateTimeService;
     this.lifecycleQueryService = lifecycleQueryService;
+    this.lifecycleTaskService = lifecycleTaskService;
   }
 
   /**
@@ -109,6 +113,49 @@ public class BillingService {
   }
 
   /**
+   * Generates an account invoice based on the custom requirements, as well as
+   * defaults for involved tasks and financial record.
+   * 
+   * @param instance Request parameters containing the parameters to generate the
+   *                 invoice.
+   */
+  public ResponseEntity<StandardApiResponse<?>> genAccountInvoice(Map<String, Object> instance) {
+    // Generate the custom invoice resource first
+    ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
+        BillingResource.INVOICE_RESOURCE, instance, TrackActionType.CREATION);
+    // If successful, generate the agent compliant requirements
+    if (response.getStatusCode() == HttpStatus.OK) {
+      // Retain iri of invoice following custom requirements
+      String invoiceIri = response.getBody().data().id();
+      instance.put(QueryResource.IRI_KEY, invoiceIri);
+
+      // Get and set financial record associated with the account field
+      String accountId = TypeCastUtils.castToObject(instance.get(QueryResource.ACCOUNT_ID_KEY), String.class);
+      SparqlBinding accountFinancialRecordInstance = this.lifecycleQueryService
+          .getInstance(FileService.ACCOUNT_FINANCIAL_RECORD_QUERY_RESOURCE, accountId);
+      instance.put(BillingResource.CUSTOMER_ACCOUNT_RESOURCE,
+          accountFinancialRecordInstance.getFieldValue(QueryResource.IRI_KEY));
+
+      // Retrieve all task invoices as an array
+      List<String> taskIds = TypeCastUtils.castToListObject(instance.get(LifecycleResource.TASK_RESOURCE),
+          String.class);
+      List<Map<String, String>> taskInvoiceIris = new ArrayList<>();
+      taskIds.forEach(taskId -> {
+        Map<String, String> currentResults = new HashMap<>();
+        SparqlBinding taskInvoiceInstance = this.lifecycleQueryService
+            .getInstance(FileService.TASK_INVOICE_QUERY_RESOURCE, taskId);
+        currentResults.put(BillingResource.INVOICE_RESOURCE, taskInvoiceInstance.getFieldValue(QueryResource.IRI_KEY));
+        taskInvoiceIris.add(currentResults);
+      });
+      instance.put(LifecycleResource.TASK_RESOURCE, taskInvoiceIris);
+
+      response = this.addService.instantiate(
+          BillingResource.CUSTOMER_ACCOUNT_INVOICE_RESOURCE, instance, TrackActionType.IGNORED);
+    }
+    return response;
+  }
+
+  /**
    * Checks if a pricing model has been assigned to the specified contract.
    * 
    * @param id Contract ID.
@@ -120,31 +167,67 @@ public class BillingService {
   }
 
   /**
-   * Retrieves the bill for the specific task.
+   * Retrieves the service charges for the specific task.
    * 
    * @param id Target task ID.
    */
-  public Map<String, Object> getBill(String id) {
-    Queue<SparqlBinding> billItemsInstances = this.lifecycleQueryService.getInstances(
+  public Map<String, Object> getServiceCharges(String id) {
+    Queue<SparqlBinding> serviceChargesInstances = this.lifecycleQueryService.getInstances(
         FileService.ACCOUNT_BILL_QUERY_RESOURCE, id);
-    Map<String, Object> billItems = new HashMap<>();
-    while (!billItemsInstances.isEmpty()) {
-      SparqlBinding currentBillItem = billItemsInstances.poll();
-      billItems.putIfAbsent(BillingResource.AMOUNT_KEY, currentBillItem.getFieldValue(BillingResource.AMOUNT_KEY));
-      if (currentBillItem.containsField(BillingResource.CHARGE_KEY)
-          || currentBillItem.containsField(BillingResource.DISCOUNT_KEY)) {
-        String chargeType = currentBillItem.containsField(BillingResource.CHARGE_KEY) ? BillingResource.CHARGE_KEY
+    Map<String, Object> serviceCharges = new HashMap<>();
+    while (!serviceChargesInstances.isEmpty()) {
+      SparqlBinding currentCharge = serviceChargesInstances.poll();
+      serviceCharges.putIfAbsent(BillingResource.AMOUNT_KEY, currentCharge.getFieldValue(BillingResource.AMOUNT_KEY));
+      if (currentCharge.containsField(BillingResource.CHARGE_KEY)
+          || currentCharge.containsField(BillingResource.DISCOUNT_KEY)) {
+        String chargeType = currentCharge.containsField(BillingResource.CHARGE_KEY) ? BillingResource.CHARGE_KEY
             : BillingResource.DISCOUNT_KEY;
         // List in map should be updated in place - DO NOT fix type casting, as the code
         // creates a copy that will cause it NOT to be updated in place
-        List<InvoiceLine> chargesLines = (List<InvoiceLine>) billItems.computeIfAbsent(chargeType,
+        List<InvoiceLine> chargesLines = (List<InvoiceLine>) serviceCharges.computeIfAbsent(chargeType,
             k -> new ArrayList<>());
-        InvoiceLine line = new InvoiceLine(currentBillItem.getFieldValue(chargeType),
-            currentBillItem.getFieldValue(ShaclResource.DESCRIPTION_PROPERTY));
+        InvoiceLine line = new InvoiceLine(currentCharge.getFieldValue(chargeType),
+            currentCharge.getFieldValue(ShaclResource.DESCRIPTION_PROPERTY));
         chargesLines.add(line);
       }
     }
-    return billItems;
+    return serviceCharges;
+  }
+
+  /**
+   * Retrieve the number of billable tasks for a target account.
+   * 
+   * @param entityType Target resource ID.
+   * @param filters    Filters for count.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getBillableCount(String entityType, Map<String, String> filters) {
+    return this.lifecycleTaskService.getOccurrenceCount(entityType, null, null, LifecycleEventType.SERVICE_ACCRUAL,
+        filters);
+  }
+
+  /**
+   * Retrieve all billable tasks for a target account.
+   * 
+   * @param entityType Target resource ID.
+   * @param pagination Pagination state to filter results.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getBillableOccurrences(String entityType, PaginationState pagination) {
+    return this.lifecycleTaskService.getOccurrences(null, null, entityType,
+        LifecycleEventType.SERVICE_ACCRUAL, pagination);
+  }
+
+  /**
+   * Retrieve all billable tasks related occurrences to a target account.
+   * 
+   * @param allRequestParams All parameters sent through the request.
+   */
+  public List<String> getBillableFilters(Map<String, String> allRequestParams) {
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    String field = allRequestParams.remove(StringResource.FIELD_REQUEST_PARAM);
+    String search = allRequestParams.getOrDefault(StringResource.SEARCH_REQUEST_PARAM, "");
+    allRequestParams.remove(StringResource.SEARCH_REQUEST_PARAM);
+    return this.lifecycleTaskService.getFilterOptions(type, field,
+        search, null, null, LifecycleEventType.SERVICE_ACCRUAL, allRequestParams);
   }
 
   /**

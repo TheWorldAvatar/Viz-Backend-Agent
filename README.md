@@ -33,6 +33,7 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
   - [2.7 Service Reporting Route](#27-service-reporting-route)
     - [2.7.1 Customer account route](#271-customer-account)
     - [2.7.2 Financial record route](#272-financial-record-route)
+    - [2.7.3 Invoice route](#273-invoice-route)
 
 ## 1. Agent Deployment
 
@@ -977,11 +978,11 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/report/accou
 
 These endpoints allow users to view and update the financial record and pricing model associated with a specific contract or task. Before using these endpoints, please read the corresponding required definitions for a **[Payment Obligation](https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation)** concept in the [`SHACL` shapes](./resources/README.md#1171-paymentobligation) section.
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/model/{id}` endpoint to get the form template of the payment obligation and pricing model associated with the target contract, where `id` is the identifier for the target contract. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1171-paymentobligation).
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/contract/pricing/form/{id}` endpoint to get the form template of the payment obligation and pricing model associated with the target contract, where `id` is the identifier for the target contract. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1171-paymentobligation).
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/contract/{id}` endpoint to check if a pricing model has been assigned to the target contract, where `id` is the identifier for the target contract.
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/contract/pricing/{id}` endpoint to check if a pricing model has been assigned to the target contract, where `id` is the identifier for the target contract.
 
-To update the pricing model of a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/transaction/model`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
+To update the pricing model of a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/contract/pricing`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
 
 ```json
 {
@@ -990,6 +991,35 @@ To update the pricing model of a specific contract, users must send a `PUT` requ
 }
 ```
 
-#### 2.7.2.1 Bills
+#### 2.7.2.1 Service charges
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/transaction/invoice/{id}` endpoint to get the bill details for the target task, where `id` is the task's identifier. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1172-individualtransaction).
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/service/charge/{id}` endpoint to get the service charge details for the target task, where `id` is the task's identifier. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1172-serviceaccrualevent).
+
+#### 2.7.3 Invoice route
+
+These endpoints allow users to add and view invoices, along with retrieval of billable tasks associated with a specific account. When adding an invoice, users can create a custom form template through using the `invoice` identifier. Users must include the invoice identifier in `application-form.json` and have a `SHACL` shape targeting a `https://purl.org/p2p-o/document#E-Invoice`.
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks?type={contractType}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all billable tasks, where `contractType` is the resource ID of the contract type, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. To target a specific account, users must include the account field as a filter parameter.
+
+> [!TIP]  
+> `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
+
+> [!IMPORTANT]  
+> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
+
+To get the count of closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks/count?type={contractType}` endpoint.
+
+Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on the billable tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, and `{field}` is the target field. Users can also include an optional `search` parameter as well as any active filters.
+
+#### 2.7.3.1 Add invoice
+
+Users can send a `POST` request to the `<baseURL>/vis-backend-agent/report/account/invoice` endpoint to create a new invoice using default and custom templates. Users must add a custom template with an `@id` using `invoice.jsonld` and an associated mapping in the `application-service.json` typically `"invoice": "invoice"`. This route will require the following `JSON` request parameters:
+
+```json
+{
+  /* parameters */
+  "id": "The invoice ID",
+  "account": "The ID of the customer account",
+  "task": ["List of task ID for the invoice" ],
+}
+```
