@@ -150,7 +150,7 @@ public class BillingService {
       instance.put(LifecycleResource.TASK_RESOURCE, taskInvoiceIris);
 
       response = this.addService.instantiate(
-          BillingResource.CUSTOMER_ACCOUNT_INVOICE_RESOURCE, instance, TrackActionType.CREATION);
+          BillingResource.CUSTOMER_ACCOUNT_INVOICE_RESOURCE, instance, TrackActionType.IGNORED);
     }
     return response;
   }
