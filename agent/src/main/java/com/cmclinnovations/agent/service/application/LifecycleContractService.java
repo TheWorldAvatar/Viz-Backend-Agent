@@ -120,7 +120,7 @@ public class LifecycleContractService {
   public ResponseEntity<Map<String, Object>> getSchedule(String contract) {
     LOGGER.debug("Retrieving the schedule details of the contract...");
     SparqlBinding result = this.lifecycleQueryService.querySchedule(contract);
-    LOGGER.info("Successfuly retrieved schedule!");
+    LOGGER.info("Successfully retrieved schedule!");
     return new ResponseEntity<>(result.get(), HttpStatus.OK);
   }
 
@@ -166,7 +166,7 @@ public class LifecycleContractService {
     draftDetails.put("time slot start", rawSchedule.getFieldValue(QueryResource.SCHEDULE_START_TIME_VAR.getVarName()));
     draftDetails.put("time slot end", rawSchedule.getFieldValue(QueryResource.SCHEDULE_END_TIME_VAR.getVarName()));
     // handle fixed date schedule separately
-    if (rawSchedule.containsField(QueryResource.FIXED_DATE_DATE_KEY)) {
+    if (rawSchedule.containsArrayField(QueryResource.FIXED_DATE_DATE_KEY)) {
       List<Map<String, SparqlResponseField>> dateFields = rawSchedule.getList(QueryResource.FIXED_DATE_DATE_KEY);
       List<String> entryDateList = dateFields.stream()
           .map(entryDate -> entryDate.get(QueryResource.FIXED_DATE_DATE_KEY).value())

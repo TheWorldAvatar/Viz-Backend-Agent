@@ -227,6 +227,17 @@ public class SparqlBinding {
   }
 
   /**
+   * Verify if an array binding exists for the specified field
+   *
+   * @param field Field of interest
+   */
+  public boolean containsArrayField(String field) {
+    String var = QueryResource.genVariable(field).getVarName();
+    return this.arrayBindingFields.containsKey(var) && this.arrayBindingFields.get(var) != null
+        && !this.arrayBindingFields.get(var).isEmpty();
+  }
+
+  /**
    * Merges with the other sparqlbinding. WARNING: Overrides existing fields.
    * 
    * @param other Target binding to merge.
