@@ -120,7 +120,7 @@ public class LifecycleContractService {
   public ResponseEntity<Map<String, Object>> getSchedule(String contract) {
     LOGGER.debug("Retrieving the schedule details of the contract...");
     SparqlBinding result = this.lifecycleQueryService.querySchedule(contract);
-    LOGGER.info("Successfuly retrieved schedule!");
+    LOGGER.info("Successfully retrieved schedule!");
     return new ResponseEntity<>(result.get(), HttpStatus.OK);
   }
 

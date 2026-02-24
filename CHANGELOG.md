@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.40.1
+
+- Fixed retrieval of fixed date schedule
+
 ## 1.40.0
 
 - Simplify naming conventions for existing reporting routes
