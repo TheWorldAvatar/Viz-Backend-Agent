@@ -218,23 +218,14 @@ public class SparqlBinding {
   }
 
   /**
-   * Verify if the bindings have the specified field
+   * Verify if the bindings have the specified field. Also checks array variables
    * 
    * @param field Field of interest
    */
   public boolean containsField(String field) {
-    return this.bindings.containsKey(field) && this.bindings.get(field) != null;
-  }
-
-  /**
-   * Verify if an array binding exists for the specified field
-   *
-   * @param field Field of interest
-   */
-  public boolean containsArrayField(String field) {
-    String var = QueryResource.genVariable(field).getVarName();
-    return this.arrayBindingFields.containsKey(var) && this.arrayBindingFields.get(var) != null
-        && !this.arrayBindingFields.get(var).isEmpty();
+    return (this.bindings.containsKey(field) && this.bindings.get(field) != null)
+        || (this.arrayBindingFields.containsKey(field) && this.arrayBindingFields.get(field) != null
+            && !this.arrayBindingFields.get(field).isEmpty());
   }
 
   /**

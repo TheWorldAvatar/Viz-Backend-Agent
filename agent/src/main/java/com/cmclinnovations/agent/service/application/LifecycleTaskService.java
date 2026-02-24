@@ -503,7 +503,7 @@ public class LifecycleTaskService {
     String recurrence = bindings.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY);
     Queue<String> occurrences = new ArrayDeque<>();
     // Handle as fixed date schedule first
-    if (bindings.containsArrayField(QueryResource.FIXED_DATE_DATE_KEY)) {
+    if (bindings.containsField(QueryResource.FIXED_DATE_DATE_KEY)) {
       List<Map<String, SparqlResponseField>> entryDates = bindings.getList(QueryResource.FIXED_DATE_DATE_KEY);
       List<String> entryDateStrings = entryDates.stream()
           .map(entryDate -> entryDate.get(QueryResource.FIXED_DATE_DATE_KEY).value())
