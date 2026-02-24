@@ -214,7 +214,8 @@ public class LifecycleQueryService {
     } catch (NullPointerException e) {
       // try query as fixed date schedule
       Queue<SparqlBinding> results = this.getInstances(FileService.FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE,contract, contract);
-      SparqlBinding fixedDateScheduleInstance = results.peek(); // this would keep the first result in queue
+      SparqlBinding fixedDateScheduleInstance = results.poll();
+      fixedDateScheduleInstance.initArray(FIXED_DATE_SCHEDULE_ARRAY_VARS); // move entry date field to array
       // Iterate over results to get entry dates as an array
       results.stream().forEach(binding -> {
         fixedDateScheduleInstance.addFieldArray(binding, FIXED_DATE_SCHEDULE_ARRAY_VARS);
