@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.40.2
+
+- Show closed details for billable tasks
+
 ## 1.40.1
 
 - Fixed retrieval of fixed date schedule
