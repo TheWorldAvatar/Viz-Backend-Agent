@@ -94,7 +94,7 @@ public class LifecycleResource {
   static {
     Map<String, String> template = new HashMap<>();
     template.put(RECURRENCE_DAILY_TASK_STRING, "?recurrence!=\"P1D\"");
-    template.put(RECURRENCE_ALT_DAY_TASK, "?recurrence!=\"P2D\"");
+    template.put(RECURRENCE_ALT_DAY_TASK_STRING, "?recurrence!=\"P2D\"");
     template.put(EMPTY_STRING, "?recurrence!=\"\"");
     template.put(RECURRENCE_FIXED_DATE_TASK_STRING, "?recurrence!=\"" + RECURRENCE_FIXED_DATE_TASK + "\"");
     NEGATE_RECURRENCE_MAP = Collections.unmodifiableMap(template);
