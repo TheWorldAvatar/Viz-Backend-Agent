@@ -323,8 +323,11 @@ public class QueryResource {
                 // Remove the negation if the filter is present
                 Map<String, String> negationMappings = new HashMap<>(LifecycleResource.NEGATE_RECURRENCE_MAP);
                 parsedFilters.forEach(filter -> negationMappings.remove(filter));
-                builder.append("FILTER(").append(negationMappings.values().stream().collect(Collectors.joining("&&")))
-                        .append(")");
+                if (!negationMappings.isEmpty()) {
+                    builder.append("FILTER(")
+                            .append(negationMappings.values().stream().collect(Collectors.joining("&&")))
+                            .append(")");
+                }
             } else {
                 String valuesClause = QueryResource.values(field, parsedFilters);
                 builder.append(valuesClause);
