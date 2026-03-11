@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.40.3
+
+- Fixed filters for schedule type
+
 ## 1.40.2
 
 - Show closed details for billable tasks
