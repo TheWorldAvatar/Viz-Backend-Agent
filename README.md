@@ -7,21 +7,34 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
 ## Table of Contents
 
 - [Vis Backend Agent](#vis-backend-agent)
+  - [Table of Contents](#table-of-contents)
   - [1. Agent Deployment](#1-agent-deployment)
     - [1.1 Preparation](#11-preparation)
+        - [Maven Repository credentials](#maven-repository-credentials)
+        - [SPARQL Endpoints](#sparql-endpoints)
+        - [Environment variables](#environment-variables)
+        - [Docker secrets](#docker-secrets)
+        - [Files](#files)
     - [1.2 Docker Deployment](#12-docker-deployment)
   - [2. Agent Route](#2-agent-route)
-    - [2.1 Status Route](#21-status-route-baseurlvis-backend-agentstatus)
-    - [2.2 Geocoding Route](#22-geocoding-route-baseurlvis-backend-agentlocation)
+    - [2.1 Status Route: `<baseURL>/vis-backend-agent/status`](#21-status-route-baseurlvis-backend-agentstatus)
+    - [2.2 Geocoding Route: `<baseURL>/vis-backend-agent/location`](#22-geocoding-route-baseurlvis-backend-agentlocation)
       - [2.2.1 Geocoding route](#221-geocoding-route)
       - [2.2.2 Address search route](#222-address-search-route)
-    - [2.3 Form Route](#23-form-route-baseurlvis-backend-agentformtype)
-    - [2.4 Concept Metadata Route](#24-concept-metadata-route-baseurlvis-backend-agenttype)
+    - [2.3 Form Route: `<baseURL>/vis-backend-agent/form/{type}`](#23-form-route-baseurlvis-backend-agentformtype)
+    - [2.4 Concept Metadata Route: `<baseURL>/vis-backend-agent/type`](#24-concept-metadata-route-baseurlvis-backend-agenttype)
     - [2.5 Instance Route](#25-instance-route)
       - [2.5.1 Add route](#251-add-route)
       - [2.5.2 Delete route](#252-delete-route)
       - [2.5.3 Update route](#253-update-route)
       - [2.5.4 Get route](#254-get-route)
+        - [Get the count of all instances](#get-the-count-of-all-instances)
+        - [Get all instances](#get-all-instances)
+        - [Get a instance](#get-a-instance)
+        - [Get all instances with human readable fields](#get-all-instances-with-human-readable-fields)
+        - [Get the distinct field options of all instances](#get-the-distinct-field-options-of-all-instances)
+        - [Get all instances associated with a specific parent instance](#get-all-instances-associated-with-a-specific-parent-instance)
+        - [Get all instances matching the search criteria](#get-all-instances-matching-the-search-criteria)
       - [2.5.5 Get changelog route](#255-get-changelog-route)
     - [2.6 Service Lifecycle Route](#26-service-lifecycle-route)
       - [2.6.1 Status route](#261-status-route)
@@ -30,10 +43,12 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
       - [2.6.4 Service commencement route](#264-service-commencement-route)
       - [2.6.5 Service order route](#265-service-order-route)
       - [2.6.6 Archive contract route](#266-archive-contract-route)
-  - [2.7 Service Reporting Route](#27-service-reporting-route)
-    - [2.7.1 Customer account route](#271-customer-account)
-    - [2.7.2 Financial record route](#272-financial-record-route)
-    - [2.7.3 Invoice route](#273-invoice-route)
+    - [2.7 Service Reporting Route](#27-service-reporting-route)
+      - [2.7.1 Customer account](#271-customer-account)
+      - [2.7.2 Financial record route](#272-financial-record-route)
+      - [2.7.2.1 Service charges](#2721-service-charges)
+      - [2.7.3 Invoice route](#273-invoice-route)
+      - [2.7.3.1 Add invoice](#2731-add-invoice)
 
 ## 1. Agent Deployment
 
@@ -969,7 +984,7 @@ This endpoint serves to allow users to create new customer accounts by sending a
 
 Users can also get all customer account IDs and names by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account?type={type}&search={search}` endpoint, where `{type}`is the requested identifier that must correspond to the customer's target class in`./resources/application-form.json` and `{search}` is the `search` parameter.
 
-Users can send a `POST` request to the `<baseURL>/vis-backend-agent/report/account/price` endpoint to create a new pricing model and assign it to the specified account. This endpoint is an extension to the [add instance endpoint](#251-add-route), which requires users to send request parameters for creating a custom pricing model based on their `JSON-LD` file. The endpoint will generate a pricing model and assign it to the corresponding customer account id via the `account` parameter.
+Users can send a `POST` request to the `<baseURL>/vis-backend-agent/report/account/price` endpoint to create a new pricing model and assign it to the specified account. This endpoint is an extension to the [add instance endpoint](#251-add-route), which requires users to send request parameters for creating a custom pricing model based on their `JSON-LD` file. The endpoint will generate a pricing model and assign it to the corresponding customer account id via the `account` parameter. Please read the [pricing model section](./resources/README.md#115-lifecycle-specific-feature) for sample usage
 
 > [!IMPORTANT]  
 > Users must include a `type` in the request parameter that corresponds to the pricing model's custom resource ID specified in the `application-service.json`
@@ -980,9 +995,9 @@ These endpoints allow users to view and update the financial record and pricing 
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/contract/pricing/form/{id}` endpoint to get the form template of the payment obligation and pricing model associated with the target contract, where `id` is the identifier for the target contract. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1171-paymentobligation).
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/contract/pricing/{id}` endpoint to check if a pricing model has been assigned to the target contract, where `id` is the identifier for the target contract.
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/contract/pricing/{id}` endpoint to check if a valid pricing model has been assigned to the target contract, where `id` is the identifier for the target contract. A pricing model is valid only if there is no expiry date or it has yet to expire.
 
-To update the pricing model of a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/contract/pricing`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
+To assign a new pricing model of a specific contract, users must send a `POST` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/contract/pricing`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters (see [this for a sample shape definition](./resources/README.md#1171-paymentobligation)):
 
 ```json
 {
