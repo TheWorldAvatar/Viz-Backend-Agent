@@ -59,13 +59,13 @@ public class ReportingController {
   }
 
   /**
-   * Verifies if the pricing model has been assigned to the contract.
+   * Verifies if a valid (non-expired) pricing model has been assigned to the contract.
    */
   @GetMapping("/contract/pricing/{id}")
-  public ResponseEntity<StandardApiResponse<?>> checkHasContractPricingModel(@PathVariable String id) {
+  public ResponseEntity<StandardApiResponse<?>> checkHasValidContractPricingModel(@PathVariable String id) {
     LOGGER.info("Received request to get the customer accounts...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.PAYMENT_OBLIGATION, () -> {
-      boolean hasContractPricingModel = this.billingService.getHasContractPricingModel(id);
+      boolean hasContractPricingModel = this.billingService.getHasValidContractPricingModel(id);
       return this.responseEntityBuilder.success(id, Boolean.toString(hasContractPricingModel));
     });
   }
