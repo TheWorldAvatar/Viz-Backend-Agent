@@ -468,7 +468,7 @@ This shape must include three Property Shapes to indicate the discounts and addi
 
 1. Derive the service charges for the event
 
-An example minimal shape is provided in the `ServiceAccrualOccurrenceShape` within the `shacl.ttl`. Users should only change the `sh:path` for each property shape and the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge.
+An example minimal shape is provided in the `ServiceAccrualOccurrenceShape` within the `shacl.ttl`. Users should only change the `sh:path` for each property shape and the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge. If pricing models can expire, users can use the `holdsDuring` relation to find the expiry date and apply the valid pricing model for the specific task.
 
 > [!NOTE]
 > Users can apply bold formatting to the description of service charges by wrapping their strings with `<b>` html tags.
