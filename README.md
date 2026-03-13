@@ -997,7 +997,7 @@ Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/contra
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/contract/pricing/{id}` endpoint to check if a valid pricing model has been assigned to the target contract, where `id` is the identifier for the target contract. A pricing model is valid only if there is no expiry date or it has yet to expire.
 
-To update the pricing model of a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/contract/pricing`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters (see [this for a sample shape definition](./resources/README.md#1171-paymentobligation)):
+To assign a new pricing model of a specific contract, users must send a `POST` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/contract/pricing`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters (see [this for a sample shape definition](./resources/README.md#1171-paymentobligation)):
 
 ```json
 {

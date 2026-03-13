@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,8 +18,6 @@ import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
-import com.cmclinnovations.agent.model.type.LifecycleEventType;
-import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.BillingService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
@@ -59,7 +56,8 @@ public class ReportingController {
   }
 
   /**
-   * Verifies if a valid (non-expired) pricing model has been assigned to the contract.
+   * Verifies if a valid (non-expired) pricing model has been assigned to the
+   * contract.
    */
   @GetMapping("/contract/pricing/{id}")
   public ResponseEntity<StandardApiResponse<?>> checkHasValidContractPricingModel(@PathVariable String id) {
@@ -173,9 +171,9 @@ public class ReportingController {
   }
 
   /**
-   * Updates the pricing model for the specified contract.
+   * Adds the pricing model for the specified contract.
    */
-  @PutMapping("/contract/pricing")
+  @PostMapping("/contract/pricing")
   public ResponseEntity<StandardApiResponse<?>> assignPricingToContract(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to update pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
