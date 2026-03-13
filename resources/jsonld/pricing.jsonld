@@ -8,6 +8,40 @@
     "prefix": "https://www.example.com/agreement/payment/model/"
   },
   "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/InstrumentPricing/PricingModel",
+  "https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring": {
+    "@id": {
+      "@replace": "id",
+      "@type": "iri",
+      "prefix": "https://www.example.com/agreement/payment/model/period/"
+    },
+    "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/DatePeriod",
+    "https://www.omg.org/spec/Commons/DatesAndTimes/hasStartDate": {
+      "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://www.example.com/agreement/payment/model/date/"
+      },
+      "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/Date",
+      "https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue": {
+        "@replace": "start date",
+        "@type": "literal",
+        "datatype": "http://www.w3.org/2001/XMLSchema#date"
+      }
+    },
+    "https://www.omg.org/spec/Commons/DatesAndTimes/hasEndDate": {
+      "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://www.example.com/agreement/payment/model/end/"
+      },
+      "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/Date",
+      "https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue": {
+        "@replace": "expiry date",
+        "@type": "literal",
+        "datatype": "http://www.w3.org/2001/XMLSchema#date"
+      }
+    }
+  },
   "https://www.omg.org/spec/Commons/QuantitiesAndUnits/hasArgument": {
     "@id": {
       "@replace": "id",
