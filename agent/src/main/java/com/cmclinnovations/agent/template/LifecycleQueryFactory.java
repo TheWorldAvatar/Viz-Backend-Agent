@@ -325,6 +325,9 @@ public class LifecycleQueryFactory {
                 this.appendArchivedFilterExists(coreQueryBuilder, false);
                 break;
             case LifecycleEventType.ARCHIVE_COMPLETION:
+                // this should only appears for archived contracts
+                statementMappings.put("final_remarks",
+                "OPTIONAL {?event <http://www.w3.org/2000/01/rdf-schema#comment> ?final_remarks . }");
                 // for archive contract, look for complete, rescind, or terminated
                 String completeEventStatement = GraphPatterns.and(
                         GraphPatterns.union(
