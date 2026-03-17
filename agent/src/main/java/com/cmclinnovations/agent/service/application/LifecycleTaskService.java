@@ -298,8 +298,7 @@ public class LifecycleTaskService {
     }
     // Only get statements for dispatch events that matches any sort/filter criteria
     // if it is not at billable state
-    String addFilterQueries = eventType.equals(LifecycleEventType.SERVICE_ACCRUAL) ? ""
-        : this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+    String addFilterQueries = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
             sortedFields, serviceEventFilters, filterExpressions);
     // Non-closed tasks should not have the closed related statements
     if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
