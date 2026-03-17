@@ -365,9 +365,6 @@ public class LifecycleContractService {
     // additional mapping for status for contracts only. needed for filtering
     extendedMappings.put("status",
         "OPTIONAL {?event <https://www.omg.org/spec/Commons/Designators/describes> / <http://www.w3.org/2000/01/rdf-schema#label> ?status.}");
-    // this should only appears for archived contracts
-    statementMappings.put("final remarks",
-        "OPTIONAL {?event <http://www.w3.org/2000/01/rdf-schema#comment> ?final_remarks . }");
     String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
         filters, field);
     lifecycleStatements += endDateFilter;
