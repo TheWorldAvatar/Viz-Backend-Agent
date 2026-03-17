@@ -49,6 +49,7 @@ public class FileService {
   public static final String INSTANCE_QUERY_RESOURCE = QUERY_GET_DIR + "instance.sparql";
   public static final String SHACL_PATH_QUERY_RESOURCE = QUERY_GET_DIR + "property_path.sparql";
   public static final String SHACL_PATH_LABEL_QUERY_RESOURCE = QUERY_GET_DIR + "property_path_label.sparql";
+  public static final String SHACL_PATH_GROUP_QUERY_RESOURCE = QUERY_GET_DIR + "property_path_group.sparql";
   public static final String SHACL_PROPERTY_OPTIONAL_RESOURCE = QUERY_GET_DIR + "property_optional.sparql";
   public static final String CHANGELOG_RESOURCE = QUERY_GET_DIR + "changelog/changes.sparql";
   public static final String CHANGELOG_TASK_RESOURCE = QUERY_GET_DIR + "changelog/task_changes.sparql";
@@ -73,7 +74,8 @@ public class FileService {
       + "jsonld/history/agent.jsonld";
 
   public static final String ACCOUNT_AGREEMENT_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_agreement.sparql";
-  public static final String ACCOUNT_FINANCIAL_RECORD_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_financial_record.sparql";
+  public static final String ACCOUNT_FINANCIAL_RECORD_QUERY_RESOURCE = QUERY_GET_BILLING_DIR
+      + "account_financial_record.sparql";
   public static final String ACCOUNT_BILL_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "bill.sparql";
   public static final String CONTRACT_PRICING_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "contract_pricing.sparql";
   public static final String TASK_INVOICE_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "task_invoice.sparql";
@@ -182,7 +184,7 @@ public class FileService {
       return Rdf.iri(LifecycleResource.EVENT_OCCURRENCE_IRI);
     } else if (resourceID.equals(BillingResource.CONTRACT_PRICING_RESOURCE)) {
       return BillingResource.PAYMENT_OBLIGATION_IRI;
-    } 
+    }
     String targetClass = this.getResourceTarget(resourceID,
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_FORM_RESOURCE);
     // Handle invalid target type

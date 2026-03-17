@@ -55,6 +55,13 @@ public class ShaclPropertyBinding {
     }
 
     /**
+     * Checks if the binding has a property path.
+     */
+    public boolean hasPaths() {
+        return this.predicate != null;
+    }
+
+    /**
      * Retrieves the name of the property.
      */
     public String getName() {
@@ -92,18 +99,29 @@ public class ShaclPropertyBinding {
     /**
      * Writes out the SPARQL query line(s) as graph pattern.
      * 
-     * @param isGroup Indicates if the content is intended to be for a group
-     *                or not
+     * @param isGroup          Indicates if the content is intended to be for a
+     *                         group or not
+     * @param hasGroupPatterns Indicates if the content belongs to a group with
+     *                         paths
      */
-    public List<GraphPattern> write(boolean isGroup) {
+    public List<GraphPattern> write(boolean isGroup, boolean hasGroupPatterns) {
+        List<GraphPattern> contents = new ArrayList<>();
+        // Early termination for Property Groups that does not have any paths
+        if (isGroup && this.predicate == null) {
+            return contents;
+        }
+
         PropertyPathBuilder jointPredicate = this.labelPredicate == null ? this.predicate
                 : this.predicate.then(this.labelPredicate.build());
-        List<GraphPattern> contents = new ArrayList<>();
         // Add a final rdfs:label if it is a class without other labels
         if (this.isClazz && this.labelPredicate == null) {
             jointPredicate = jointPredicate.then(RDFS.LABEL);
         }
 
+        // If a group exists and has patterns to append, it should be the subject
+        if (this.group != null && hasGroupPatterns) {
+            this.subject = this.group;
+        }
         TriplePattern primaryTriples = this.subject.has(jointPredicate.build(), this.property);
         if (this.subjectFilter.isEmpty()) {
             contents.add(primaryTriples);
@@ -147,7 +165,7 @@ public class ShaclPropertyBinding {
         String branchValue = binding.getFieldValue(ShaclResource.BRANCH_VAR);
         this.branch = branchValue != null ? QueryResource.genVariable(branchValue) : null;
 
-        this.subject = this.group != null ? this.group : QueryResource.IRI_VAR;
+        this.subject = QueryResource.IRI_VAR;
         this.appendPred(binding);
 
         this.subjectFilter = binding.getFieldValue(ShaclResource.SUBJECT_VAR, "");

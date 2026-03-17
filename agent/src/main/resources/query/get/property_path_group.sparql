@@ -1,0 +1,21 @@
+PREFIX sh:             <http://www.w3.org/ns/shacl#>
+PREFIX twa:            <https://theworldavatar.io/kg/form/>
+
+SELECT DISTINCT ?clazz ?instance_clazz ?name ?nodegroup ?nested_class ?branch ?role ?order ?subject ?isarray ?isoptional ?isclass
+ ?multipath ?multipath_proppath ?name_multipath ?name_multipath_proppath
+WHERE {
+  ?shape rdf:type sh:NodeShape ;
+         sh:targetClass ?clazz ;
+         sh:targetClass [target] ;
+         (sh:or/rdf:rest*/rdf:first)? ?node.
+  OPTIONAL { ?node sh:name ?branch . }
+  ?node (sh:and/rdf:rest*/rdf:first)?/sh:property?[shape]/sh:group ?group .
+  ?group rdfs:label ?name ;
+    sh:order ?order .
+  OPTIONAL {?group sh:minCount ?minCount.} 
+  OPTIONAL {?group sh:maxCount ?maxCount.}
+
+  BIND(BOUND(?minCount) && (?minCount=0) AS ?isoptional)
+  BIND(!BOUND(?maxCount) || (?maxCount>1) AS ?isarray)
+  BIND(false as ?isclass)
+}
