@@ -92,8 +92,10 @@ CONSTRUCT {
         ?groupobj twa:role ?grouprole .
       }
       OPTIONAL {
-        ?groupobj sh:minCount ?mingroupcount ;
-          sh:maxCount ?maxgroupcount .
+        ?groupobj sh:minCount ?mingroupcount .
+      }
+      OPTIONAL {
+        ?groupobj sh:maxCount ?maxgroupcount .
       }
     }
     # Else, populate group from the target of sh:node
