@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.40.4
+
+- Fixed the Final Remarks filter in the Jobs (Archive)
+- Aligned closed task and invoice form table to behave the same with the filtering 
+
 ## 1.40.3
 
 - Fixed filters for schedule type
