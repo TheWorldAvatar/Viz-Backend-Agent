@@ -60,10 +60,11 @@ public class ReportingController {
    * contract.
    */
   @GetMapping("/contract/pricing/{id}")
-  public ResponseEntity<StandardApiResponse<?>> checkHasValidContractPricingModel(@PathVariable String id) {
+  public ResponseEntity<StandardApiResponse<?>> checkHasValidContractPricingModel(@PathVariable String id,
+      @RequestParam String date) {
     LOGGER.info("Received request to get the customer accounts...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.PAYMENT_OBLIGATION, () -> {
-      boolean hasContractPricingModel = this.billingService.getHasValidContractPricingModel(id);
+      boolean hasContractPricingModel = this.billingService.getHasValidContractPricingModel(id, date);
       return this.responseEntityBuilder.success(id, Boolean.toString(hasContractPricingModel));
     });
   }

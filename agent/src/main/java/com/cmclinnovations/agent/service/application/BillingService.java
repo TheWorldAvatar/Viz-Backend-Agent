@@ -153,13 +153,14 @@ public class BillingService {
 
   /**
    * Checks if a valid (non-expired) pricing model has been assigned to the
-   * specified contract.
+   * specified contract based on the target date.
    * 
-   * @param id Contract ID.
+   * @param id   Contract ID.
+   * @param date Target date that the pricing model should be valid on.
    */
-  public boolean getHasValidContractPricingModel(String id) {
+  public boolean getHasValidContractPricingModel(String id, String date) {
     Queue<SparqlBinding> instance = this.lifecycleQueryService.getInstances(FileService.CONTRACT_PRICING_QUERY_RESOURCE,
-        id);
+        id, date);
     return instance.size() == 1;
   }
 

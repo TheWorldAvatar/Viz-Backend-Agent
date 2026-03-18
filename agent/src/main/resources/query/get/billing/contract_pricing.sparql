@@ -11,9 +11,11 @@ WHERE {
     dc-terms:identifier "[target]" ;
     fibo-fnd-rel-rel:mandates ?pricing_model .
 
-  ?pricing_model a <https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/InstrumentPricing/PricingModel> .
+  ?pricing_model a <https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/InstrumentPricing/PricingModel> ;
+    cmns-pts:holdsDuring / cmns-dt:hasStartDate / cmns-dt:hasDateValue ?start_date .
   OPTIONAL {
     ?pricing_model  cmns-pts:holdsDuring / cmns-dt:hasEndDate / cmns-dt:hasDateValue ?expiry_date .
   }
-  FILTER( !BOUND(?expiry_date) || ?expiry_date > xsd:date(NOW()) )
+  BIND ("[target]"^^xsd:date AS ?valid_date)
+  FILTER( ?start_date < ?valid_date && (!BOUND(?expiry_date) || ?expiry_date > ?valid_date) )
 }
