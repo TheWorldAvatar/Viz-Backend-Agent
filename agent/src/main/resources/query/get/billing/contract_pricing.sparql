@@ -17,5 +17,5 @@ WHERE {
     ?pricing_model  cmns-pts:holdsDuring / cmns-dt:hasEndDate / cmns-dt:hasDateValue ?expiry_date .
   }
   BIND ("[target]"^^xsd:date AS ?valid_date)
-  FILTER( ?start_date < ?valid_date && (!BOUND(?expiry_date) || ?expiry_date > ?valid_date) )
+  FILTER( ?start_date <= ?valid_date && (!BOUND(?expiry_date) || ?expiry_date > ?valid_date) )
 }
