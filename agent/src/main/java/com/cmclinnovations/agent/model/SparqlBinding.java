@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.model;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -18,7 +19,9 @@ import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -38,7 +41,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class SparqlBinding {
   private Map<String, SparqlResponseField> bindings;
   private Map<String, List<Map<String, SparqlResponseField>>> arrayBindingFields;
-  private List<Variable> sequence;
+  private Set<Variable> sequence;
 
   /**
    * This constructor is added solely for the purpose of deserialisation and
@@ -48,7 +51,7 @@ public class SparqlBinding {
   public SparqlBinding() {
     this.bindings = new HashMap<>();
     this.arrayBindingFields = new HashMap<>();
-    this.sequence = new ArrayList<>();
+    this.sequence = new LinkedHashSet<>();
   }
 
   /**
@@ -135,7 +138,15 @@ public class SparqlBinding {
    * @param sequence List of order that fields should be in.
    */
   public void addSequence(List<Variable> sequence) {
-    this.sequence = sequence;
+    this.sequence.clear();
+    if (sequence != null) {
+      this.sequence.addAll(sequence);
+    }
+  }
+
+  @JsonSetter("sequence")
+  public void setSequence(Collection<Variable> incoming) {
+    this.sequence = (incoming == null) ? new LinkedHashSet<>() : new LinkedHashSet<>(incoming);
   }
 
   /**
@@ -214,8 +225,9 @@ public class SparqlBinding {
   /**
    * Retrieve the sequence.
    */
+  @JsonGetter("sequence")
   public List<Variable> getSequence() {
-    return this.sequence;
+    return new ArrayList<>(this.sequence);
   }
 
   /**
@@ -244,22 +256,7 @@ public class SparqlBinding {
         this.bindings.put(field, TypeCastUtils.castToObject(value, SparqlResponseField.class));
       }
     });
-    this.mergeSequence(other.getSequence());
-  }
-
-  private void mergeSequence(List<Variable> otherSequence) {
-    if (otherSequence == null || otherSequence.isEmpty()) {
-      return;
-    }
-
-    // Initialize a LinkedHashSet with the current sequence to preserve order and uniqueness
-    Set<Variable> deduplicator = new LinkedHashSet<>(this.sequence);
-
-    // Add all from the other sequence (duplicates will be ignored automatically)
-    deduplicator.addAll(otherSequence);
-
-    // Convert back to the original type
-    this.sequence = new ArrayList<>(deduplicator);
+    this.sequence.addAll(other.getSequence());
   }
 
   @Override
