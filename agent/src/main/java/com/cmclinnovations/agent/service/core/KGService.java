@@ -333,7 +333,7 @@ public class KGService {
               .filter(field -> field != QueryResource.ID_KEY)
               .forEach(field -> variables.add(QueryResource.genVariable(field)));
         }
-        currentBinding.addSequence(variables);
+        currentBinding.setSequence(variables);
         results.merge(currentBinding.getFieldValue(QueryResource.ID_KEY), currentBinding,
             (existing, replacement) -> {
               // If there is an existing mapping, merge the two
