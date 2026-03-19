@@ -4,6 +4,8 @@
 @prefix rdfs:               <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix sh:                 <http://www.w3.org/ns/shacl#> .
 @prefix xsd:                <http://www.w3.org/2001/XMLSchema#> .
+@prefix cmns-dt:            <https://www.omg.org/spec/Commons/DatesAndTimes/> .
+@prefix cmns-pts:           <https://www.omg.org/spec/Commons/PartiesAndSituations/> .
 @prefix cmns-qtu:           <https://www.omg.org/spec/Commons/QuantitiesAndUnits/> .
 @prefix fibo-fbc-fi-ip:     <https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/InstrumentPricing/> .
 @prefix fibo-fbc-pas-fpas:  <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/> .
@@ -20,6 +22,32 @@ base:PricingModelShape
     sh:path cmns-qtu:hasArgument ;
     sh:node base:BaseFeeShape ;
     sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:name "start date";
+    sh:description "The start date of the pricing model.";
+    sh:order 1;
+    sh:path (
+      cmns-pts:holdsDuring
+      cmns-dt:hasStartDate 
+      cmns-dt:hasDateValue
+      ) ;
+    sh:datatype xsd:date ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:name "expiry date";
+    sh:description "The expiry date of the pricing model.";
+    sh:order 2;
+    sh:path (
+      cmns-pts:holdsDuring
+      cmns-dt:hasEndDate 
+      cmns-dt:hasDateValue
+    ) ;
+    sh:datatype xsd:date ;
+    sh:minCount 0 ;
     sh:maxCount 1 ;
   ] ;
   sh:or (

@@ -128,7 +128,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         String permittedRoles = binding.getFieldValue(ShaclResource.ROLE_PROPERTY);
 
         // Any nested id properties in sh:node should be ignored
-        if (binding.getFieldValue(ShaclResource.NODE_GROUP_VAR) != null && property.equals(QueryResource.ID_KEY)) {
+        if (shGroup != null && property.equals(QueryResource.ID_KEY)) {
           continue;
         }
 
@@ -212,7 +212,9 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     // or branch
     propertyShapeMap.get(ShaclResource.PROPERTY_PROPERTY).values().forEach(propBinding -> {
       String group = propBinding.getGroup();
-      List<GraphPattern> content = propBinding.write(false);
+      boolean hasGroupPatterns = propertyShapeMap.get(ShaclResource.GROUP_PROPERTY).containsKey(group)
+          && propertyShapeMap.get(ShaclResource.GROUP_PROPERTY).get(group).hasPaths();
+      List<GraphPattern> content = propBinding.write(false, hasGroupPatterns);
       if (propBinding.isOptional()) {
         GraphPatternNotTriples optionalPattern = GraphPatterns.optional(
             content.toArray(new GraphPattern[0]));
@@ -238,7 +240,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         // If there is an associated group, store the content to the associated group in
         // the temp mappings; Note that a group may have multiple fields, so each
         // content should be appended to the previous batch
-        String mappingKey = ShaclResource.getMappingKey("", group, propBinding.getBranch());
+        String mappingKey = ShaclResource.getMappingKey(group, propBinding.getBranch());
         accumulatedStatementsByGroup.computeIfAbsent(mappingKey, k -> new ArrayList<>()).addAll(content);
         // Store array variables in their groups
         this.arrayVariables.computeIfAbsent(mappingKey, k -> new HashSet<>()).add(propBinding.getName());
@@ -251,7 +253,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     Map<String, GraphPattern> arrayStatementsMap = new HashMap<>();
     Map<String, Boolean> arrayGroupOptionalityMap = new HashMap<>(); // this tracks if all array insides are optional
     propertyShapeMap.get(ShaclResource.GROUP_PROPERTY).forEach((key, propBinding) -> {
-      List<GraphPattern> content = propBinding.write(true);
+      List<GraphPattern> content = propBinding.write(true, false);
       content.addAll(accumulatedStatementsByGroup.get(key));
 
       // For arrays, attach them to a second map for further parsing
@@ -264,7 +266,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
             : graphPatterns;
         arrayStatementsMap.put(propKey, currentArrayPatterns);
         // Initial entry takes its own optionality. Subsequent entries use logical AND.
-        arrayGroupOptionalityMap.put(propKey, 
+        arrayGroupOptionalityMap.put(propKey,
             arrayGroupOptionalityMap.getOrDefault(propKey, true) && propBinding.isOptional());
         return; // End loop early for arrays
       }
@@ -289,7 +291,8 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     });
     // Handle array parsing
     arrayStatementsMap.forEach((key, contents) -> {
-      // If all arrays in this group were optional, wrap the whole union/and block in OPTIONAL
+      // If all arrays in this group were optional, wrap the whole union/and block in
+      // OPTIONAL
       GraphPattern finalPattern = arrayGroupOptionalityMap.getOrDefault(key, false)
           ? GraphPatterns.optional(contents)
           : contents;

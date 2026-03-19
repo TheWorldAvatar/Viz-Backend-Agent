@@ -1,3 +1,5 @@
+PREFIX cmns-dt:           <https://www.omg.org/spec/Commons/DatesAndTimes/>
+PREFIX cmns-pts:          <https://www.omg.org/spec/Commons/PartiesAndSituations/>
 PREFIX dc-terms:          <http://purl.org/dc/terms/>
 PREFIX fibo-fnd-rel-rel:  <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
 PREFIX fibo-fnd-pas-psch: <https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/>
@@ -9,5 +11,11 @@ WHERE {
     dc-terms:identifier "[target]" ;
     fibo-fnd-rel-rel:mandates ?pricing_model .
 
-  ?pricing_model a <https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/InstrumentPricing/PricingModel> . 
+  ?pricing_model a <https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/InstrumentPricing/PricingModel> ;
+    cmns-pts:holdsDuring / cmns-dt:hasStartDate / cmns-dt:hasDateValue ?start_date .
+  OPTIONAL {
+    ?pricing_model  cmns-pts:holdsDuring / cmns-dt:hasEndDate / cmns-dt:hasDateValue ?expiry_date .
+  }
+  BIND ("[target]"^^xsd:date AS ?valid_date)
+  FILTER( ?start_date <= ?valid_date && (!BOUND(?expiry_date) || ?expiry_date > ?valid_date) )
 }

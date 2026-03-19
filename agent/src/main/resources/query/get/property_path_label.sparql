@@ -22,6 +22,7 @@ WHERE {
   OPTIONAL {
     ?property twa:role ?role .
   }
+  OPTIONAL { ?property sh:group/rdfs:label ?nodegroup . }
   OPTIONAL {
     ?property sh:group/twa:role ?nestedrole .
   }

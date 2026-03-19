@@ -4,26 +4,30 @@ This directory provides examples for different applications of the agent.
 
 # Table of Contents
 
-- [1. SHACL Restrictions](#1-shacl-restrictions)
-  - [1.1 Form Generation](#11-form-generation)
+- [Examples](#examples)
+- [Table of Contents](#table-of-contents)
+  - [1. SHACL Restrictions](#1-shacl-restrictions)
+    - [1.1 Form Generation](#11-form-generation)
     - [1.1.1 Branching Form](#111-branching-form)
     - [1.1.2 Property Groups](#112-property-groups)
-    - [1.1.3 Dependent form fields](#113-dependent-form-fields)
+    - [1.1.3 Dependent Form Fields](#113-dependent-form-fields)
     - [1.1.4 Array Field](#114-array-field)
     - [1.1.5 Lifecycle-specific Feature](#115-lifecycle-specific-feature)
     - [1.1.6 Role-based data access](#116-role-based-data-access)
     - [1.1.7 Billing-specific Feature](#117-billing-specific-feature)
-  - [1.2 Automated Data Retrieval](#12-automated-data-retrieval)
+      - [1.1.7.1 PaymentObligation](#1171-paymentobligation)
+      - [1.1.7.2 ServiceAccrualEvent](#1172-serviceaccrualevent)
+    - [1.2 Automated Data Retrieval](#12-automated-data-retrieval)
   - [1.3 SHACL Derivation](#13-shacl-derivation)
     - [1.3.1 Virtual or persist derivation](#131-virtual-or-persist-derivation)
-- [2. Schemas](#2-schemas)
-  - [2.1 Instantiation](#21-instantiation)
-    - [2.1.1 Array](#211-array)
-    - [2.1.2 Form Branch](#212-form-branch)
-    - [2.1.3 Service Lifecycle](#213-service-lifecycle)
-  - [2.2 Geocoding](#22-geocoding)
-- [3. Appendix](#3-appendix)
-  - [3.1 TWA-SHACL extension](#31-twa-shacl-extension)
+  - [2. Schemas](#2-schemas)
+    - [2.1 Instantiation](#21-instantiation)
+      - [2.1.1 Array](#211-array)
+      - [2.1.2 Form Branch](#212-form-branch)
+      - [2.1.3 Service Lifecycle](#213-service-lifecycle)
+    - [2.2 Geocoding](#22-geocoding)
+  - [3. Appendix](#3-appendix)
+    - [3.1 TWA-SHACL extension](#31-twa-shacl-extension)
 
 ## 1. SHACL Restrictions
 
@@ -369,7 +373,7 @@ base:ExampleContactGroup
 > For any lifecycle form, users will be required to configure the event occurrences using `SHACL` restrictions. Typically, `ContractRescission`, and `ContractTermination` can only accommodate a remarks property. For the `ServiceDispatchEvent`,`ServiceDeliveryEvent`, `TerminatedServiceEvent`, `IncidentReportEvent`, and `ServiceAccrualEvent`, users may assign additional details through defining more `SHACL` properties. A sample file has been created in `./shacl.ttl`
 
 > [!IMPORTANT]
-> Users can configure a pricing model for the agreement following the sample SHACL in `./pricing.ttl`. This will have to be used alongside the corresponding `JSON-LD` at `./jsonld/pricing.jsonld`. Users must update the possible list of classes in line 85 of the SHACL constraints. No modifications are required for the `JSON-LD` file.
+> Users can configure a pricing model for the agreement following the sample SHACL in `./pricing.ttl`. This will have to be used alongside the corresponding `JSON-LD` at `./jsonld/pricing.jsonld`. Users can customise these files according to their needs, changing all the properties as required. However, the agent will require the start and end date of the pricing model encapsulated in the `holdsDuring` relations to function as expected.
 
 ### 1.1.6 Role-based data access
 
@@ -464,7 +468,7 @@ This shape must include three Property Shapes to indicate the discounts and addi
 
 1. Derive the service charges for the event
 
-An example minimal shape is provided in the `ServiceAccrualOccurrenceShape` within the `shacl.ttl`. Users should only change the `sh:path` for each property shape and the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge.
+An example minimal shape is provided in the `ServiceAccrualOccurrenceShape` within the `shacl.ttl`. Users should only change the `sh:path` for each property shape and the WHERE contents of the (1) SHACL rule to get the pricing model and calculate the final service charge. If pricing models can expire, users can use the `holdsDuring` relation to find the expiry date and apply the valid pricing model for the specific task.
 
 > [!NOTE]
 > Users can apply bold formatting to the description of service charges by wrapping their strings with `<b>` html tags.

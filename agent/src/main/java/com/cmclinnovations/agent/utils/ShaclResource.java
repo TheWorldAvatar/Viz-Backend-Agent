@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 
 public class ShaclResource {
   // JSON LD keys
@@ -108,14 +109,15 @@ public class ShaclResource {
    * additional variables.
    * 
    * @param property property name.
-   * @param parts    Additional string parts to append (only non-null parts are
-   *                 used).
+   * @param parts    Additional string parts to append (only non-null and
+   *                 non-empty parts are used).
    */
   public static String getMappingKey(String property, String... parts) {
-    StringBuilder key = new StringBuilder(property);
+    StringJoiner key = new StringJoiner(";");
+    key.add(property);
     for (String part : parts) {
-      if (part != null) {
-        key.append(part);
+      if (part != null && !part.isEmpty()) {
+        key.add(part);
       }
     }
     return QueryResource.genVariable(key.toString()).getVarName();

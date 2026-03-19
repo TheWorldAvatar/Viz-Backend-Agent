@@ -171,8 +171,8 @@ public class KGRepository {
     @Cacheable(value = "shaclQuery", key = "#shaclReplacement.concat('-').concat(#requireLabel)")
     public List<List<SparqlBinding>> execParamsConstructorQuery(String shaclReplacement,
             boolean requireLabel) {
-        String query = this.queryTemplateService.getShaclQuery(shaclReplacement, requireLabel);
-        return this.queryNestedPredicates(query);
+        String[] queries = this.queryTemplateService.getShaclQuery(shaclReplacement, requireLabel);
+        return this.queryNestedPredicates(queries);
     }
 
     /**
@@ -265,10 +265,10 @@ public class KGRepository {
      * Queries for the nested predicates as a queue of responses based on their
      * current nested level.
      * 
-     * @param shaclPathQuery The query to retrieve the required predicate paths in
-     *                       the SHACL restrictions.
+     * @param shaclPathQueries The queries to retrieve the required predicate paths
+     *                         and property groups in the SHACL restrictions.
      */
-    private List<List<SparqlBinding>> queryNestedPredicates(String shaclPathQuery) {
+    private List<List<SparqlBinding>> queryNestedPredicates(String[] shaclPathQueries) {
         LOGGER.debug("Querying the knowledge graph for predicate paths and variables...");
         String shaclEndpoint = this.getShaclEndpoint();
         // Initialise a queue to store all values
@@ -282,12 +282,18 @@ public class KGRepository {
             boolean hasResults = false;
             String replacementPath = "";
             List<SparqlBinding> variablesAndPropertyPaths = new ArrayList<>();
+            // For each nested level, query for the property groups
+            List<SparqlBinding> propGroups = this.queryPropertyGroups(shaclPathQueries[1], replacementShapePath,
+                    shaclEndpoint);
+            if (!propGroups.isEmpty()) {
+                results.add(propGroups);
+            }
             // Iterate through the depth to retrieve all associated predicate paths for this
             // property in this shape
             while (isFirstIteration || hasResults) {
                 hasResults = false; // Reset and verify if there are results for this iteration
                 // Replace the [subproperty] and [path] with the respective values
-                String executableQuery = shaclPathQuery
+                String executableQuery = shaclPathQueries[0]
                         .replace(FileService.REPLACEMENT_SHAPE, replacementShapePath)
                         .replace(FileService.REPLACEMENT_PATH, replacementPath)
                         .replace(FileService.REPLACEMENT_FILTER, replacementFilterPath);
@@ -334,4 +340,23 @@ public class KGRepository {
         return results;
     }
 
+    /**
+     * Queries for SHACL property groups that are relevant to the current shape.
+     * 
+     * @param query                The SPARQL query to execute.
+     * @param replacementShapePath The shape path to replace in the query.
+     * @param shaclEndpoint        The endpoint to query.
+     */
+    private List<SparqlBinding> queryPropertyGroups(String query, String replacementShapePath, String shaclEndpoint) {
+        LOGGER.debug("Querying for property groups...");
+        List<SparqlBinding> results = new ArrayList<>();
+        String executablePropertyGroupQuery = query
+                .replace(FileService.REPLACEMENT_SHAPE, replacementShapePath);
+        List<SparqlBinding> queryResults = this.query(executablePropertyGroupQuery, shaclEndpoint);
+        if (!queryResults.isEmpty()) {
+            LOGGER.debug("Found data at the endpoint {}...", shaclEndpoint);
+            results.addAll(queryResults);
+        }
+        return results;
+    }
 }
