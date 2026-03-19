@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.41.2
+
+- Fixed default date range for closed tasks based on schedule type
+
 ## 1.41.1
 
 - Fixed out of memory error for virtual SHACL rules
