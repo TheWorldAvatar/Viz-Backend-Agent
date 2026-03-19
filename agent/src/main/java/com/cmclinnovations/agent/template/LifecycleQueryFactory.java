@@ -24,12 +24,14 @@ public class LifecycleQueryFactory {
     private static final String BILLABLE_QUERY_STATEMENTS = ACCRUAL_EVENT_QUERY_STATEMENT
             + ";cmns-dt:succeeds/fibo-fnd-rel-rel:exemplifies ?prev_event. "
             + QueryResource.minus(INVOICED_QUERY_STATEMENT);
-    private static final String CLOSED_QUERY_STATEMENTS = "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:TerminatedServiceEvent .}UNION"
-            + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:IncidentReportEvent .}UNION"
-            + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent ; cmns-dsg:describes ontoservice:CompletedStatus .}UNION"
-            + "{" + BILLABLE_QUERY_STATEMENTS + "}UNION"
+    private static final String CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT = "\n ?event_id cmns-dt:succeeds/ <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.";
+    private static final String CLOSED_QUERY_STATEMENTS = "{\n?event_id fibo-fnd-rel-rel:exemplifies ontoservice:TerminatedServiceEvent\n;<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.}UNION"
+            + "{\n?event_id fibo-fnd-rel-rel:exemplifies ontoservice:IncidentReportEvent\n;<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.}UNION"
+            + "{\n?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent;\ncmns-dsg:describes ontoservice:CompletedStatus\n;<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.}UNION"
+            + "{\n" + CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT + BILLABLE_QUERY_STATEMENTS + "}UNION"
             // Invoiced status
-            + "{" + ACCRUAL_EVENT_QUERY_STATEMENT + "." + INVOICED_QUERY_STATEMENT + ".BIND(\""
+            + "{\n" + CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT + ACCRUAL_EVENT_QUERY_STATEMENT + "."
+            + INVOICED_QUERY_STATEMENT + ".BIND(\""
             + BillingResource.INVOICE_RESOURCE + "\" AS ?prev_event)}";
     private static final String UNCLOSED_QUERY_STATEMENTS = "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent .}UNION"
             + "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDispatchEvent .}UNION"
@@ -205,16 +207,18 @@ public class LifecycleQueryFactory {
         // Generates query statements to target specific events based on closed status
         String eventTargetStatements;
         if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE)) {
-            eventTargetStatements = CLOSED_QUERY_STATEMENTS;
-            eventTargetStatements += "?event_id <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder."
-                    + "BIND(xsd:date(?closed_date_placeholder) AS " + closedDateVar + ")";
+            eventTargetStatements = "OPTIONAL{\n{?stage fibo-fnd-dt-fd:hasSchedule/ fibo-fnd-dt-fd:hasRecurrenceInterval / cmns-dt:hasDurationValue ?bounded_recurrence .\n} UNION {\n?stage fibo-fnd-dt-fd:hasSchedule/a fibo-fnd-dt-fd:AdHocSchedule.\nBIND(\"true\" AS ?bounded_recurrence )\n}}\n";
+            eventTargetStatements += CLOSED_QUERY_STATEMENTS;
+            eventTargetStatements += "BIND(IF(BOUND(?bounded_recurrence),xsd:date(?event_date) ,xsd:date(?closed_date_placeholder)) AS "
+                    + closedDateVar + ")";
         } else if (eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
             eventTargetStatements = BILLABLE_QUERY_STATEMENTS;
         } else {
             eventTargetStatements = UNCLOSED_QUERY_STATEMENTS;
         }
         results.put(LifecycleResource.LIFECYCLE_RESOURCE,
-                "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
+                filterContractStatement
+                        + "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
                         + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
                         + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
                         + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event."
@@ -222,11 +226,14 @@ public class LifecycleQueryFactory {
                         + Rdf.iri(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString()
                         + ";<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
                         + eventDatePlaceholderVar
-                        + ". BIND(xsd:date(" + eventDatePlaceholderVar + ") AS " + eventDateVar + ")"
+                        + ". BIND(xsd:date(" + eventDatePlaceholderVar + ") AS " + eventDateVar
+                        + ")"
+                        + eventIdVar
+                        + " <https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
+                        + eventTargetStatements
                         + filterDateStatement
-                        + eventIdVar + " <https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
-                        + eventTargetStatements + filterContractStatement
-                        // Event must be the last in the chain ie no other events will succeed it
+                        // Event must be the last in the chain ie no other events will succeed
+                        // it
                         + "MINUS{" + eventIdVar
                         + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}");
         results.put(LifecycleResource.EVENT_KEY,
@@ -327,7 +334,7 @@ public class LifecycleQueryFactory {
             case LifecycleEventType.ARCHIVE_COMPLETION:
                 // this should only appears for archived contracts
                 statementMappings.put("final_remarks",
-                "OPTIONAL {?event <http://www.w3.org/2000/01/rdf-schema#comment> ?final_remarks . }");
+                        "OPTIONAL {?event <http://www.w3.org/2000/01/rdf-schema#comment> ?final_remarks . }");
                 // for archive contract, look for complete, rescind, or terminated
                 String completeEventStatement = GraphPatterns.and(
                         GraphPatterns.union(
