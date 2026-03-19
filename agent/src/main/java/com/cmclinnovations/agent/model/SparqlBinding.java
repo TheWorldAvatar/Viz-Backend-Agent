@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -243,7 +244,22 @@ public class SparqlBinding {
         this.bindings.put(field, TypeCastUtils.castToObject(value, SparqlResponseField.class));
       }
     });
-    this.sequence.addAll(other.getSequence());
+    this.mergeSequence(other.getSequence());
+  }
+
+  private void mergeSequence(List<Variable> otherSequence) {
+    if (otherSequence == null || otherSequence.isEmpty()) {
+      return;
+    }
+
+    // Initialize a LinkedHashSet with the current sequence to preserve order and uniqueness
+    Set<Variable> deduplicator = new LinkedHashSet<>(this.sequence);
+
+    // Add all from the other sequence (duplicates will be ignored automatically)
+    deduplicator.addAll(otherSequence);
+
+    // Convert back to the original type
+    this.sequence = new ArrayList<>(deduplicator);
   }
 
   @Override
