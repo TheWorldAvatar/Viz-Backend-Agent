@@ -207,7 +207,7 @@ public class LifecycleQueryFactory {
         // Generates query statements to target specific events based on closed status
         String eventTargetStatements;
         if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE)) {
-            eventTargetStatements = "OPTIONAL {?stage fibo-fnd-dt-fd:hasSchedule/ fibo-fnd-dt-fd:hasRecurrenceInterval / cmns-dt:hasDurationValue ?bounded_recurrence .}\n";
+            eventTargetStatements = "OPTIONAL{\n{?stage fibo-fnd-dt-fd:hasSchedule/ fibo-fnd-dt-fd:hasRecurrenceInterval / cmns-dt:hasDurationValue ?bounded_recurrence .\n} UNION {\n?stage fibo-fnd-dt-fd:hasSchedule/a fibo-fnd-dt-fd:AdHocSchedule.\nBIND(\"true\" AS ?bounded_recurrence )\n}}\n";
             eventTargetStatements += CLOSED_QUERY_STATEMENTS;
             eventTargetStatements += "BIND(IF(BOUND(?bounded_recurrence),xsd:date(?event_date) ,xsd:date(?closed_date_placeholder)) AS "
                     + closedDateVar + ")";
