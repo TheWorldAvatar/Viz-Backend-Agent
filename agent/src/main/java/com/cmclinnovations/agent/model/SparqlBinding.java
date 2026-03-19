@@ -140,7 +140,7 @@ public class SparqlBinding {
 
   @JsonSetter("sequence")
   public void setSequence(Collection<Variable> incoming) {
-    this.sequence = (incoming == null) ? new LinkedHashSet<>() : new LinkedHashSet<>(incoming);
+    this.sequence = new LinkedHashSet<>(incoming);
   }
 
   /**
