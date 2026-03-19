@@ -107,7 +107,7 @@ public class ShaclPropertyBinding {
     public List<GraphPattern> write(boolean isGroup, boolean hasGroupPatterns) {
         List<GraphPattern> contents = new ArrayList<>();
         // Early termination for Property Groups that does not have any paths
-        if (isGroup && this.predicate == null) {
+        if (isGroup && !this.hasPaths()) {
             return contents;
         }
 
