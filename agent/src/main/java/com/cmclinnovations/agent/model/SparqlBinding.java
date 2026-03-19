@@ -133,16 +133,10 @@ public class SparqlBinding {
   }
 
   /**
-   * Adds the sequence for the fields.
+   * Sets the sequence for the fields.
    * 
    * @param sequence List of order that fields should be in.
    */
-  public void addSequence(List<Variable> sequence) {
-    this.sequence.clear();
-    if (sequence != null) {
-      this.sequence.addAll(sequence);
-    }
-  }
 
   @JsonSetter("sequence")
   public void setSequence(Collection<Variable> incoming) {

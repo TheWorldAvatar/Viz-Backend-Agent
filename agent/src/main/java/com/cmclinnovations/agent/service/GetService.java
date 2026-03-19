@@ -635,7 +635,7 @@ public class GetService {
     instances = this.kgService.combineBindingQueue(instances, this.queryTemplateService.getArrayVariables());
     // If there is a variable sequence available, add the sequence to each binding,
     if (!varSequence.isEmpty()) {
-      instances.forEach(instance -> instance.addSequence(varSequence));
+      instances.forEach(instance -> instance.setSequence(varSequence));
     }
     return instances;
   }
