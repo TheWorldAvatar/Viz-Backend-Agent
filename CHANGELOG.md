@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.41.1
+
+- Fixed out of memory error for virtual SHACL rules
+
 ## 1.41.0
 
 - Extended pricing models to work with and check for validity period
