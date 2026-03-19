@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.41.0
+
+- Extended pricing models to work with and check for validity period
+- Changed pricing model assignment to contract route from `PUT` to `POST`
+- Revised documentation for pricing model
+- Improve handling of SHACL property groups with arrays and branches
+- Fixed form SHACL query for getting min and max count of SHACL property groups
+
 ## 1.40.4
 
 - Fixed the Final Remarks filter in the Jobs (Archive)
