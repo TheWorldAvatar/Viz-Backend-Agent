@@ -493,72 +493,63 @@ public class GetService {
         .getSparqlQueryConstructionParameters(shaclReplacement, true);
     // Next, parse and get the query statements for the fields of interest that
     // requires sorting or filtering
+    Set<String> groups = new HashSet<>();
     Set<String> filterFields = new HashSet<>(filters.keySet());
+    Map<String, ArrayDeque<Queue<SparqlBinding>>> groupQueryPartMappings = new HashMap<>();
     Map<String, ArrayDeque<Queue<SparqlBinding>>> filterQueryPartMappings = new HashMap<>();
     Map<String, ArrayDeque<Queue<SparqlBinding>>> sortedQueryPartMappings = new HashMap<>();
-    // Stores the node group name to the corresponding field for easier access
-    Map<String, String> groupFieldMappings = new HashMap<>();
+    // Stores the field and their corresponding node group name for easier access
+    Map<String, String> fieldGroupMappings = new HashMap<>();
     while (!results.isEmpty()) {
       // Retrieve the last list of parts first, which are not mixed with node groups
       // Queue sorts them by node groups first if available, and we want to reverse
       // this process instead
       Queue<SparqlBinding> currentQueryVarsAndPaths = results.pollLast();
+      Map<String, Queue<SparqlBinding>> tempGroupPartsMapping = new HashMap<>();
       Map<String, Queue<SparqlBinding>> tempFilterPartsMapping = new HashMap<>();
       Map<String, Queue<SparqlBinding>> tempSortedPartsMapping = new HashMap<>();
       // Iterate over the list to find bindings matching the field
       while (!currentQueryVarsAndPaths.isEmpty()) {
         SparqlBinding binding = currentQueryVarsAndPaths.poll();
-        String fieldName = binding.getFieldValue(ShaclResource.NAME_PROPERTY);
-        fieldName = QueryResource.genVariable(fieldName).getVarName();
-        // If the field name is a group with a corresponding field, find its original
-        // child field name
-        String fieldKey = groupFieldMappings.getOrDefault(fieldName, fieldName);
+        String oriFieldName = binding.getFieldValue(ShaclResource.NAME_PROPERTY);
+        String fieldName = QueryResource.genVariable(oriFieldName).getVarName();
         // Filters are prioritised over sorted fields to prevent duplicating query
         // statements
         if (filterFields.contains(fieldName)) {
           Queue<SparqlBinding> currentQueue = Optional.ofNullable(
-              tempFilterPartsMapping.putIfAbsent(fieldKey, new ArrayDeque<>()))
-              .orElseGet(() -> tempFilterPartsMapping.get(fieldKey));
+              tempFilterPartsMapping.putIfAbsent(fieldName, new ArrayDeque<>()))
+              .orElseGet(() -> tempFilterPartsMapping.get(fieldName));
           currentQueue.offer(binding);
           // Add node groups to ensure they are parsed in later iteration
-          if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
-            String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
-            group = QueryResource.genVariable(group).getVarName();
-            groupFieldMappings.put(group, fieldName);
-            filterFields.add(group);
-          }
+          this.appendGroupFieldIfPresent(fieldName, binding, groups, fieldGroupMappings);
         } else if (sortedFields.contains(fieldName)) {
           Queue<SparqlBinding> currentQueue = Optional.ofNullable(
-              tempSortedPartsMapping.putIfAbsent(fieldKey, new ArrayDeque<>()))
-              .orElseGet(() -> tempSortedPartsMapping.get(fieldKey));
+              tempSortedPartsMapping.putIfAbsent(fieldName, new ArrayDeque<>()))
+              .orElseGet(() -> tempSortedPartsMapping.get(fieldName));
           currentQueue.offer(binding);
           // Add node groups to ensure they are parsed in later iteration
-          if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
-            String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
-            group = QueryResource.genVariable(group).getVarName();
-            groupFieldMappings.put(group, fieldName);
-            sortedFields.add(group);
-          }
+          this.appendGroupFieldIfPresent(fieldName, binding, groups, fieldGroupMappings);
+        } else if (groups.contains(fieldName)) {
+          Queue<SparqlBinding> currentQueue = Optional.ofNullable(
+              tempGroupPartsMapping.putIfAbsent(fieldName, new ArrayDeque<>()))
+              .orElseGet(() -> tempGroupPartsMapping.get(fieldName));
+          currentQueue.offer(binding);
         }
       }
       // After iteration at the nested queue level, add them to the respective
       // mappings
-      tempFilterPartsMapping.forEach((key, value) -> {
-        ArrayDeque<Queue<SparqlBinding>> currentQueryParts = Optional.ofNullable(
-            filterQueryPartMappings.putIfAbsent(key, new ArrayDeque<>()))
-            .orElseGet(() -> filterQueryPartMappings.get(key));
-        currentQueryParts.offerFirst(value);
-      });
-      tempSortedPartsMapping.forEach((key, value) -> {
-        ArrayDeque<Queue<SparqlBinding>> currentQueryParts = Optional.ofNullable(
-            sortedQueryPartMappings.putIfAbsent(key, new ArrayDeque<>()))
-            .orElseGet(() -> sortedQueryPartMappings.get(key));
-        currentQueryParts.offerFirst(value);
-      });
+      this.addQueryPartMappings(tempFilterPartsMapping, filterQueryPartMappings);
+      this.addQueryPartMappings(tempSortedPartsMapping, sortedQueryPartMappings);
+      this.addQueryPartMappings(tempGroupPartsMapping, groupQueryPartMappings);
     }
     // Generate statements for each mappings as individual parts
     StringBuilder sortStatementBuilder = new StringBuilder();
     sortedQueryPartMappings.forEach((key, queryParts) -> {
+      if (fieldGroupMappings.containsKey(key)) {
+        Queue<Queue<SparqlBinding>> mappingsCopy = QueryResource
+            .copyQueue(groupQueryPartMappings.get(fieldGroupMappings.get(key)));
+        queryParts.addAll(mappingsCopy);
+      }
       sortStatementBuilder.append(QueryResource.optional(this.queryTemplateService.genWhereClause(queryParts)));
     });
     Map<String, String> outputMappings = new HashMap<>();
@@ -566,12 +557,52 @@ public class GetService {
       outputMappings.put(StringResource.SORT_KEY, sortStatementBuilder.toString());
     }
     filterQueryPartMappings.forEach((key, queryParts) -> {
+      if (fieldGroupMappings.containsKey(key)) {
+        Queue<Queue<SparqlBinding>> mappingsCopy = QueryResource
+            .copyQueue(groupQueryPartMappings.get(fieldGroupMappings.get(key)));
+        queryParts.addAll(mappingsCopy);
+      }
       // Generate the query statements for this filter
       String clause = this.queryTemplateService.genWhereClause(queryParts)
           .replaceAll("(?s)\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
       outputMappings.put(key, clause);
     });
     return outputMappings;
+  }
+
+  /**
+   * Appends the group and its field to the mappings if present.
+   * 
+   * @param field         The field name to be added.
+   * @param binding       Query result containing the group.
+   * @param groups        Stores a unique list of groups.
+   * @param groupMappings Stores the group and their associated fields.
+   */
+  private void appendGroupFieldIfPresent(String field, SparqlBinding binding, Set<String> groups,
+      Map<String, String> groupMappings) {
+    if (binding.containsField(ShaclResource.NODE_GROUP_VAR)) {
+      String group = binding.getFieldValue(ShaclResource.NODE_GROUP_VAR);
+      String varGroup = QueryResource.genVariable(group).getVarName();
+      groupMappings.put(field, varGroup);
+      groups.add(varGroup);
+    }
+  }
+
+  /**
+   * Updates the existing query part mappings with the new input
+   * 
+   * @param input             The target mappings to parse into the required
+   *                          format.
+   * @param queryPartMappings Stores the output mappings
+   */
+  private void addQueryPartMappings(Map<String, Queue<SparqlBinding>> input,
+      Map<String, ArrayDeque<Queue<SparqlBinding>>> queryPartMappings) {
+    input.forEach((key, value) -> {
+      ArrayDeque<Queue<SparqlBinding>> currentQueryParts = Optional.ofNullable(
+          queryPartMappings.putIfAbsent(key, new ArrayDeque<>()))
+          .orElseGet(() -> queryPartMappings.get(key));
+      currentQueryParts.offerFirst(value);
+    });
   }
 
   /**

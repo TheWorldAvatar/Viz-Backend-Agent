@@ -1,10 +1,12 @@
 package com.cmclinnovations.agent.utils;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,6 +29,7 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.http.MediaType;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.model.SparqlBinding;
 
 public class QueryResource {
     public static final MediaType JSON_MEDIA_TYPE = MediaType.valueOf("application/json");
@@ -431,5 +434,14 @@ public class QueryResource {
                 GEO,
                 ONTOSERVICE,
                 XSD_PREFIX);
+    }
+
+    /**
+     * Copies the queue of queue.
+     */
+    public static <T> Queue<Queue<T>> copyQueue(Queue<Queue<T>> input) {
+        return input.stream()
+                .map(ArrayDeque::new)
+                .collect(Collectors.toCollection(ArrayDeque::new));
     }
 }
