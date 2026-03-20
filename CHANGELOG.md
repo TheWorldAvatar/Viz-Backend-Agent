@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.41.3
+
+- Fixed filter options for shacl property group with an active filter in the same group
+- Fixed filter options for a branch-specific field within the shacl property group
+
 ## 1.41.2
 
 - Fixed default date range for closed tasks based on schedule type
@@ -19,7 +24,7 @@
 ## 1.40.4
 
 - Fixed the Final Remarks filter in the Jobs (Archive)
-- Aligned closed task and invoice form table to behave the same with the filtering 
+- Aligned closed task and invoice form table to behave the same with the filtering
 
 ## 1.40.3
 
