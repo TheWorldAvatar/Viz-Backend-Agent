@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 
@@ -114,6 +115,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
     Map<String, Map<String, ShaclPropertyBinding>> shaclPropertyShapesMap = new HashMap<>();
     Set<String> referencedGroupIdentifiers = new HashSet<>();
+    Map<String, Set<String>> groupBranchMappings = new HashMap<>();
     Map<String, ShaclPropertyBinding> groupPropertyMap = new HashMap<>();
     Map<String, ShaclPropertyBinding> indivPropertyMap = new HashMap<>();
     Set<String> userRoles = this.authenticationService.getUserRoles();
@@ -165,7 +167,16 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
           if (!propertyBinding.getGroup().isEmpty()) {
             // Group references are stored as group + branch name
             String groupRefKey = ShaclResource.getMappingKey(propertyBinding.getGroup(), propertyBinding.getBranch());
+            // Create a new group in the group branch mappings; only useful for getting
+            // filter options with SHACL property groups; use white spaces for variable
+            groupBranchMappings.putIfAbsent(shGroup, new HashSet<>());
             referencedGroupIdentifiers.add(groupRefKey);
+          }
+
+          // Store the group references under the group branch mappings; only useful for
+          // getting filter options with SHACL property groups
+          if (groupBranchMappings.keySet().contains(property)) {
+            groupBranchMappings.get(property).add(mappingKey);
           }
 
           // Parse ordering only for label query, as we require the heading order in csv
@@ -189,7 +200,9 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     referencedGroupIdentifiers.forEach(groupIdentifier -> {
       groupPropertyMap.put(groupIdentifier, indivPropertyMap.remove(groupIdentifier));
     });
-
+    // Remove the unused groups in the indiv property maps; useful mainly for filters
+    groupBranchMappings.values().forEach((groupBranchMapping) -> groupBranchMapping
+        .forEach(indivPropertyMap::remove));
     // Store results
     shaclPropertyShapesMap.put(ShaclResource.GROUP_PROPERTY, groupPropertyMap);
     shaclPropertyShapesMap.put(ShaclResource.PROPERTY_PROPERTY, indivPropertyMap);
