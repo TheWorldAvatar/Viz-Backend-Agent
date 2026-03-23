@@ -1,0 +1,42 @@
+PREFIX cmns-dt:           <https://www.omg.org/spec/Commons/DatesAndTimes/>
+PREFIX cmns-pts:          <https://www.omg.org/spec/Commons/PartiesAndSituations/>
+PREFIX dc-terms:          <http://purl.org/dc/terms/>
+PREFIX fibo-fnd-rel-rel:  <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+PREFIX fibo-fnd-pas-psch: <https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/>
+PREFIX fibo-fbc-fi-ip:    <https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/InstrumentPricing/>
+
+SELECT ?iri
+WHERE {
+  # query for the period of validity for the proposed pricing model
+  <[target]> a fibo-fbc-fi-ip:PricingModel ;
+    cmns-pts:holdsDuring ?period.
+  ?period cmns-dt:hasStartDate / cmns-dt:hasDateValue ?proposed_start_date .
+  OPTIONAL {
+    ?period  cmns-dt:hasEndDate / cmns-dt:hasDateValue ?proposed_expiry_date .
+  }
+
+  # query for the validity period of an existing pricing model
+  # proposed pricing model is valid if there is no existing pricing model
+  ?iri a fibo-fnd-pas-psch:PaymentObligation ;
+    dc-terms:identifier "[target]" ;
+    fibo-fnd-rel-rel:mandates ?pricing_model .
+
+  ?pricing_model a fibo-fbc-fi-ip:PricingModel ;
+    cmns-pts:holdsDuring / cmns-dt:hasStartDate / cmns-dt:hasDateValue ?current_start_date .
+  OPTIONAL {
+    ?pricing_model  cmns-pts:holdsDuring / cmns-dt:hasEndDate / cmns-dt:hasDateValue ?current_expiry_date .
+  }
+  
+  # verify proposed pricing model does not overlap with existing pricing model(s)
+  FILTER( !( # negate filter so that it returns no results for a valid model
+    # expiry dates must occur after start dates if expiry exists
+    (!BOUND(?current_expiry_date) || ?current_start_date <= ?current_expiry_date) &&
+    (!BOUND(?proposed_expiry_date) || ?proposed_start_date <= ?proposed_expiry_date) &&
+
+    # when proposed start date occurs before current start, it must have a expiry date before the current start
+    (?proposed_start_date < ?current_start_date && BOUND(?proposed_expiry_date) && ?proposed_expiry_date < ?current_start_date ) ||
+
+    # proposed start date occurs after current expiry date if expiry exists
+    (BOUND(?current_expiry_date) && ?proposed_start_date > ?current_expiry_date)
+  ))
+}

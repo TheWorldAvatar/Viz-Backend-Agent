@@ -45,6 +45,7 @@ public class LocalisationResource {
   public static final String ERROR_INVALID_DATE_REPORT_KEY = ERROR_PREFIX + "invalid.date.report";
   public static final String ERROR_INVALID_EVENT_TYPE_KEY = ERROR_PREFIX + "invalid.event.type";
   public static final String ERROR_INVALID_GEOCODE_PARAMS_KEY = ERROR_PREFIX + "invalid.geocoding";
+  public static final String ERROR_INVALID_PRICING_KEY = ERROR_PREFIX + "invalid.pricing";
   public static final String ERROR_INVALID_INSTANCE_KEY = ERROR_PREFIX + "invalid.instance";
   public static final String ERROR_INVALID_MULTIPLE_INSTANCE_KEY = ERROR_PREFIX + "invalid.multiple.instance";
   public static final String ERROR_INVALID_METHOD_KEY = ERROR_PREFIX + "invalid.method";

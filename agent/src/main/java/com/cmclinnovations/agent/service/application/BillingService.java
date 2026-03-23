@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.InvoiceLine;
@@ -23,6 +24,7 @@ import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
@@ -102,6 +104,13 @@ public class BillingService {
   public ResponseEntity<StandardApiResponse<?>> assignPricingPlanToContract(Map<String, Object> instance) {
     // Query for the contract IRI from the contract ID
     String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
+    String pricingModelIri = TypeCastUtils.castToObject(instance.get(BillingResource.PRICING_KEY), String.class);
+    Queue<SparqlBinding> invalidCounter = this.lifecycleQueryService.getInstances(
+        FileService.VERIFY_PRICING_QUERY_RESOURCE, pricingModelIri, contractId);
+    if (!invalidCounter.isEmpty()) {
+      throw new IllegalArgumentException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_PRICING_KEY));
+    }
     SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
     instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
     return this.addService.instantiate(BillingResource.CONTRACT_PRICING_RESOURCE, contractId, instance, null, null,
