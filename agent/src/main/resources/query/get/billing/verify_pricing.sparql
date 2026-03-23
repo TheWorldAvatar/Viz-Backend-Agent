@@ -33,10 +33,10 @@ WHERE {
     (!BOUND(?current_expiry_date) || ?current_start_date <= ?current_expiry_date) &&
     (!BOUND(?proposed_expiry_date) || ?proposed_start_date <= ?proposed_expiry_date) &&
 
-    # when proposed start date occurs before current start, it must have a expiry date before the current start
-    (?proposed_start_date < ?current_start_date && BOUND(?proposed_expiry_date) && ?proposed_expiry_date < ?current_start_date ) ||
+    # when proposed start date occurs before current start, it must have a expiry date on or before the current start
+    (?proposed_start_date < ?current_start_date && BOUND(?proposed_expiry_date) && ?proposed_expiry_date <= ?current_start_date ) ||
 
-    # proposed start date occurs after current expiry date if expiry exists
-    (BOUND(?current_expiry_date) && ?proposed_start_date > ?current_expiry_date)
+    # proposed start date occurs on or after current expiry date if expiry exists
+    (BOUND(?current_expiry_date) && ?proposed_start_date => ?current_expiry_date)
   ))
 }
