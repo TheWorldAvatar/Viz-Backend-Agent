@@ -298,7 +298,7 @@ public class LifecycleTaskService {
     }
     // Get statements for dispatch events that matches any sort/filter criteria
     String addFilterQueries = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-            sortedFields, serviceEventFilters, filterExpressions);
+        sortedFields, serviceEventFilters, filterExpressions);
     // Non-closed tasks should not have the closed related statements
     if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
       addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
@@ -685,28 +685,28 @@ public class LifecycleTaskService {
         eventType.getStage()).getFieldValue(QueryResource.IRI_KEY);
     params.put(LifecycleResource.STAGE_KEY, stage);
     params.put(LifecycleResource.REMARKS_KEY, remarksMsg);
-    String occurrenceId = params.get(QueryResource.ID_KEY).toString();
-    // Get previous occurrence ID for the same event type if they exist and update
-    // it; Can fail this silently
-    String currentOccurrenceId = this.getPreviousOccurrence(QueryResource.ID_KEY, eventType, params);
-    if (currentOccurrenceId != null) {
-      params.put(QueryResource.ID_KEY, currentOccurrenceId);
+    // Get the task ID for the order received event
+    String taskId = this.getPreviousOccurrence(QueryResource.ID_KEY, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
+    if (taskId != null) {
+      params.put(QueryResource.ID_KEY, taskId);
+    } else {
+      throw new IllegalStateException("Invalid date range! No task is found for the specified contract and date.");
     }
-    String previousOccurrenceId = null;
+    String previousOccurrenceIri = null;
     for (LifecycleEventType fallbackEvent : fallbackEvents) {
-      previousOccurrenceId = this.getPreviousOccurrence(QueryResource.IRI_KEY, fallbackEvent, params);
-      if (previousOccurrenceId != null) {
+      previousOccurrenceIri = this.getPreviousOccurrence(QueryResource.IRI_KEY, fallbackEvent, params);
+      if (previousOccurrenceIri != null) {
         break;
       }
     }
-    if (previousOccurrenceId == null) {
+    if (previousOccurrenceIri == null) {
       throw new NullPointerException("No valid previous occurrence found!");
     }
-    params.put(LifecycleResource.ORDER_KEY, previousOccurrenceId);
-    ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(occurrenceId, eventType.getId(),
+    params.put(LifecycleResource.ORDER_KEY, previousOccurrenceIri);
+    ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(taskId, eventType.getId(),
         successMsgId, params, TrackActionType.IGNORED);
     if (response.getStatusCode() == HttpStatus.OK) {
-      String orderTask = this.getPreviousOccurrence(occurrenceId, QueryResource.IRI_KEY,
+      String orderTask = this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY,
           LifecycleEventType.SERVICE_ORDER_RECEIVED);
       this.addService.logActivity(orderTask, action);
     }
