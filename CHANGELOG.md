@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.42.0
+
+- Standardised all task actions to follow the order received id
+
 ## 1.41.5
 
 - Fixed contract duplication to work with new array structure
