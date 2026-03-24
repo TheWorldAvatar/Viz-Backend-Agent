@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.41.5
+
+- Fixed contract duplication to work with new array structure
+
 ## 1.41.4
 
 - Fixed to prevent users from assigning invalid pricing models with conflicting periods to a contract
