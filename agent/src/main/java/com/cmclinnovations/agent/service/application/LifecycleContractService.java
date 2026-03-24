@@ -132,23 +132,30 @@ public class LifecycleContractService {
    */
   public Map<String, Object> getContractDetails(String contractId, String entityType) {
     StandardApiResponse<?> response = this.getService.getInstance(contractId, entityType, false).getBody();
-    Map<String, Object> contractDetails = ((Map<String, Object>) response.data().items().get(0))
+    return ((Map<String, Object>) response.data().items().get(0))
         .entrySet().stream()
         .filter((entry) -> entry.getKey() != QueryResource.ID_KEY && entry.getKey() != QueryResource.IRI_KEY)
         .collect(Collectors.toMap(
             Map.Entry::getKey,
             entry -> {
-              if (entry.getValue() == null) {
+              Object entryValue = entry.getValue();
+              if (entryValue == null) {
                 return "";
               }
-              List<SparqlResponseField> values = TypeCastUtils.castToListObject(entry.getValue(),
-                  SparqlResponseField.class);
-              if (values.size() == 1) {
-                return values.get(0).value();
+              // For arrays
+              if (entryValue instanceof List) {
+                return ((List<Map<String, SparqlResponseField>>) entryValue)
+                    .stream()
+                    .map(originalMap -> originalMap.entrySet().stream()
+                        .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            arrayEntry -> arrayEntry.getValue().value())))
+                    .toList();
               }
-              return values.stream().map(value -> value.value()).toList();
+              // For non-array
+              return TypeCastUtils.castToObject(entryValue,
+                  SparqlResponseField.class).value();
             }));
-    return contractDetails;
   }
 
   /**
