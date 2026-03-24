@@ -686,12 +686,7 @@ public class LifecycleTaskService {
     params.put(LifecycleResource.STAGE_KEY, stage);
     params.put(LifecycleResource.REMARKS_KEY, remarksMsg);
     // Get the task ID for the order received event
-    String taskId = this.getPreviousOccurrence(QueryResource.ID_KEY, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
-    if (taskId != null) {
-      params.put(QueryResource.ID_KEY, taskId);
-    } else {
-      throw new IllegalStateException("Invalid date range! No task is found for the specified contract and date.");
-    }
+    String taskId = this.getTaskId(params);
     String previousOccurrenceIri = null;
     for (LifecycleEventType fallbackEvent : fallbackEvents) {
       previousOccurrenceIri = this.getPreviousOccurrence(QueryResource.IRI_KEY, fallbackEvent, params);
@@ -726,6 +721,21 @@ public class LifecycleTaskService {
     return this.lifecycleQueryService
         .getInstance(FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, latestEventId, eventType.getEvent())
         .getFieldValue(fieldKey);
+  }
+
+  /**
+   * Retrieves the task ID stored in the order received event.
+   * 
+   * @param params Mappings containing the contract and date value for the query.
+   */
+  private String getTaskId(Map<String, Object> params) {
+    String taskId = this.getPreviousOccurrence(QueryResource.ID_KEY, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
+    if (taskId != null) {
+      params.put(QueryResource.ID_KEY, taskId);
+    } else {
+      throw new IllegalStateException("Invalid date range! No task is found for the specified contract and date.");
+    }
+    return taskId;
   }
 
   /**
