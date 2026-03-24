@@ -79,6 +79,7 @@ public class FileService {
   public static final String ACCOUNT_BILL_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "bill.sparql";
   public static final String CONTRACT_PRICING_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "contract_pricing.sparql";
   public static final String TASK_INVOICE_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "task_invoice.sparql";
+  public static final String VERIFY_PRICING_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "verify_pricing.sparql";
   public static final String CONTRACT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract.sparql";
   public static final String CONTRACT_STATUS_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_status.sparql";
   public static final String CONTRACT_STAGE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_stage.sparql";
