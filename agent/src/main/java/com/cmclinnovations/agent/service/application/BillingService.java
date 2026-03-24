@@ -20,6 +20,7 @@ import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
+import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.utils.BillingResource;
@@ -33,6 +34,7 @@ import com.cmclinnovations.agent.utils.TypeCastUtils;
 @Service
 public class BillingService {
   private final AddService addService;
+  private final UpdateService updateService;
   final DateTimeService dateTimeService;
   public final LifecycleQueryService lifecycleQueryService;
   public final LifecycleTaskService lifecycleTaskService;
@@ -42,9 +44,10 @@ public class BillingService {
   /**
    * Constructs a new service with the following dependencies.
    */
-  public BillingService(AddService addService, DateTimeService dateTimeService,
+  public BillingService(AddService addService, UpdateService updateService, DateTimeService dateTimeService,
       LifecycleQueryService lifecycleQueryService, LifecycleTaskService lifecycleTaskService) {
     this.addService = addService;
+    this.updateService = updateService;
     this.dateTimeService = dateTimeService;
     this.lifecycleQueryService = lifecycleQueryService;
     this.lifecycleTaskService = lifecycleTaskService;
@@ -102,7 +105,6 @@ public class BillingService {
    *                 the contract ID.
    */
   public ResponseEntity<StandardApiResponse<?>> assignPricingPlanToContract(Map<String, Object> instance) {
-    // Query for the contract IRI from the contract ID
     String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
     String pricingModelIri = TypeCastUtils.castToObject(instance.get(BillingResource.PRICING_KEY), String.class);
     Queue<SparqlBinding> invalidCounter = this.lifecycleQueryService.getInstances(
@@ -114,6 +116,20 @@ public class BillingService {
     SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
     instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
     return this.addService.instantiate(BillingResource.CONTRACT_PRICING_RESOURCE, contractId, instance, null, null,
+        TrackActionType.IGNORED);
+  }
+
+  /**
+   * Updates the pricing plan for the target contract.
+   * 
+   * @param instance Request parameters containing the IRI for pricing model and
+   *                 the contract ID.
+   */
+  public ResponseEntity<StandardApiResponse<?>> updatePricingPlanToContract(Map<String, Object> instance) {
+    String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
+    SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
+    instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
+    return this.updateService.update(contractId, BillingResource.CONTRACT_PRICING_RESOURCE, null, instance,
         TrackActionType.IGNORED);
   }
 
