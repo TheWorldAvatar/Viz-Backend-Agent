@@ -21,7 +21,6 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.UpdateService;
-import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
@@ -35,20 +34,18 @@ import com.cmclinnovations.agent.utils.TypeCastUtils;
 public class BillingService {
   private final AddService addService;
   private final UpdateService updateService;
-  final DateTimeService dateTimeService;
-  public final LifecycleQueryService lifecycleQueryService;
-  public final LifecycleTaskService lifecycleTaskService;
+  private final LifecycleQueryService lifecycleQueryService;
+  private final LifecycleTaskService lifecycleTaskService;
 
   static final Logger LOGGER = LogManager.getLogger(BillingService.class);
 
   /**
    * Constructs a new service with the following dependencies.
    */
-  public BillingService(AddService addService, UpdateService updateService, DateTimeService dateTimeService,
-      LifecycleQueryService lifecycleQueryService, LifecycleTaskService lifecycleTaskService) {
+  public BillingService(AddService addService, UpdateService updateService, LifecycleQueryService lifecycleQueryService,
+      LifecycleTaskService lifecycleTaskService) {
     this.addService = addService;
     this.updateService = updateService;
-    this.dateTimeService = dateTimeService;
     this.lifecycleQueryService = lifecycleQueryService;
     this.lifecycleTaskService = lifecycleTaskService;
   }
