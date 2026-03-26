@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.42.3
+
+- Extend cloning jobs with direct disposal branch
+
 ## 1.42.2
 
 - Fix to include null checks for previous occurrence retrieval to prevent accrual from failing

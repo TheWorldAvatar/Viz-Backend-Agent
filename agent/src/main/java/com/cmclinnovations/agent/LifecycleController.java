@@ -267,11 +267,16 @@ public class LifecycleController {
     String branchName = null;
 
     Object wasteCategory = contractDetails.get("waste_category");
+    Object binType = contractDetails.get("bin_type");
     Object bin = contractDetails.get("bin");
     Object truck = contractDetails.get("truck");
 
     if (wasteCategory != null && !wasteCategory.toString().isEmpty()) {
-      branchName = "Waste Collection Service";
+      if (binType != null && !binType.toString().isEmpty()) {
+        branchName = "Waste Collection Service";
+      } else {
+        branchName = "Direct Disposal Service";
+      }
     } else if (bin != null && !bin.toString().isEmpty()) {
       branchName = "Bin Handling Service";
     } else if (truck != null && !truck.toString().isEmpty()) {
