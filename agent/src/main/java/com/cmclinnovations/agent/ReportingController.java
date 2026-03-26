@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -179,6 +180,17 @@ public class ReportingController {
     LOGGER.info("Received request to update pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
       return this.billingService.assignPricingPlanToContract(instance);
+    });
+  }
+
+  /**
+   * Updates the pricing model for the specified contract.
+   */
+  @PutMapping("/contract/pricing")
+  public ResponseEntity<StandardApiResponse<?>> updatePricingToContract(@RequestBody Map<String, Object> instance) {
+    LOGGER.info("Received request to update pricing model...");
+    return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
+      return this.billingService.updatePricingPlanToContract(instance);
     });
   }
 }

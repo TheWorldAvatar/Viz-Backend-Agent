@@ -1006,6 +1006,9 @@ To assign a new pricing model of a specific contract, users must send a `POST` r
 }
 ```
 
+> [!NOTE]  
+> Users can update the pricing model for the contract if they send a `PUT` request with the same parameters as the `POST` request to `<baseURL>/vis-backend-agent/report/contract/pricing`. However, this is only possible at the draft stage and enforces that only one pricing model is added during the draft stage.
+
 #### 2.7.2.1 Service charges
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/service/charge/{id}` endpoint to get the service charge details for the target task, where `id` is the task's identifier. This requires the definition of a [specific `SHACL` shape](./resources/README.md#1172-serviceaccrualevent).

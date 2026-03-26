@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.42.1
+
+- Allow users to update the pricing model for the contract at the draft stage
+
 ## 1.42.0
 
 - Standardised all task actions to follow the order received id
