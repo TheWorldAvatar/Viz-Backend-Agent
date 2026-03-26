@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.42.2
+
+- Fix to include null checks for previous occurrence retrieval to prevent accrual from failing
+
 ## 1.42.1
 
 - Allow users to update the pricing model for the contract at the draft stage
