@@ -690,8 +690,9 @@ public class LifecycleTaskService {
     String[] orderTask = this.getOrderTask(params);
     String previousOccurrenceIri = null;
     for (LifecycleEventType fallbackEvent : fallbackEvents) {
-      previousOccurrenceIri = this.getPreviousOccurrence(fallbackEvent, params).getFieldValue(QueryResource.IRI_KEY);
-      if (previousOccurrenceIri != null) {
+      SparqlBinding previousOccurrence = this.getPreviousOccurrence(fallbackEvent, params);
+      if (previousOccurrence != null) {
+        previousOccurrenceIri = previousOccurrence.getFieldValue(QueryResource.IRI_KEY);
         break;
       }
     }
