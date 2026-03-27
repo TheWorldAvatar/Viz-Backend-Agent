@@ -183,10 +183,9 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
           // Order field will not exist for non-label query
           if (binding.containsField(ShaclResource.ORDER_PROPERTY)) {
             int order = Integer.parseInt(binding.getFieldValue(ShaclResource.ORDER_PROPERTY));
-            List<Integer> orders = new ArrayList<>();
-            if (shGroup != null) {
-              orders = this.varSequence.getOrDefault(QueryResource.genVariable(shGroup), new ArrayList<>());
-            }
+            List<Integer> orders = shGroup != null ? new ArrayList<>(
+                this.varSequence.getOrDefault(QueryResource.genVariable(shGroup), new ArrayList<>()))
+                : new ArrayList<>();
             orders.add(order);
             this.varSequence.put(QueryResource.genVariable(property), orders);
           }
@@ -200,7 +199,8 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     referencedGroupIdentifiers.forEach(groupIdentifier -> {
       groupPropertyMap.put(groupIdentifier, indivPropertyMap.remove(groupIdentifier));
     });
-    // Remove the unused groups in the indiv property maps; useful mainly for filters
+    // Remove the unused groups in the indiv property maps; useful mainly for
+    // filters
     groupBranchMappings.values().forEach((groupBranchMapping) -> groupBranchMapping
         .forEach(indivPropertyMap::remove));
     // Store results
