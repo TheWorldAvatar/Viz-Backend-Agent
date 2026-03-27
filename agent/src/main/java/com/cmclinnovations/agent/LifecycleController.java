@@ -528,47 +528,6 @@ public class LifecycleController {
   }
 
   /**
-   * Retrieve the number of contracts in the target stage:
-   * 1) draft - awaiting approval
-   * 2) archive - expired
-   */
-  @GetMapping("/{stage}/count")
-  public ResponseEntity<StandardApiResponse<?>> getContractCount(
-      @PathVariable String stage,
-      @RequestParam Map<String, String> allRequestParams) {
-    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
-    LifecycleEventType eventType = switch (stage.toLowerCase()) {
-      case "draft" -> {
-        LOGGER.info("Received request to retrieve number of draft contracts...");
-        yield LifecycleEventType.APPROVED;
-      }
-      case "archive" -> {
-        LOGGER.info("Received request to retrieve number of archived contracts...");
-        yield LifecycleEventType.ARCHIVE_COMPLETION;
-      }
-      default -> throw new IllegalArgumentException(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
-    };
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      return this.lifecycleContractService.getContractCount(type, eventType, allRequestParams);
-    });
-  }
-
-  /**
-   * Retrieve the number of active contracts.
-   */
-  @GetMapping("/service/count")
-  public ResponseEntity<StandardApiResponse<?>> getActiveContractCount(
-      @RequestParam Map<String, String> allRequestParams) {
-    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
-    LOGGER.info("Received request to retrieve number of contracts in progress...");
-    LifecycleEventType eventType = LifecycleEventType.ACTIVE_SERVICE;
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      return this.lifecycleContractService.getContractCount(type, eventType, allRequestParams);
-    });
-  }
-
-  /**
    * Retrieve the filter options for the draft contracts.
    */
   @GetMapping("/draft/filter")
@@ -648,21 +607,7 @@ public class LifecycleController {
     };
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       return this.lifecycleContractService.getContracts(type, label, eventType,
-          new PaginationState(page, limit, sortBy, true, allRequestParams));
-    });
-  }
-
-  /**
-   * Retrieve the number of outstanding tasks.
-   */
-  @GetMapping("/service/outstanding/count")
-  public ResponseEntity<StandardApiResponse<?>> getOutstandingTaskCount(
-      @RequestParam Map<String, String> allRequestParams) {
-    LOGGER.info("Received request to retrieve number of outstanding tasks...");
-    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrenceCount(type, null, null, LifecycleEventType.SERVICE_ORDER_RECEIVED,
-          allRequestParams);
+          new PaginationState(page, limit, sortBy, true, allRequestParams), allRequestParams);
     });
   }
 
@@ -680,7 +625,8 @@ public class LifecycleController {
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleTaskService.getOccurrences(null, null, type, LifecycleEventType.SERVICE_ORDER_RECEIVED,
-          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
+          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams),
+          allRequestParams);
     });
   }
 
@@ -696,37 +642,6 @@ public class LifecycleController {
       List<String> options = this.lifecycleTaskService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
           filterOptionParams[2], null, null, LifecycleEventType.SERVICE_ORDER_RECEIVED, allRequestParams);
       return this.responseEntityBuilder.success(options);
-    });
-  }
-
-  /**
-   * Retrieve the number of tasks at the following event stage:
-   * 
-   * 1) scheduled - upcoming tasks on the specified date(s)
-   * 2) closed - completed or problematic tasks on the specified date(s)
-   */
-  @GetMapping("/service/{task}/count")
-  public ResponseEntity<StandardApiResponse<?>> getScheduledOrClosedTaskCount(
-      @PathVariable(name = "task") String taskType,
-      @RequestParam Map<String, String> allRequestParams) {
-    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
-    String startTimestamp = allRequestParams.remove(StringResource.START_TIMESTAMP_REQUEST_PARAM);
-    String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
-    LifecycleEventType eventType = switch (taskType.toLowerCase()) {
-      case "scheduled" -> {
-        LOGGER.info("Received request to retrieve number of scheduled contract task...");
-        yield LifecycleEventType.SERVICE_ORDER_RECEIVED;
-      }
-      case "closed" -> {
-        LOGGER.info("Received request to retrieve number of closed contract task...");
-        yield LifecycleEventType.ACTIVE_SERVICE;
-      }
-      default -> throw new IllegalArgumentException(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
-    };
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrenceCount(type, startTimestamp, endTimestamp, eventType,
-          allRequestParams);
     });
   }
 
@@ -747,7 +662,8 @@ public class LifecycleController {
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type,
           LifecycleEventType.SERVICE_ORDER_RECEIVED,
-          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
+          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams),
+          allRequestParams);
     });
   }
 
@@ -768,7 +684,8 @@ public class LifecycleController {
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
       return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type,
           LifecycleEventType.ACTIVE_SERVICE,
-          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
+          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams),
+          allRequestParams);
     });
   }
 
