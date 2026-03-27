@@ -248,14 +248,12 @@ public class LifecycleContractService {
    * @param eventType  The target event type to retrieve.
    * @param filters    Mappings between filter fields and their values.
    */
-  public ResponseEntity<StandardApiResponse<?>> getContractCount(String resourceID, LifecycleEventType eventType,
+  private Integer getContractCount(String resourceID, LifecycleEventType eventType,
       Map<String, String> filters) {
-
     Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, IS_CONTRACT);
     // Sorting is irrelevant for count
     String[] addStatements = this.genLifecycleStatements(eventType, new HashSet<>(), parsedFilters, "", false);
-    return this.responseEntityBuilder.success(null,
-        String.valueOf(this.getService.getCount(resourceID, addStatements[0], "", filters, IS_CONTRACT)));
+    return this.getService.getCount(resourceID, addStatements[0], "", filters, IS_CONTRACT);
   }
 
   /**
@@ -288,12 +286,15 @@ public class LifecycleContractService {
    * Retrieve all the contract instances and their information based on the
    * resource ID.
    * 
-   * @param resourceID The target resource identifier for the instance class.
-   * @param eventType  The target event type to retrieve.
-   * @param pagination Pagination state to filter results.
+   * @param resourceID   The target resource identifier for the instance class.
+   * @param requireLabel Indicates if labels should be returned for all the fields
+   *                     that are IRIs.
+   * @param eventType    The target event type to retrieve.
+   * @param pagination   Pagination state to filter results.
+   * @param filters      Filters provided in the request parameters.
    */
   public ResponseEntity<StandardApiResponse<?>> getContracts(String resourceID, boolean requireLabel,
-      LifecycleEventType eventType, PaginationState pagination) {
+      LifecycleEventType eventType, PaginationState pagination, Map<String, String> filters) {
     LOGGER.debug("Retrieving all contracts...");
     Map<Variable, List<Integer>> contractVariables = new HashMap<>(this.lifecycleVarSequence);
     if (eventType.equals(LifecycleEventType.APPROVED) || eventType.equals(LifecycleEventType.ARCHIVE_COMPLETION)) {
@@ -309,9 +310,13 @@ public class LifecycleContractService {
     Queue<List<String>> ids = this.getService.getAllIds(resourceID, addStatements[0], pagination);
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,
         addStatements[1], contractVariables);
-    return this.responseEntityBuilder.success(null, instances.stream()
-        .map(binding -> this.lifecycleQueryService.parseLifecycleBinding(binding.get()))
-        .toList());
+
+    return this.responseEntityBuilder.success(null,
+        this.getContractCount(resourceID, eventType, filters),
+        this.getContractCount(resourceID, eventType, new HashMap<>()),
+        instances.stream()
+            .map(binding -> this.lifecycleQueryService.parseLifecycleBinding(binding.get()))
+            .toList());
   }
 
   /**

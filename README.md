@@ -28,7 +28,6 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
       - [2.5.2 Delete route](#252-delete-route)
       - [2.5.3 Update route](#253-update-route)
       - [2.5.4 Get route](#254-get-route)
-        - [Get the count of all instances](#get-the-count-of-all-instances)
         - [Get all instances](#get-all-instances)
         - [Get a instance](#get-a-instance)
         - [Get all instances with human readable fields](#get-all-instances-with-human-readable-fields)
@@ -449,23 +448,12 @@ When updating an instance that involves branches, the payload must explicitly sp
 
 There are several routes for retrieving instances associated with a specific `type` to populate the records in the registry. The agent will automatically generate the query and parameters based on the SHACL restrictions developed. The agent will return **EITHER** a `JSON` array containing entities as their corresponding `JSON` object **OR** one Entity `JSON` object depending on which `GET` route is executed.
 
-1. Get the count of all instances
-2. Get all instances
-3. Get a specific instance
-4. Get all instances with human readable fields
-5. Get the distinct field options of all instances
-6. Get all instances associated with a specific parent instance
-7. Get all instances matching the search criteria
-
-##### Get the count of all instances
-
-Users can send a `GET` request to
-
-```
-<baseURL>/vis-backend-agent/{type}/count
-```
-
-where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`. To retrieve a count of instances meeting specific criteria, users can include filters as query parameters, following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
+1. Get all instances
+2. Get a specific instance
+3. Get all instances with human readable fields
+4. Get the distinct field options of all instances
+5. Get all instances associated with a specific parent instance
+6. Get all instances matching the search criteria
 
 ##### Get all instances
 
@@ -659,8 +647,6 @@ When users edit a draft contract, this will move the status to amended. Users ca
 
 > Get all draft contracts
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft/count?type={type}` endpoint to retrieve the number of draft contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
-
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all draft contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
 
 There is also an additional optional parameter `label` to retrieve draft contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise.
@@ -777,8 +763,6 @@ This `<baseURL>/vis-backend-agent/contracts/service` endpoint serves to interact
 
 > Active contracts
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/count?type={type}` endpoint to retrieve the number of active contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
-
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all active contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
 
 There is also an additional optional parameter `label` to retrieve in progress contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise.
@@ -810,8 +794,6 @@ For outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-back
 > [!IMPORTANT]  
 > Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
-To get the count of outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding/count?type={contractType}` endpoint.
-
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all outstanding tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. Users can also include an optional `search` parameter as well as any active filters.
 
 ---
@@ -824,8 +806,6 @@ For upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/v
 > [!IMPORTANT]  
 > Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
-To get the count of upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled/count?type={contractType}}&startTimestamp={start}&endTimestamp={end}` endpoint.
-
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled/filter?type={type}&field={field}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all the distinct field options for a specific field on all scheduled tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{field}` is the target field, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. Users can also include an optional `search` parameter as well as any active filters.
 
 ---
@@ -837,8 +817,6 @@ For closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-a
 
 > [!IMPORTANT]  
 > Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
-
-To get the count of closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed/count?type={contractType}}&startTimestamp={start}&endTimestamp={end}` endpoint.
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed/filter?type={type}&field={field}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all the distinct field options for a specific field on all closed tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{field}` is the target field, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. Users can also include an optional `search` parameter as well as any active filters.
 
@@ -932,8 +910,6 @@ The endpoint serves to archive in progress contracts as well as retrieve all con
 
 > Get all archived contracts
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/archive/count?type={type}` endpoint to retrieve the number of archived contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
-
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/archive?type={type}` endpoint to retrieve all archived contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
 
 There is also an additional optional parameter `label` to retrieve archived contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise.
@@ -1024,8 +1000,6 @@ Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/accoun
 
 > [!IMPORTANT]  
 > Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
-
-To get the count of closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks/count?type={contractType}` endpoint.
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on the billable tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, and `{field}` is the target field. Users can also include an optional `search` parameter as well as any active filters.
 

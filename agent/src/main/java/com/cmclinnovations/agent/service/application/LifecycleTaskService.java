@@ -92,15 +92,13 @@ public class LifecycleTaskService {
    *                       execution. Closed should be completed.
    * @param filters        Mappings between filter fields and their values.
    */
-  public ResponseEntity<StandardApiResponse<?>> getOccurrenceCount(String resourceID, String startTimestamp,
+  public Integer getOccurrenceCount(String resourceID, String startTimestamp,
       String endTimestamp, LifecycleEventType eventType, Map<String, String> filters) {
     Map<String, Set<String>> parsedFilters = StringResource.parseFilters(filters, IS_CONTRACT);
     String[] queryStatement = this.genLifecycleStatements(startTimestamp, endTimestamp, new HashSet<>(), parsedFilters,
         "", eventType, false);
-    return this.responseEntityBuilder.success(null,
-        String.valueOf(
-            this.getService.getCount(resourceID, queryStatement[0], LifecycleResource.TASK_ID_SORT_BY_PARAMS, filters,
-                IS_CONTRACT)));
+    return this.getService.getCount(resourceID, queryStatement[0], LifecycleResource.TASK_ID_SORT_BY_PARAMS, filters,
+        IS_CONTRACT);
   }
 
   /**
@@ -163,13 +161,17 @@ public class LifecycleTaskService {
    * @param eventType      The current event type, affecting the query for
    *                       execution. Closed should be completed.
    * @param pagination     Pagination state to filter results.
+   * @param filters        Filters provided in the request parameters.
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String startTimestamp, String endTimestamp,
-      String entityType, LifecycleEventType eventType, PaginationState pagination) {
+      String entityType, LifecycleEventType eventType, PaginationState pagination, Map<String, String> filters) {
     List<Map<String, Object>> occurrences = this.queryOccurrences(startTimestamp, endTimestamp,
         entityType, eventType, pagination);
     LOGGER.info("Successfuly retrieved tasks!");
-    return this.responseEntityBuilder.success(null, occurrences);
+    return this.responseEntityBuilder.success(null,
+        this.getOccurrenceCount(entityType, startTimestamp, endTimestamp, eventType, filters),
+        this.getOccurrenceCount(entityType, startTimestamp, endTimestamp, eventType, new HashMap<>()),
+        occurrences);
   }
 
   /**

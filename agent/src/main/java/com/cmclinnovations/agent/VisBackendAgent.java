@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -109,20 +110,6 @@ public class VisBackendAgent {
   }
 
   /**
-   * Retrieves the count of all instances belonging to the specified type in the
-   * knowledge graph.
-   */
-  @GetMapping("/{type}/count")
-  public ResponseEntity<StandardApiResponse<?>> getInstancesCount(
-      @PathVariable(name = "type") String type,
-      @RequestParam Map<String, String> allRequestParams) {
-    LOGGER.info("Received request to get all instances for {}...", type);
-    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      return this.responseEntityBuilder.success(null, String.valueOf(this.getService.getCount(type, allRequestParams)));
-    });
-  }
-
-  /**
    * Retrieves all instances belonging to the specified type in the knowledge
    * graph, and include human readable labels for all properties.
    */
@@ -140,6 +127,8 @@ public class VisBackendAgent {
       Queue<SparqlBinding> instances = this.getService.getInstances(type, true,
           new PaginationState(page, limit, sortBy, allRequestParams));
       return this.responseEntityBuilder.success(null,
+          this.getService.getCount(type, allRequestParams),
+          this.getService.getCount(type, new HashMap<>()),
           instances.stream()
               .map(SparqlBinding::get)
               .toList());
