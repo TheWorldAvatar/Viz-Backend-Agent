@@ -27,6 +27,7 @@ import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
@@ -401,9 +402,17 @@ public class GetService {
     return this.responseEntityBuilder.success(null,
         this.getCount(resourceID, filters),
         this.getCount(resourceID, new HashMap<>()),
+        this.getColumns(),
         instances.stream()
             .map(SparqlBinding::get)
             .toList());
+  }
+
+  /**
+   * Retrieve the column metadata.
+   */
+  public List<ColumnMetaPayload> getColumns() {
+    return this.queryTemplateService.getColumns();
   }
 
   /**
@@ -670,14 +679,9 @@ public class GetService {
     String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetIds,
         addQueryStatements, addVars);
     LOGGER.debug("Querying the knowledge graph for the instances...");
-    List<Variable> varSequence = this.queryTemplateService.getFieldSequence();
     // Query for direct instances
     Queue<SparqlBinding> instances = this.kgService.query(getQuery, SparqlEndpointType.MIXED);
     instances = this.kgService.combineBindingQueue(instances, this.queryTemplateService.getArrayVariables());
-    // If there is a variable sequence available, add the sequence to each binding,
-    if (!varSequence.isEmpty()) {
-      instances.forEach(instance -> instance.setSequence(varSequence));
-    }
     return instances;
   }
 

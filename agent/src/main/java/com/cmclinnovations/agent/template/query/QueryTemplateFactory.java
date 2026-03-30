@@ -3,9 +3,9 @@ package com.cmclinnovations.agent.template.query;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 
@@ -18,16 +18,16 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.ShaclPropertyBinding;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory {
-  private List<Variable> sortedVars;
+  private List<ColumnMetaPayload> columns;
   protected Set<Variable> variables;
   private Map<String, Set<String>> arrayVariables;
-  protected Map<Variable, List<Integer>> varSequence;
   private final AuthenticationService authenticationService;
 
   protected QueryTemplateFactory(AuthenticationService authenticationService) {
@@ -42,27 +42,20 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
   }
 
   /**
-   * Retrieve the sequence of the variables.
+   * Retrieve the column metadata.
    */
-  public List<Variable> getSequence() {
-    return this.sortedVars;
-  }
-
-  /**
-   * Set the sequence of the variables.
-   */
-  protected void setSequence(List<Variable> sequence) {
-    this.sortedVars = sequence;
+  public List<ColumnMetaPayload> getColumns() {
+    return this.columns;
   }
 
   /**
    * Retrieve the sequence of the variables.
    */
   protected void reset() {
-    this.sortedVars = new ArrayList<>();
+    this.columns = new ArrayList<>();
+    this.columns.add(new ColumnMetaPayload(QueryResource.ID_KEY, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
     this.variables = new HashSet<>();
     this.arrayVariables = new HashMap<>();
-    this.varSequence = new HashMap<>();
   }
 
   /**
@@ -171,23 +164,16 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
             // filter options with SHACL property groups; use white spaces for variable
             groupBranchMappings.putIfAbsent(shGroup, new HashSet<>());
             referencedGroupIdentifiers.add(groupRefKey);
+
+            // Prepend group sequence to the individual property
+            ShaclPropertyBinding groupBinding = indivPropertyMap.get(groupRefKey);
+            propertyBinding.prependSequence(groupBinding.getSequence());
           }
 
           // Store the group references under the group branch mappings; only useful for
           // getting filter options with SHACL property groups
           if (groupBranchMappings.keySet().contains(property)) {
             groupBranchMappings.get(property).add(mappingKey);
-          }
-
-          // Parse ordering only for label query, as we require the heading order in csv
-          // Order field will not exist for non-label query
-          if (binding.containsField(ShaclResource.ORDER_PROPERTY)) {
-            int order = Integer.parseInt(binding.getFieldValue(ShaclResource.ORDER_PROPERTY));
-            List<Integer> orders = shGroup != null ? new ArrayList<>(
-                this.varSequence.getOrDefault(QueryResource.genVariable(shGroup), new ArrayList<>()))
-                : new ArrayList<>();
-            orders.add(order);
-            this.varSequence.put(QueryResource.genVariable(property), orders);
           }
         }
         // Store the new/updated in the mappings
@@ -220,6 +206,8 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       Map<String, Map<String, ShaclPropertyBinding>> propertyShapeMap) {
     Map<String, List<GraphPattern>> accumulatedStatementsByGroup = new HashMap<>();
     Map<String, List<GraphPattern>> branchStatementMap = new HashMap<>();
+    Set<ColumnMetaPayload> uniqueColumns = new LinkedHashSet<>();
+    Map<String, List<Integer>> varSequence = new HashMap<>();
 
     // Iterate over each property to add either directly or to the associated group
     // or branch
@@ -245,21 +233,23 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         }
         if (propBinding.isArray()) {
           // Store individual array variables as well
-          this.arrayVariables.computeIfAbsent(propBinding.getName(), k -> new HashSet<>()).add(propBinding.getName());
+          this.arrayVariables.computeIfAbsent(propBinding.getName().getVarName(), k -> new HashSet<>())
+              .add(propBinding.getName().getVarName());
         }
       } else {
         this.variables.remove(QueryResource.genVariable(group));
-        this.varSequence.remove(QueryResource.genVariable(group));
         // If there is an associated group, store the content to the associated group in
         // the temp mappings; Note that a group may have multiple fields, so each
         // content should be appended to the previous batch
         String mappingKey = ShaclResource.getMappingKey(group, propBinding.getBranch());
         accumulatedStatementsByGroup.computeIfAbsent(mappingKey, k -> new ArrayList<>()).addAll(content);
         // Store array variables in their groups
-        this.arrayVariables.computeIfAbsent(mappingKey, k -> new HashSet<>()).add(propBinding.getName());
+        this.arrayVariables.computeIfAbsent(mappingKey, k -> new HashSet<>()).add(propBinding.getName().getVarName());
       }
       // Store the variable for individual properties only
-      this.variables.add(QueryResource.genVariable(propBinding.getName()));
+      this.variables.add(propBinding.getName());
+      varSequence.put(propBinding.getName().getVarName(), propBinding.getSequence());
+      uniqueColumns.add(propBinding.getColumnMeta());
     });
 
     // Handle group query parsing
@@ -323,6 +313,9 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         selectTemplate.where(GraphPatterns.optional(branchPattern));
       });
     }
+    this.columns.addAll(uniqueColumns.stream()
+        .sorted(ColumnMetaPayload.lexComparator(varSequence))
+        .toList());
     return selectTemplate;
   }
 }

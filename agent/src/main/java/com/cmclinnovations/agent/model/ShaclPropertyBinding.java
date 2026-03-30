@@ -14,6 +14,7 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfSubject;
 
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 
@@ -21,7 +22,6 @@ public class ShaclPropertyBinding {
     private Variable property;
     private Variable group;
     private Variable branch;
-
     private Iri instanceClass;
     private Iri nestedClass;
 
@@ -29,6 +29,9 @@ public class ShaclPropertyBinding {
     private PropertyPathBuilder predicate;
     private PropertyPathBuilder labelPredicate;
     private String subjectFilter;
+
+    private ColumnMetaPayload columnMeta;
+    private List<Integer> sequence;
 
     private boolean isArray;
     private boolean isOptional;
@@ -41,6 +44,7 @@ public class ShaclPropertyBinding {
      * @param binding Initial variables queried from the KG.
      */
     public ShaclPropertyBinding(SparqlBinding binding) {
+        this.sequence = new ArrayList<>();
         this.parseBinding(binding);
     }
 
@@ -64,8 +68,8 @@ public class ShaclPropertyBinding {
     /**
      * Retrieves the name of the property.
      */
-    public String getName() {
-        return this.property.getVarName();
+    public Variable getName() {
+        return this.property;
     }
 
     /**
@@ -94,6 +98,31 @@ public class ShaclPropertyBinding {
      */
     public boolean isOptional() {
         return this.isOptional;
+    }
+
+    /**
+     * Retrieves the column metadata for the property.
+     */
+    public ColumnMetaPayload getColumnMeta() {
+        return this.columnMeta;
+    }
+
+    /**
+     * Gets the sequence if available.
+     */
+    public List<Integer> getSequence() {
+        return this.sequence;
+    }
+
+    /**
+     * Add the sequence to the start of the list.
+     * 
+     * @param targetSequence Sequence to be prepended.
+     */
+    public void prependSequence(List<Integer> targetSequence) {
+        List<Integer> placeholder = new ArrayList<>(targetSequence);
+        placeholder.addAll(this.sequence);
+        this.sequence = placeholder;
     }
 
     /**
@@ -164,10 +193,8 @@ public class ShaclPropertyBinding {
         this.group = groupValue != null ? QueryResource.genVariable(groupValue) : null;
         String branchValue = binding.getFieldValue(ShaclResource.BRANCH_VAR);
         this.branch = branchValue != null ? QueryResource.genVariable(branchValue) : null;
-
         this.subject = QueryResource.IRI_VAR;
         this.appendPred(binding);
-
         this.subjectFilter = binding.getFieldValue(ShaclResource.SUBJECT_VAR, "");
 
         String instanceClassResult = binding.getFieldValue(ShaclResource.INSTANCE_CLASS_VAR, "");
@@ -183,6 +210,16 @@ public class ShaclPropertyBinding {
         this.isArray = Boolean.parseBoolean(binding.getFieldValue(ShaclResource.IS_ARRAY_VAR));
         this.isClazz = Boolean.parseBoolean(binding.getFieldValue(ShaclResource.IS_CLASS_VAR));
         this.isOptional = Boolean.parseBoolean(binding.getFieldValue(ShaclResource.IS_OPTIONAL_VAR));
+
+        if (binding.containsField(ShaclResource.ORDER_PROPERTY)) {
+            int order = Integer.parseInt(binding.getFieldValue(ShaclResource.ORDER_PROPERTY));
+            this.sequence.add(order);
+        }
+
+        String dataType = binding.getFieldValue(ShaclResource.DATA_TYPE_PROPERTY);
+        this.columnMeta = new ColumnMetaPayload(this.property.getVarName(),
+                dataType != null ? QueryResource.LITERAL_TYPE : QueryResource.URI_TYPE,
+                dataType);
     }
 
     /**

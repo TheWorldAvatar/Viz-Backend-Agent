@@ -29,7 +29,6 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.http.MediaType;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
-import com.cmclinnovations.agent.model.SparqlBinding;
 
 public class QueryResource {
     public static final MediaType JSON_MEDIA_TYPE = MediaType.valueOf("application/json");
@@ -113,6 +112,8 @@ public class QueryResource {
     public static final String FIXED_DATE_DATE_KEY = "entry_date";
     public static final String FIXED_DATE_SCHEDULE_KEY = "schedule entry";
     public static final String FIXED_DATE_SCHEDULE_DATE_KEY = "schedule entry date";
+    public static final String LITERAL_TYPE = "literal";
+    public static final String URI_TYPE = "uri";
 
     public static final String HISTORY_ACTIVITY_RESOURCE = "activity";
     public static final String HISTORY_AGENT_RESOURCE = "agent";

@@ -314,6 +314,7 @@ public class LifecycleContractService {
     return this.responseEntityBuilder.success(null,
         this.getContractCount(resourceID, eventType, filters),
         this.getContractCount(resourceID, eventType, new HashMap<>()),
+        this.getService.getColumns(),
         instances.stream()
             .map(binding -> this.lifecycleQueryService.parseLifecycleBinding(binding.get()))
             .toList());

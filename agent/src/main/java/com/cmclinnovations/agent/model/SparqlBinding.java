@@ -1,27 +1,20 @@
 package com.cmclinnovations.agent.model;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
-
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -41,7 +34,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class SparqlBinding {
   private Map<String, SparqlResponseField> bindings;
   private Map<String, List<Map<String, SparqlResponseField>>> arrayBindingFields;
-  private Set<Variable> sequence;
 
   /**
    * This constructor is added solely for the purpose of deserialisation and
@@ -51,7 +43,6 @@ public class SparqlBinding {
   public SparqlBinding() {
     this.bindings = new HashMap<>();
     this.arrayBindingFields = new HashMap<>();
-    this.sequence = new LinkedHashSet<>();
   }
 
   /**
@@ -67,7 +58,7 @@ public class SparqlBinding {
       JsonNode sparqlField = sparqlCol.getValue();
       String type = StringResource.getNodeString(sparqlField, "type");
       // Defaults to null if it is a URI, else it should be string
-      String dataTypeDefaultOption = type.equals("uri") ? null : ShaclResource.XSD_STRING;
+      String dataTypeDefaultOption = type.equals(QueryResource.URI_TYPE) ? null : ShaclResource.XSD_STRING;
       this.bindings.put(sparqlCol.getKey(), new SparqlResponseField(
           type,
           StringResource.getNodeString(sparqlField, "value"),
@@ -88,33 +79,11 @@ public class SparqlBinding {
    *         List<SparqlResponseField> as its values.
    */
   public Map<String, Object> get() {
-    // Return unsorted bindings if not required
-    if (this.sequence.isEmpty()) {
-      Map<String, Object> resultBindings = new HashMap<>();
-      resultBindings.putAll(this.bindings);
-      resultBindings.putAll(this.arrayBindingFields);
-      return resultBindings;
-    }
-    // Else, iterate through the variable sequence
-    Map<String, Object> sortedBindings = new LinkedHashMap<>();
-    this.sequence.forEach(variable -> {
-      String field = variable.getVarName();
-      // Attempt to retrieve the field directly from the bindings for sorting
-      if (this.bindings.containsKey(field)) {
-        sortedBindings.put(field, this.bindings.get(field));
-        // Search through the array if no direct field is found
-      } else if (!this.arrayBindingFields.isEmpty()) {
-        // Append array results to the result mappings
-        this.arrayBindingFields.keySet().forEach(arrayField -> {
-          List<Map<String, SparqlResponseField>> arrayFieldList = this.arrayBindingFields.get(arrayField);
-          // Add array results if it has not been added and contains the current field
-          if (!sortedBindings.containsKey(arrayField) && arrayFieldList.get(0).containsKey(field)) {
-            sortedBindings.put(arrayField, arrayFieldList);
-          }
-        });
-      }
-    });
-    return sortedBindings;
+    Map<String, Object> resultBindings = new HashMap<>();
+    this.bindings.remove(QueryResource.IRI_KEY);
+    resultBindings.putAll(this.bindings);
+    resultBindings.putAll(this.arrayBindingFields);
+    return resultBindings;
   }
 
   /**
@@ -130,17 +99,6 @@ public class SparqlBinding {
 
   public List<Map<String, SparqlResponseField>> getList(String field) {
     return this.arrayBindingFields.get(QueryResource.genVariable(field).getVarName());
-  }
-
-  /**
-   * Sets the sequence for the fields.
-   * 
-   * @param sequence List of order that fields should be in.
-   */
-
-  @JsonSetter("sequence")
-  public void setSequence(Collection<Variable> incoming) {
-    this.sequence = new LinkedHashSet<>(incoming);
   }
 
   /**
@@ -217,14 +175,6 @@ public class SparqlBinding {
   }
 
   /**
-   * Retrieve the sequence.
-   */
-  @JsonGetter("sequence")
-  public List<Variable> getSequence() {
-    return new ArrayList<>(this.sequence);
-  }
-
-  /**
    * Verify if the bindings have the specified field. Also checks array variables
    * 
    * @param field Field of interest
@@ -250,7 +200,6 @@ public class SparqlBinding {
         this.bindings.put(field, TypeCastUtils.castToObject(value, SparqlResponseField.class));
       }
     });
-    this.sequence.addAll(other.getSequence());
   }
 
   @Override

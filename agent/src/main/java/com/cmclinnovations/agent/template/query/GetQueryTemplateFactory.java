@@ -58,22 +58,10 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
     SelectQuery selectTemplate = super.genWhereClauseContent(targetClass, params.bindings());
 
     // Retrieve only the property fields if no sequence of variable is present
-    if (super.varSequence.isEmpty()) {
-      selectTemplate.select(QueryResource.IRI_VAR)
-          .select(QueryResource.ID_VAR);
-      super.variables.forEach(variable -> selectTemplate.select(variable));
-      params.addVars().forEach((field, fieldSequence) -> selectTemplate.select(field));
-    } else {
-      super.varSequence.putAll(params.addVars());
-      List<Variable> sortedSequence = new ArrayList<>(super.varSequence.keySet());
-      sortedSequence
-          .sort((key1, key2) -> ShaclResource.compareLists(super.varSequence.get(key1), super.varSequence.get(key2)));
-      sortedSequence.add(0, QueryResource.ID_VAR);
-      // Add variables
-      sortedSequence
-          .forEach(variable -> selectTemplate.select(variable));
-      super.setSequence(sortedSequence);
-    }
+    selectTemplate.select(QueryResource.IRI_VAR)
+        .select(QueryResource.ID_VAR);
+    super.variables.forEach(variable -> selectTemplate.select(variable));
+    params.addVars().forEach((field, fieldSequence) -> selectTemplate.select(field));
 
     String valuesClause = this.appendOptionalIdFilters(selectTemplate, params.targetIds());
     return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause);

@@ -10,5 +10,5 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record DataPayload<T>(String id, String message, Integer currentItemCount, Integer totalItems, Boolean deleted,
-        List<T> items) {
+                List<ColumnMetaPayload> columns, List<T> items) {
 }

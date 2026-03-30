@@ -171,6 +171,7 @@ public class LifecycleTaskService {
     return this.responseEntityBuilder.success(null,
         this.getOccurrenceCount(entityType, startTimestamp, endTimestamp, eventType, filters),
         this.getOccurrenceCount(entityType, startTimestamp, endTimestamp, eventType, new HashMap<>()),
+        this.getService.getColumns(),
         occurrences);
   }
 

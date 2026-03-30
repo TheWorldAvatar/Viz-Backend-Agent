@@ -19,6 +19,7 @@ import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.pagination.SortDirective;
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.template.FormTemplateFactory;
 import com.cmclinnovations.agent.template.query.DeleteQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
@@ -259,10 +260,10 @@ public class QueryTemplateService {
   }
 
   /**
-   * Retrieve the sequence of the fields.
+   * Retrieve the column metadata.
    */
-  public List<Variable> getFieldSequence() {
-    return this.getQueryTemplateFactory.getSequence();
+  public List<ColumnMetaPayload> getColumns() {
+    return this.getQueryTemplateFactory.getColumns();
   }
 
   /**

@@ -2,7 +2,7 @@ PREFIX sh:             <http://www.w3.org/ns/shacl#>
 PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/>
 PREFIX twa:            <https://theworldavatar.io/kg/form/>
 
-SELECT DISTINCT ?clazz ?instance_clazz ?name ?nodegroup ?nested_class ?branch ?role ?subject ?isarray ?isoptional ?isnumber ?multipath ?multipath_proppath
+SELECT DISTINCT ?clazz ?instance_clazz ?name ?nodegroup ?nested_class ?branch ?role ?subject ?datatype ?isarray ?isoptional ?isnumber ?multipath ?multipath_proppath
 WHERE{
   ?shape rdf:type sh:NodeShape ;
          sh:targetClass ?clazz ;
@@ -15,6 +15,7 @@ WHERE{
     ?node (sh:and/rdf:rest*/rdf:first)?/sh:property?[shape] ?property .
     ?property sh:name ?name ;
               sh:path ?predicatepath .
+    OPTIONAL{?property sh:datatype ?datatype}
     OPTIONAL{?property sh:node/sh:targetClass ?nested_class}
   OPTIONAL {
     ?property twa:role ?role .
