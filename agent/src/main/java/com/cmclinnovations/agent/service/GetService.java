@@ -353,7 +353,8 @@ public class GetService {
     LOGGER.debug("Retrieving parent filter for {} ...", resourceId);
     Queue<List<String>> targetIds = new ArrayDeque<>();
     targetIds.offer(List.of(id));
-    Queue<SparqlBinding> parentInstances = this.getInstances(resourceId, false, targetIds, "", new HashMap<>());
+    Queue<SparqlBinding> parentInstances = this.execGetInstancesWithVirtualResults(resourceId, false, targetIds, "",
+        new HashMap<>());
     Map<String, Set<String>> parentFilter = new HashMap<>();
     parentFilter.put(resourceId,
         Set.of("\"" + parentInstances.poll().getFieldValue(ShaclResource.NAME_PROPERTY) + "\""));
@@ -389,11 +390,20 @@ public class GetService {
    * @param requireLabel Indicates if labels should be returned for all
    *                     the fields that are IRIs.
    * @param pagination   Optional pagination state to filter results.
+   * @param filters      Mappings between filter fields and their values.
    */
-  public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, PaginationState pagination) {
+  public ResponseEntity<StandardApiResponse<?>> getInstances(String resourceID, boolean requireLabel,
+      PaginationState pagination, Map<String, String> filters) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     Queue<List<String>> ids = this.getAllIds(resourceID, "", pagination);
-    return this.execGetInstancesWithVirtualResults(resourceID, requireLabel, ids, "", new HashMap<>());
+    Queue<SparqlBinding> instances = this.execGetInstancesWithVirtualResults(resourceID, requireLabel, ids, "",
+        new HashMap<>());
+    return this.responseEntityBuilder.success(null,
+        this.getCount(resourceID, filters),
+        this.getCount(resourceID, new HashMap<>()),
+        instances.stream()
+            .map(SparqlBinding::get)
+            .toList());
   }
 
   /**

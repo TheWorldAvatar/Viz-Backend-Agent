@@ -1,9 +1,7 @@
 package com.cmclinnovations.agent;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
@@ -20,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
-import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
@@ -124,14 +121,8 @@ public class VisBackendAgent {
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      Queue<SparqlBinding> instances = this.getService.getInstances(type, true,
-          new PaginationState(page, limit, sortBy, allRequestParams));
-      return this.responseEntityBuilder.success(null,
-          this.getService.getCount(type, allRequestParams),
-          this.getService.getCount(type, new HashMap<>()),
-          instances.stream()
-              .map(SparqlBinding::get)
-              .toList());
+      return this.getService.getInstances(type, true,
+          new PaginationState(page, limit, sortBy, allRequestParams), allRequestParams);
     });
   }
 
