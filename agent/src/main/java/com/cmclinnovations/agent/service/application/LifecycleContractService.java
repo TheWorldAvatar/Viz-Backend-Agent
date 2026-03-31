@@ -319,11 +319,12 @@ public class LifecycleContractService {
     Queue<List<String>> ids = this.getService.getAllIds(resourceID, addStatements[0], pagination);
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,
         addStatements[1], contractColumns);
-
+    // Get column metadata before it is overridden by the get count methods
+    List<ColumnMetaPayload> columns = this.getService.getColumns();
     return this.responseEntityBuilder.success(null,
         this.getContractCount(resourceID, eventType, filters),
         this.getContractCount(resourceID, eventType, new HashMap<>()),
-        this.getService.getColumns(),
+        columns,
         instances.stream()
             .map(binding -> this.lifecycleQueryService.parseLifecycleBinding(binding.get()))
             .toList());

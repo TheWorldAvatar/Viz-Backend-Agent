@@ -398,10 +398,12 @@ public class GetService {
     Queue<List<String>> ids = this.getAllIds(resourceID, "", pagination);
     Queue<SparqlBinding> instances = this.execGetInstancesWithVirtualResults(resourceID, requireLabel, ids, "",
         new ArrayList<>());
+    // Get column metadata before it is overridden by the get count methods
+    List<ColumnMetaPayload> columns = this.getColumns();
     return this.responseEntityBuilder.success(null,
         this.getCount(resourceID, filters),
         this.getCount(resourceID, new HashMap<>()),
-        this.getColumns(),
+        columns,
         instances.stream()
             .map(SparqlBinding::get)
             .toList());

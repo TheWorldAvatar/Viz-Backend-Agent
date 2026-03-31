@@ -177,11 +177,13 @@ public class LifecycleTaskService {
       String entityType, LifecycleEventType eventType, PaginationState pagination, Map<String, String> filters) {
     List<Map<String, Object>> occurrences = this.queryOccurrences(startTimestamp, endTimestamp,
         entityType, eventType, pagination);
+    // Get column metadata before it is overridden by the get count methods
+    List<ColumnMetaPayload> columns = this.getService.getColumns();
     LOGGER.info("Successfuly retrieved tasks!");
     return this.responseEntityBuilder.success(null,
         this.getOccurrenceCount(entityType, startTimestamp, endTimestamp, eventType, filters),
         this.getOccurrenceCount(entityType, startTimestamp, endTimestamp, eventType, new HashMap<>()),
-        this.getService.getColumns(),
+        columns,
         occurrences);
   }
 
