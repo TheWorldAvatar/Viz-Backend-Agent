@@ -352,11 +352,11 @@ public class LifecycleTaskService {
     Queue<List<String>> ids = this.getService.getAllIds(entityType, lifecycleStatements[0], pagination);
     Set<ColumnMetaPayload> varSequences = new LinkedHashSet<>(this.taskColumnMeta);
     String addQuery = lifecycleStatements[1];
-    addQuery += this.parseEventOccurrenceQuery(-4, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
+    addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
     if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
-      addQuery += this.parseEventOccurrenceQuery(-3, LifecycleEventType.SERVICE_EXECUTION, varSequences);
-      addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_CANCELLATION, varSequences);
-      addQuery += this.parseEventOccurrenceQuery(-1, LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
+      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXECUTION, varSequences);
+      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_CANCELLATION, varSequences);
+      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
     }
     Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, ids, addQuery,
         new ArrayList<>(varSequences));
@@ -404,18 +404,15 @@ public class LifecycleTaskService {
    * Parses the event occurrence query to extract the variables and WHERE
    * contents.
    * 
-   * @param groupIndex     The group index for the variables.
    * @param lifecycleEvent Target event type.
    * @param columns        Set of columns names to be added.
    */
-  private String parseEventOccurrenceQuery(int groupIndex, LifecycleEventType lifecycleEvent,
-      Set<ColumnMetaPayload> columns) {
+  private String parseEventOccurrenceQuery(LifecycleEventType lifecycleEvent, Set<ColumnMetaPayload> columns) {
     String replacementQueryLine = lifecycleEvent.getShaclReplacement();
     String occurrenceQuery = this.getService.getQuery(replacementQueryLine, true);
-    List<ColumnMetaPayload> dispatchColumns = this.getService.getColumns().stream()
+    List<ColumnMetaPayload> eventColumns = this.getService.getColumns().stream()
         .filter(column -> !column.value().equals(QueryResource.ID_KEY)).toList();
-    // LifecycleResource.extractOccurrenceVariables(occurrenceQuery,groupIndex);
-    columns.addAll(dispatchColumns);
+    columns.addAll(eventColumns);
     return LifecycleResource.extractOccurrenceQuery(occurrenceQuery, lifecycleEvent);
   }
 
