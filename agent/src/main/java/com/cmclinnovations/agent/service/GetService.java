@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -74,7 +73,7 @@ public class GetService {
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService
         .getSparqlQueryConstructionParameters(shaclReplacement, requireLabel);
     return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, new ArrayDeque<>(),
-        "", new HashMap<>());
+        "", new ArrayList<>());
   }
 
   /**
@@ -355,7 +354,7 @@ public class GetService {
     Queue<List<String>> targetIds = new ArrayDeque<>();
     targetIds.offer(List.of(id));
     Queue<SparqlBinding> parentInstances = this.execGetInstancesWithVirtualResults(resourceId, false, targetIds, "",
-        new HashMap<>());
+        new ArrayList<>());
     Map<String, Set<String>> parentFilter = new HashMap<>();
     parentFilter.put(resourceId,
         Set.of("\"" + parentInstances.poll().getFieldValue(ShaclResource.NAME_PROPERTY) + "\""));
@@ -373,13 +372,13 @@ public class GetService {
    *                           the fields that are IRIs.
    * @param ids                List of IDs to retrieve.
    * @param addQueryStatements Additional query statements to be added.
-   * @param addVars            Optional additional variables to be included in
-   *                           the query, along with their order sequence.
+   * @param addColumns         Optional additional columns to be included in the
+   *                           results.
    */
   public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, Queue<List<String>> ids,
-      String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+      String addQueryStatements, List<ColumnMetaPayload> addColumns) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
-    return this.execGetInstancesWithVirtualResults(resourceID, requireLabel, ids, addQueryStatements, addVars);
+    return this.execGetInstancesWithVirtualResults(resourceID, requireLabel, ids, addQueryStatements, addColumns);
   }
 
   /**
@@ -398,7 +397,7 @@ public class GetService {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     Queue<List<String>> ids = this.getAllIds(resourceID, "", pagination);
     Queue<SparqlBinding> instances = this.execGetInstancesWithVirtualResults(resourceID, requireLabel, ids, "",
-        new HashMap<>());
+        new ArrayList<>());
     return this.responseEntityBuilder.success(null,
         this.getCount(resourceID, filters),
         this.getCount(resourceID, new HashMap<>()),
@@ -428,7 +427,7 @@ public class GetService {
     LOGGER.debug("Retrieving an instance of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
     Queue<SparqlBinding> instances = this.execGetInstances(iri, new ArrayDeque<>(List.of(Arrays.asList(targetId))),
-        requireLabel, "", new HashMap<>());
+        requireLabel, "", new ArrayList<>());
     return this.getSingleInstanceResponse(instances);
   }
 
@@ -445,7 +444,7 @@ public class GetService {
         Rdf.iri(eventType.getEvent()));
     Queue<SparqlBinding> instances = this.execGetInstances(eventType.getShaclReplacement(),
         new ArrayDeque<>(List.of(Arrays.asList(targetId))), false, lifecycleEventPattern.getQueryString(),
-        new HashMap<>());
+        new ArrayList<>());
     return this.getSingleInstanceResponse(instances);
   }
 
@@ -634,11 +633,11 @@ public class GetService {
    *                           the fields that are IRIs.
    * @param ids                List of IDs to retrieve.
    * @param addQueryStatements Additional query statements to be added
-   * @param addVars            Optional additional variables to be included in
-   *                           the query, along with their order sequence.
+   * @param addColumns         Optional additional columns to be included in the
+   *                           results.
    */
   private Queue<SparqlBinding> execGetInstancesWithVirtualResults(String resourceID, boolean requireLabel,
-      Queue<List<String>> ids, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+      Queue<List<String>> ids, String addQueryStatements, List<ColumnMetaPayload> addColumns) {
     if (ids.isEmpty()) {
       return new ArrayDeque<>();
     }
@@ -646,11 +645,11 @@ public class GetService {
 
     // Do not execute virtual rules if labels are not required
     if (!requireLabel) {
-      return this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
+      return this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addColumns);
     }
     // Execute virtual results first as IDs are removed on the actual execution
     Map<String, SparqlBinding> virtualResults = this.kgService.execVirtualShaclRules(resourceID, ids);
-    Queue<SparqlBinding> instances = this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addVars);
+    Queue<SparqlBinding> instances = this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addColumns);
     return instances.stream().map(instance -> {
       String id = instance.getFieldValue(QueryResource.ID_KEY);
       if (virtualResults.containsKey(id)) {
@@ -669,15 +668,15 @@ public class GetService {
    * @param requireLabel         Indicates if labels should be returned for all
    *                             the fields that are IRIs.
    * @param addQueryStatements   Additional query statements to be added
-   * @param addVars              Optional additional variables to be included in
-   *                             the query, along with their order sequence
+   * @param addColumns           Optional additional columns to be included in the
+   *                             results.
    */
   private Queue<SparqlBinding> execGetInstances(String nodeShapeReplacement, Queue<List<String>> targetIds,
-      boolean requireLabel, String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+      boolean requireLabel, String addQueryStatements, List<ColumnMetaPayload> addColumns) {
     Queue<Queue<SparqlBinding>> queryVarsAndPaths = this.kgService.getSparqlQueryConstructionParameters(
         nodeShapeReplacement, requireLabel);
     String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetIds,
-        addQueryStatements, addVars);
+        addQueryStatements, addColumns);
     LOGGER.debug("Querying the knowledge graph for the instances...");
     // Query for direct instances
     Queue<SparqlBinding> instances = this.kgService.query(getQuery, SparqlEndpointType.MIXED);

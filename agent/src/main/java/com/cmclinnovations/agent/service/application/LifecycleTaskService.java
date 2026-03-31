@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -12,7 +13,6 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -22,6 +22,7 @@ import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
@@ -34,6 +35,7 @@ import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 
@@ -47,13 +49,12 @@ public class LifecycleTaskService {
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private final LifecycleQueryFactory lifecycleQueryFactory;
-  private final Map<Variable, List<Integer>> taskVarSequence = new HashMap<>();
+  private final List<ColumnMetaPayload> taskColumnMeta = new ArrayList<>();
 
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
   private static final String ORDER_COMPLETE_MESSAGE = "Order has been completed successfully.";
   private static final String ORDER_ACCRUAL_MESSAGE = "Billables have been accrued successfully.";
-  private static final int MIN_INDEX = -5;
   private static final int NUM_DAY_ORDER_GEN = 30;
   static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
@@ -74,12 +75,21 @@ public class LifecycleTaskService {
     this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
 
-    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.DATE_KEY), List.of(MIN_INDEX, 1));
-    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY), List.of(MIN_INDEX, 2));
-    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_KEY), List.of(MIN_INDEX, 3));
-    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY), List.of(1000, 999));
-    this.taskVarSequence.put(QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY), List.of(1000, 1000));
-    this.taskVarSequence.put(QueryResource.SCHEDULE_RECURRENCE_VAR, List.of(1000, 1001));
+    this.taskColumnMeta.add(new ColumnMetaPayload(LifecycleResource.DATE_KEY,
+        QueryResource.LITERAL_TYPE, ShaclResource.XSD_DATE));
+    this.taskColumnMeta
+        .add(new ColumnMetaPayload(QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY).getVarName(),
+            QueryResource.LITERAL_TYPE, ShaclResource.XSD_DATE_TIME));
+    this.taskColumnMeta
+        .add(new ColumnMetaPayload(QueryResource.genVariable(LifecycleResource.EVENT_KEY).getVarName(),
+            QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
+    this.taskColumnMeta
+        .add(new ColumnMetaPayload(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY).getVarName(),
+            QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
+    this.taskColumnMeta.add(new ColumnMetaPayload(LifecycleResource.EVENT_STATUS_KEY, QueryResource.LITERAL_TYPE,
+        ShaclResource.XSD_STRING));
+    this.taskColumnMeta.add(new ColumnMetaPayload(QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName(),
+        QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
   }
 
   /**
@@ -341,7 +351,7 @@ public class LifecycleTaskService {
   private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String[] lifecycleStatements,
       LifecycleEventType eventType, PaginationState pagination) {
     Queue<List<String>> ids = this.getService.getAllIds(entityType, lifecycleStatements[0], pagination);
-    Map<Variable, List<Integer>> varSequences = new HashMap<>(this.taskVarSequence);
+    Set<ColumnMetaPayload> varSequences = new LinkedHashSet<>(this.taskColumnMeta);
     String addQuery = lifecycleStatements[1];
     addQuery += this.parseEventOccurrenceQuery(-4, LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
     if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
@@ -349,7 +359,8 @@ public class LifecycleTaskService {
       addQuery += this.parseEventOccurrenceQuery(-2, LifecycleEventType.SERVICE_CANCELLATION, varSequences);
       addQuery += this.parseEventOccurrenceQuery(-1, LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
     }
-    Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, ids, addQuery, varSequences);
+    Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, ids, addQuery,
+        new ArrayList<>(varSequences));
     return results.stream()
         .map(binding -> this.lifecycleQueryService.parseLifecycleBinding(binding.get()))
         .toList();
@@ -396,15 +407,16 @@ public class LifecycleTaskService {
    * 
    * @param groupIndex     The group index for the variables.
    * @param lifecycleEvent Target event type.
-   * @param varSequences   List of variable sequences to be added.
+   * @param columns        Set of columns names to be added.
    */
   private String parseEventOccurrenceQuery(int groupIndex, LifecycleEventType lifecycleEvent,
-      Map<Variable, List<Integer>> varSequences) {
+      Set<ColumnMetaPayload> columns) {
     String replacementQueryLine = lifecycleEvent.getShaclReplacement();
     String occurrenceQuery = this.getService.getQuery(replacementQueryLine, true);
-    Map<Variable, List<Integer>> dispatchVars = LifecycleResource.extractOccurrenceVariables(occurrenceQuery,
-        groupIndex);
-    varSequences.putAll(dispatchVars);
+    List<ColumnMetaPayload> dispatchColumns = this.getService.getColumns().stream()
+        .filter(column -> !column.value().equals(QueryResource.ID_KEY)).toList();
+    // LifecycleResource.extractOccurrenceVariables(occurrenceQuery,groupIndex);
+    columns.addAll(dispatchColumns);
     return LifecycleResource.extractOccurrenceQuery(occurrenceQuery, lifecycleEvent);
   }
 

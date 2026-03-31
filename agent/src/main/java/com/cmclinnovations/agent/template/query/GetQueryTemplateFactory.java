@@ -8,7 +8,6 @@ import java.util.Queue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
-import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -20,7 +19,6 @@ import com.cmclinnovations.agent.model.ShaclPropertyBinding;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.QueryResource;
-import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public class GetQueryTemplateFactory extends QueryTemplateFactory {
@@ -55,13 +53,13 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
     LOGGER.info("Generating a query template for getting data...");
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    SelectQuery selectTemplate = super.genWhereClauseContent(targetClass, params.bindings());
+    SelectQuery selectTemplate = super.genWhereClauseContent(targetClass, params.addColumns(), params.bindings());
 
     // Retrieve only the property fields if no sequence of variable is present
     selectTemplate.select(QueryResource.IRI_VAR)
         .select(QueryResource.ID_VAR);
-    super.variables.forEach(variable -> selectTemplate.select(variable));
-    params.addVars().forEach((field, fieldSequence) -> selectTemplate.select(field));
+    super.variables.forEach(selectTemplate::select);
+    params.addColumns().forEach(col -> selectTemplate.select(QueryResource.genVariable(col.value())));
 
     String valuesClause = this.appendOptionalIdFilters(selectTemplate, params.targetIds());
     return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause);

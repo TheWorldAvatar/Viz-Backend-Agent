@@ -3,12 +3,11 @@ package com.cmclinnovations.agent.model;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
-import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
-
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public record QueryTemplateFactoryParameters(
@@ -17,7 +16,7 @@ public record QueryTemplateFactoryParameters(
     Queue<List<String>> targetIds,
     Map<String, String> criterias,
     String addQueryStatements,
-    Map<Variable, List<Integer>> addVars,
+    List<ColumnMetaPayload> addColumns,
     String branchName,
     Set<String> optVarNames) {
 
@@ -30,8 +29,8 @@ public record QueryTemplateFactoryParameters(
   }
 
   public QueryTemplateFactoryParameters(Queue<Queue<SparqlBinding>> bindings, Queue<List<String>> targetIds,
-      String addQueryStatements, Map<Variable, List<Integer>> addVars) {
-    this(bindings, null, targetIds, null, addQueryStatements, addVars, null, null);
+      String addQueryStatements, List<ColumnMetaPayload> addColumns) {
+    this(bindings, null, targetIds, null, addQueryStatements, addColumns, null, null);
   }
 
   public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId, String branchName) {

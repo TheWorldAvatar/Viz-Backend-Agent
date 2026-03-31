@@ -79,9 +79,12 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    * @param targetClass            Target class.
    * @param shaclNodeShapeBindings The node shapes queried from SHACL
    *                               restrictions.
+   * @param addColumns             The additional columns metadata.
    */
-  protected SelectQuery genWhereClauseContent(String targetClass, Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
+  protected SelectQuery genWhereClauseContent(String targetClass, List<ColumnMetaPayload> addColumns,
+      Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
     this.reset();
+    this.columns.addAll(addColumns);
     Map<String, Map<String, ShaclPropertyBinding>> propertyBindingMap = this.parseNodeShapes(shaclNodeShapeBindings);
     SelectQuery selectTemplate = genSelectTemplate(targetClass);
     return this.write(selectTemplate, propertyBindingMap);

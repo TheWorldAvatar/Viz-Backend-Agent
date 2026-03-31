@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.service.application;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -10,7 +11,6 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -20,6 +20,7 @@ import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
@@ -32,6 +33,7 @@ import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 
@@ -45,7 +47,7 @@ public class LifecycleContractService {
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private final LifecycleQueryFactory lifecycleQueryFactory;
-  private final Map<Variable, List<Integer>> lifecycleVarSequence = new HashMap<>();
+  private final List<ColumnMetaPayload> lifecycleColumnMeta = new ArrayList<>();
   private static final Logger LOGGER = LogManager.getLogger(LifecycleContractService.class);
 
   private static final boolean IS_CONTRACT = true;
@@ -65,13 +67,22 @@ public class LifecycleContractService {
     this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
 
-    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY), List.of(-3, 2));
-    this.lifecycleVarSequence.put(QueryResource.SCHEDULE_START_DATE_VAR, List.of(2, 0));
-    this.lifecycleVarSequence.put(QueryResource.SCHEDULE_END_DATE_VAR, List.of(2, 1));
-    this.lifecycleVarSequence.put(QueryResource.SCHEDULE_START_TIME_VAR, List.of(2, 2));
-    this.lifecycleVarSequence.put(QueryResource.SCHEDULE_END_TIME_VAR, List.of(2, 3));
-    this.lifecycleVarSequence.put(QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY), List.of(2, 4));
-    this.lifecycleVarSequence.put(QueryResource.SCHEDULE_RECURRENCE_VAR, List.of(2, 5));
+    this.lifecycleColumnMeta
+        .add(new ColumnMetaPayload(QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY).getVarName(),
+            QueryResource.LITERAL_TYPE, ShaclResource.XSD_DATE_TIME));
+    this.lifecycleColumnMeta.add(new ColumnMetaPayload(QueryResource.SCHEDULE_START_DATE_VAR.getVarName(),
+        QueryResource.LITERAL_TYPE, ShaclResource.XSD_DATE));
+    this.lifecycleColumnMeta.add(new ColumnMetaPayload(QueryResource.SCHEDULE_END_DATE_VAR.getVarName(),
+        QueryResource.LITERAL_TYPE, ShaclResource.XSD_DATE));
+    this.lifecycleColumnMeta.add(new ColumnMetaPayload(QueryResource.SCHEDULE_START_TIME_VAR.getVarName(),
+        QueryResource.LITERAL_TYPE, ShaclResource.XSD_TIME));
+    this.lifecycleColumnMeta.add(new ColumnMetaPayload(QueryResource.SCHEDULE_END_TIME_VAR.getVarName(),
+        QueryResource.LITERAL_TYPE, ShaclResource.XSD_TIME));
+    this.lifecycleColumnMeta
+        .add(new ColumnMetaPayload(QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY).getVarName(),
+            QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
+    this.lifecycleColumnMeta.add(new ColumnMetaPayload(QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName(),
+        QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
   }
 
   /**
@@ -296,20 +307,20 @@ public class LifecycleContractService {
   public ResponseEntity<StandardApiResponse<?>> getContracts(String resourceID, boolean requireLabel,
       LifecycleEventType eventType, PaginationState pagination, Map<String, String> filters) {
     LOGGER.debug("Retrieving all contracts...");
-    Map<Variable, List<Integer>> contractVariables = new HashMap<>(this.lifecycleVarSequence);
+    List<ColumnMetaPayload> contractColumns = new ArrayList<>(this.lifecycleColumnMeta);
     if (eventType.equals(LifecycleEventType.APPROVED) || eventType.equals(LifecycleEventType.ARCHIVE_COMPLETION)) {
-      contractVariables.put(
-          QueryResource.genVariable(LifecycleResource.STATUS_KEY),
-          List.of(1, 1));
+      contractColumns.add(
+          new ColumnMetaPayload(LifecycleResource.STATUS_KEY, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
     }
     if (eventType.equals(LifecycleEventType.ARCHIVE_COMPLETION)) {
-      contractVariables.put(QueryResource.genVariable("final remarks"), List.of(10, 20));
+      contractColumns.add(
+          new ColumnMetaPayload("final_remarks", QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
     }
     String[] addStatements = this.genLifecycleStatements(eventType, pagination.getSortedFields(),
         pagination.getFilters(), "", true);
     Queue<List<String>> ids = this.getService.getAllIds(resourceID, addStatements[0], pagination);
     Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,
-        addStatements[1], contractVariables);
+        addStatements[1], contractColumns);
 
     return this.responseEntityBuilder.success(null,
         this.getContractCount(resourceID, eventType, filters),
