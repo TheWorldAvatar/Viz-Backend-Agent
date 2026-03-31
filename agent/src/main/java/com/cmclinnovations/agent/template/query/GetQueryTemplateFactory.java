@@ -63,7 +63,8 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
     params.addColumns().forEach(col -> {
       if (col.value().equals(LifecycleResource.SCHEDULE_TYPE_KEY)) {
         selectTemplate.select(QueryResource.SCHEDULE_RECURRENCE_VAR);
-      } else if (col.value().equals(LifecycleResource.STATUS_KEY)) {
+      } else if (col.value().equals(LifecycleResource.STATUS_KEY)
+          && params.addColumns().contains(QueryResource.EVENT_ID_COL)) {
         selectTemplate.select(QueryResource.EVENT_STATUS_VAR);
         selectTemplate.select(QueryResource.genVariable(LifecycleResource.EVENT_KEY));
       } else {
