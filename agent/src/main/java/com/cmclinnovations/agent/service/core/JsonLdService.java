@@ -75,7 +75,7 @@ public class JsonLdService {
       }
     }
     // Return the replacement value with the target key for literal
-    if (replacementType.equals("literal")) {
+    if (replacementType.equals(QueryResource.LITERAL_TYPE)) {
       return replacements.get(targetKey).toString();
     } else if (replacementType.equals(QueryResource.IRI_KEY)) {
       JsonNode prefixNode = replacementNode.path("prefix");
