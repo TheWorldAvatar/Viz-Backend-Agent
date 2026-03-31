@@ -87,12 +87,22 @@ public class SparqlBinding {
   }
 
   /**
-   * Retrieve the field names.
+   * Retrieve the field names that have non-null values.
+   */
+  @JsonIgnore
+  public Set<String> getNonEmptyFields() {
+    return this.bindings.entrySet().stream()
+        .filter(entry -> entry.getValue() != null)
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toSet());
+  }
+
+  /**
+   * Retrieve all the field names.
    */
   @JsonIgnore
   public Set<String> getFields() {
     return this.bindings.entrySet().stream()
-        .filter(entry -> entry.getValue() != null)
         .map(Map.Entry::getKey)
         .collect(Collectors.toSet());
   }
@@ -115,7 +125,10 @@ public class SparqlBinding {
 
       if (bestMatchGroup != null) {
         arrayVars.get(bestMatchGroup).forEach((field) -> {
-          currentArrayFields.put(QueryResource.genVariable(field).getVarName(), this.getFieldResponse(field));
+          SparqlResponseField fieldResponse = this.getFieldResponse(field);
+          if (fieldResponse != null) {
+            currentArrayFields.put(field, fieldResponse);
+          }
           this.bindings.remove(field); // Remove field from bindings as they should now be an array
         });
         currentArrayGroup.add(currentArrayFields);
@@ -135,7 +148,10 @@ public class SparqlBinding {
     String bestMatchGroup = ShaclResource.findBestMatchingGroup(secBinding.getFields(), arrayVars);
     Map<String, SparqlResponseField> targetMergedArrayFields = new HashMap<>();
     arrayVars.get(bestMatchGroup).forEach((field) -> {
-      targetMergedArrayFields.put(QueryResource.genVariable(field).getVarName(), secBinding.getFieldResponse(field));
+      SparqlResponseField fieldResponse = secBinding.getFieldResponse(field);
+      if (fieldResponse != null) {
+        targetMergedArrayFields.put(field, fieldResponse);
+      }
       this.bindings.remove(field); // Remove field from bindings as they should now be an array
     });
     this.arrayBindingFields.computeIfAbsent(bestMatchGroup, k -> new ArrayList<>())

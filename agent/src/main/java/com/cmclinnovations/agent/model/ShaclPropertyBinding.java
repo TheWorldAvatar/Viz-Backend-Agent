@@ -217,8 +217,11 @@ public class ShaclPropertyBinding {
         }
 
         String dataType = binding.getFieldValue(ShaclResource.DATA_TYPE_PROPERTY);
-        this.columnMeta = new ColumnMetaPayload(this.property.getVarName(),
-                dataType != null ? QueryResource.LITERAL_TYPE : QueryResource.URI_TYPE,
+
+        this.columnMeta = new ColumnMetaPayload(
+                groupValue != null && this.isArray ? this.group.getVarName() : this.property.getVarName(),
+                this.isArray ? ShaclResource.ARRAY_KEY
+                        : dataType != null ? QueryResource.LITERAL_TYPE : QueryResource.URI_TYPE,
                 dataType);
     }
 
