@@ -81,13 +81,10 @@ public class LifecycleTaskService {
         .add(new ColumnMetaPayload(QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY).getVarName(),
             QueryResource.LITERAL_TYPE, ShaclResource.XSD_DATE_TIME));
     this.taskColumnMeta
-        .add(new ColumnMetaPayload(QueryResource.genVariable(LifecycleResource.EVENT_KEY).getVarName(),
-            QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
+        .add(new ColumnMetaPayload(LifecycleResource.STATUS_KEY, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
     this.taskColumnMeta
         .add(new ColumnMetaPayload(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY).getVarName(),
             QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
-    this.taskColumnMeta.add(new ColumnMetaPayload(LifecycleResource.EVENT_STATUS_KEY, QueryResource.LITERAL_TYPE,
-        ShaclResource.XSD_STRING));
     this.taskColumnMeta.add(new ColumnMetaPayload(LifecycleResource.SCHEDULE_TYPE_KEY, QueryResource.LITERAL_TYPE,
         ShaclResource.XSD_STRING));
   }
