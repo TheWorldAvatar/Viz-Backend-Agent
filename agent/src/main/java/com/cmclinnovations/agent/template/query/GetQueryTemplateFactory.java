@@ -18,6 +18,7 @@ import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.ShaclPropertyBinding;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
@@ -59,8 +60,13 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
     selectTemplate.select(QueryResource.IRI_VAR)
         .select(QueryResource.ID_VAR);
     super.variables.forEach(selectTemplate::select);
-    params.addColumns().forEach(col -> selectTemplate.select(QueryResource.genVariable(col.value())));
-
+    params.addColumns().forEach(col -> {
+      if (col.value().equals(LifecycleResource.SCHEDULE_TYPE_KEY)) {
+        selectTemplate.select(QueryResource.SCHEDULE_RECURRENCE_VAR);
+      } else {
+        selectTemplate.select(QueryResource.genVariable(col.value()));
+      }
+    });
     String valuesClause = this.appendOptionalIdFilters(selectTemplate, params.targetIds());
     return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause);
   }

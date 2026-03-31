@@ -81,8 +81,6 @@ public class LifecycleContractService {
     this.lifecycleColumnMeta
         .add(new ColumnMetaPayload(QueryResource.genVariable(LifecycleResource.SCHEDULE_TYPE_KEY).getVarName(),
             QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
-    this.lifecycleColumnMeta.add(new ColumnMetaPayload(QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName(),
-        QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
   }
 
   /**
