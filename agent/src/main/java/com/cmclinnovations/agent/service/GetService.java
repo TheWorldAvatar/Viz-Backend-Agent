@@ -565,25 +565,27 @@ public class GetService {
     // Generate statements for each mappings as individual parts
     StringBuilder sortStatementBuilder = new StringBuilder();
     sortedQueryPartMappings.forEach((key, queryParts) -> {
+      Queue<Queue<SparqlBinding>> queryVarsAndPaths = queryParts;
       if (fieldGroupMappings.containsKey(key)) {
-        Queue<Queue<SparqlBinding>> mappingsCopy = QueryResource
+        queryVarsAndPaths = QueryResource
             .copyQueue(groupQueryPartMappings.get(fieldGroupMappings.get(key)));
-        queryParts.addAll(mappingsCopy);
+        queryVarsAndPaths.addAll(queryParts);
       }
-      sortStatementBuilder.append(QueryResource.optional(this.queryTemplateService.genWhereClause(queryParts)));
+      sortStatementBuilder.append(this.queryTemplateService.genWhereClause(queryVarsAndPaths));
     });
     Map<String, String> outputMappings = new HashMap<>();
     if (!sortStatementBuilder.isEmpty()) {
       outputMappings.put(StringResource.SORT_KEY, sortStatementBuilder.toString());
     }
     filterQueryPartMappings.forEach((key, queryParts) -> {
+      Queue<Queue<SparqlBinding>> queryVarsAndPaths = queryParts;
       if (fieldGroupMappings.containsKey(key)) {
-        Queue<Queue<SparqlBinding>> mappingsCopy = QueryResource
+        queryVarsAndPaths = QueryResource
             .copyQueue(groupQueryPartMappings.get(fieldGroupMappings.get(key)));
-        queryParts.addAll(mappingsCopy);
+        queryVarsAndPaths.addAll(queryParts);
       }
       // Generate the query statements for this filter
-      String clause = this.queryTemplateService.genWhereClause(queryParts)
+      String clause = this.queryTemplateService.genWhereClause(queryVarsAndPaths)
           .replaceAll("(?s)\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
       outputMappings.put(key, clause);
     });
