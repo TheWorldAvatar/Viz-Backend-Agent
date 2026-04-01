@@ -3,7 +3,6 @@ package com.cmclinnovations.agent.service.core;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -20,7 +19,6 @@ import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -109,7 +107,7 @@ public class KGService {
     if (statusCode == 200) {
       LOGGER.info("Instance has been successfully deleted!");
       return this.responseEntityBuilder.success(null,
-          LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_DELETE_KEY), true, null);
+          LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_DELETE_KEY), null, null, true, null, null);
     }
     throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_DELETE_KEY));
   }
@@ -325,15 +323,8 @@ public class KGService {
     Map<String, SparqlBinding> results = new HashMap<>();
     while (!queries.isEmpty()) {
       Queue<SparqlBinding> currentResults = this.query(queries.poll(), SparqlEndpointType.MIXED);
-      List<Variable> variables = new ArrayList<>();
       while (!currentResults.isEmpty()) {
         SparqlBinding currentBinding = currentResults.poll();
-        if (variables.isEmpty()) {
-          currentBinding.getFields().stream()
-              .filter(field -> field != QueryResource.ID_KEY)
-              .forEach(field -> variables.add(QueryResource.genVariable(field)));
-        }
-        currentBinding.setSequence(variables);
         results.merge(currentBinding.getFieldValue(QueryResource.ID_KEY), currentBinding,
             (existing, replacement) -> {
               // If there is an existing mapping, merge the two

@@ -381,7 +381,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
   private ObjectNode getArrayReplacementContents(ObjectNode contents, String arrayField) {
     ObjectNode newIdNode = this.jsonLdService.genObjectNode();
     newIdNode.put(ShaclResource.REPLACE_KEY, arrayField);
-    newIdNode.put(ShaclResource.TYPE_KEY, "literal");
+    newIdNode.put(ShaclResource.TYPE_KEY, QueryResource.LITERAL_TYPE);
     // Replace or add @id with a new ID node based on the array field
     contents.set(ShaclResource.ID_KEY, newIdNode);
     return contents;

@@ -231,7 +231,7 @@ public class AddService {
           ArrayNode resultArray = this.genFieldArray(currentNode, replacements);
           parentNode.set(parentField, resultArray);
           // Parse literal with data types differently
-        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals("literal")
+        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(QueryResource.LITERAL_TYPE)
             && currentNode.has(ShaclResource.DATA_TYPE_PROPERTY)) {
           String replacement = this.jsonLdService.getReplacementValue(currentNode, replacements);
           if (replacement.isEmpty()) { // Remove empty replacements

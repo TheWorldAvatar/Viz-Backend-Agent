@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.model.response.DataPayload;
 import com.cmclinnovations.agent.model.response.ErrorPayload;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
@@ -32,7 +33,7 @@ public class ResponseEntityBuilder {
    *                payload.
    */
   public ResponseEntity<StandardApiResponse<?>> success(String id, String message) {
-    return success(id, message, null, null);
+    return success(id, message, null, null, null, null, null);
   }
 
   /**
@@ -45,7 +46,7 @@ public class ResponseEntityBuilder {
   public ResponseEntity<StandardApiResponse<?>> success(String message, Map<String, Object> item) {
     List<Map<String, Object>> items = new ArrayList<>();
     items.add(item);
-    return success(null, message, null, items);
+    return success(null, message, null, null, null, null, items);
   }
 
   /**
@@ -56,22 +57,45 @@ public class ResponseEntityBuilder {
    * @param items   A collection of instances/data.
    */
   public ResponseEntity<StandardApiResponse<?>> success(String message, List<Map<String, Object>> items) {
-    return success(null, message, null, items);
+    return success(null, message, null, null, null, null, items);
+  }
+
+  /**
+   * Builds a successful response for multiple items.
+   *
+   * @param message          An optional message for its corresponding key in the
+   *                         data payload.
+   * @param currentItemCount The count of all items after filter applied. Equals
+   *                         to total items if no filter is applied.
+   * @param totalItems       An integer count of all items.
+   * @param columns          An optional list of column metadata.
+   * @param items            A collection of instances/data.
+   */
+  public ResponseEntity<StandardApiResponse<?>> success(String message, Integer currentItemCount,
+      Integer totalItems, List<ColumnMetaPayload> columns, List<Map<String, Object>> items) {
+    return success(null, message, currentItemCount, totalItems, null, columns, items);
   }
 
   /**
    * Builds a successful response with the data payload.
    *
-   * @param id      An optional id for its corresponding key in the data payload.
-   * @param message An optional message for its corresponding key in the data
-   *                payload.
-   * @param deleted An optional boolean to indicate the deleted status for any
-   *                DELETE request.
-   * @param items   An optional collection of instances/data.
+   * @param id               An optional id for its corresponding key in the data
+   *                         payload.
+   * @param message          An optional message for its corresponding key in the
+   *                         data payload.
+   * @param currentItemCount An optional count of all items after any filter
+   *                         applied. Equals to total items if no filter is
+   *                         applied.
+   * @param totalItems       An optional count of all items.
+   * @param deleted          An optional boolean to indicate the deleted status
+   *                         for any DELETE request.
+   * @param columns          An optional list of column metadata.
+   * @param items            An optional collection of instances/data.
    */
-  public ResponseEntity<StandardApiResponse<?>> success(String id, String message, Boolean deleted,
-      List<Map<String, Object>> items) {
-    DataPayload<Map<String, Object>> dataPayload = new DataPayload<>(id, message, deleted, items);
+  public ResponseEntity<StandardApiResponse<?>> success(String id, String message, Integer currentItemCount,
+      Integer totalItems, Boolean deleted, List<ColumnMetaPayload> columns, List<Map<String, Object>> items) {
+    DataPayload<Map<String, Object>> dataPayload = new DataPayload<>(id, message, currentItemCount, totalItems, deleted,
+        columns, items);
     return new ResponseEntity<>(
         new StandardApiResponse<>(this.appVersion, dataPayload, null),
         HttpStatus.OK);
@@ -83,7 +107,7 @@ public class ResponseEntityBuilder {
    * @param items An optional collection of strings.
    */
   public <T> ResponseEntity<StandardApiResponse<?>> success(List<T> items) {
-    DataPayload<T> dataPayload = new DataPayload<>(null, null, null, items);
+    DataPayload<T> dataPayload = new DataPayload<>(null, null, null, null, null, null, items);
     return new ResponseEntity<>(
         new StandardApiResponse<>(this.appVersion, dataPayload, null),
         HttpStatus.OK);

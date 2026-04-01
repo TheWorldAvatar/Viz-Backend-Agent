@@ -29,7 +29,7 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.http.MediaType;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
-import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 
 public class QueryResource {
     public static final MediaType JSON_MEDIA_TYPE = MediaType.valueOf("application/json");
@@ -94,6 +94,8 @@ public class QueryResource {
     public static final String ACCOUNT_ID_KEY = "account";
     public static final Variable DATE_VAR = QueryResource.genVariable(LifecycleResource.DATE_KEY);
     public static final Variable EVENT_ID_VAR = QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY);
+    public static final ColumnMetaPayload EVENT_ID_COL = new ColumnMetaPayload(QueryResource.EVENT_ID_VAR.getVarName(),
+            QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING);
     public static final Variable EVENT_STATUS_VAR = QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY);
     public static final Variable LAST_MODIFIED_VAR = QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY);
     public static final Variable SCHEDULE_START_DATE_VAR = QueryResource
@@ -113,6 +115,8 @@ public class QueryResource {
     public static final String FIXED_DATE_DATE_KEY = "entry_date";
     public static final String FIXED_DATE_SCHEDULE_KEY = "schedule entry";
     public static final String FIXED_DATE_SCHEDULE_DATE_KEY = "schedule entry date";
+    public static final String LITERAL_TYPE = "literal";
+    public static final String URI_TYPE = "uri";
 
     public static final String HISTORY_ACTIVITY_RESOURCE = "activity";
     public static final String HISTORY_AGENT_RESOURCE = "agent";

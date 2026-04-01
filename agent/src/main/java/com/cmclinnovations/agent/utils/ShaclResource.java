@@ -2,7 +2,6 @@ package com.cmclinnovations.agent.utils;
 
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -74,34 +73,13 @@ public class ShaclResource {
   public static final String REPLACEMENT_ENDPOINT = "[endpoint]";
   public static final String WHITE_SPACE = " ";
   // Data types
+  public static final String XSD_DATE = XSD_PREFIX + "date";
   public static final String XSD_DATE_TIME = XSD_PREFIX + "dateTime";
   public static final String XSD_DECIMAL = XSD_PREFIX + "decimal";
   public static final String XSD_STRING = XSD_PREFIX + "string";
+  public static final String XSD_TIME = XSD_PREFIX + "time";
 
   private ShaclResource() {
-  }
-
-  /**
-   * Method to support the comparison of two lists containing integers.
-   * 
-   * @param list1 First list of integers.
-   * @param list2 Second list of integers.
-   */
-  public static int compareLists(List<Integer> list1, List<Integer> list2) {
-    int size1 = list1.size();
-    int size2 = list2.size();
-    int minSize = Math.min(size1, size2);
-
-    // Compare element by element
-    for (int i = 0; i < minSize; i++) {
-      int difference = Integer.compare(list1.get(i), list2.get(i));
-      if (difference != 0) {
-        return difference; // Return at the first difference
-      }
-    }
-
-    // If all compared elements are equal, the shorter list is smaller
-    return Integer.compare(size1, size2);
   }
 
   /**

@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.template.query;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Queue;
 
@@ -48,7 +49,7 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
     LOGGER.info("Generating a query template for getting the data that matches the search criteria...");
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    SelectQuery selectTemplate = super.genWhereClauseContent(targetClass, params.bindings());
+    SelectQuery selectTemplate = super.genWhereClauseContent(targetClass, new ArrayList<>(), params.bindings());
     // Generating the search criteria as separate filter statements
     Queue<Expression<?>> filters = new ArrayDeque<>();
     super.variables.forEach(variable -> {

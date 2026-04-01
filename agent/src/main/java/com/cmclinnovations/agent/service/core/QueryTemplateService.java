@@ -2,7 +2,7 @@ package com.cmclinnovations.agent.service.core;
 
 import java.nio.file.FileSystemNotFoundException;
 import java.util.ArrayDeque;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -10,7 +10,6 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.stereotype.Service;
@@ -19,6 +18,7 @@ import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.pagination.SortDirective;
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.template.FormTemplateFactory;
 import com.cmclinnovations.agent.template.query.DeleteQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
@@ -216,7 +216,7 @@ public class QueryTemplateService {
    * @param queryVarsAndPaths The query construction requirements.
    */
   public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
-    return this.genGetQuery(queryVarsAndPaths, new ArrayDeque<>(), "", new HashMap<>());
+    return this.genGetQuery(queryVarsAndPaths, new ArrayDeque<>(), "", new ArrayList<>());
   }
 
   /**
@@ -224,16 +224,16 @@ public class QueryTemplateService {
    * 
    * @param queryVarsAndPaths  The query construction requirements.
    * @param targetIds          An optional field with the specific IDs to target.
-   * @param addQueryStatements Additional query statements to be added
-   * @param addVars            Optional additional variables to be included in the
-   *                           query, along with their order sequence
+   * @param addQueryStatements Additional query statements to be added.
+   * @param addColumns         Optional additional columns to be included in the
+   *                           results.
    */
   public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, Queue<List<String>> targetIds,
-      String addQueryStatements, Map<Variable, List<Integer>> addVars) {
+      String addQueryStatements, List<ColumnMetaPayload> addColumns) {
     LOGGER.debug("Generating the SELECT query to get instances...");
     return this.getQueryTemplateFactory
         .write(
-            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetIds, addQueryStatements, addVars));
+            new QueryTemplateFactoryParameters(queryVarsAndPaths, targetIds, addQueryStatements, addColumns));
   }
 
   /**
@@ -259,10 +259,10 @@ public class QueryTemplateService {
   }
 
   /**
-   * Retrieve the sequence of the fields.
+   * Retrieve the column metadata.
    */
-  public List<Variable> getFieldSequence() {
-    return this.getQueryTemplateFactory.getSequence();
+  public List<ColumnMetaPayload> getColumns() {
+    return this.getQueryTemplateFactory.getColumns();
   }
 
   /**

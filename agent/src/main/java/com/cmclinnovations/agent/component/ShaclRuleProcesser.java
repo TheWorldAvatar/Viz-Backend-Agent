@@ -273,7 +273,7 @@ public class ShaclRuleProcesser {
                 if (allVar.contains(field)) {
                     SparqlResponseField responseField = currentData.getFieldResponse(field);
                     String fieldValue = responseField.value();
-                    if (fieldValue != null && responseField.type().equals("uri")) {
+                    if (fieldValue != null && responseField.type().equals(QueryResource.URI_TYPE)) {
                         iriMap.computeIfAbsent(field, k -> new HashSet<>()).add(Rdf.iri(fieldValue).getQueryString());
                     }
                 }
@@ -335,7 +335,7 @@ public class ShaclRuleProcesser {
             if (field == null) {
                 return "";
             }
-            if (field.type().equals("uri")) {
+            if (field.type().equals(QueryResource.URI_TYPE)) {
                 return Rdf.iri(field.value()).getQueryString();
             }
             String literal = "\"" + field.value() + "\"";

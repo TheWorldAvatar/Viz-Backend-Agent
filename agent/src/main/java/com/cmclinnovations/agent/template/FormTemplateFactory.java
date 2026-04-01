@@ -342,7 +342,7 @@ public class FormTemplateFactory {
                 ? defaultValueNode.get(ShaclResource.ID_KEY).asText()
                 : defaultValueNode.get(ShaclResource.VAL_KEY).asText();
             String fieldType = input.has(ShaclResource.SHACL_IN_PROPERTY)
-                || input.has(ShaclResource.SHACL_CLASS_PROPERTY) ? "uri" : "literal";
+                || input.has(ShaclResource.SHACL_CLASS_PROPERTY) ? QueryResource.URI_TYPE : QueryResource.LITERAL_TYPE;
             SparqlResponseField defaultValNode = new SparqlResponseField(fieldType, defaultVal, "", "");
             inputModel.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultValNode);
           }

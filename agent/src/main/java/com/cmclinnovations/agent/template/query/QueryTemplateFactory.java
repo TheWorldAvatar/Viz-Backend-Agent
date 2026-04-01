@@ -3,11 +3,12 @@ package com.cmclinnovations.agent.template.query;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
@@ -18,16 +19,17 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.ShaclPropertyBinding;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
+import com.cmclinnovations.agent.model.util.ShaclPropertyId;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory {
-  private List<Variable> sortedVars;
+  private List<ColumnMetaPayload> columns;
   protected Set<Variable> variables;
   private Map<String, Set<String>> arrayVariables;
-  protected Map<Variable, List<Integer>> varSequence;
   private final AuthenticationService authenticationService;
 
   protected QueryTemplateFactory(AuthenticationService authenticationService) {
@@ -42,27 +44,20 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
   }
 
   /**
-   * Retrieve the sequence of the variables.
+   * Retrieve the column metadata.
    */
-  public List<Variable> getSequence() {
-    return this.sortedVars;
-  }
-
-  /**
-   * Set the sequence of the variables.
-   */
-  protected void setSequence(List<Variable> sequence) {
-    this.sortedVars = sequence;
+  public List<ColumnMetaPayload> getColumns() {
+    return this.columns;
   }
 
   /**
    * Retrieve the sequence of the variables.
    */
   protected void reset() {
-    this.sortedVars = new ArrayList<>();
+    this.columns = new ArrayList<>();
+    this.columns.add(new ColumnMetaPayload(QueryResource.ID_KEY, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
     this.variables = new HashSet<>();
     this.arrayVariables = new HashMap<>();
-    this.varSequence = new HashMap<>();
   }
 
   /**
@@ -86,9 +81,12 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    * @param targetClass            Target class.
    * @param shaclNodeShapeBindings The node shapes queried from SHACL
    *                               restrictions.
+   * @param addColumns             The additional columns metadata.
    */
-  protected SelectQuery genWhereClauseContent(String targetClass, Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
+  protected SelectQuery genWhereClauseContent(String targetClass, List<ColumnMetaPayload> addColumns,
+      Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
     this.reset();
+    this.columns.addAll(addColumns);
     Map<String, Map<String, ShaclPropertyBinding>> propertyBindingMap = this.parseNodeShapes(shaclNodeShapeBindings);
     SelectQuery selectTemplate = genSelectTemplate(targetClass);
     return this.write(selectTemplate, propertyBindingMap);
@@ -114,10 +112,10 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
   protected Map<String, Map<String, ShaclPropertyBinding>> parseNodeShapes(
       Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
     Map<String, Map<String, ShaclPropertyBinding>> shaclPropertyShapesMap = new HashMap<>();
-    Set<String> referencedGroupIdentifiers = new HashSet<>();
-    Map<String, Set<String>> groupBranchMappings = new HashMap<>();
+    Set<ShaclPropertyId> groupFields = new HashSet<>();
+    Map<String, Set<ShaclPropertyId>> branchMappings = new HashMap<>();
+    Map<ShaclPropertyId, ShaclPropertyBinding> indivPropertyMap = new HashMap<>();
     Map<String, ShaclPropertyBinding> groupPropertyMap = new HashMap<>();
-    Map<String, ShaclPropertyBinding> indivPropertyMap = new HashMap<>();
     Set<String> userRoles = this.authenticationService.getUserRoles();
 
     while (!shaclNodeShapeBindings.isEmpty()) {
@@ -139,8 +137,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
           continue;
         }
 
-        String mappingKey = ShaclResource.getMappingKey(property, shGroup, branch);
-
+        ShaclPropertyId mappingKey = new ShaclPropertyId(property, shGroup, branch);
         // If authentication is enabled along with associated roles BUT the user is
         // unauthorised
         if (this.authenticationService.isAuthenticationEnabled() && permittedRoles != null
@@ -165,47 +162,69 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
 
           // Add a new group reference IF it isnt an array
           if (!propertyBinding.getGroup().isEmpty()) {
-            // Group references are stored as group + branch name
-            String groupRefKey = ShaclResource.getMappingKey(propertyBinding.getGroup(), propertyBinding.getBranch());
-            // Create a new group in the group branch mappings; only useful for getting
-            // filter options with SHACL property groups; use white spaces for variable
-            groupBranchMappings.putIfAbsent(shGroup, new HashSet<>());
-            referencedGroupIdentifiers.add(groupRefKey);
-          }
+            // Add a reference for fields that are part of a group
+            ShaclPropertyId fieldMappingKey = new ShaclPropertyId(property, shGroup, branch);
+            groupFields.add(fieldMappingKey);
 
-          // Store the group references under the group branch mappings; only useful for
-          // getting filter options with SHACL property groups
-          if (groupBranchMappings.keySet().contains(property)) {
-            groupBranchMappings.get(property).add(mappingKey);
+            // Prepend group sequence to the individual property
+            ShaclPropertyId groupMappingKey = new ShaclPropertyId(shGroup, null, branch);
+            ShaclPropertyBinding groupBinding = indivPropertyMap.get(groupMappingKey);
+            propertyBinding.prependSequence(groupBinding.getSequence());
           }
-
-          // Parse ordering only for label query, as we require the heading order in csv
-          // Order field will not exist for non-label query
-          if (binding.containsField(ShaclResource.ORDER_PROPERTY)) {
-            int order = Integer.parseInt(binding.getFieldValue(ShaclResource.ORDER_PROPERTY));
-            List<Integer> orders = new ArrayList<>();
-            if (shGroup != null) {
-              orders = this.varSequence.getOrDefault(QueryResource.genVariable(shGroup), new ArrayList<>());
-            }
-            orders.add(order);
-            this.varSequence.put(QueryResource.genVariable(property), orders);
-          }
+        }
+        // Track all properties with branches as this may be a group branching
+        if (branch != null && !branch.isEmpty()) {
+          branchMappings.computeIfAbsent(property, k -> new HashSet<>())
+              .add(new ShaclPropertyId(property, shGroup, branch));
         }
         // Store the new/updated in the mappings
         indivPropertyMap.put(mappingKey, propertyBinding);
       }
     }
 
-    // Move the group bindings over to the right mappings
-    referencedGroupIdentifiers.forEach(groupIdentifier -> {
-      groupPropertyMap.put(groupIdentifier, indivPropertyMap.remove(groupIdentifier));
+    // Iterate over group fields to transfer them to the group mapping
+    groupFields.forEach(refId -> {
+      // non-branches will return null in refId.branch()
+      ShaclPropertyId groupMappingKey = new ShaclPropertyId(refId.group(), null, refId.branch());
+      // For groups with branches
+      if (branchMappings.containsKey(refId.group())) {
+        // Get the branch reference for the field, and remove it from branch mapping
+        Set<ShaclPropertyId> propertyBranchReferences = branchMappings.get(refId.id());
+        propertyBranchReferences.remove(refId);
+        // Remove field mapping when the set is empty to only permit group branch
+        // references
+        if (propertyBranchReferences.isEmpty()) {
+          branchMappings.remove(refId.id());
+        }
+        // If the group branch reference exists, remove it within the set
+        // Keep the group mapping key as multiple fields may reference the same group
+        // but we should not remove it right away
+        Set<ShaclPropertyId> groupBranchReferences = branchMappings.get(refId.group());
+        if (!groupBranchReferences.isEmpty() && groupBranchReferences.contains(groupMappingKey)) {
+          groupBranchReferences.remove(groupMappingKey);
+        }
+      }
+      // Move the group mappings over if they have not been moved over by a previous
+      // reference
+      if (indivPropertyMap.containsKey(groupMappingKey)) {
+        groupPropertyMap.put(groupMappingKey.getFormattedId(), indivPropertyMap.remove(groupMappingKey));
+      }
     });
-    // Remove the unused groups in the indiv property maps; useful mainly for filters
-    groupBranchMappings.values().forEach((groupBranchMapping) -> groupBranchMapping
-        .forEach(indivPropertyMap::remove));
+
+    // Remove any dangling group branch references in property map; useful for
+    // filters only
+    branchMappings.values().forEach(groupRefs -> {
+      if (!groupRefs.isEmpty()) {
+        groupRefs.forEach(indivPropertyMap::remove);
+      }
+    });
+
     // Store results
     shaclPropertyShapesMap.put(ShaclResource.GROUP_PROPERTY, groupPropertyMap);
-    shaclPropertyShapesMap.put(ShaclResource.PROPERTY_PROPERTY, indivPropertyMap);
+    shaclPropertyShapesMap.put(ShaclResource.PROPERTY_PROPERTY, indivPropertyMap.entrySet().stream()
+        .collect(Collectors.toMap(
+            entry -> entry.getKey().getFormattedId(),
+            Map.Entry::getValue)));
     return shaclPropertyShapesMap;
   }
 
@@ -220,6 +239,8 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       Map<String, Map<String, ShaclPropertyBinding>> propertyShapeMap) {
     Map<String, List<GraphPattern>> accumulatedStatementsByGroup = new HashMap<>();
     Map<String, List<GraphPattern>> branchStatementMap = new HashMap<>();
+    Set<ColumnMetaPayload> uniqueColumns = new LinkedHashSet<>();
+    Map<String, List<Integer>> varSequence = new HashMap<>();
 
     // Iterate over each property to add either directly or to the associated group
     // or branch
@@ -245,21 +266,25 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         }
         if (propBinding.isArray()) {
           // Store individual array variables as well
-          this.arrayVariables.computeIfAbsent(propBinding.getName(), k -> new HashSet<>()).add(propBinding.getName());
+          this.arrayVariables.computeIfAbsent(propBinding.getName().getVarName(), k -> new HashSet<>())
+              .add(propBinding.getName().getVarName());
         }
       } else {
         this.variables.remove(QueryResource.genVariable(group));
-        this.varSequence.remove(QueryResource.genVariable(group));
         // If there is an associated group, store the content to the associated group in
         // the temp mappings; Note that a group may have multiple fields, so each
         // content should be appended to the previous batch
         String mappingKey = ShaclResource.getMappingKey(group, propBinding.getBranch());
         accumulatedStatementsByGroup.computeIfAbsent(mappingKey, k -> new ArrayList<>()).addAll(content);
-        // Store array variables in their groups
-        this.arrayVariables.computeIfAbsent(mappingKey, k -> new HashSet<>()).add(propBinding.getName());
+        if (propBinding.isArray()) {
+          // Store array variables in their groups
+          this.arrayVariables.computeIfAbsent(mappingKey, k -> new HashSet<>()).add(propBinding.getName().getVarName());
+        }
       }
       // Store the variable for individual properties only
-      this.variables.add(QueryResource.genVariable(propBinding.getName()));
+      this.variables.add(propBinding.getName());
+      varSequence.put(propBinding.getName().getVarName(), propBinding.getSequence());
+      uniqueColumns.add(propBinding.getColumnMeta());
     });
 
     // Handle group query parsing
@@ -278,6 +303,8 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
             ? GraphPatterns.union(arrayStatementsMap.get(propKey), graphPatterns)
             : graphPatterns;
         arrayStatementsMap.put(propKey, currentArrayPatterns);
+        // Store the sequence for the array group for sorting
+        varSequence.put(propBinding.getName().getVarName(), propBinding.getSequence());
         // Initial entry takes its own optionality. Subsequent entries use logical AND.
         arrayGroupOptionalityMap.put(propKey,
             arrayGroupOptionalityMap.getOrDefault(propKey, true) && propBinding.isOptional());
@@ -298,9 +325,6 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         // Store them in a separate branch mappings if a branch is involved
         branchStatementMap.computeIfAbsent(propBinding.getBranch(), k -> new ArrayList<>()).addAll(content);
       }
-      // Remove non-array variables; This method is only accessed for non-arrays as
-      // arrays will have ended the loop earlier
-      this.arrayVariables.remove(key);
     });
     // Handle array parsing
     arrayStatementsMap.forEach((key, contents) -> {
@@ -323,6 +347,9 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         selectTemplate.where(GraphPatterns.optional(branchPattern));
       });
     }
+    this.columns.addAll(uniqueColumns.stream()
+        .sorted(ColumnMetaPayload.lexComparator(varSequence))
+        .toList());
     return selectTemplate;
   }
 }

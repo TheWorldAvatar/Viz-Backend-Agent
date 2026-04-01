@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.43.0
+
+- Consolidated route to get count into get instances route to reduce API calls
+- Returned column metadata separately from the instances
+- Improved speed by removing the need to order all instances and general code simplifications
+- Fixed return of array fields when they are grouped
+- Fixed ordering based on shacl shape
+
 ## 1.42.3
 
 - Extend cloning jobs with direct disposal branch

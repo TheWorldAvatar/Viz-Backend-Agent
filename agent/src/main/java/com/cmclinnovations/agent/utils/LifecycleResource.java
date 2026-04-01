@@ -2,7 +2,6 @@ package com.cmclinnovations.agent.utils;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -42,7 +41,7 @@ public class LifecycleResource {
   public static final String EVENT_KEY = "event";
   public static final String EVENT_ID_KEY = "event id";
   public static final String EVENT_STATUS_KEY = "event status";
-  public static final String LAST_MODIFIED_KEY = "lastModified";
+  public static final String LAST_MODIFIED_KEY = "lastmodified";
   public static final String STAGE_KEY = "stage";
   public static final String STATUS_KEY = "status";
   public static final String REMARKS_KEY = "remarks";
@@ -165,30 +164,6 @@ public class LifecycleResource {
       default:
         return null;
     }
-  }
-
-  /**
-   * Extract the variables from the query with their sequence order.
-   * 
-   * @param query      Target query for extraction.
-   * @param groupIndex The group index for the variables.
-   */
-  public static Map<Variable, List<Integer>> extractOccurrenceVariables(String query, int groupIndex) {
-    Matcher matcher = OCCURRENCE_VARIABLES_PATTERN.matcher(query);
-    if (!matcher.find()) {
-      return new HashMap<>();
-    }
-    String selectClause = matcher.group(1).trim();
-    String[] variables = selectClause.split("\\s?\\?");
-    Map<Variable, List<Integer>> varSequence = new HashMap<>();
-    for (int i = 0; i < variables.length; i++) {
-      String varName = variables[i].trim();
-      if (varName.isEmpty() || varName.equals(QueryResource.ID_KEY)) {
-        continue; // Skip empty variables and ID key
-      }
-      varSequence.put(QueryResource.genVariable(varName), List.of(groupIndex, i));
-    }
-    return varSequence;
   }
 
   /**

@@ -215,25 +215,16 @@ public class BillingService {
   }
 
   /**
-   * Retrieve the number of billable tasks for a target account.
-   * 
-   * @param entityType Target resource ID.
-   * @param filters    Filters for count.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getBillableCount(String entityType, Map<String, String> filters) {
-    return this.lifecycleTaskService.getOccurrenceCount(entityType, null, null, LifecycleEventType.SERVICE_ACCRUAL,
-        filters);
-  }
-
-  /**
    * Retrieve all billable tasks for a target account.
    * 
    * @param entityType Target resource ID.
    * @param pagination Pagination state to filter results.
+   * @param filters    Filters provided in the request parameters.
    */
-  public ResponseEntity<StandardApiResponse<?>> getBillableOccurrences(String entityType, PaginationState pagination) {
+  public ResponseEntity<StandardApiResponse<?>> getBillableOccurrences(String entityType, PaginationState pagination,
+      Map<String, String> filters) {
     return this.lifecycleTaskService.getOccurrences(null, null, entityType,
-        LifecycleEventType.SERVICE_ACCRUAL, pagination);
+        LifecycleEventType.SERVICE_ACCRUAL, pagination, filters);
   }
 
   /**

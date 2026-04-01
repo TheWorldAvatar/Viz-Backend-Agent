@@ -2,7 +2,7 @@ PREFIX sh:             <http://www.w3.org/ns/shacl#>
 PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/>
 PREFIX twa:            <https://theworldavatar.io/kg/form/>
 
-SELECT DISTINCT ?clazz ?instance_clazz ?name ?nodegroup ?nested_class ?branch ?role ?order ?subject ?isarray ?isoptional ?isclass
+SELECT DISTINCT ?clazz ?instance_clazz ?name ?nodegroup ?nested_class ?branch ?role ?order ?subject ?datatype ?isarray ?isoptional ?isclass
  ?multipath ?multipath_proppath ?name_multipath ?name_multipath_proppath
 WHERE {
   ?shape rdf:type sh:NodeShape ;
@@ -18,25 +18,27 @@ WHERE {
               sh:path ?predicatepath ;
               sh:order ?order .
     OPTIONAL{?property sh:node/sh:targetClass ?nested_class}
+    OPTIONAL{?property sh:datatype ?datatype}
 
-  OPTIONAL {
-    ?property twa:role ?role .
-  }
-  OPTIONAL { ?property sh:group/rdfs:label ?nodegroup . }
-  OPTIONAL {
-    ?property sh:group/twa:role ?nestedrole .
-  }
-  # nestedrole may be present within the [shape] replacement
-  BIND(IF(BOUND(?role), ?role, ?nestedrole) AS ?role)
+    OPTIONAL {
+      ?property twa:role ?role .
+    }
+    OPTIONAL { ?property sh:group/rdfs:label ?nodegroup . }
+    OPTIONAL {
+      ?property sh:group/twa:role ?nestedrole .
+    }
+    # nestedrole may be present within the [shape] replacement
+    BIND(IF(BOUND(?role), ?role, ?nestedrole) AS ?role)
     OPTIONAL{
       ?property sh:hasValue ?parentSubjectValue .
     }
     OPTIONAL{
       {?property sh:minCount ?minCount.} UNION {?property ^sh:group/sh:minCount ?minCount.}
     }
-    OPTIONAL{
-      {?property sh:maxCount ?maxCount.} UNION {?property ^sh:group/sh:maxCount ?maxCount.}
-    }
+    OPTIONAL{?property sh:maxCount ?maxCount.}
+    OPTIONAL{?property sh:group/sh:maxCount ?groupMaxCount.}
+    OPTIONAL{?property ^sh:property/^sh:node/sh:maxCount ?groupMaxCount.}
+
     # Verify numerical value
     OPTIONAL{
       ?property sh:datatype ?datatype.
@@ -79,7 +81,7 @@ WHERE {
     # Check if the path has a min count property to determine if it is optional
     BIND(BOUND(?minCount) && (?minCount=0) AS ?isoptional)
     # Determine if it is an array based on the presence of a max count or at least more than one
-    BIND(!BOUND(?maxCount) || (?maxCount>1) AS ?isarray)
+    BIND((BOUND(?nodegroup) && (!BOUND(?groupMaxCount) || ?groupMaxCount>1)) || !BOUND(?maxCount) || ?maxCount>1 AS ?isarray)
     # Verify if the data type is a number (integer/decimal)
     BIND(BOUND(?datatype) && (?datatype = xsd:integer || ?datatype =xsd:decimal) AS ?isnumber)
 

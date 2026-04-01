@@ -8,7 +8,6 @@ import java.util.Queue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
-import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -19,8 +18,8 @@ import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.ShaclPropertyBinding;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
-import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public class GetQueryTemplateFactory extends QueryTemplateFactory {
@@ -55,26 +54,23 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
     LOGGER.info("Generating a query template for getting data...");
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    SelectQuery selectTemplate = super.genWhereClauseContent(targetClass, params.bindings());
+    SelectQuery selectTemplate = super.genWhereClauseContent(targetClass, params.addColumns(), params.bindings());
 
     // Retrieve only the property fields if no sequence of variable is present
-    if (super.varSequence.isEmpty()) {
-      selectTemplate.select(QueryResource.IRI_VAR)
-          .select(QueryResource.ID_VAR);
-      super.variables.forEach(variable -> selectTemplate.select(variable));
-      params.addVars().forEach((field, fieldSequence) -> selectTemplate.select(field));
-    } else {
-      super.varSequence.putAll(params.addVars());
-      List<Variable> sortedSequence = new ArrayList<>(super.varSequence.keySet());
-      sortedSequence
-          .sort((key1, key2) -> ShaclResource.compareLists(super.varSequence.get(key1), super.varSequence.get(key2)));
-      sortedSequence.add(0, QueryResource.ID_VAR);
-      // Add variables
-      sortedSequence
-          .forEach(variable -> selectTemplate.select(variable));
-      super.setSequence(sortedSequence);
-    }
-
+    selectTemplate.select(QueryResource.IRI_VAR)
+        .select(QueryResource.ID_VAR);
+    super.variables.forEach(selectTemplate::select);
+    params.addColumns().forEach(col -> {
+      if (col.value().equals(LifecycleResource.SCHEDULE_TYPE_KEY)) {
+        selectTemplate.select(QueryResource.SCHEDULE_RECURRENCE_VAR);
+      } else if (col.value().equals(LifecycleResource.STATUS_KEY)
+          && params.addColumns().contains(QueryResource.EVENT_ID_COL)) {
+        selectTemplate.select(QueryResource.EVENT_STATUS_VAR);
+        selectTemplate.select(QueryResource.genVariable(LifecycleResource.EVENT_KEY));
+      } else {
+        selectTemplate.select(QueryResource.genVariable(col.value()));
+      }
+    });
     String valuesClause = this.appendOptionalIdFilters(selectTemplate, params.targetIds());
     return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause);
   }
