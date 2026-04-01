@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
@@ -19,6 +20,7 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import com.cmclinnovations.agent.model.ShaclPropertyBinding;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
+import com.cmclinnovations.agent.model.util.ShaclPropertyId;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
@@ -110,10 +112,10 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
   protected Map<String, Map<String, ShaclPropertyBinding>> parseNodeShapes(
       Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
     Map<String, Map<String, ShaclPropertyBinding>> shaclPropertyShapesMap = new HashMap<>();
-    Set<String> referencedGroupIdentifiers = new HashSet<>();
-    Map<String, Set<String>> groupBranchMappings = new HashMap<>();
+    Set<ShaclPropertyId> groupFields = new HashSet<>();
+    Map<String, Set<ShaclPropertyId>> branchMappings = new HashMap<>();
+    Map<ShaclPropertyId, ShaclPropertyBinding> indivPropertyMap = new HashMap<>();
     Map<String, ShaclPropertyBinding> groupPropertyMap = new HashMap<>();
-    Map<String, ShaclPropertyBinding> indivPropertyMap = new HashMap<>();
     Set<String> userRoles = this.authenticationService.getUserRoles();
 
     while (!shaclNodeShapeBindings.isEmpty()) {
@@ -135,8 +137,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
           continue;
         }
 
-        String mappingKey = ShaclResource.getMappingKey(property, shGroup, branch);
-
+        ShaclPropertyId mappingKey = new ShaclPropertyId(property, shGroup, branch);
         // If authentication is enabled along with associated roles BUT the user is
         // unauthorised
         if (this.authenticationService.isAuthenticationEnabled() && permittedRoles != null
@@ -161,40 +162,69 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
 
           // Add a new group reference IF it isnt an array
           if (!propertyBinding.getGroup().isEmpty()) {
-            // Group references are stored as group + branch name
-            String groupRefKey = ShaclResource.getMappingKey(propertyBinding.getGroup(), propertyBinding.getBranch());
-            // Create a new group in the group branch mappings; only useful for getting
-            // filter options with SHACL property groups; use white spaces for variable
-            groupBranchMappings.putIfAbsent(shGroup, new HashSet<>());
-            referencedGroupIdentifiers.add(groupRefKey);
+            // Add a reference for fields that are part of a group
+            ShaclPropertyId fieldMappingKey = new ShaclPropertyId(property, shGroup, branch);
+            groupFields.add(fieldMappingKey);
 
             // Prepend group sequence to the individual property
-            ShaclPropertyBinding groupBinding = indivPropertyMap.get(groupRefKey);
+            ShaclPropertyId groupMappingKey = new ShaclPropertyId(shGroup, null, branch);
+            ShaclPropertyBinding groupBinding = indivPropertyMap.get(groupMappingKey);
             propertyBinding.prependSequence(groupBinding.getSequence());
           }
-
-          // Store the group references under the group branch mappings; only useful for
-          // getting filter options with SHACL property groups
-          if (groupBranchMappings.keySet().contains(property)) {
-            groupBranchMappings.get(property).add(mappingKey);
-          }
+        }
+        // Track all properties with branches as this may be a group branching
+        if (branch != null && !branch.isEmpty()) {
+          branchMappings.computeIfAbsent(property, k -> new HashSet<>())
+              .add(new ShaclPropertyId(property, shGroup, branch));
         }
         // Store the new/updated in the mappings
         indivPropertyMap.put(mappingKey, propertyBinding);
       }
     }
 
-    // Move the group bindings over to the right mappings
-    referencedGroupIdentifiers.forEach(groupIdentifier -> {
-      groupPropertyMap.put(groupIdentifier, indivPropertyMap.remove(groupIdentifier));
+    // Iterate over group fields to transfer them to the group mapping
+    groupFields.forEach(refId -> {
+      // non-branches will return null in refId.branch()
+      ShaclPropertyId groupMappingKey = new ShaclPropertyId(refId.group(), null, refId.branch());
+      // For groups with branches
+      if (branchMappings.containsKey(refId.group())) {
+        // Get the branch reference for the field, and remove it from branch mapping
+        Set<ShaclPropertyId> propertyBranchReferences = branchMappings.get(refId.id());
+        propertyBranchReferences.remove(refId);
+        // Remove field mapping when the set is empty to only permit group branch
+        // references
+        if (propertyBranchReferences.isEmpty()) {
+          branchMappings.remove(refId.id());
+        }
+        // If the group branch reference exists, remove it within the set
+        // Keep the group mapping key as multiple fields may reference the same group
+        // but we should not remove it right away
+        Set<ShaclPropertyId> groupBranchReferences = branchMappings.get(refId.group());
+        if (!groupBranchReferences.isEmpty() && groupBranchReferences.contains(groupMappingKey)) {
+          groupBranchReferences.remove(groupMappingKey);
+        }
+      }
+      // Move the group mappings over if they have not been moved over by a previous
+      // reference
+      if (indivPropertyMap.containsKey(groupMappingKey)) {
+        groupPropertyMap.put(groupMappingKey.getFormattedId(), indivPropertyMap.remove(groupMappingKey));
+      }
     });
-    // Remove the unused groups in the indiv property maps; useful mainly for
-    // filters
-    groupBranchMappings.values().forEach((groupBranchMapping) -> groupBranchMapping
-        .forEach(indivPropertyMap::remove));
+
+    // Remove any dangling group branch references in property map; useful for
+    // filters only
+    branchMappings.values().forEach(groupRefs -> {
+      if (!groupRefs.isEmpty()) {
+        groupRefs.forEach(indivPropertyMap::remove);
+      }
+    });
+
     // Store results
     shaclPropertyShapesMap.put(ShaclResource.GROUP_PROPERTY, groupPropertyMap);
-    shaclPropertyShapesMap.put(ShaclResource.PROPERTY_PROPERTY, indivPropertyMap);
+    shaclPropertyShapesMap.put(ShaclResource.PROPERTY_PROPERTY, indivPropertyMap.entrySet().stream()
+        .collect(Collectors.toMap(
+            entry -> entry.getKey().getFormattedId(),
+            Map.Entry::getValue)));
     return shaclPropertyShapesMap;
   }
 
