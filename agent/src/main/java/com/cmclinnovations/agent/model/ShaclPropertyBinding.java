@@ -219,7 +219,10 @@ public class ShaclPropertyBinding {
         String dataType = binding.getFieldValue(ShaclResource.DATA_TYPE_PROPERTY);
 
         this.columnMeta = new ColumnMetaPayload(
+                // For array properties, the var is the group; else default to property
                 groupValue != null && this.isArray ? this.group.getVarName() : this.property.getVarName(),
+                // Arrays should return array; data type is specified only for literals; default
+                // to uri
                 this.isArray ? ShaclResource.ARRAY_KEY
                         : dataType != null ? QueryResource.LITERAL_TYPE : QueryResource.URI_TYPE,
                 dataType);
