@@ -655,7 +655,7 @@ public class GetService {
     Map<String, SparqlBinding> virtualResults = this.kgService.execVirtualShaclRules(resourceID, ids);
     if (!virtualResults.isEmpty()) {
       SparqlBinding virtualBinding = virtualResults.values().iterator().next();
-      List<ColumnMetaPayload> virtualColumns = virtualBinding.getNonEmptyFields().stream()
+      List<ColumnMetaPayload> virtualColumns = virtualBinding.getFields().stream()
           .filter(field -> !field.equals(QueryResource.ID_KEY))
           .map(field -> new ColumnMetaPayload(field, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING))
           .toList();

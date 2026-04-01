@@ -86,22 +86,12 @@ public class SparqlBinding {
   }
 
   /**
-   * Retrieve the field names that have non-null values.
-   */
-  @JsonIgnore
-  public Set<String> getNonEmptyFields() {
-    return this.bindings.entrySet().stream()
-        .filter(entry -> entry.getValue() != null)
-        .map(Map.Entry::getKey)
-        .collect(Collectors.toSet());
-  }
-
-  /**
    * Retrieve all the field names.
    */
   @JsonIgnore
   public Set<String> getFields() {
     return this.bindings.entrySet().stream()
+        .filter(entry -> entry.getValue() != null)
         .map(Map.Entry::getKey)
         .collect(Collectors.toSet());
   }

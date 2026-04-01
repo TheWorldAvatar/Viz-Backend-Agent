@@ -269,7 +269,7 @@ public class ShaclRuleProcesser {
         Map<String, Set<String>> iriMap = new HashMap<>();
 
         for (SparqlBinding currentData : results) {
-            for (String field : currentData.getNonEmptyFields()) {
+            for (String field : currentData.getFields()) {
                 if (allVar.contains(field)) {
                     SparqlResponseField responseField = currentData.getFieldResponse(field);
                     String fieldValue = responseField.value();
