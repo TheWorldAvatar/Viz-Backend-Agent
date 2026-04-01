@@ -80,7 +80,6 @@ public class SparqlBinding {
    */
   public Map<String, Object> get() {
     Map<String, Object> resultBindings = new HashMap<>();
-    this.bindings.remove(QueryResource.IRI_KEY);
     resultBindings.putAll(this.bindings);
     resultBindings.putAll(this.arrayBindingFields);
     return resultBindings;
