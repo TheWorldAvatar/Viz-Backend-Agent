@@ -5,15 +5,24 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * Represents the column metadata information for a specific variable, including
- * their header name, type (uri, literal, array), and datatype.
+ * their header name, type (uri, literal, array), datatype, and if they have a
+ * specific lifecycle stage. Fields with null values will be excluded from the
+ * JSON output.
  */
-public record ColumnMetaPayload(String value, String type, String datatype) {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record ColumnMetaPayload(String value, String type, String datatype, String stage) {
     public ColumnMetaPayload {
         if (datatype == null) {
             datatype = "";
         }
+    }
+
+    public ColumnMetaPayload(String value, String type, String datatype) {
+       this(value, type, datatype, null);
     }
 
     /**

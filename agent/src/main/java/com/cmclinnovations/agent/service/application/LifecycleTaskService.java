@@ -411,6 +411,11 @@ public class LifecycleTaskService {
     String occurrenceQuery = this.getService.getQuery(replacementQueryLine, true);
     List<ColumnMetaPayload> eventColumns = this.getService.getColumns().stream()
         .filter(column -> !column.value().equals(QueryResource.ID_KEY)).toList();
+    if (lifecycleEvent.equals(LifecycleEventType.SERVICE_ORDER_DISPATCHED)) {
+      eventColumns = eventColumns.stream()
+          .map(col -> new ColumnMetaPayload(col.value(), col.type(), col.datatype(), lifecycleEvent.getId()))
+          .toList();
+    }
     columns.addAll(eventColumns);
     return LifecycleResource.extractOccurrenceQuery(occurrenceQuery, lifecycleEvent);
   }
