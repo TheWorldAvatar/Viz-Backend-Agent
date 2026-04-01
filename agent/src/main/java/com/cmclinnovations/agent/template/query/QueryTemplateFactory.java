@@ -303,6 +303,8 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
             ? GraphPatterns.union(arrayStatementsMap.get(propKey), graphPatterns)
             : graphPatterns;
         arrayStatementsMap.put(propKey, currentArrayPatterns);
+        // Store the sequence for the array group for sorting
+        varSequence.put(propBinding.getName().getVarName(), propBinding.getSequence());
         // Initial entry takes its own optionality. Subsequent entries use logical AND.
         arrayGroupOptionalityMap.put(propKey,
             arrayGroupOptionalityMap.getOrDefault(propKey, true) && propBinding.isOptional());
