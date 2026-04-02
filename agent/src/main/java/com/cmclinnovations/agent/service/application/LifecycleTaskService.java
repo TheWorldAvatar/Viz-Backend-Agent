@@ -275,6 +275,12 @@ public class LifecycleTaskService {
         return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params, LifecycleEventType.SERVICE_INCIDENT_REPORT,
             TrackActionType.ISSUE_REPORT, "Task has been successfully reported!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
+      case "waive":
+        LOGGER.info("Received request to waive the billable details for a service...");
+        // Service date selected for waiving cannot be a future date
+        return this.genOccurrence(LifecycleResource.WAIVE_RESOURCE, params, LifecycleEventType.SERVICE_WAIVE,
+            TrackActionType.WAIVE, "Billable details have been successfully waived!",
+            LocalisationResource.SUCCESS_CONTRACT_TASK_WAIVE_KEY);
 
       default:
         throw new IllegalArgumentException(
@@ -773,6 +779,16 @@ public class LifecycleTaskService {
    * @param params Mappings containing the contract and date value for the query.
    */
   public String getPreviousOccurrenceEnum(Map<String, Object> params) {
+    // try getting complete or cancel or issue event
+    if (this.getPreviousOccurrence(LifecycleEventType.SERVICE_EXECUTION, params) != null) {
+      return "4";
+    }
+    if (this.getPreviousOccurrence(LifecycleEventType.SERVICE_CANCELLATION, params) != null) {
+      return "3";
+    }
+    if (this.getPreviousOccurrence(LifecycleEventType.SERVICE_INCIDENT_REPORT, params) != null) {
+      return "2";
+    }
     // try getting dispatch event first
     if (this.getPreviousOccurrence(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
         params) != null) {
