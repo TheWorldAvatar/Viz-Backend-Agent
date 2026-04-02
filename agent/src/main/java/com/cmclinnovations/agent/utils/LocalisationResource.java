@@ -28,6 +28,7 @@ public class LocalisationResource {
   public static final String SUCCESS_CONTRACT_TASK_CANCEL_KEY = SUCCESS_CONTRACT_PREFIX + "task.cancel";
   public static final String SUCCESS_CONTRACT_TASK_REPORT_KEY = SUCCESS_CONTRACT_PREFIX + "task.report";
   public static final String SUCCESS_CONTRACT_TASK_ACCRUAL_KEY = SUCCESS_CONTRACT_PREFIX + "task.accrual";
+  public static final String SUCCESS_CONTRACT_TASK_WAIVE_KEY = SUCCESS_CONTRACT_PREFIX + "task.waive";
   public static final String SUCCESS_DELETE_KEY = SUCCESS_PREFIX + "delete";
   public static final String SUCCESS_UPDATE_KEY = SUCCESS_PREFIX + "update";
   public static final String ERROR_ADD_KEY = ERROR_PREFIX + "add";
@@ -65,6 +66,7 @@ public class LocalisationResource {
   public static final String EVENT_STATUS_BILLABLE_CANCELLED_KEY = "billableCancelled";
   public static final String EVENT_STATUS_BILLABLE_COMPLETED_KEY = "billableCompleted";
   public static final String EVENT_STATUS_BILLABLE_ISSUE_KEY = "billableIssue";
+  public static final String EVENT_STATUS_BILLABLE_WAIVE_KEY = "billableWaived";
   public static final String EVENT_STATUS_INVOICED_KEY = "invoiced";
 
   // Private constructor to prevent instantiation

@@ -64,6 +64,8 @@ public class LocalisationTranslator {
         yield LocalisationResource.EVENT_STATUS_BILLABLE_CANCELLED_KEY;
       case LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_INCIDENT_REPORT:
         yield LocalisationResource.EVENT_STATUS_BILLABLE_ISSUE_KEY;
+      case LifecycleResource.EVENT_ACCRUAL + ";" + BillingResource.WAIVE_RESOURCE:
+        yield LocalisationResource.EVENT_STATUS_BILLABLE_WAIVE_KEY;
       case LifecycleResource.EVENT_ACCRUAL + ";" + BillingResource.INVOICE_RESOURCE:
         yield LocalisationResource.EVENT_STATUS_INVOICED_KEY;
       default:
@@ -101,6 +103,8 @@ public class LocalisationTranslator {
       case LocalisationResource.EVENT_STATUS_BILLABLE_ISSUE_KEY:
         yield Rdf.literalOf(LifecycleResource.EVENT_ACCRUAL + ";" + LifecycleResource.EVENT_INCIDENT_REPORT)
             .getQueryString();
+      case LocalisationResource.EVENT_STATUS_BILLABLE_WAIVE_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_ACCRUAL + ";" + BillingResource.WAIVE_RESOURCE).getQueryString();
       case LocalisationResource.EVENT_STATUS_INVOICED_KEY:
         yield Rdf.literalOf(LifecycleResource.EVENT_ACCRUAL + ";" + BillingResource.INVOICE_RESOURCE)
             .getQueryString();
