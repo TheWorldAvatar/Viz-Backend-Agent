@@ -21,6 +21,7 @@ public class LifecycleResource {
   public static final String OCCURRENCE_INSTANT_RESOURCE = "occurrence instant";
   public static final String CANCEL_RESOURCE = "cancel";
   public static final String REPORT_RESOURCE = "report";
+  public static final String WAIVE_RESOURCE = "waive";
   public static final String TASK_ID_SORT_BY_PARAMS = ",+event_id";
   public static final String RECURRENCE_DAILY_TASK = "P1D";
   public static final String RECURRENCE_ALT_DAY_TASK = "P2D";
@@ -126,6 +127,12 @@ public class LifecycleResource {
         return LifecycleEventType.SERVICE_ORDER_RECEIVED;
       case "1":
         return LifecycleEventType.SERVICE_ORDER_DISPATCHED;
+      case "2":
+        return LifecycleEventType.SERVICE_INCIDENT_REPORT;
+      case "3":
+        return LifecycleEventType.SERVICE_CANCELLATION;
+      case "4":
+        return LifecycleEventType.SERVICE_EXECUTION;
       default:
         throw new IllegalArgumentException("Invalid order enum number!");
     }
@@ -152,6 +159,7 @@ public class LifecycleResource {
         return FileService.CONTRACT_PRICING_JSON_LD_RESOURCE;
       case LifecycleResource.CANCEL_RESOURCE:
       case LifecycleResource.REPORT_RESOURCE:
+      case LifecycleResource.WAIVE_RESOURCE:
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
       case LifecycleResource.SCHEDULE_RESOURCE:
         return FileService.SCHEDULE_JSON_LD_RESOURCE;

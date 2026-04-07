@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.43.1
+
+- Added new option to waive billable of a task
+
 ## 1.43.0
 
 - Consolidated route to get count into get instances route to reduce API calls
