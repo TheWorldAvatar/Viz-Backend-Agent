@@ -253,8 +253,9 @@ public class LifecycleTaskService {
   public ResponseEntity<StandardApiResponse<?>> performSingleServiceAction(String type, Map<String, Object> params) {
     params.put(LifecycleResource.ORDER_KEY, this.getPreviousOccurrenceEnum(params)); // get previous event enum
     this.getOrderTask(params);
-    switch (type.toLowerCase()) {
-      case "cancel":
+    LifecycleEventType eventType = LifecycleEventType.fromId(type.toLowerCase());
+    switch (eventType) {
+      case LifecycleEventType.SERVICE_CANCELLATION:
         LOGGER.info("Received request to cancel the upcoming service...");
         // Service date selected for cancellation cannot be a past date
         if (this.dateTimeService.isFutureDate(this.dateTimeService.getCurrentDate(),
@@ -265,7 +266,7 @@ public class LifecycleTaskService {
         return this.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params, LifecycleEventType.SERVICE_CANCELLATION,
             TrackActionType.CANCELLATION, "Task has been successfully cancelled!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_CANCEL_KEY);
-      case "report":
+      case LifecycleEventType.SERVICE_INCIDENT_REPORT:
         LOGGER.info("Received request to report an unfulfilled service...");
         // Service date selected for reporting an issue cannot be a future date
         if (this.dateTimeService.isFutureDate(params.get(LifecycleResource.DATE_KEY).toString())) {
@@ -275,7 +276,11 @@ public class LifecycleTaskService {
         return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params, LifecycleEventType.SERVICE_INCIDENT_REPORT,
             TrackActionType.ISSUE_REPORT, "Task has been successfully reported!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
-
+      case LifecycleEventType.SERVICE_WAIVE:
+        LOGGER.info("Received request to waive the billable details for a service...");
+        return this.genOccurrence(LifecycleResource.WAIVE_RESOURCE, params, LifecycleEventType.SERVICE_WAIVE,
+            TrackActionType.WAIVE, "Billable details have been successfully waived!",
+            LocalisationResource.SUCCESS_CONTRACT_TASK_WAIVE_KEY);
       default:
         throw new IllegalArgumentException(
             LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, type));
@@ -773,6 +778,16 @@ public class LifecycleTaskService {
    * @param params Mappings containing the contract and date value for the query.
    */
   public String getPreviousOccurrenceEnum(Map<String, Object> params) {
+    // try getting complete or cancel or issue event
+    if (this.getPreviousOccurrence(LifecycleEventType.SERVICE_EXECUTION, params) != null) {
+      return "4";
+    }
+    if (this.getPreviousOccurrence(LifecycleEventType.SERVICE_CANCELLATION, params) != null) {
+      return "3";
+    }
+    if (this.getPreviousOccurrence(LifecycleEventType.SERVICE_INCIDENT_REPORT, params) != null) {
+      return "2";
+    }
     // try getting dispatch event first
     if (this.getPreviousOccurrence(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
         params) != null) {
