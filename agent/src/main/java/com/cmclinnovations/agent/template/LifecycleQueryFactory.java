@@ -34,7 +34,7 @@ public class LifecycleQueryFactory {
             + "{\n" + CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT + BILLABLE_QUERY_STATEMENTS + "}UNION"
             // Waived status
             + "{\n" + CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT + WAIVE_QUERY_STATEMENTS + ".BIND(\""
-            + BillingResource.WAIVE_RESOURCE + "\" AS ?prev_event)}UNION"
+            + LifecycleResource.WAIVE_RESOURCE + "\" AS ?prev_event)}UNION"
             // Invoiced status
             + "{\n" + CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT + ACCRUAL_EVENT_QUERY_STATEMENT + "."
             + INVOICED_QUERY_STATEMENT + ".BIND(\""
