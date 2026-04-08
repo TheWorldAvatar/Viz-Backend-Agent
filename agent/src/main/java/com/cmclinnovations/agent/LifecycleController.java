@@ -387,6 +387,27 @@ public class LifecycleController {
     });
   }
 
+  @PutMapping("/service/dispatch/bulk")
+  public ResponseEntity<StandardApiResponse<?>> bulkUpdateTaskEventDetails(
+      @RequestBody Map<String, List<Map<String, Object>>> params) {
+    boolean hasError = false;
+    try {
+      params.get("items").forEach(item -> {
+        this.updateTaskEventDetails(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), item);
+      });
+    } catch (IllegalArgumentException e) {
+      LOGGER.error("Error encountered while bulk assigning dispatch details! Read error logs for more details");
+      hasError = true;
+    }
+    if (hasError) {
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_DISPATCH_PARTIAL_KEY),
+          HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    return this.responseEntityBuilder
+        .success("task", LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_TASK_BULK_ASSIGN_KEY));
+  }
+
   /**
    * Reschedule a service task to a new date by updating the associated lifecycle
    * events and dates.

@@ -829,9 +829,20 @@ Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/ser
 ```json
 {
   /* parameters */
-  "contract": "The target contract IRI",
-  "order": "The target order IRI",
+  "id" : "The task event id"
+  "contract": "The target contract id",
   "date": "Scheduled date of the order delivery in the YYYY-MM-DD format"
+}
+```
+
+To update dispatch details in bulk, users can send a `PUT` request to `<baseURL>/vis-backend-agent/contracts/service/dispatch/bulk`. The request body must contain an `items` object, which accepts an array of dispatch parameters. Each object within the array should follow the schema of the single dispatch endpoint.
+
+```json
+{
+  "items": [
+    { "id": "T123", "contract": "D99", "date" : "2026-06-04" },
+    { "id": "T124", "contract": "D100", "date" : "2026-06-04"  }
+  ]
 }
 ```
 
