@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.44.0
+
+- Added bulk assignment endpoint
+- Return dispatch metadata in columns
+
 ## 1.43.1
 
 - Added new option to waive billable of a task

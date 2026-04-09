@@ -24,6 +24,7 @@ public class LocalisationResource {
   public static final String SUCCESS_CONTRACT_RESCIND_KEY = SUCCESS_CONTRACT_PREFIX + "rescind";
   public static final String SUCCESS_CONTRACT_TERMINATE_KEY = SUCCESS_CONTRACT_PREFIX + "terminate";
   public static final String SUCCESS_CONTRACT_TASK_ASSIGN_KEY = SUCCESS_CONTRACT_PREFIX + "task.assign";
+  public static final String SUCCESS_CONTRACT_TASK_BULK_ASSIGN_KEY = SUCCESS_CONTRACT_PREFIX + "task.bulk.assign";
   public static final String SUCCESS_CONTRACT_TASK_COMPLETE_KEY = SUCCESS_CONTRACT_PREFIX + "task.complete";
   public static final String SUCCESS_CONTRACT_TASK_CANCEL_KEY = SUCCESS_CONTRACT_PREFIX + "task.cancel";
   public static final String SUCCESS_CONTRACT_TASK_REPORT_KEY = SUCCESS_CONTRACT_PREFIX + "task.report";
@@ -38,6 +39,7 @@ public class LocalisationResource {
   public static final String ERROR_MISSING_FILE_KEY = ERROR_PREFIX + "missing.file";
   public static final String ERROR_APPROVE_PARTIAL_KEY = ERROR_PREFIX + "approve.partial";
   public static final String ERROR_COPY_DRAFT_PARTIAL_KEY = ERROR_PREFIX + "copy.partial";
+  public static final String ERROR_DISPATCH_PARTIAL_KEY = ERROR_PREFIX + "dispatch.partial";
   public static final String ERROR_ORDERS_PARTIAL_KEY = ERROR_PREFIX + "orders.partial";
   public static final String ERROR_RESET_PARTIAL_KEY = ERROR_PREFIX + "reset.partial";
   public static final String ERROR_INVALID_DATE_CHRONOLOGY_KEY = ERROR_PREFIX + "invalid.date.chronology";
