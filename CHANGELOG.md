@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.44.1
+
+- Fix to ensure optional fields are derived from min count of the field shape itself
+
 ## 1.44.0
 
 - Added bulk assignment endpoint
