@@ -22,12 +22,13 @@ import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.model.util.ShaclPropertyId;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory {
-  private List<ColumnMetaPayload> columns;
+  private Set<ColumnMetaPayload> columns;
   protected Set<Variable> variables;
   private Map<String, Set<String>> arrayVariables;
   private final AuthenticationService authenticationService;
@@ -47,14 +48,22 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    * Retrieve the column metadata.
    */
   public List<ColumnMetaPayload> getColumns() {
-    return this.columns;
+    return this.columns.stream()
+        .collect(Collectors.toMap(
+            ColumnMetaPayload::value,
+            payload -> payload,
+            // Override the payload if incoming has a stage, else it will always be existing
+            (existing, incoming) -> incoming.stage() != null ? incoming : existing))
+        .values()
+        .stream()
+        .toList();
   }
 
   /**
    * Retrieve the sequence of the variables.
    */
   protected void reset() {
-    this.columns = new ArrayList<>();
+    this.columns = new HashSet<>();
     this.columns.add(new ColumnMetaPayload(QueryResource.ID_KEY, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
     this.variables = new HashSet<>();
     this.arrayVariables = new HashMap<>();
@@ -87,6 +96,19 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
     this.reset();
     this.columns.addAll(addColumns);
+    // Add variables here to prevent duplicates
+    addColumns.forEach(col -> {
+      if (col.value().equals(LifecycleResource.SCHEDULE_TYPE_KEY)) {
+        this.variables.add(QueryResource.SCHEDULE_RECURRENCE_VAR);
+      } else if (col.value().equals(LifecycleResource.STATUS_KEY)
+          && addColumns.contains(QueryResource.EVENT_ID_COL)) {
+        this.variables.add(QueryResource.EVENT_STATUS_VAR);
+        this.variables.add(QueryResource.genVariable(LifecycleResource.EVENT_KEY));
+      } else {
+        this.variables.add(QueryResource.genVariable(col.value()));
+      }
+    });
+
     Map<String, Map<String, ShaclPropertyBinding>> propertyBindingMap = this.parseNodeShapes(shaclNodeShapeBindings);
     SelectQuery selectTemplate = genSelectTemplate(targetClass);
     return this.write(selectTemplate, propertyBindingMap);
