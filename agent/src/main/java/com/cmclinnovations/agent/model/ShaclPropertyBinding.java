@@ -225,7 +225,7 @@ public class ShaclPropertyBinding {
                 // to uri
                 this.isArray ? ShaclResource.ARRAY_KEY
                         : dataType != null ? QueryResource.LITERAL_TYPE : QueryResource.URI_TYPE,
-                dataType);
+                this.isArray ? "" : dataType);
     }
 
     /**
