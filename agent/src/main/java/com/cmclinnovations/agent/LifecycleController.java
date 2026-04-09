@@ -390,16 +390,12 @@ public class LifecycleController {
   @PutMapping("/service/dispatch/bulk")
   public ResponseEntity<StandardApiResponse<?>> bulkUpdateTaskEventDetails(
       @RequestBody Map<String, List<Map<String, Object>>> params) {
-    boolean hasError = false;
     try {
       params.get("items").forEach(item -> {
         this.updateTaskEventDetails(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), item);
       });
     } catch (IllegalArgumentException e) {
       LOGGER.error("Error encountered while bulk assigning dispatch details! Read error logs for more details");
-      hasError = true;
-    }
-    if (hasError) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_DISPATCH_PARTIAL_KEY),
           HttpStatus.INTERNAL_SERVER_ERROR);
