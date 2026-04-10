@@ -3,7 +3,6 @@ package com.cmclinnovations.agent.template.query;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -104,6 +103,16 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
           && addColumns.contains(QueryResource.EVENT_ID_COL)) {
         this.variables.add(QueryResource.EVENT_STATUS_VAR);
         this.variables.add(QueryResource.genVariable(LifecycleResource.EVENT_KEY));
+      } else if (col.type().equals(ShaclResource.ARRAY_KEY)) {
+
+        Set<String> arrayFields = new HashSet<>();
+        col.arrayFields().forEach(arrayField -> {
+          Variable arrayVar = QueryResource.genVariable(arrayField.value());
+          this.variables.add(arrayVar);
+          arrayFields.add(arrayVar.getVarName());
+        });
+        this.arrayVariables.computeIfAbsent(col.value(), k -> new HashSet<>())
+            .addAll(arrayFields);
       } else {
         this.variables.add(QueryResource.genVariable(col.value()));
       }
@@ -261,7 +270,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       Map<String, Map<String, ShaclPropertyBinding>> propertyShapeMap) {
     Map<String, List<GraphPattern>> accumulatedStatementsByGroup = new HashMap<>();
     Map<String, List<GraphPattern>> branchStatementMap = new HashMap<>();
-    Set<ColumnMetaPayload> uniqueColumns = new LinkedHashSet<>();
+    Map<String, ColumnMetaPayload> columnMappings = new HashMap<>();
     Map<String, List<Integer>> varSequence = new HashMap<>();
 
     // Iterate over each property to add either directly or to the associated group
@@ -306,7 +315,19 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       // Store the variable for individual properties only
       this.variables.add(propBinding.getName());
       varSequence.put(propBinding.getName().getVarName(), propBinding.getSequence());
-      uniqueColumns.add(propBinding.getColumnMeta());
+      ColumnMetaPayload columnMeta = propBinding.getColumnMeta();
+      columnMappings.merge(columnMeta.value(), columnMeta, (current, incoming) -> {
+        // If there are incoming array fields, override them
+        if (incoming.arrayFields() != null) {
+          if (current.arrayFields() != null) {
+            current.arrayFields().addAll(incoming.arrayFields());
+            return current;
+          } else {
+            return incoming;
+          }
+        }
+        return current;
+      });
     });
 
     // Handle group query parsing
@@ -369,7 +390,8 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         selectTemplate.where(GraphPatterns.optional(branchPattern));
       });
     }
-    this.columns.addAll(uniqueColumns.stream()
+
+    this.columns.addAll(columnMappings.values().stream()
         .sorted(ColumnMetaPayload.lexComparator(varSequence))
         .toList());
     return selectTemplate;

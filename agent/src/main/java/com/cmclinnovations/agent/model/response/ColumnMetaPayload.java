@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -14,15 +15,20 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * JSON output.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record ColumnMetaPayload(String value, String type, String datatype, String stage) {
+public record ColumnMetaPayload(String value, String type, String datatype, String stage,
+        Set<ColumnMetaPayload> arrayFields) {
     public ColumnMetaPayload {
         if (datatype == null) {
             datatype = "";
         }
     }
 
+    public ColumnMetaPayload(String value, String type, String datatype, Set<ColumnMetaPayload> arrayFields) {
+        this(value, type, datatype, null, arrayFields);
+    }
+
     public ColumnMetaPayload(String value, String type, String datatype) {
-       this(value, type, datatype, null);
+        this(value, type, datatype, null, null);
     }
 
     /**
