@@ -3,6 +3,8 @@ package com.cmclinnovations.agent.template.query;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -52,7 +54,8 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
             ColumnMetaPayload::value,
             payload -> payload,
             // Override the payload if incoming has a stage, else it will always be existing
-            (existing, incoming) -> incoming.stage() != null ? incoming : existing))
+            (existing, incoming) -> incoming.stage() != null ? incoming : existing,
+            LinkedHashMap::new))
         .values()
         .stream()
         .toList();
@@ -62,7 +65,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    * Retrieve the sequence of the variables.
    */
   protected void reset() {
-    this.columns = new HashSet<>();
+    this.columns = new LinkedHashSet<>();
     this.columns.add(new ColumnMetaPayload(QueryResource.ID_KEY, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
     this.variables = new HashSet<>();
     this.arrayVariables = new HashMap<>();
