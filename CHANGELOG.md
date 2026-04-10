@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.44.2
+
+- Fix to prevent duplicate column metadata due to presence of arrays in different stages
+
 ## 1.44.1
 
 - Fix to ensure optional fields are derived from min count of the field shape itself

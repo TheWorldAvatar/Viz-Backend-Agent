@@ -60,17 +60,6 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
     selectTemplate.select(QueryResource.IRI_VAR)
         .select(QueryResource.ID_VAR);
     super.variables.forEach(selectTemplate::select);
-    params.addColumns().forEach(col -> {
-      if (col.value().equals(LifecycleResource.SCHEDULE_TYPE_KEY)) {
-        selectTemplate.select(QueryResource.SCHEDULE_RECURRENCE_VAR);
-      } else if (col.value().equals(LifecycleResource.STATUS_KEY)
-          && params.addColumns().contains(QueryResource.EVENT_ID_COL)) {
-        selectTemplate.select(QueryResource.EVENT_STATUS_VAR);
-        selectTemplate.select(QueryResource.genVariable(LifecycleResource.EVENT_KEY));
-      } else {
-        selectTemplate.select(QueryResource.genVariable(col.value()));
-      }
-    });
     String valuesClause = this.appendOptionalIdFilters(selectTemplate, params.targetIds());
     return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause);
   }

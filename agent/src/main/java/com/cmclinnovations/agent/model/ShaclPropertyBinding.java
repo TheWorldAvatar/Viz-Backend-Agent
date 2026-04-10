@@ -1,7 +1,9 @@
 package com.cmclinnovations.agent.model;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -218,6 +220,16 @@ public class ShaclPropertyBinding {
 
         String dataType = binding.getFieldValue(ShaclResource.DATA_TYPE_PROPERTY);
 
+        Set<ColumnMetaPayload> arrayProps = null;
+        // For array properties, store the properties themselves
+        if (groupValue != null && this.isArray) {
+            arrayProps = new HashSet<>();
+            ColumnMetaPayload arrayProp = new ColumnMetaPayload(
+                    this.property.getVarName(),
+                    dataType != null ? QueryResource.LITERAL_TYPE : QueryResource.URI_TYPE,
+                    dataType);
+            arrayProps.add(arrayProp);
+        }
         this.columnMeta = new ColumnMetaPayload(
                 // For array properties, the var is the group; else default to property
                 groupValue != null && this.isArray ? this.group.getVarName() : this.property.getVarName(),
@@ -225,7 +237,8 @@ public class ShaclPropertyBinding {
                 // to uri
                 this.isArray ? ShaclResource.ARRAY_KEY
                         : dataType != null ? QueryResource.LITERAL_TYPE : QueryResource.URI_TYPE,
-                dataType);
+                this.isArray ? "" : dataType,
+                arrayProps);
     }
 
     /**

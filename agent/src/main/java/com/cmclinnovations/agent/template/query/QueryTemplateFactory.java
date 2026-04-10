@@ -3,6 +3,7 @@ package com.cmclinnovations.agent.template.query;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,12 +23,13 @@ import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.model.util.ShaclPropertyId;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory {
-  private List<ColumnMetaPayload> columns;
+  private Set<ColumnMetaPayload> columns;
   protected Set<Variable> variables;
   private Map<String, Set<String>> arrayVariables;
   private final AuthenticationService authenticationService;
@@ -47,14 +49,23 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    * Retrieve the column metadata.
    */
   public List<ColumnMetaPayload> getColumns() {
-    return this.columns;
+    return this.columns.stream()
+        .collect(Collectors.toMap(
+            ColumnMetaPayload::value,
+            payload -> payload,
+            // Override the payload if incoming has a stage, else it will always be existing
+            (existing, incoming) -> incoming.stage() != null ? incoming : existing,
+            LinkedHashMap::new))
+        .values()
+        .stream()
+        .toList();
   }
 
   /**
    * Retrieve the sequence of the variables.
    */
   protected void reset() {
-    this.columns = new ArrayList<>();
+    this.columns = new LinkedHashSet<>();
     this.columns.add(new ColumnMetaPayload(QueryResource.ID_KEY, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
     this.variables = new HashSet<>();
     this.arrayVariables = new HashMap<>();
@@ -87,6 +98,29 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
     this.reset();
     this.columns.addAll(addColumns);
+    // Add variables here to prevent duplicates
+    addColumns.forEach(col -> {
+      if (col.value().equals(LifecycleResource.SCHEDULE_TYPE_KEY)) {
+        this.variables.add(QueryResource.SCHEDULE_RECURRENCE_VAR);
+      } else if (col.value().equals(LifecycleResource.STATUS_KEY)
+          && addColumns.contains(QueryResource.EVENT_ID_COL)) {
+        this.variables.add(QueryResource.EVENT_STATUS_VAR);
+        this.variables.add(QueryResource.genVariable(LifecycleResource.EVENT_KEY));
+      } else if (col.type().equals(ShaclResource.ARRAY_KEY)) {
+
+        Set<String> arrayFields = new HashSet<>();
+        col.arrayFields().forEach(arrayField -> {
+          Variable arrayVar = QueryResource.genVariable(arrayField.value());
+          this.variables.add(arrayVar);
+          arrayFields.add(arrayVar.getVarName());
+        });
+        this.arrayVariables.computeIfAbsent(col.value(), k -> new HashSet<>())
+            .addAll(arrayFields);
+      } else {
+        this.variables.add(QueryResource.genVariable(col.value()));
+      }
+    });
+
     Map<String, Map<String, ShaclPropertyBinding>> propertyBindingMap = this.parseNodeShapes(shaclNodeShapeBindings);
     SelectQuery selectTemplate = genSelectTemplate(targetClass);
     return this.write(selectTemplate, propertyBindingMap);
@@ -239,7 +273,7 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       Map<String, Map<String, ShaclPropertyBinding>> propertyShapeMap) {
     Map<String, List<GraphPattern>> accumulatedStatementsByGroup = new HashMap<>();
     Map<String, List<GraphPattern>> branchStatementMap = new HashMap<>();
-    Set<ColumnMetaPayload> uniqueColumns = new LinkedHashSet<>();
+    Map<String, ColumnMetaPayload> columnMappings = new HashMap<>();
     Map<String, List<Integer>> varSequence = new HashMap<>();
 
     // Iterate over each property to add either directly or to the associated group
@@ -284,7 +318,19 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       // Store the variable for individual properties only
       this.variables.add(propBinding.getName());
       varSequence.put(propBinding.getName().getVarName(), propBinding.getSequence());
-      uniqueColumns.add(propBinding.getColumnMeta());
+      ColumnMetaPayload columnMeta = propBinding.getColumnMeta();
+      columnMappings.merge(columnMeta.value(), columnMeta, (current, incoming) -> {
+        // If there are incoming array fields, override them
+        if (incoming.arrayFields() != null) {
+          if (current.arrayFields() != null) {
+            current.arrayFields().addAll(incoming.arrayFields());
+            return current;
+          } else {
+            return incoming;
+          }
+        }
+        return current;
+      });
     });
 
     // Handle group query parsing
@@ -347,7 +393,8 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
         selectTemplate.where(GraphPatterns.optional(branchPattern));
       });
     }
-    this.columns.addAll(uniqueColumns.stream()
+
+    this.columns.addAll(columnMappings.values().stream()
         .sorted(ColumnMetaPayload.lexComparator(varSequence))
         .toList());
     return selectTemplate;

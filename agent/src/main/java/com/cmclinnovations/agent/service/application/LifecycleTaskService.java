@@ -418,7 +418,8 @@ public class LifecycleTaskService {
         .filter(column -> !column.value().equals(QueryResource.ID_KEY)).toList();
     if (lifecycleEvent.equals(LifecycleEventType.SERVICE_ORDER_DISPATCHED)) {
       eventColumns = eventColumns.stream()
-          .map(col -> new ColumnMetaPayload(col.value(), col.type(), col.datatype(), lifecycleEvent.getId()))
+          .map(col -> new ColumnMetaPayload(col.value(), col.type(), col.datatype(), lifecycleEvent.getId(),
+              col.arrayFields()))
           .toList();
     }
     columns.addAll(eventColumns);
