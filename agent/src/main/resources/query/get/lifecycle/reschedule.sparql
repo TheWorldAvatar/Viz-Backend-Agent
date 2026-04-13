@@ -14,8 +14,7 @@ PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>
 SELECT ?start_date ?end_date ?stage ?event
 WHERE {
 
-  ?target_event dc-terms:identifier "[target]" ;
-    cmns-dt:succeeds* ?event .
+  ?event dc-terms:identifier "[target]" .
 
   ?event fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent;
     ^cmns-col:comprises ?service_stage .
