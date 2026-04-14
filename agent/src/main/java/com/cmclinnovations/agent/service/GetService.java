@@ -31,6 +31,7 @@ import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
+import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
@@ -69,7 +70,7 @@ public class GetService {
    * @param shaclReplacement The replacement value of the SHACL query target
    * @param requireLabel     Indicates if labels should be returned
    */
-  public String getQuery(String shaclReplacement, boolean requireLabel) {
+  public DataManifest<String> getQuery(String shaclReplacement, boolean requireLabel) {
     Queue<Queue<SparqlBinding>> nestedVariablesAndPropertyPaths = this.kgService
         .getSparqlQueryConstructionParameters(shaclReplacement, requireLabel);
     return this.queryTemplateService.genGetQuery(nestedVariablesAndPropertyPaths, new ArrayDeque<>(),
@@ -353,11 +354,11 @@ public class GetService {
     LOGGER.debug("Retrieving parent filter for {} ...", resourceId);
     Queue<List<String>> targetIds = new ArrayDeque<>();
     targetIds.offer(List.of(id));
-    Queue<SparqlBinding> parentInstances = this.execGetInstancesWithVirtualResults(resourceId, false, targetIds, "",
-        new ArrayList<>());
+    DataManifest<Queue<SparqlBinding>> parentInstanceManifest = this.execGetInstancesWithVirtualResults(resourceId,
+        false, targetIds, "", new ArrayList<>());
     Map<String, Set<String>> parentFilter = new HashMap<>();
     parentFilter.put(resourceId,
-        Set.of("\"" + parentInstances.poll().getFieldValue(ShaclResource.NAME_PROPERTY) + "\""));
+        Set.of("\"" + parentInstanceManifest.data().poll().getFieldValue(ShaclResource.NAME_PROPERTY) + "\""));
     return parentFilter;
   }
 
@@ -375,7 +376,8 @@ public class GetService {
    * @param addColumns         Optional additional columns to be included in the
    *                           results.
    */
-  public Queue<SparqlBinding> getInstances(String resourceID, boolean requireLabel, Queue<List<String>> ids,
+  public DataManifest<Queue<SparqlBinding>> getInstances(String resourceID, boolean requireLabel,
+      Queue<List<String>> ids,
       String addQueryStatements, List<ColumnMetaPayload> addColumns) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     return this.execGetInstancesWithVirtualResults(resourceID, requireLabel, ids, addQueryStatements, addColumns);
@@ -396,24 +398,15 @@ public class GetService {
       PaginationState pagination, Map<String, String> filters) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
     Queue<List<String>> ids = this.getAllIds(resourceID, "", pagination);
-    Queue<SparqlBinding> instances = this.execGetInstancesWithVirtualResults(resourceID, requireLabel, ids, "",
-        new ArrayList<>());
-    // Get column metadata before it is overridden by the get count methods
-    List<ColumnMetaPayload> columns = this.getColumns();
+    DataManifest<Queue<SparqlBinding>> instanceManifest = this.execGetInstancesWithVirtualResults(resourceID,
+        requireLabel, ids, "", new ArrayList<>());
     return this.responseEntityBuilder.success(null,
         this.getCount(resourceID, filters),
         this.getCount(resourceID, new HashMap<>()),
-        columns,
-        instances.stream()
+        instanceManifest.columns(),
+        instanceManifest.data().stream()
             .map(SparqlBinding::get)
             .toList());
-  }
-
-  /**
-   * Retrieve the column metadata.
-   */
-  public List<ColumnMetaPayload> getColumns() {
-    return this.queryTemplateService.getColumns();
   }
 
   /**
@@ -429,7 +422,7 @@ public class GetService {
     LOGGER.debug("Retrieving an instance of {} ...", resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
     Queue<SparqlBinding> instances = this.execGetInstances(iri, new ArrayDeque<>(List.of(Arrays.asList(targetId))),
-        requireLabel, "", new ArrayList<>());
+        requireLabel, "", new ArrayList<>()).data();
     return this.getSingleInstanceResponse(instances);
   }
 
@@ -446,7 +439,8 @@ public class GetService {
         Rdf.iri(eventType.getEvent()));
     Queue<SparqlBinding> instances = this.execGetInstances(eventType.getShaclReplacement(),
         new ArrayDeque<>(List.of(Arrays.asList(targetId))), false, lifecycleEventPattern.getQueryString(),
-        new ArrayList<>());
+        new ArrayList<>())
+        .data();
     return this.getSingleInstanceResponse(instances);
   }
 
@@ -571,7 +565,8 @@ public class GetService {
             .copyQueue(groupQueryPartMappings.get(fieldGroupMappings.get(key)));
         queryVarsAndPaths.addAll(queryParts);
       }
-      sortStatementBuilder.append(this.queryTemplateService.genWhereClause(queryVarsAndPaths));
+      String sortStatements = this.queryTemplateService.genWhereClause(queryVarsAndPaths).data();
+      sortStatementBuilder.append(sortStatements);
     });
     Map<String, String> outputMappings = new HashMap<>();
     if (!sortStatementBuilder.isEmpty()) {
@@ -586,6 +581,7 @@ public class GetService {
       }
       // Generate the query statements for this filter
       String clause = this.queryTemplateService.genWhereClause(queryVarsAndPaths)
+          .data()
           .replaceAll("(?s)\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
       outputMappings.put(key, clause);
     });
@@ -640,10 +636,10 @@ public class GetService {
    * @param addColumns         Optional additional columns to be included in the
    *                           results.
    */
-  private Queue<SparqlBinding> execGetInstancesWithVirtualResults(String resourceID, boolean requireLabel,
+  private DataManifest<Queue<SparqlBinding>> execGetInstancesWithVirtualResults(String resourceID, boolean requireLabel,
       Queue<List<String>> ids, String addQueryStatements, List<ColumnMetaPayload> addColumns) {
     if (ids.isEmpty()) {
-      return new ArrayDeque<>();
+      return new DataManifest<>(new ArrayDeque<>(), new ArrayList<>());
     }
     String iri = this.queryTemplateService.getIri(resourceID);
 
@@ -661,14 +657,17 @@ public class GetService {
           .toList();
       addColumns.addAll(virtualColumns);
     }
-    Queue<SparqlBinding> instances = this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addColumns);
-    return instances.stream().map(instance -> {
-      String id = instance.getFieldValue(QueryResource.ID_KEY);
-      if (virtualResults.containsKey(id)) {
-        instance.merge(virtualResults.get(id));
-      }
-      return instance;
-    }).collect(Collectors.toCollection(ArrayDeque::new));
+    DataManifest<Queue<SparqlBinding>> instancesManifest = this.execGetInstances(iri, ids, requireLabel,
+        addQueryStatements, addColumns);
+    return new DataManifest<>(
+        instancesManifest.data().stream().map(instance -> {
+          String id = instance.getFieldValue(QueryResource.ID_KEY);
+          if (virtualResults.containsKey(id)) {
+            instance.merge(virtualResults.get(id));
+          }
+          return instance;
+        }).collect(Collectors.toCollection(ArrayDeque::new)),
+        instancesManifest.columns());
   }
 
   /**
@@ -683,17 +682,18 @@ public class GetService {
    * @param addColumns           Optional additional columns to be included in the
    *                             results.
    */
-  private Queue<SparqlBinding> execGetInstances(String nodeShapeReplacement, Queue<List<String>> targetIds,
+  private DataManifest<Queue<SparqlBinding>> execGetInstances(String nodeShapeReplacement,
+      Queue<List<String>> targetIds,
       boolean requireLabel, String addQueryStatements, List<ColumnMetaPayload> addColumns) {
     Queue<Queue<SparqlBinding>> queryVarsAndPaths = this.kgService.getSparqlQueryConstructionParameters(
         nodeShapeReplacement, requireLabel);
-    String getQuery = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetIds,
+    DataManifest<String> getQueryManifest = this.queryTemplateService.genGetQuery(queryVarsAndPaths, targetIds,
         addQueryStatements, addColumns);
     LOGGER.debug("Querying the knowledge graph for the instances...");
     // Query for direct instances
-    Queue<SparqlBinding> instances = this.kgService.query(getQuery, SparqlEndpointType.MIXED);
+    Queue<SparqlBinding> instances = this.kgService.query(getQueryManifest.data(), SparqlEndpointType.MIXED);
     instances = this.kgService.combineBindingQueue(instances, this.queryTemplateService.getArrayVariables());
-    return instances;
+    return new DataManifest<>(instances, getQueryManifest.columns());
   }
 
   /**

@@ -22,6 +22,7 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfObject;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfSubject;
 
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
+import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
@@ -52,13 +53,14 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    *               template
    *               targetId - The target instance IRI.
    */
-  public String write(QueryTemplateFactoryParameters params) {
+  public DataManifest<String> write(QueryTemplateFactoryParameters params) {
     this.reset();
 
     ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetIds().poll().get(0),
         this.parseVariable((ObjectNode) params.rootNode().path(ShaclResource.ID_KEY)));
     this.recursiveParseNode(deleteTemplate, null, params.rootNode(), params.branchName(), params.optVarNames());
-    return this.appendArrayStatements(deleteTemplate.getQueryString(), params.optVarNames());
+    String query = this.appendArrayStatements(deleteTemplate.getQueryString(), params.optVarNames());
+    return new DataManifest<>(query, new ArrayList<>());
   }
 
   protected void reset() {
