@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.44.3
+
+- Fix to ensure the associated column metadata is returned from the query generated and prevent hidden interactions
+
 ## 1.44.2
 
 - Fix to prevent duplicate column metadata due to presence of arrays in different stages
