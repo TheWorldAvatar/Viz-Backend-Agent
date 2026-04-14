@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.44.3
+
+- Fix reschedule after changing design for lifecycle occurrences
+
 ## 1.44.2
 
 - Fix to prevent duplicate column metadata due to presence of arrays in different stages
