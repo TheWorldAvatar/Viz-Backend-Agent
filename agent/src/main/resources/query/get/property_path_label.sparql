@@ -3,8 +3,11 @@ PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTi
 PREFIX twa:            <https://theworldavatar.io/kg/form/>
 
 SELECT DISTINCT ?clazz ?instance_clazz ?name ?nodegroup ?nested_class ?branch ?role ?order ?subject ?datatype ?isarray ?isoptional ?isclass
- ?multipath ?multipath_proppath ?name_multipath ?name_multipath_proppath
+ ?islabel ?multipath ?multipath_proppath ?name_multipath ?name_multipath_proppath
 WHERE {
+  # Indicates that this query requires a label
+  BIND(true AS ?islabel)
+
   ?shape rdf:type sh:NodeShape ;
          sh:targetClass ?clazz ;
          sh:targetClass [target] ;

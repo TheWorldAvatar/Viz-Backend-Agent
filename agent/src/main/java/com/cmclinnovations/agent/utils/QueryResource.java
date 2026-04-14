@@ -10,6 +10,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expression;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
@@ -84,6 +85,7 @@ public class QueryResource {
     public static final Iri FIBO_FND_DT_FD_HAS_SCHEDULE = FIBO_FND_DT_FD.iri("hasSchedule");
     public static final Iri FIBO_FND_DT_OC_HAS_EVENT_DATE = FIBO_FND_DT_OC.iri("hasEventDate");
     public static final Iri FIBO_FND_REL_REL_EXEMPLIFIES = FIBO_FND_REL_REL.iri("exemplifies");
+    public static final Iri RDFS_SUBCLASSOF = Rdf.iri(RDFS.SUBCLASSOF);
 
     public static final String NULL_KEY = "null";
     public static final String IRI_KEY = "iri";

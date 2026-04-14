@@ -2,8 +2,12 @@ PREFIX sh:             <http://www.w3.org/ns/shacl#>
 PREFIX fibo-fnd-dt-fd: <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/>
 PREFIX twa:            <https://theworldavatar.io/kg/form/>
 
-SELECT DISTINCT ?clazz ?instance_clazz ?name ?nodegroup ?nested_class ?branch ?role ?subject ?datatype ?isarray ?isoptional ?isnumber ?multipath ?multipath_proppath
+SELECT DISTINCT ?clazz ?instance_clazz ?name ?nodegroup ?nested_class ?branch ?role ?subject ?datatype ?isarray ?isoptional ?isclass 
+  ?islabel ?multipath ?multipath_proppath
 WHERE{
+  # Indicates that this query does not require a label
+  BIND(false AS ?islabel)
+
   ?shape rdf:type sh:NodeShape ;
          sh:targetClass ?clazz ;
          sh:targetClass [target] ;
@@ -51,6 +55,10 @@ WHERE{
       BIND(IF(?multipath_proppath != "" && isBlank(?multipath_initial), ?multipath_listitem, ?multipath_initial) AS ?multipath)
       FILTER(BOUND(?multipath))
     }
+    
+    # Check if this is a TBox class concept that requires human readable labels
+    OPTIONAL{?property sh:in ?classconcept}
+    BIND(BOUND(?classconcept) AS ?isclass)
 
     # Retrieve sub target value first; Else, attempt to retrieve from parent or return null 
     BIND(IF(BOUND(?parentSubjectValue), ?parentSubjectValue, ?null) AS ?subject)
@@ -58,8 +66,6 @@ WHERE{
     BIND(BOUND(?minCount) && (?minCount=0) AS ?isoptional)
     # Determine if it is an array based on the presence of a max count or at least more than one
     BIND((BOUND(?nodegroup) && (!BOUND(?groupMaxCount) || ?groupMaxCount>1)) || !BOUND(?maxCount) || ?maxCount>1 AS ?isarray)
-    # Verify if the data type is a number (integer/decimal)
-    BIND(BOUND(?datatype) && (?datatype = xsd:integer || ?datatype =xsd:decimal) AS ?isnumber)
     
     # Retrieve results for non-regular schedules
     OPTIONAL{?property sh:class ?instance_clazz}

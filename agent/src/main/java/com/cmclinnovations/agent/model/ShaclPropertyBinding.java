@@ -36,6 +36,7 @@ public class ShaclPropertyBinding {
     private List<Integer> sequence;
 
     private boolean isArray;
+    private boolean isLabel;
     private boolean isOptional;
     private boolean isClazz;
 
@@ -144,9 +145,20 @@ public class ShaclPropertyBinding {
 
         PropertyPathBuilder jointPredicate = this.labelPredicate == null ? this.predicate
                 : this.predicate.then(this.labelPredicate.build());
-        // Add a final rdfs:label if it is a class without other labels
         if (this.isClazz && this.labelPredicate == null) {
-            jointPredicate = jointPredicate.then(RDFS.LABEL);
+            // Add a final rdfs:label if it requires a label but is a class without other
+            // labels
+            if (this.isLabel) {
+                jointPredicate = jointPredicate.then(RDFS.LABEL);
+                // If no label is required, filter out the parent classes
+            } else {
+                Variable inferredPropertyClass = QueryResource.genVariable(this.property.getVarName() + " parent");
+                contents.add(
+                        this.property.has(QueryResource.RDFS_SUBCLASSOF, inferredPropertyClass)
+                                .filter(Expressions.and(
+                                        Expressions.notEquals(this.property, inferredPropertyClass),
+                                        Expressions.notEquals(inferredPropertyClass, RDFS.RESOURCE))));
+            }
         }
 
         // If a group exists and has patterns to append, it should be the subject
@@ -211,6 +223,7 @@ public class ShaclPropertyBinding {
 
         this.isArray = Boolean.parseBoolean(binding.getFieldValue(ShaclResource.IS_ARRAY_VAR));
         this.isClazz = Boolean.parseBoolean(binding.getFieldValue(ShaclResource.IS_CLASS_VAR));
+        this.isLabel = Boolean.valueOf(binding.getFieldValue(ShaclResource.IS_LABEL_VAR));
         this.isOptional = Boolean.parseBoolean(binding.getFieldValue(ShaclResource.IS_OPTIONAL_VAR));
 
         if (binding.containsField(ShaclResource.ORDER_PROPERTY)) {
