@@ -1,8 +1,12 @@
 # Change Log
 
-## 1.44.3
+## 1.44.4
 
 - Fix to ensure the associated column metadata is returned from the query generated and prevent hidden interactions
+
+## 1.44.3
+
+- Fix reschedule after changing design for lifecycle occurrences
 
 ## 1.44.2
 
