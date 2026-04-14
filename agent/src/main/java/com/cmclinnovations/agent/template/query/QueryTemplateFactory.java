@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.template.query;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -49,6 +50,10 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    * Retrieve the column metadata.
    */
   public List<ColumnMetaPayload> getColumns() {
+    // Return an empty list if the source collection is null
+    if (this.columns == null) {
+        return Collections.emptyList();
+    }
     return this.columns.stream()
         .collect(Collectors.toMap(
             ColumnMetaPayload::value,
