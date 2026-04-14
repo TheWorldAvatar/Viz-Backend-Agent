@@ -24,6 +24,7 @@ import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
+import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
@@ -317,15 +318,13 @@ public class LifecycleContractService {
     String[] addStatements = this.genLifecycleStatements(eventType, pagination.getSortedFields(),
         pagination.getFilters(), "", true);
     Queue<List<String>> ids = this.getService.getAllIds(resourceID, addStatements[0], pagination);
-    Queue<SparqlBinding> instances = this.getService.getInstances(resourceID, requireLabel, ids,
+    DataManifest<Queue<SparqlBinding>> instanceManifest = this.getService.getInstances(resourceID, requireLabel, ids,
         addStatements[1], contractColumns);
-    // Get column metadata before it is overridden by the get count methods
-    List<ColumnMetaPayload> columns = this.getService.getColumns();
     return this.responseEntityBuilder.success(null,
         this.getContractCount(resourceID, eventType, filters),
         this.getContractCount(resourceID, eventType, new HashMap<>()),
-        columns,
-        instances.stream()
+        instanceManifest.columns(),
+        instanceManifest.data().stream()
             .map(binding -> this.lifecycleQueryService.parseLifecycleBinding(binding.get()))
             .toList());
   }

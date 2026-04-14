@@ -21,6 +21,7 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import com.cmclinnovations.agent.model.ShaclPropertyBinding;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
+import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.model.util.ShaclPropertyId;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
@@ -29,7 +30,6 @@ import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory {
-  private Set<ColumnMetaPayload> columns;
   protected Set<Variable> variables;
   private Map<String, Set<String>> arrayVariables;
   private final AuthenticationService authenticationService;
@@ -46,27 +46,9 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
   }
 
   /**
-   * Retrieve the column metadata.
-   */
-  public List<ColumnMetaPayload> getColumns() {
-    return this.columns.stream()
-        .collect(Collectors.toMap(
-            ColumnMetaPayload::value,
-            payload -> payload,
-            // Override the payload if incoming has a stage, else it will always be existing
-            (existing, incoming) -> incoming.stage() != null ? incoming : existing,
-            LinkedHashMap::new))
-        .values()
-        .stream()
-        .toList();
-  }
-
-  /**
    * Retrieve the sequence of the variables.
    */
   protected void reset() {
-    this.columns = new LinkedHashSet<>();
-    this.columns.add(new ColumnMetaPayload(QueryResource.ID_KEY, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
     this.variables = new HashSet<>();
     this.arrayVariables = new HashMap<>();
   }
@@ -94,10 +76,9 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    *                               restrictions.
    * @param addColumns             The additional columns metadata.
    */
-  protected SelectQuery genWhereClauseContent(String targetClass, List<ColumnMetaPayload> addColumns,
+  protected DataManifest<SelectQuery> genWhereClauseContent(String targetClass, List<ColumnMetaPayload> addColumns,
       Queue<Queue<SparqlBinding>> shaclNodeShapeBindings) {
     this.reset();
-    this.columns.addAll(addColumns);
     // Add variables here to prevent duplicates
     addColumns.forEach(col -> {
       if (col.value().equals(LifecycleResource.SCHEDULE_TYPE_KEY)) {
@@ -122,8 +103,9 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
     });
 
     Map<String, Map<String, ShaclPropertyBinding>> propertyBindingMap = this.parseNodeShapes(shaclNodeShapeBindings);
+
     SelectQuery selectTemplate = genSelectTemplate(targetClass);
-    return this.write(selectTemplate, propertyBindingMap);
+    return this.write(selectTemplate, propertyBindingMap, addColumns);
   }
 
   /**
@@ -268,9 +250,11 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
    * 
    * @param selectTemplate   SELECT query template to build the query
    * @param propertyShapeMap The sorted mappings for the SHACL property shapes.
+   * @param addColumns       The additional columns metadata.
    */
-  protected SelectQuery write(SelectQuery selectTemplate,
-      Map<String, Map<String, ShaclPropertyBinding>> propertyShapeMap) {
+  protected DataManifest<SelectQuery> write(SelectQuery selectTemplate,
+      Map<String, Map<String, ShaclPropertyBinding>> propertyShapeMap,
+      List<ColumnMetaPayload> addColumns) {
     Map<String, List<GraphPattern>> accumulatedStatementsByGroup = new HashMap<>();
     Map<String, List<GraphPattern>> branchStatementMap = new HashMap<>();
     Map<String, ColumnMetaPayload> columnMappings = new HashMap<>();
@@ -394,9 +378,22 @@ public abstract class QueryTemplateFactory extends AbstractQueryTemplateFactory 
       });
     }
 
-    this.columns.addAll(columnMappings.values().stream()
+    Set<ColumnMetaPayload> columns = new LinkedHashSet<>();
+    columns.add(new ColumnMetaPayload(QueryResource.ID_KEY, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
+    columns.addAll(addColumns);
+    columns.addAll(columnMappings.values().stream()
         .sorted(ColumnMetaPayload.lexComparator(varSequence))
         .toList());
-    return selectTemplate;
+    List<ColumnMetaPayload> columnList = columns.stream()
+        .collect(Collectors.toMap(
+            ColumnMetaPayload::value,
+            payload -> payload,
+            // Override the payload if incoming has a stage, else it will always be existing
+            (existing, incoming) -> incoming.stage() != null ? incoming : existing,
+            LinkedHashMap::new))
+        .values()
+        .stream()
+        .toList();
+    return new DataManifest<>(selectTemplate, columnList);
   }
 }

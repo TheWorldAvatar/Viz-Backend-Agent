@@ -19,6 +19,7 @@ import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.pagination.SortDirective;
 import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
+import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.template.FormTemplateFactory;
 import com.cmclinnovations.agent.template.query.DeleteQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
@@ -82,7 +83,8 @@ public class QueryTemplateService {
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.getJsonLDResource(resourceID).deepCopy();
     return this.deleteQueryTemplateFactory
-        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId, branchName, optVarNames));
+        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId, branchName, optVarNames))
+        .data();
   }
 
   /**
@@ -215,7 +217,7 @@ public class QueryTemplateService {
    * 
    * @param queryVarsAndPaths The query construction requirements.
    */
-  public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
+  public DataManifest<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
     return this.genGetQuery(queryVarsAndPaths, new ArrayDeque<>(), "", new ArrayList<>());
   }
 
@@ -228,7 +230,7 @@ public class QueryTemplateService {
    * @param addColumns         Optional additional columns to be included in the
    *                           results.
    */
-  public String genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, Queue<List<String>> targetIds,
+  public DataManifest<String> genGetQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, Queue<List<String>> targetIds,
       String addQueryStatements, List<ColumnMetaPayload> addColumns) {
     LOGGER.debug("Generating the SELECT query to get instances...");
     return this.getQueryTemplateFactory
@@ -241,7 +243,7 @@ public class QueryTemplateService {
    * 
    * @param queryVarsAndPaths The query construction requirements.
    */
-  public String genWhereClause(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
+  public DataManifest<String> genWhereClause(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
     LOGGER.debug("Generating the SELECT query to get instances...");
     return this.getQueryTemplateFactory.genWhereClause(queryVarsAndPaths);
   }
@@ -255,14 +257,8 @@ public class QueryTemplateService {
   public String genSearchQuery(Queue<Queue<SparqlBinding>> queryVarsAndPaths, Map<String, String> criterias) {
     LOGGER.debug("Generating the SELECT query to search for specific instances...");
     return this.searchQueryTemplateFactory
-        .write(new QueryTemplateFactoryParameters(queryVarsAndPaths, criterias));
-  }
-
-  /**
-   * Retrieve the column metadata.
-   */
-  public List<ColumnMetaPayload> getColumns() {
-    return this.getQueryTemplateFactory.getColumns();
+        .write(new QueryTemplateFactoryParameters(queryVarsAndPaths, criterias))
+        .data();
   }
 
   /**

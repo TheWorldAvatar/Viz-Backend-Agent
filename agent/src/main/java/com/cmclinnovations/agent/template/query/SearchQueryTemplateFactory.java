@@ -14,6 +14,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
+import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
@@ -45,11 +46,13 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
    *                  be in the template.
    * @param criterias All the required search criteria.
    */
-  public String write(QueryTemplateFactoryParameters params) {
+  public DataManifest<String> write(QueryTemplateFactoryParameters params) {
     LOGGER.info("Generating a query template for getting the data that matches the search criteria...");
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    SelectQuery selectTemplate = super.genWhereClauseContent(targetClass, new ArrayList<>(), params.bindings());
+    DataManifest<SelectQuery> selectTemplateManifest = super.genWhereClauseContent(targetClass, new ArrayList<>(),
+        params.bindings());
+    SelectQuery selectTemplate = selectTemplateManifest.data();
     // Generating the search criteria as separate filter statements
     Queue<Expression<?>> filters = new ArrayDeque<>();
     super.variables.forEach(variable -> {
@@ -76,8 +79,8 @@ public class SearchQueryTemplateFactory extends QueryTemplateFactory {
           .append(" )\n");
     }
     selectTemplate.select(QueryResource.IRI_VAR);
-    return super.appendAdditionalPatterns(selectTemplate, filterString.toString());
-
+    String query = super.appendAdditionalPatterns(selectTemplate, filterString.toString());
+    return new DataManifest<>(query, selectTemplateManifest.columns());
   }
 
   /**

@@ -17,8 +17,8 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfObject;
 import com.cmclinnovations.agent.model.QueryTemplateFactoryParameters;
 import com.cmclinnovations.agent.model.ShaclPropertyBinding;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
-import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
@@ -50,18 +50,21 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    *               addVars - Optional additional variables to be included in the
    *               query, along with their order sequence
    */
-  public String write(QueryTemplateFactoryParameters params) {
+  public DataManifest<String> write(QueryTemplateFactoryParameters params) {
     LOGGER.info("Generating a query template for getting data...");
     // Extract the first binding class but it should not be removed from the queue
     String targetClass = params.bindings().peek().peek().getFieldValue(StringResource.CLAZZ_VAR);
-    SelectQuery selectTemplate = super.genWhereClauseContent(targetClass, params.addColumns(), params.bindings());
 
+    DataManifest<SelectQuery> selectTemplateManifest = super.genWhereClauseContent(targetClass, params.addColumns(),
+        params.bindings());
+    SelectQuery selectTemplate = selectTemplateManifest.data();
     // Retrieve only the property fields if no sequence of variable is present
     selectTemplate.select(QueryResource.IRI_VAR)
         .select(QueryResource.ID_VAR);
     super.variables.forEach(selectTemplate::select);
     String valuesClause = this.appendOptionalIdFilters(selectTemplate, params.targetIds());
-    return super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause);
+    String query = super.appendAdditionalPatterns(selectTemplate, params.addQueryStatements() + valuesClause);
+    return new DataManifest<>(query, selectTemplateManifest.columns());
   }
 
   /**
@@ -69,18 +72,21 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
    * 
    * @param queryVarsAndPaths The query construction requirements.
    */
-  public String genWhereClause(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
+  public DataManifest<String> genWhereClause(Queue<Queue<SparqlBinding>> queryVarsAndPaths) {
     LOGGER.info("Generating the WHERE clause...");
     super.reset();
     // Extract out select and where, test what we get
     Map<String, Map<String, ShaclPropertyBinding>> propertyBindingMap = super.parseNodeShapes(queryVarsAndPaths);
-    return super.write(Queries.SELECT(), propertyBindingMap)
+    DataManifest<SelectQuery> selectTemplateManifest = super.write(Queries.SELECT(), propertyBindingMap,
+        new ArrayList<>());
+    String query = selectTemplateManifest.data()
         .getQueryString()
         // SparqlBuilder concats OPTIONAL and UNION instead of wrapping them as nested,
         // code is an adjustment
         .replaceAll("OPTIONAL\\s*(\\{.*})\\s*UNION\\s*OPTIONAL\\s*(\\{.*\\})", "$1 UNION $2")
         // Extract only the WHERE clause content
         .replaceAll("(?s)SELECT\\s*\\*\\s*\\nWHERE\\s*\\{(.*)\\}\\n$", "$1");
+    return new DataManifest<>(query, selectTemplateManifest.columns());
   }
 
   /**

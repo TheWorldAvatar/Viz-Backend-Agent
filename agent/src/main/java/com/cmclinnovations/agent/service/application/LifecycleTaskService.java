@@ -26,6 +26,7 @@ import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
+import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
@@ -171,16 +172,14 @@ public class LifecycleTaskService {
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String startTimestamp, String endTimestamp,
       String entityType, LifecycleEventType eventType, PaginationState pagination, Map<String, String> filters) {
-    List<Map<String, Object>> occurrences = this.queryOccurrences(startTimestamp, endTimestamp,
+    DataManifest<List<Map<String, Object>>> occurrenceManifest = this.queryOccurrences(startTimestamp, endTimestamp,
         entityType, eventType, pagination);
-    // Get column metadata before it is overridden by the get count methods
-    List<ColumnMetaPayload> columns = this.getService.getColumns();
     LOGGER.info("Successfuly retrieved tasks!");
     return this.responseEntityBuilder.success(null,
         this.getOccurrenceCount(entityType, startTimestamp, endTimestamp, eventType, filters),
         this.getOccurrenceCount(entityType, startTimestamp, endTimestamp, eventType, new HashMap<>()),
-        columns,
-        occurrences);
+        occurrenceManifest.columns(),
+        occurrenceManifest.data());
   }
 
   /**
@@ -194,7 +193,7 @@ public class LifecycleTaskService {
    *                       execution. Closed should be completed.
    * @param pagination     Pagination state to filter results.
    */
-  private List<Map<String, Object>> queryOccurrences(String startTimestamp, String endTimestamp,
+  private DataManifest<List<Map<String, Object>>> queryOccurrences(String startTimestamp, String endTimestamp,
       String entityType, LifecycleEventType eventType, PaginationState pagination) {
     String[] lifecycleStatements = this.genLifecycleStatements(startTimestamp, endTimestamp,
         pagination.getSortedFields(), pagination.getFilters(), "", eventType, true);
@@ -216,9 +215,10 @@ public class LifecycleTaskService {
     filter.put("id", contractId);
     PaginationState pagination = new PaginationState(0, null,
         StringResource.DEFAULT_SORT_BY + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, filter);
-    List<Map<String, Object>> occurrences = this.queryOccurrences(startTimestamp, endTimestamp,
+    DataManifest<List<Map<String, Object>>> occurrenceManifest = this.queryOccurrences(startTimestamp, endTimestamp,
         entityType, LifecycleEventType.SERVICE_ORDER_RECEIVED, pagination);
-    return occurrences.stream().filter(occurrenceMap -> occurrenceMap.containsKey(LifecycleResource.DATE_KEY))
+    return occurrenceManifest.data().stream()
+        .filter(occurrenceMap -> occurrenceMap.containsKey(LifecycleResource.DATE_KEY))
         .map(occurrenceMap -> (SparqlResponseField) occurrenceMap.get(LifecycleResource.DATE_KEY))
         .map(SparqlResponseField::value)
         .collect(Collectors.toList());
@@ -351,7 +351,8 @@ public class LifecycleTaskService {
    *                      execution. Closed should be completed.
    * @param pagination    Pagination state to filter results.
    */
-  private List<Map<String, Object>> executeOccurrenceQuery(String entityType, String[] lifecycleStatements,
+  private DataManifest<List<Map<String, Object>>> executeOccurrenceQuery(String entityType,
+      String[] lifecycleStatements,
       LifecycleEventType eventType, PaginationState pagination) {
     Queue<List<String>> ids = this.getService.getAllIds(entityType, lifecycleStatements[0], pagination);
     Set<ColumnMetaPayload> varSequences = new LinkedHashSet<>(this.taskColumnMeta);
@@ -362,11 +363,12 @@ public class LifecycleTaskService {
       addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_CANCELLATION, varSequences);
       addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
     }
-    Queue<SparqlBinding> results = this.getService.getInstances(entityType, true, ids, addQuery,
+    DataManifest<Queue<SparqlBinding>> resultsManifest = this.getService.getInstances(entityType, true, ids, addQuery,
         new ArrayList<>(varSequences));
-    return results.stream()
+    return new DataManifest<>(resultsManifest.data().stream()
         .map(binding -> this.lifecycleQueryService.parseLifecycleBinding(binding.get()))
-        .toList();
+        .toList(),
+        resultsManifest.columns());
   }
 
   /**
@@ -413,8 +415,8 @@ public class LifecycleTaskService {
    */
   private String parseEventOccurrenceQuery(LifecycleEventType lifecycleEvent, Set<ColumnMetaPayload> columns) {
     String replacementQueryLine = lifecycleEvent.getShaclReplacement();
-    String occurrenceQuery = this.getService.getQuery(replacementQueryLine, true);
-    List<ColumnMetaPayload> eventColumns = this.getService.getColumns().stream()
+    DataManifest<String> occurrenceQueryManifest = this.getService.getQuery(replacementQueryLine, true);
+    List<ColumnMetaPayload> eventColumns = occurrenceQueryManifest.columns().stream()
         .filter(column -> !column.value().equals(QueryResource.ID_KEY)).toList();
     if (lifecycleEvent.equals(LifecycleEventType.SERVICE_ORDER_DISPATCHED)) {
       eventColumns = eventColumns.stream()
@@ -423,7 +425,7 @@ public class LifecycleTaskService {
           .toList();
     }
     columns.addAll(eventColumns);
-    return LifecycleResource.extractOccurrenceQuery(occurrenceQuery, lifecycleEvent);
+    return LifecycleResource.extractOccurrenceQuery(occurrenceQueryManifest.data(), lifecycleEvent);
   }
 
   /**
