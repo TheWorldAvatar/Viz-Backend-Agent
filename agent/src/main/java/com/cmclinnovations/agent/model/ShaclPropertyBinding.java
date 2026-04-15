@@ -11,6 +11,7 @@ import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.propertypath.builder.PropertyPathBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Iri;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -174,6 +175,21 @@ public class ShaclPropertyBinding {
             contents.add(
                     primaryTriples.filter(
                             Expressions.equals(this.property, Rdf.literalOf(this.subjectFilter))));
+        }
+
+        // Additional filter for classes with labels to ensure they are leaf nodes
+
+        if (this.isClazz && this.labelPredicate != null) {
+
+            Variable intermediateUri = QueryResource.genVariable(this.property.getVarName() + "_uri");
+            Variable child = QueryResource.genVariable(this.property.getVarName() + "_child");
+
+            contents.add(intermediateUri.has(this.labelPredicate.build(), this.property));
+
+            // Filter out classes with subclasses
+            contents.add(GraphPatterns.filterExists(false,
+                    child.has(QueryResource.RDFS_SUBCLASSOF, intermediateUri)
+                            .filter(Expressions.notEquals(child, intermediateUri))));
         }
 
         // If sh:node targetClass is available and not a group, append the class
