@@ -73,6 +73,7 @@ public class LifecycleResource {
   public static final String EVENT_CANCELLATION = "https://www.theworldavatar.com/kg/ontoservice/TerminatedServiceEvent";
   public static final String EVENT_INCIDENT_REPORT = "https://www.theworldavatar.com/kg/ontoservice/IncidentReportEvent";
   public static final String EVENT_ACCRUAL = "https://www.theworldavatar.com/kg/ontoservice/ServiceAccrualEvent";
+  public static final String EVENT_WAIVE = "https://www.theworldavatar.com/kg/ontoservice/ServiceWaiveEvent";
   public static final String EVENT_CONTRACT_COMPLETION = "https://www.theworldavatar.com/kg/ontoservice/ContractDischarge";
   public static final String EVENT_CONTRACT_RESCISSION = "https://www.theworldavatar.com/kg/ontoservice/ContractRescission";
   public static final String EVENT_CONTRACT_TERMINATION = "https://www.theworldavatar.com/kg/ontoservice/ContractTermination";

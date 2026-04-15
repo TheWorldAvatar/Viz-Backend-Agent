@@ -362,6 +362,7 @@ public class LifecycleTaskService {
       addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXECUTION, varSequences);
       addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_CANCELLATION, varSequences);
       addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
+      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_WAIVE, varSequences);
     }
     DataManifest<Queue<SparqlBinding>> resultsManifest = this.getService.getInstances(entityType, true, ids, addQuery,
         new ArrayList<>(varSequences));

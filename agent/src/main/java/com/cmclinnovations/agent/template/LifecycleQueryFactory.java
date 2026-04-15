@@ -25,16 +25,14 @@ public class LifecycleQueryFactory {
             + ";^<https://www.omg.org/spec/Commons/Documents/isAbout> ?task_invoice"
             + ";cmns-dt:succeeds/fibo-fnd-rel-rel:exemplifies ?prev_event. "
             + QueryResource.minus(INVOICED_QUERY_STATEMENT);
-    private static final String WAIVE_QUERY_STATEMENTS = ACCRUAL_EVENT_QUERY_STATEMENT
-            + ". MINUS{?task_invoice <https://www.omg.org/spec/Commons/Documents/isAbout> ?event_id}";
+    private static final String WAIVE_QUERY_STATEMENTS = "?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceWaiveEvent";
     private static final String CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT = "\n ?event_id cmns-dt:succeeds/ <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.";
     private static final String CLOSED_QUERY_STATEMENTS = "{\n?event_id fibo-fnd-rel-rel:exemplifies ontoservice:TerminatedServiceEvent\n;<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.}UNION"
             + "{\n?event_id fibo-fnd-rel-rel:exemplifies ontoservice:IncidentReportEvent\n;<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.}UNION"
             + "{\n?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent;\ncmns-dsg:describes ontoservice:CompletedStatus\n;<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.}UNION"
             + "{\n" + CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT + BILLABLE_QUERY_STATEMENTS + "}UNION"
             // Waived status
-            + "{\n" + CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT + WAIVE_QUERY_STATEMENTS + ".BIND(\""
-            + LifecycleResource.WAIVE_RESOURCE + "\" AS ?prev_event)}UNION"
+            + "{\n" + CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT + WAIVE_QUERY_STATEMENTS + "}UNION"
             // Invoiced status
             + "{\n" + CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT + ACCRUAL_EVENT_QUERY_STATEMENT + "."
             + INVOICED_QUERY_STATEMENT + ".BIND(\""
