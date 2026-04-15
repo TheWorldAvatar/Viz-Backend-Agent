@@ -64,6 +64,7 @@ public class ShaclResource {
   public static final String MULTIPATH_VAR = "multipath";
   public static final String MULTI_NAME_PATH_VAR = "name_multipath";
   public static final String IS_ARRAY_VAR = "isarray";
+  public static final String IS_LABEL_VAR = "islabel";
   public static final String IS_OPTIONAL_VAR = "isoptional";
   public static final String IS_CLASS_VAR = "isclass";
   // Query string elements
