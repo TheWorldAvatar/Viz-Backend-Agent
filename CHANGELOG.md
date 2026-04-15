@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.44.5
+
+- Fix instance query to only return the lowest class
+
 ## 1.44.4
 
 - Fix to ensure the associated column metadata is returned from the query generated and prevent hidden interactions
