@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.cmclinnovations</groupId>
 	<artifactId>vis-backend-agent</artifactId>
-	<version>1.44.5</version>
+	<version>1.44.6-class-table-filter-SNAPSHOT</version>
 	<packaging>war</packaging>
 	<name>vis-backend-agent</name>
 	<url />
