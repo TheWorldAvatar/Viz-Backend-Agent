@@ -786,6 +786,8 @@ public class LifecycleController {
         case "service;cancel" -> new OrderType("to cancel the order", LifecycleEventType.SERVICE_CANCELLATION);
         case "service;accrual" ->
           new OrderType("to accrue the billables on the order", LifecycleEventType.SERVICE_ACCRUAL);
+        case "service;waive" ->
+          new OrderType("to waive the billables on the order", LifecycleEventType.SERVICE_WAIVE);
         case "archive;rescind" -> new OrderType("to rescind the contract", LifecycleEventType.ARCHIVE_RESCINDMENT);
         case "archive;terminate" -> new OrderType("to terminate the contract", LifecycleEventType.ARCHIVE_TERMINATION);
         default -> throw new IllegalArgumentException(
