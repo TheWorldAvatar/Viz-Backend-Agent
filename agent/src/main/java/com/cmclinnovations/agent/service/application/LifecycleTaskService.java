@@ -276,11 +276,11 @@ public class LifecycleTaskService {
         return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params, LifecycleEventType.SERVICE_INCIDENT_REPORT,
             TrackActionType.ISSUE_REPORT, "Task has been successfully reported!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
-      case LifecycleEventType.SERVICE_WAIVE:
-        LOGGER.info("Received request to waive the billable details for a service...");
-        return this.genOccurrence(LifecycleResource.WAIVE_RESOURCE, params, LifecycleEventType.SERVICE_WAIVE,
-            TrackActionType.WAIVE, "Billable details have been successfully waived!",
-            LocalisationResource.SUCCESS_CONTRACT_TASK_WAIVE_KEY);
+      case LifecycleEventType.SERVICE_EXEMPT:
+        LOGGER.info("Received request to exempt the billable details for a service...");
+        return this.genOccurrence(LifecycleResource.EXEMPT_RESOURCE, params, LifecycleEventType.SERVICE_EXEMPT,
+            TrackActionType.EXEMPT, "Billable details have been successfully exempted!",
+            LocalisationResource.SUCCESS_CONTRACT_TASK_EXEMPT_KEY);
       default:
         throw new IllegalArgumentException(
             LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_ROUTE_KEY, type));
@@ -362,7 +362,7 @@ public class LifecycleTaskService {
       addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXECUTION, varSequences);
       addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_CANCELLATION, varSequences);
       addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
-      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_WAIVE, varSequences);
+      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXEMPT, varSequences);
     }
     DataManifest<Queue<SparqlBinding>> resultsManifest = this.getService.getInstances(entityType, true, ids, addQuery,
         new ArrayList<>(varSequences));
