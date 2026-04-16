@@ -13,7 +13,7 @@ public enum LifecycleEventType {
   SERVICE_CANCELLATION("cancel", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_CANCELLATION),
   SERVICE_INCIDENT_REPORT("report", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_INCIDENT_REPORT),
   SERVICE_ACCRUAL("accrual", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_ACCRUAL),
-  SERVICE_WAIVE("waive", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_ACCRUAL),
+  SERVICE_EXEMPT("exempt", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_EXEMPT),
   ARCHIVE_COMPLETION("completed", LifecycleResource.EXPIRATION_STAGE, LifecycleResource.EVENT_CONTRACT_COMPLETION),
   ARCHIVE_RESCINDMENT("rescinded", LifecycleResource.EXPIRATION_STAGE, LifecycleResource.EVENT_CONTRACT_RESCISSION),
   ARCHIVE_TERMINATION("terminated", LifecycleResource.EXPIRATION_STAGE, LifecycleResource.EVENT_CONTRACT_TERMINATION);

@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.44.6
+
+- Return form for exempting task from filling
+
 ## 1.44.5
 
 - Fix instance query to only return the lowest class

@@ -21,7 +21,7 @@ public class LifecycleResource {
   public static final String OCCURRENCE_INSTANT_RESOURCE = "occurrence instant";
   public static final String CANCEL_RESOURCE = "cancel";
   public static final String REPORT_RESOURCE = "report";
-  public static final String WAIVE_RESOURCE = "waive";
+  public static final String EXEMPT_RESOURCE = "exempt";
   public static final String TASK_ID_SORT_BY_PARAMS = ",+event_id";
   public static final String RECURRENCE_DAILY_TASK = "P1D";
   public static final String RECURRENCE_ALT_DAY_TASK = "P2D";
@@ -73,6 +73,7 @@ public class LifecycleResource {
   public static final String EVENT_CANCELLATION = "https://www.theworldavatar.com/kg/ontoservice/TerminatedServiceEvent";
   public static final String EVENT_INCIDENT_REPORT = "https://www.theworldavatar.com/kg/ontoservice/IncidentReportEvent";
   public static final String EVENT_ACCRUAL = "https://www.theworldavatar.com/kg/ontoservice/ServiceAccrualEvent";
+  public static final String EVENT_EXEMPT = "https://www.theworldavatar.com/kg/ontoservice/ServiceAccrualExemptionEvent";
   public static final String EVENT_CONTRACT_COMPLETION = "https://www.theworldavatar.com/kg/ontoservice/ContractDischarge";
   public static final String EVENT_CONTRACT_RESCISSION = "https://www.theworldavatar.com/kg/ontoservice/ContractRescission";
   public static final String EVENT_CONTRACT_TERMINATION = "https://www.theworldavatar.com/kg/ontoservice/ContractTermination";
@@ -159,7 +160,7 @@ public class LifecycleResource {
         return FileService.CONTRACT_PRICING_JSON_LD_RESOURCE;
       case LifecycleResource.CANCEL_RESOURCE:
       case LifecycleResource.REPORT_RESOURCE:
-      case LifecycleResource.WAIVE_RESOURCE:
+      case LifecycleResource.EXEMPT_RESOURCE:
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
       case LifecycleResource.SCHEDULE_RESOURCE:
         return FileService.SCHEDULE_JSON_LD_RESOURCE;
