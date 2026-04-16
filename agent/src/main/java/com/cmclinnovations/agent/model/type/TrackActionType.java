@@ -13,7 +13,7 @@ public enum TrackActionType {
   RESCINDMENT("Rescinded"),
   RESCHEDULED("Rescheduled"),
   ACCRUAL("Accrued billables"),
-  EXEMPT("Exempted billables"),
+  EXEMPT("Task exempted from billing"),
   IGNORED("");
 
   private final String message;

@@ -279,7 +279,7 @@ public class LifecycleTaskService {
       case LifecycleEventType.SERVICE_EXEMPT:
         LOGGER.info("Received request to exempt the billable details for a service...");
         return this.genOccurrence(LifecycleResource.EXEMPT_RESOURCE, params, LifecycleEventType.SERVICE_EXEMPT,
-            TrackActionType.EXEMPT, "Billable details have been successfully exempted!",
+            TrackActionType.EXEMPT, "Task has been exempted from billing successfully!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_EXEMPT_KEY);
       default:
         throw new IllegalArgumentException(
