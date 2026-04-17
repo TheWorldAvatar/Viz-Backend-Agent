@@ -74,6 +74,7 @@ public class ShaclResource {
   public static final String REPLACEMENT_ENDPOINT = "[endpoint]";
   public static final String WHITE_SPACE = " ";
   // Data types
+  public static final String XSD_BOOLEAN = XSD_PREFIX + "boolean";
   public static final String XSD_DATE = XSD_PREFIX + "date";
   public static final String XSD_DATE_TIME = XSD_PREFIX + "dateTime";
   public static final String XSD_DECIMAL = XSD_PREFIX + "decimal";
