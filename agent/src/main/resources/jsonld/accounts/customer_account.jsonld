@@ -21,6 +21,15 @@
           "prefix": "https://www.theworldavatar.io/kg/customer/account/"
         },
         "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/CustomerAccount",
+        "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasBalance": {
+          "@id": {
+            "@replace": "id",
+            "@type": "iri",
+            "prefix": "https://www.theworldavatar.io/kg/customer/account/balance/"
+          },
+          "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/Balance",
+          "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/hasAmount": 0.00
+        },
         "http://purl.org/dc/terms/identifier": {
           "@replace": "id",
           "@type": "literal"
