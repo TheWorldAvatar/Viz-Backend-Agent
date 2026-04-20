@@ -971,6 +971,16 @@ This endpoint serves to allow users to create new customer accounts by sending a
 
 Users can also get all customer account IDs and names by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account/filter?type={type}&search={search}` endpoint, where `{type}`is the requested identifier that must correspond to the customer's target class in`./resources/application-form.json` and `{search}` is the `search` parameter.
 
+Users can also get all customer accounts by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account/filter?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint, where `{type}`is the requested identifier that must correspond to the customer account's target class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
+
+> [!TIP]  
+> `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
+
+> [!IMPORTANT]  
+> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
+
+Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/report/account/flag` endpoint to flag or resolve a flag for the account. The request body must contain the customer account id that is specified within the `id` key.
+
 Users can send a `POST` request to the `<baseURL>/vis-backend-agent/report/account/price` endpoint to create a new pricing model and assign it to the specified account. This endpoint is an extension to the [add instance endpoint](#251-add-route), which requires users to send request parameters for creating a custom pricing model based on their `JSON-LD` file. The endpoint will generate a pricing model and assign it to the corresponding customer account id via the `account` parameter. Please read the [pricing model section](./resources/README.md#115-lifecycle-specific-feature) for sample usage
 
 > [!IMPORTANT]  
