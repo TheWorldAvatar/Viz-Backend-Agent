@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -247,8 +248,8 @@ public class GetService {
     String iri = this.queryTemplateService.getIri(resourceID);
     addStatements += this.getQueryStatementsForTargetFields(resourceID, iri, pagination.getSortedFields(),
         pagination.getFilters());
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
-        pagination, true, false);
+    SelectQuery allInstancesQueryObj = this.queryTemplateService.getAllIdsQueryTemplate(iri, pagination, true, false);
+    String allInstancesQuery = this.queryTemplateService.addStringStatements(allInstancesQueryObj, addStatements);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> {
           String eventIdVar = QueryResource.EVENT_ID_VAR.getVarName();
@@ -338,8 +339,9 @@ public class GetService {
           + search.toLowerCase()
           + "\"))";
     }
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
+    SelectQuery allInstancesQueryObj = this.queryTemplateService.getAllIdsQueryTemplate(iri,
         new PaginationState(0, 21, "+" + field, new HashMap<>()), requireId, requireIri);
+    String allInstancesQuery = this.queryTemplateService.addStringStatements(allInstancesQueryObj, addStatements);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED);
   }
 

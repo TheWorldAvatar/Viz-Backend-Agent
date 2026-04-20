@@ -101,14 +101,13 @@ public class QueryTemplateService {
    * placeholder class is used and MUST be replaced to get the right ids.
    * 
    * @param nodeShapeReplacement The statement to target the node shape.
-   * @param addQueryStatements   Additional query statements to be added.
    * @param pagination           Optional state containing the current page and
    *                             limit.
    * @param requireId            If the results should include ID.
    * @param requireIri           If the results should include IRI variable.
    */
-  public String getAllIdsQueryTemplate(String nodeShapeReplacement, String addQueryStatements,
-      PaginationState pagination, boolean requireId, boolean requireIri) {
+  public SelectQuery getAllIdsQueryTemplate(String nodeShapeReplacement, PaginationState pagination, boolean requireId,
+      boolean requireIri) {
     // If pagination is not given, no limits and offset should be set
     SelectQuery query = QueryResource.getSelectQuery(true, pagination.getLimit())
         .where(QueryResource.IRI_VAR.isA(Rdf.iri(
@@ -135,9 +134,19 @@ public class QueryTemplateService {
     if (hasNoIdToSort) {
       query.orderBy(QueryResource.ID_VAR);
     }
+    return query;
+  }
+
+  /**
+   * Adds additional query statements constructed as strings.
+   * 
+   * @param query              The query template to add new statements.
+   * @param newQueryStatements Additional query statements to be added.
+   */
+  public String addStringStatements(SelectQuery query, String newQueryStatements) {
     return query
         .getQueryString()
-        .replace("?id .", "?id ." + addQueryStatements);
+        .replace("?id .", "?id ." + newQueryStatements);
   }
 
   /**
