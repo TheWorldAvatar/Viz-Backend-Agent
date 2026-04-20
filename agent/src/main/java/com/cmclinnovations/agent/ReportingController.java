@@ -30,7 +30,6 @@ import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
-import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @RestController
 @RequestMapping("/report")
@@ -85,7 +84,8 @@ public class ReportingController {
       @RequestParam String search) {
     LOGGER.info("Received request to get the customer accounts...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, search);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search,
+          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, BillingResource.FLAG_KEY);
       return this.responseEntityBuilder.success(options);
     });
   }
