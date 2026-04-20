@@ -1,0 +1,12 @@
+PREFIX cmns-dsg: <https://www.omg.org/spec/Commons/Designators/>
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX fibo-fbc-pas-caa: <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/>
+PREFIX fibo-fnd-acc-cur: <https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/CurrencyAmount/>
+
+SELECT DISTINCT ?flag
+WHERE{
+  ?account a fibo-fbc-pas-caa:CustomerAccount;
+    dc-terms:identifier "[target]";
+    fibo-fbc-pas-caa:hasBalance/fibo-fnd-acc-cur:hasAmount ?balance.
+    BIND(IF(?balance<0, true, false) AS ?flag)
+}

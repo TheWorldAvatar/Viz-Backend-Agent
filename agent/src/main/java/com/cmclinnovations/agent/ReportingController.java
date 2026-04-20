@@ -28,7 +28,9 @@ import com.cmclinnovations.agent.service.application.BillingService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
+import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @RestController
 @RequestMapping("/report")
@@ -199,6 +201,18 @@ public class ReportingController {
     LOGGER.info("Received request to update pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
       return this.billingService.assignPricingPlanToContract(instance);
+    });
+  }
+
+  /**
+   * Updates the customer account flag.
+   */
+  @PutMapping("/account/flag")
+  public ResponseEntity<StandardApiResponse<?>> updateAccountFlag(@RequestBody Map<String, String> params) {
+    LOGGER.info("Received request to update the account flag...");
+    return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
+      String accountId = params.get(QueryResource.ID_KEY);
+      return this.billingService.updateAccountFlag(accountId);
     });
   }
 
