@@ -971,7 +971,7 @@ This endpoint serves to allow users to create new customer accounts by sending a
 
 Users can also get all customer account IDs and names by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account/filter?type={type}&search={search}` endpoint, where `{type}`is the requested identifier that must correspond to the customer's target class in`./resources/application-form.json` and `{search}` is the `search` parameter.
 
-Users can also get all customer accounts by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account/filter?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint, where `{type}`is the requested identifier that must correspond to the customer account's target class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
+Users can also get all customer accounts by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint, where `{type}`is the requested identifier that must correspond to the customer account's target class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
 
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
