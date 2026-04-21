@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.45.0
+
+- Added account flagging functionality
+
 ## 1.44.6
 
 - Return form for exempting task from filling

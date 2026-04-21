@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -34,6 +35,7 @@ import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
+import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
@@ -247,8 +249,8 @@ public class GetService {
     String iri = this.queryTemplateService.getIri(resourceID);
     addStatements += this.getQueryStatementsForTargetFields(resourceID, iri, pagination.getSortedFields(),
         pagination.getFilters());
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
-        pagination, true, false);
+    SelectQuery allInstancesQueryObj = this.queryTemplateService.getAllIdsQueryTemplate(iri, pagination, true, false);
+    String allInstancesQuery = this.queryTemplateService.addStringStatements(allInstancesQueryObj, addStatements);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> {
           String eventIdVar = QueryResource.EVENT_ID_VAR.getVarName();
@@ -272,7 +274,7 @@ public class GetService {
    */
   public List<String> getAllFilterOptionsAsStrings(String resourceID, String field, String addStatements,
       String search, Map<String, Set<String>> filters) {
-    return this.queryFilterOptions(resourceID, field, addStatements, search, filters, false, false)
+    return this.queryFilterOptions(resourceID, field, addStatements, "", search, filters, false, false)
         .stream()
         .map(binding -> binding.getFieldValue(field))
         .toList();
@@ -287,7 +289,8 @@ public class GetService {
    * @param filters    Filters to further narrow filter scope.
    */
   public List<SelectOption> getAllFilterOptions(String resourceID, String search, Map<String, Set<String>> filters) {
-    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", search, filters, false, true).stream()
+    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", "", search, filters, false, true)
+        .stream()
         .map(binding -> new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
             binding.getFieldValue(QueryResource.IRI_KEY)))
         .toList();
@@ -297,14 +300,25 @@ public class GetService {
    * Retrieve all filter options associated with the resource and search terms as
    * options with names and their IDs.
    * 
-   * @param resourceID Target resource identifier for the instance class.
-   * @param search     String subset to narrow filter scope.
+   * @param resourceID    Target resource identifier for the instance class.
+   * @param search        String subset to narrow filter scope.
+   * @param addStatements Additional query statements to be added if any.
+   * @param addVar        One additional query variable to be added if any.
    */
-  public List<SelectOption> getAllFilterOptions(String resourceID, String search) {
-    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", search, new HashMap<>(), false, true)
+  public List<SelectOption> getAllFilterOptions(String resourceID, String search, String addStatements, String addVar) {
+    return this
+        .queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, addStatements, addVar, search, new HashMap<>(),
+            false, true)
         .stream()
-        .map(binding -> new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
-            binding.getFieldValue(QueryResource.IRI_KEY)))
+        .map(binding -> {
+          if (binding.containsField(BillingResource.FLAG_KEY)) {
+            return new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
+                binding.getFieldValue(QueryResource.IRI_KEY),
+                binding.getFieldValue(BillingResource.FLAG_KEY).equalsIgnoreCase("true"));
+          }
+          return new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
+              binding.getFieldValue(QueryResource.IRI_KEY));
+        })
         .toList();
   }
 
@@ -315,12 +329,13 @@ public class GetService {
    * @param resourceID    Target resource identifier for the instance class.
    * @param field         The field of interest.
    * @param addStatements Additional query statements to be added if any.
+   * @param addVar        One additional query variable to be added if any.
    * @param search        String subset to narrow filter scope.
    * @param filters       Optional additional filters.
    * @param requireId     If the results should include ID.
    * @param requireIri    If the results should include IRI variable.
    */
-  private Queue<SparqlBinding> queryFilterOptions(String resourceID, String field, String addStatements,
+  private Queue<SparqlBinding> queryFilterOptions(String resourceID, String field, String addStatements, String addVar,
       String search, Map<String, Set<String>> filters, boolean requireId, boolean requireIri) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
@@ -338,8 +353,12 @@ public class GetService {
           + search.toLowerCase()
           + "\"))";
     }
-    String allInstancesQuery = this.queryTemplateService.getAllIdsQueryTemplate(iri, addStatements,
+    SelectQuery allInstancesQueryObj = this.queryTemplateService.getAllIdsQueryTemplate(iri,
         new PaginationState(0, 21, "+" + field, new HashMap<>()), requireId, requireIri);
+    if (!addVar.isEmpty()) {
+      allInstancesQueryObj.select(QueryResource.genVariable(addVar));
+    }
+    String allInstancesQuery = this.queryTemplateService.addStringStatements(allInstancesQueryObj, addStatements);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED);
   }
 

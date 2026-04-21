@@ -70,6 +70,20 @@ public class BillingService {
   }
 
   /**
+   * Updates the account flag.
+   * 
+   * @param id The identifier for the target customer account instance.
+   */
+  public ResponseEntity<StandardApiResponse<?>> updateAccountFlag(String id) {
+    String flag = this.lifecycleQueryService.getInstance(FileService.ACCOUNT_FLAG_QUERY_RESOURCE, id)
+        .getFieldValue(BillingResource.FLAG_KEY);
+    boolean isFlag = Boolean.parseBoolean(flag);
+    LOGGER.info("Flag for customer account is currently: {}", isFlag);
+    String query = BillingResource.getBalanceUpdateQuery(id, isFlag);
+    return this.updateService.update(query);
+  }
+
+  /**
    * Assigns pricing plans to the target customer account.
    * 
    * @param instance Request parameters containing the pricing plan details and

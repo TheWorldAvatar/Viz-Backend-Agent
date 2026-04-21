@@ -1,7 +1,9 @@
 package com.cmclinnovations.agent;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,14 +18,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
+import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.BillingService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 @RestController
@@ -45,13 +50,42 @@ public class ReportingController {
   }
 
   /**
-   * Retrieves the accounts as dropdown options including name and id.
+   * Retrieves all account instances
    */
   @GetMapping("/account")
-  public ResponseEntity<StandardApiResponse<?>> getAccounts(@RequestParam String type, @RequestParam String search) {
+  public ResponseEntity<StandardApiResponse<?>> getAccounts(
+      @RequestParam Map<String, String> allRequestParams) {
+    LOGGER.info("Received request to get all accounts...");
+    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
+    Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
+    String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
+    allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
+    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
+      PaginationState pagination = new PaginationState(page, limit, sortBy, allRequestParams);
+      Queue<List<String>> ids = this.getService.getAllIds(type, "", pagination);
+      DataManifest<Queue<SparqlBinding>> instanceManifest = this.getService.getInstances(type, true, ids,
+          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, List.of(BillingResource.FLAG_COLUMN_META_PAYLOAD));
+      return this.responseEntityBuilder.success(null,
+          this.getService.getCount(type, allRequestParams),
+          this.getService.getCount(type, new HashMap<>()),
+          instanceManifest.columns(),
+          instanceManifest.data().stream()
+              .map(SparqlBinding::get)
+              .toList());
+    });
+  }
+
+  /**
+   * Retrieves the accounts as dropdown options including name and id.
+   */
+  @GetMapping("/account/filter")
+  public ResponseEntity<StandardApiResponse<?>> getAccountFilters(@RequestParam String type,
+      @RequestParam String search) {
     LOGGER.info("Received request to get the customer accounts...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, search);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search,
+          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, BillingResource.FLAG_KEY);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -167,6 +201,18 @@ public class ReportingController {
     LOGGER.info("Received request to update pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
       return this.billingService.assignPricingPlanToContract(instance);
+    });
+  }
+
+  /**
+   * Updates the customer account flag.
+   */
+  @PutMapping("/account/flag")
+  public ResponseEntity<StandardApiResponse<?>> updateAccountFlag(@RequestBody Map<String, String> params) {
+    LOGGER.info("Received request to update the account flag...");
+    return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
+      String accountId = params.get(QueryResource.ID_KEY);
+      return this.billingService.updateAccountFlag(accountId);
     });
   }
 
