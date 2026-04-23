@@ -293,7 +293,14 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
             optVarNames);
       }
     } else {
-      TriplePattern triplePattern = subject.has(predicate, Rdf.literalOf(((TextNode) objectNode).textValue()));
+      TriplePattern triplePattern;
+      if (objectNode.isInt()) {
+        triplePattern = subject.has(predicate, Rdf.literalOf(objectNode.asInt()));
+      } else if (objectNode.isDouble()) {
+        triplePattern = subject.has(predicate, Rdf.literalOf(objectNode.asDouble()));
+      } else {
+        triplePattern = subject.has(predicate, Rdf.literalOf(((TextNode) objectNode).textValue()));
+      }
       deleteTemplate.delete(triplePattern);
       this.updateWherePatterns(triplePattern, deleteTemplate, whereBranchPatterns);
     }

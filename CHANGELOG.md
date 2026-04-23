@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.45.1
+
+- Fixed the generation of delete query for number literals
+
 ## 1.45.0
 
 - Added account flagging functionality
