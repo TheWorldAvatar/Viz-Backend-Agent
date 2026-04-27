@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.utils;
 
+import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -119,6 +120,8 @@ public class QueryResource {
     public static final String FIXED_DATE_SCHEDULE_DATE_KEY = "schedule entry date";
     public static final String LITERAL_TYPE = "literal";
     public static final String URI_TYPE = "uri";
+
+    public static final String DATE_FILTER_TEMPLATE = "xsd:date(?{0}){1}\"{2}\"^^xsd:date";
 
     public static final String HISTORY_ACTIVITY_RESOURCE = "activity";
     public static final String HISTORY_AGENT_RESOURCE = "agent";
@@ -351,6 +354,23 @@ public class QueryResource {
                     }).collect(Collectors.toSet());
             String valuesClause = QueryResource.values(field, parsedFilters);
             builder.append(valuesClause);
+        } else if (filters.contains(LifecycleResource.DATE_KEY)) {
+            builder.append(query);
+
+            List<String> dateFilters = new ArrayList<>(filters);
+            dateFilters.remove(LifecycleResource.DATE_KEY);
+            // If there is only one date, ensure field matches the selected date
+            if (dateFilters.size() == 1) {
+                builder.append(QueryResource.filter(
+                        MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, "=", dateFilters.get(0))));
+                // If there is two dates, ensure field matches the selected date range
+            } else {
+                builder.append(QueryResource.filter(
+                        MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, ">=", dateFilters.get(0))
+                                + "&&" +
+                                MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, "<=",
+                                        dateFilters.get(1))));
+            }
         } else {
             // When there are null filter values, the user has requested for blank values,
             // and this should be excluded from the query via a MINUS clause

@@ -2,8 +2,11 @@ package com.cmclinnovations.agent.utils;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
@@ -26,6 +29,8 @@ public class StringResource {
   public static final String SORT_KEY = "@sort";
 
   public static final String INVALID_SHACL_ERROR_MSG = "Invalid knowledge model! SHACL restrictions have not been defined/instantiated in the knowledge graph.";
+  public static final Pattern DATE_RANGE_FILTER_PATTERN = Pattern
+      .compile("(\\d{4}-\\d{2}-\\d{2})\\.\\.(\\d{4}-\\d{2}-\\d{2})");
 
   // Private constructor to prevent instantiation
   private StringResource() {
@@ -147,12 +152,30 @@ public class StringResource {
   public static Map<String, Set<String>> parseFilters(Map<String, String> filters, Boolean isContract) {
     return filters.entrySet()
         .stream()
-        .map(entry -> Map.entry(
-            LifecycleResource.revertLifecycleSpecialFields(entry.getKey(), isContract),
-            Arrays.stream(entry.getValue().split("\\|"))
+        .map(entry -> {
+          Set<String> valueSet;
+          // Parse filters for date
+          Matcher matcher = DATE_RANGE_FILTER_PATTERN.matcher(entry.getValue());
+          if (matcher.find()) {
+            String startFilterDate = matcher.group(1);
+            String endFilterDate = matcher.group(2);
+            valueSet = new LinkedHashSet<>();
+            // Add a date key to handle the date filter differently later
+            valueSet.add(LifecycleResource.DATE_KEY);
+            valueSet.add(startFilterDate);
+            if (!startFilterDate.equals(endFilterDate)) {
+              valueSet.add(endFilterDate);
+            }
+          } else {
+            valueSet = Arrays.stream(entry.getValue().split("\\|"))
                 .map(string -> string.equals(QueryResource.NULL_KEY) ? string
                     : "\"" + string.trim() + "\"")
-                .collect(Collectors.toSet())))
+                .collect(Collectors.toSet());
+          }
+          return Map.entry(
+              LifecycleResource.revertLifecycleSpecialFields(entry.getKey(), isContract),
+              valueSet);
+        })
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 }
