@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -156,6 +157,7 @@ public class DateTimeService {
 
   /**
    * Retrieve the timestamp as a date time string at start of day.
+   * 
    * @param date The input in YYYY-MM-DD format.
    */
   public String getTimestampFromDate(String date) {
@@ -274,7 +276,9 @@ public class DateTimeService {
     Queue<String> occurrenceDates = new ArrayDeque<>();
     LocalDate startDate = this.parseDate(startDateInput);
     LocalDate endDate = this.parseDate(endDateInput);
-    LocalDate currentDate = this.parseDate(startDateInput);
+
+    // Normalise to the Monday of the starting week
+    LocalDate currentDate = startDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     // Retrieve scheduled days of week for occurrence
     Set<DayOfWeek> daysOfWeek = this.getScheduledDaysOfWeek(bindings);
 
