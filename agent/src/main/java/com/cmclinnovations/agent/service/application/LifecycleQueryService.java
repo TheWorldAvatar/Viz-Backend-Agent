@@ -144,6 +144,13 @@ public class LifecycleQueryService {
         QueryResource.genFilterStatements(statements, LifecycleResource.NEW_DATE_KEY,
             filtersWithSortedFields.get(fieldKey),
             addStatementBuilder);
+        // For start/ end/last modified date, add a filter statement targeted at the original var
+      } else if ((fieldKey.equals(QueryResource.SCHEDULE_START_DATE_VAR.getVarName())
+          || fieldKey.equals(QueryResource.SCHEDULE_END_DATE_VAR.getVarName())
+          || fieldKey.equals(QueryResource.LAST_MODIFIED_VAR.getVarName()))
+          && filtersWithSortedFields.containsKey(fieldKey)) {
+        QueryResource.genFilterStatements(statements, StringResource.ORIGINAL_PREFIX + fieldKey,
+            filtersWithSortedFields.get(fieldKey), addStatementBuilder);
         // Generate filter statements if the filters require them
       } else if (filtersWithSortedFields.containsKey(fieldKey)) {
         QueryResource.genFilterStatements(statements, fieldKey, filtersWithSortedFields.get(fieldKey),
@@ -201,7 +208,6 @@ public class LifecycleQueryService {
             LinkedHashMap::new));
   }
 
-  
   /**
    * Query for schedule of a contract.
    * 
@@ -210,10 +216,11 @@ public class LifecycleQueryService {
   public SparqlBinding querySchedule(String contract) {
     // try query as regular schedule
     try {
-      return this.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE,contract, contract);
+      return this.getInstance(FileService.CONTRACT_SCHEDULE_QUERY_RESOURCE, contract, contract);
     } catch (NullPointerException e) {
       // try query as fixed date schedule
-      Queue<SparqlBinding> results = this.getInstances(FileService.FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE,contract, contract);
+      Queue<SparqlBinding> results = this.getInstances(FileService.FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE,
+          contract, contract);
       SparqlBinding fixedDateScheduleInstance = results.poll();
       fixedDateScheduleInstance.initArray(FIXED_DATE_SCHEDULE_ARRAY_VARS); // move entry date field to array
       // Iterate over results to get entry dates as an array
