@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.45.2
+
+- Fixed calculation of dates based on recurrence rule
+
 ## 1.45.1
 
 - Fixed the generation of delete query for number literals
