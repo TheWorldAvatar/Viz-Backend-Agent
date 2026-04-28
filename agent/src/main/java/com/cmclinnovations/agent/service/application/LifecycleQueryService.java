@@ -139,12 +139,12 @@ public class LifecycleQueryService {
       // to be queried, the statements must also be present
       if (fieldKey.equals(LifecycleResource.LIFECYCLE_RESOURCE) || field.equals(fieldKey)) {
         addStatementBuilder.append(statements);
-        // Special filter statement if a date key is required for filtering
+        // For date (usually tasks), add statement for event date
       } else if (fieldKey.equals(LifecycleResource.DATE_KEY) && filtersWithSortedFields.containsKey(fieldKey)) {
-        QueryResource.genFilterStatements(statements, LifecycleResource.NEW_DATE_KEY,
-            filtersWithSortedFields.get(fieldKey),
-            addStatementBuilder);
-        // For start/ end/last modified date, add a filter statement targeted at the original var
+        QueryResource.genFilterStatements(statements, LifecycleResource.EVENT_DATE_KEY,
+            filtersWithSortedFields.get(fieldKey), addStatementBuilder);
+        // For start/ end/last modified date, add a filter statement targeted at the
+        // original var
       } else if ((fieldKey.equals(QueryResource.SCHEDULE_START_DATE_VAR.getVarName())
           || fieldKey.equals(QueryResource.SCHEDULE_END_DATE_VAR.getVarName())
           || fieldKey.equals(QueryResource.LAST_MODIFIED_VAR.getVarName()))

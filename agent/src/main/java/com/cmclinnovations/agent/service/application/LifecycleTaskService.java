@@ -330,8 +330,8 @@ public class LifecycleTaskService {
 
     Map<String, String> extendedMappings = this.lifecycleQueryFactory
         .insertExtendedLastModifiedFilters(statementMappings);
-    String extendedDateStatement = "BIND(STR(?date) as ?" + LifecycleResource.NEW_DATE_KEY + ")";
-    extendedMappings.put(LifecycleResource.DATE_KEY, extendedDateStatement);
+    // Include an empty date statement to support filtering
+    extendedMappings.put(LifecycleResource.DATE_KEY, "");
     String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
         filters, field) + filterExpressions.values().stream().collect(Collectors.joining("\n"));
     if (reqOriStatements) {
