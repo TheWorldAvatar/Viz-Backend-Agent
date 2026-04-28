@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.46.0
+
+- Added date filtering capabilities
+
 ## 1.45.2
 
 - Fixed calculation of dates based on recurrence rule
