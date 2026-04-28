@@ -48,6 +48,7 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
       - [2.7.2.1 Service charges](#2721-service-charges)
       - [2.7.3 Invoice route](#273-invoice-route)
       - [2.7.3.1 Add invoice](#2731-add-invoice)
+    - [2.8 Filter Query Parameters](#28-filter-query-parameters)
 
 ## 1. Agent Deployment
 
@@ -485,13 +486,10 @@ This route retrieves all instances with human-readable fields. Users can send a 
 <baseURL>/vis-backend-agent/{type}/label?page={page}&limit={limit}&sort_by={sortby}
 ```
 
-where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
+where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. For the query filter parameters, please read [this section](#28-filter-query-parameters).
 
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
-
-> [!IMPORTANT]  
-> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
 ##### Get the distinct field options of all instances
 
@@ -649,13 +647,10 @@ When users edit a draft contract, this will move the status to amended. Users ca
 
 Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all draft contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
 
-There is also an additional optional parameter `label` to retrieve draft contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise.
+There is also an additional optional parameter `label` to retrieve draft contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise. For the query filter parameters, please read [this section](#28-filter-query-parameters).
 
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`.
-
-> [!IMPORTANT]  
-> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/draft/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all draft contracts, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. Users can also include an optional `search` parameter as well as any active filters.
 
@@ -763,15 +758,12 @@ This `<baseURL>/vis-backend-agent/contracts/service` endpoint serves to interact
 
 > Active contracts
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all active contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all active contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. For the query filter parameters, please read [this section](#28-filter-query-parameters).
 
 There is also an additional optional parameter `label` to retrieve in progress contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise.
 
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
-
-> [!IMPORTANT]  
-> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all active contracts, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. Users can also include an optional `search` parameter as well as any active filters.
 
@@ -786,37 +778,28 @@ For tasks associated with a contract, users can send a `GET` request to the `<ba
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
 
-For outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding?type={contractType}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all outstanding open tasks, where `contractType` is the resource ID of the contract type, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
+For outstanding tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding?type={contractType}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all outstanding open tasks, where `contractType` is the resource ID of the contract type, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. For the query filter parameters, please read [this section](#28-filter-query-parameters).
 
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
-
-> [!IMPORTANT]  
-> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/outstanding/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all outstanding tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. Users can also include an optional `search` parameter as well as any active filters.
 
 ---
 
-For upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all scheduled tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. The start date must occur after today, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
+For upcoming scheduled tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all scheduled tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. The start date must occur after today, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. For the query filter parameters, please read [this section](#28-filter-query-parameters).
 
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
-
-> [!IMPORTANT]  
-> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/scheduled/filter?type={type}&field={field}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all the distinct field options for a specific field on all scheduled tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{field}` is the target field, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. Users can also include an optional `search` parameter as well as any active filters.
 
 ---
 
-For closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all closed tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
+For closed tasks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed?type={contractType}&startTimestamp={start}&endTimestamp={end}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all closed tasks for the target date range, where `contractType` is the resource ID of the contract type, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. For the query filter parameters, please read [this section](#28-filter-query-parameters).
 
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
-
-> [!IMPORTANT]  
-> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/closed/filter?type={type}&field={field}&startTimestamp={start}&endTimestamp={end}` endpoint to retrieve all the distinct field options for a specific field on all closed tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, `{field}` is the target field, `start` and `end` are the UNIX timestamps for the corresponding starting and ending date of a period that the users are interested in. Users can also include an optional `search` parameter as well as any active filters.
 
@@ -921,12 +904,9 @@ The endpoint serves to archive in progress contracts as well as retrieve all con
 
 > Get all archived contracts
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/archive?type={type}` endpoint to retrieve all archived contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`.
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/archive?type={type}` endpoint to retrieve all archived contracts, where `{type}`is the requested identifier that must correspond to the target contract class in`./resources/application-form.json`. For the query filter parameters, please read [this section](#28-filter-query-parameters).
 
 There is also an additional optional parameter `label` to retrieve archived contracts with only human readable values. Users may pass in `yes` if the response should all be labelled and `no` otherwise.
-
-> [!IMPORTANT]  
-> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/archive/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on all archived contracts, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json` and `{field}` is the target field. Users can also include an optional `search` parameter as well as any active filters.
 
@@ -971,13 +951,10 @@ This endpoint serves to allow users to create new customer accounts by sending a
 
 Users can also get all customer account IDs and names by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account/filter?type={type}&search={search}` endpoint, where `{type}`is the requested identifier that must correspond to the customer's target class in`./resources/application-form.json` and `{search}` is the `search` parameter.
 
-Users can also get all customer accounts by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint, where `{type}`is the requested identifier that must correspond to the customer account's target class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
+Users can also get all customer accounts by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint, where `{type}`is the requested identifier that must correspond to the customer account's target class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. For the query filter parameters, please read [this section](#28-filter-query-parameters).
 
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
-
-> [!IMPORTANT]  
-> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
 Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/report/account/flag` endpoint to flag or resolve a flag for the account. The request body must contain the customer account id that is specified within the `id` key.
 
@@ -1014,13 +991,10 @@ Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/servic
 
 These endpoints allow users to add and view invoices, along with retrieval of billable tasks associated with a specific account. When adding an invoice, users can create a custom form template through using the `invoice` identifier. Users must include the invoice identifier in `application-form.json` and have a `SHACL` shape targeting a `https://purl.org/p2p-o/document#E-Invoice`.
 
-Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks?type={contractType}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all billable tasks, where `contractType` is the resource ID of the contract type, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. To target a specific account, users must include the account field as a filter parameter.
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks?type={contractType}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all billable tasks, where `contractType` is the resource ID of the contract type, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. To target a specific account, users must include the account field as a filter parameter. For the query filter parameters, please read [this section](#28-filter-query-parameters).
 
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
-
-> [!IMPORTANT]  
-> Users can also include filters as query parameters following the structure: `field=value1|value2`, where `field` is the name of the field filter. If multiple values are provided for a **single** field, they must be separated by **the pipe delimiter** (`|`)."
 
 Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/report/account/tasks/filter?type={type}&field={field}` endpoint to retrieve all the distinct field options for a specific field on the billable tasks, where `{type}`is the requested identifier that must correspond to a target class in`./resources/application-form.json`, and `{field}` is the target field. Users can also include an optional `search` parameter as well as any active filters.
 
@@ -1036,3 +1010,11 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/report/accou
   "task": ["List of task ID for the invoice" ],
 }
 ```
+
+### 2.8 Filter Query Parameters
+
+Users can apply filters by appending query parameters to the URL:
+
+- **Single General Fields**: `field=value`
+- **Multiple General Fields**: `field=val1|val2` - separate multiple values using the pipe (|) delimiter
+- **Date ranges**: `field=YYYY-MM-DD..YYYY-MM-DD` - use the same date for both bounds to filter by a single day
