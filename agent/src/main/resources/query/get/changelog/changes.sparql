@@ -1,12 +1,12 @@
 PREFIX dc-terms: <http://purl.org/dc/terms/>
 PREFIX ontochangelog: <https://theworldavatar.io/kg/ontochangelog/>
 
-SELECT DISTINCT ?timestamp ?user ?message WHERE { 
+SELECT DISTINCT ?timestamp ?user ?activity WHERE { 
   ?iri a [target] ;
-         dc-terms:identifier "[target]" .
-  ?activity ontochangelog:affected ?iri ;
-            ontochangelog:timestamp ?timestamp ;
-            dc-terms:description ?message .
-  OPTIONAL{?activity ontochangelog:wasPerformedBy/rdfs:label ?user}
+    dc-terms:identifier "[target]" .
+  ?activity_instance a ?activity ; 
+    ontochangelog:affected ?iri ;
+    ontochangelog:timestamp ?timestamp .
+  OPTIONAL{?activity_instance ontochangelog:wasPerformedBy/rdfs:label ?user}
 }
 ORDER BY ASC( ?timestamp )
