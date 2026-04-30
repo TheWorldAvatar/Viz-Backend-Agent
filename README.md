@@ -540,6 +540,9 @@ where `{type}`is the requested identifier that must correspond to a target class
 
 Users can get the changelog for tasks at this route `<baseURL>/vis-backend-agent/changes/task/{id}`, where `{id}` is the specific instance's identifier.
 
+> [!IMPORTANT]  
+> This agent implements the [`Activity` concept from `OntoChangeLog`](https://github.com/TheWorldAvatar/ontology/tree/main/ontology/ontochangelog) to track modifications. The agent injects **local subclasses** of `Activity` during runtime to categorise specific operations. Developers should treat these local subclasses as extensions of the base class. A sample ontology file is given at `./resources/changelog.ttl`.
+
 ### 2.6 Service Lifecycle Route
 
 This `<baseURL>/vis-backend-agent/contracts/` route serves as an endpoint to manage the lifecycle of contracts and their associated services. Note that the following scheduled tasks are available and will occur at 6am everyday if `TASKS_ENABLED` is true:
