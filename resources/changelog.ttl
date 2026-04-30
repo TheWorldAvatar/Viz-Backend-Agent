@@ -1,0 +1,15 @@
+@prefix ocl:     <https://theworldavatar.io/kg/ontochangelog/> .
+
+ocl:CreationActivity rdfs:subClassOf ocl:Activity.
+ocl:ModificationActivity rdfs:subClassOf ocl:Activity.
+ocl:ContractResetActivity rdfs:subClassOf ocl:Activity.
+ocl:ApprovalActivity rdfs:subClassOf ocl:Activity.
+ocl:AssignmentActivity rdfs:subClassOf ocl:Activity.
+ocl:CancellationActivity rdfs:subClassOf ocl:Activity.
+ocl:CompletionActivity rdfs:subClassOf ocl:Activity.
+ocl:SavingActivity rdfs:subClassOf ocl:Activity.
+ocl:IssueReportedActivity rdfs:subClassOf ocl:Activity.
+ocl:RescindmentActivity rdfs:subClassOf ocl:Activity.
+ocl:RescheduleActivity rdfs:subClassOf ocl:Activity.
+ocl:AccrualActivity rdfs:subClassOf ocl:Activity.
+ocl:ExemptionActivity rdfs:subClassOf ocl:Activity.

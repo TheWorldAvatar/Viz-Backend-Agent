@@ -125,6 +125,7 @@ public class QueryResource {
 
     public static final String HISTORY_ACTIVITY_RESOURCE = "activity";
     public static final String HISTORY_AGENT_RESOURCE = "agent";
+    public static final String MESSAGE_RESOURCE = "message";
 
     // Private constructor to prevent instantiation
     private QueryResource() {

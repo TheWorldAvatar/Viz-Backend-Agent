@@ -38,7 +38,7 @@ public class ChangelogService {
     String currentDateTime = this.dateTimeService.getCurrentDateTime();
     Map<String, Object> replacements = new HashMap<>();
     replacements.put(QueryResource.IRI_KEY, iri);
-    replacements.put(LifecycleResource.REMARKS_KEY, action.getMessage());
+    replacements.put(QueryResource.HISTORY_ACTIVITY_RESOURCE, action.getClazz());
     replacements.put(LifecycleResource.TIMESTAMP_KEY, currentDateTime);
     return replacements;
   }

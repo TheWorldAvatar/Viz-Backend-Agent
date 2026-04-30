@@ -32,6 +32,7 @@ import com.cmclinnovations.agent.model.response.SelectOption;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
+import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
@@ -810,7 +811,13 @@ public class GetService {
     Queue<SparqlBinding> instances = this.kgService.query(query, SparqlEndpointType.BLAZEGRAPH);
     return this.responseEntityBuilder.success(null,
         instances.stream()
-            .map(SparqlBinding::get)
+            .map(instance -> {
+              String activityType = instance.getFieldValue(QueryResource.HISTORY_ACTIVITY_RESOURCE);
+              Map<String, Object> bindings = instance.get();
+              bindings.put(QueryResource.MESSAGE_RESOURCE, TrackActionType.getMessage(activityType));
+              bindings.remove(QueryResource.HISTORY_ACTIVITY_RESOURCE);
+              return bindings;
+            })
             .toList());
   }
 }

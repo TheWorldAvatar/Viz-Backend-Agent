@@ -7,10 +7,9 @@
     "@type": "iri",
     "prefix": "https://theworldavatar.io/kg/activity/"
   },
-  "@type": "https://theworldavatar.io/kg/ontochangelog/Activity",
-  "http://purl.org/dc/terms/description": {
-    "@replace": "remarks",
-    "@type": "literal"
+  "@type": {
+    "@replace": "activity",
+    "@type": "iri"
   },
   "https://theworldavatar.io/kg/ontochangelog/timestamp": {
     "@replace": "timestamp",
