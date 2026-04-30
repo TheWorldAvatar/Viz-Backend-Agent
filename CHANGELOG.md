@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.47.0
+
+- Refactor the changelog mechanisms to provide translation messages based on request locale
+
 ## 1.46.0
 
 - Added date filtering capabilities
