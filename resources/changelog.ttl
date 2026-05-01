@@ -12,4 +12,5 @@ ocl:IssueReportedActivity rdfs:subClassOf ocl:Activity.
 ocl:RescindmentActivity rdfs:subClassOf ocl:Activity.
 ocl:RescheduleActivity rdfs:subClassOf ocl:Activity.
 ocl:AccrualActivity rdfs:subClassOf ocl:Activity.
+ocl:PricingAdjustmentActivity rdfs:subClassOf ocl:Activity.
 ocl:ExemptionActivity rdfs:subClassOf ocl:Activity.

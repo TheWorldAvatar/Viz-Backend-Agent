@@ -19,6 +19,8 @@ public enum TrackActionType {
   RESCINDMENT("https://theworldavatar.io/kg/ontochangelog/RescindmentActivity", "label.activity.rescind"),
   RESCHEDULED("https://theworldavatar.io/kg/ontochangelog/RescheduleActivity", "label.activity.reschedule"),
   ACCRUAL("https://theworldavatar.io/kg/ontochangelog/AccrualActivity", "label.activity.accrue"),
+  ADJUSTMENT_PRICING("https://theworldavatar.io/kg/ontochangelog/PricingAdjustmentActivity",
+      "label.activity.adjust.price"),
   EXEMPT("https://theworldavatar.io/kg/ontochangelog/ExemptionActivity", "label.activity.exempt"),
   IGNORED("", "");
 

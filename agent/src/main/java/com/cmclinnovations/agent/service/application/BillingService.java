@@ -141,7 +141,8 @@ public class BillingService {
   public ResponseEntity<StandardApiResponse<?>> updatePricingPlanToContract(Map<String, Object> instance) {
     String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
     SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
-    instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
+    String contractIri = contract.getFieldValue(QueryResource.IRI_KEY);
+    instance.put(LifecycleResource.CONTRACT_KEY, contractIri);
     List<Map<String, String>> pricingModels = TypeCastUtils
         .castToListObject(instance.get(BillingResource.PRICING_KEY), String.class)
         .stream()
@@ -152,6 +153,8 @@ public class BillingService {
     ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(contractId,
         BillingResource.CONTRACT_MULTI_PRICING_RESOURCE, null, instance, TrackActionType.IGNORED);
     if (response.getStatusCode() == HttpStatus.OK) {
+      this.addService.logActivity(contractIri, TrackActionType.ADJUSTMENT_PRICING);
+
       Queue<SparqlBinding> accrualInstances = this.lifecycleQueryService.getInstances(
           FileService.TASK_ACCRUAL_QUERY_RESOURCE, contractId);
       while (!accrualInstances.isEmpty()) {
