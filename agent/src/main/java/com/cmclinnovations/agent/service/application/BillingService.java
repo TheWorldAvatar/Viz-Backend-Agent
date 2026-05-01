@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -140,7 +142,14 @@ public class BillingService {
     String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
     SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
     instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
-    return this.updateService.update(contractId, BillingResource.CONTRACT_PRICING_RESOURCE, null, instance,
+    List<Map<String, String>> pricingModels = TypeCastUtils
+        .castToListObject(instance.get(BillingResource.PRICING_KEY), String.class)
+        .stream()
+        .filter(p -> Objects.nonNull(p) && !p.isBlank())
+        .map(p -> Map.of(BillingResource.PRICING_MODEL_KEY, p))
+        .collect(Collectors.toList());
+    instance.put(BillingResource.PRICING_KEY, pricingModels);
+    return this.updateService.update(contractId, BillingResource.CONTRACT_MULTI_PRICING_RESOURCE, null, instance,
         TrackActionType.IGNORED);
   }
 

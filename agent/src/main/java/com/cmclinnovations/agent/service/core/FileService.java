@@ -63,6 +63,8 @@ public class FileService {
       + "jsonld/accounts/account_pricing.jsonld";
   public static final String CONTRACT_PRICING_JSON_LD_RESOURCE = CLASS_PATH_DIR
       + "jsonld/accounts/payment_obligation.jsonld";
+  public static final String CONTRACT_MULTI_PRICING_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/accounts/payment_obligation_array.jsonld";
   public static final String OCCURRENCE_INSTANT_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_instant.jsonld";
   public static final String OCCURRENCE_LINK_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/occurrence_link.jsonld";
   public static final String SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/schedule.jsonld";
@@ -184,7 +186,8 @@ public class FileService {
     LOGGER.debug("Retrieving the target class associated with the resource identifier: {} ...", resourceID);
     if (resourceID.equals(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE)) {
       return Rdf.iri(LifecycleResource.EVENT_OCCURRENCE_IRI);
-    } else if (resourceID.equals(BillingResource.CONTRACT_PRICING_RESOURCE)) {
+    } else if (resourceID.equals(BillingResource.CONTRACT_PRICING_RESOURCE)
+        || resourceID.equals(BillingResource.CONTRACT_MULTI_PRICING_RESOURCE)) {
       return BillingResource.PAYMENT_OBLIGATION_IRI;
     }
     String targetClass = this.getResourceTarget(resourceID,
