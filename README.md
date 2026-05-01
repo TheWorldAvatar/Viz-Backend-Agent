@@ -983,8 +983,14 @@ To assign a new pricing model of a specific contract, users must send a `POST` r
 }
 ```
 
-> [!NOTE]  
-> Users can update the pricing model for the contract if they send a `PUT` request with the same parameters as the `POST` request to `<baseURL>/vis-backend-agent/report/contract/pricing`. However, this is only possible at the draft stage and enforces that only one pricing model is added during the draft stage.
+To update multiple pricing models for a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/contract/pricing`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
+
+```json
+{
+  "id": "identifier of the contract",
+  "pricing": ["a list of pricing model instances", "second instance"]
+}
+```
 
 #### 2.7.2.1 Service charges
 

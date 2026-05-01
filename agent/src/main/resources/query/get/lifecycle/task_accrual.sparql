@@ -1,0 +1,21 @@
+PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>
+PREFIX cmns-doc: <https://www.omg.org/spec/Commons/Documents/>
+PREFIX cmns-dt: <https://www.omg.org/spec/Commons/DatesAndTimes/>
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX fibo-fnd-arr-lif: <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/>
+PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT DISTINCT ?iri WHERE{
+  ?contract dc-terms:identifier "[target]";
+    fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage ?stage.
+  ?stage cmns-col:comprises ?event;
+    cmns-col:comprises ?iri.
+  ?event fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent;
+    ^cmns-dt:succeeds* ?iri.
+  ?iri fibo-fnd-rel-rel:exemplifies ontoservice:ServiceAccrualEvent.
+  MINUS{
+    ?invoice <https://purl.org/p2p-o/invoice#hasInvoiceReference>/cmns-doc:isAbout ?iri
+  }
+}

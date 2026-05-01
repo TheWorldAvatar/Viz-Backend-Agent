@@ -10,6 +10,7 @@ public class BillingResource {
   public static final String CUSTOMER_ACCOUNT_PRICING_RESOURCE = "customer pricing plans";
   public static final String CUSTOMER_ACCOUNT_INVOICE_RESOURCE = "account invoice";
   public static final String CONTRACT_PRICING_RESOURCE = "customer pricing contract";
+  public static final String CONTRACT_MULTI_PRICING_RESOURCE = "customer multi pricing contract";
   public static final String INVOICE_RESOURCE = "invoice";
 
   public static final String AMOUNT_KEY = "amount";
@@ -17,6 +18,7 @@ public class BillingResource {
   public static final String DISCOUNT_KEY = "discount";
   public static final String FLAG_KEY = "flag";
   public static final String PRICING_KEY = "pricing";
+  public static final String PRICING_MODEL_KEY = "pricing model";
 
   public static final String ACCOUNT_FLAG_QUERY_STATEMENT = "?iri ^cmns-rlcmp:isPlayedBy/fibo-fnd-rel-rel:holds/<https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasBalance>/fibo-fnd-acc-cur:hasAmount ?balance."
       + "BIND(IF(?balance<0, true, false) AS ?flag)";

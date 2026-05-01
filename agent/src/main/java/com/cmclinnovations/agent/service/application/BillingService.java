@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -139,9 +141,29 @@ public class BillingService {
   public ResponseEntity<StandardApiResponse<?>> updatePricingPlanToContract(Map<String, Object> instance) {
     String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
     SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
-    instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
-    return this.updateService.update(contractId, BillingResource.CONTRACT_PRICING_RESOURCE, null, instance,
-        TrackActionType.IGNORED);
+    String contractIri = contract.getFieldValue(QueryResource.IRI_KEY);
+    instance.put(LifecycleResource.CONTRACT_KEY, contractIri);
+    List<Map<String, String>> pricingModels = TypeCastUtils
+        .castToListObject(instance.get(BillingResource.PRICING_KEY), String.class)
+        .stream()
+        .filter(p -> Objects.nonNull(p) && !p.isBlank())
+        .map(p -> Map.of(BillingResource.PRICING_MODEL_KEY, p))
+        .collect(Collectors.toList());
+    instance.put(BillingResource.PRICING_KEY, pricingModels);
+    ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(contractId,
+        BillingResource.CONTRACT_MULTI_PRICING_RESOURCE, null, instance, TrackActionType.IGNORED);
+    if (response.getStatusCode() == HttpStatus.OK) {
+      this.addService.logActivity(contractIri, TrackActionType.ADJUSTMENT_PRICING);
+
+      Queue<SparqlBinding> accrualInstances = this.lifecycleQueryService.getInstances(
+          FileService.TASK_ACCRUAL_QUERY_RESOURCE, contractId);
+      while (!accrualInstances.isEmpty()) {
+        SparqlBinding accrualInstance = accrualInstances.poll();
+        this.addService.execSparqlConstructRules(LifecycleEventType.SERVICE_ACCRUAL.getId(),
+            accrualInstance.getFieldValue(QueryResource.IRI_KEY));
+      }
+    }
+    return response;
   }
 
   /**
