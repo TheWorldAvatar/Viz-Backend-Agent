@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.48.0
+
+- Extend update pricing model to contract route to allow simultaneous changes for multiple pricing model
+- Retrigger accrual derivation for affected tasks that have yet to be invoiced
+
 ## 1.47.0
 
 - Refactor the changelog mechanisms to provide translation messages based on request locale
