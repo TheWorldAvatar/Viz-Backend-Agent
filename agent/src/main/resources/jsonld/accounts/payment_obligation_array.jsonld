@@ -3,24 +3,26 @@
     "xsd": "http://www.w3.org/2001/XMLSchema#"
   },
   "@id": {
-    "@replace": "contract",
-    "@type": "iri"
+    "@replace": "id",
+    "@type": "iri",
+    "prefix": "https://theworldavatar.io/kg/contract/payment/obligation/"
   },
-  "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/confers": {
+  "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation",
+  "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/mandates": {
     "@replace": "pricing",
     "@type": "array",
     "@contents": {
       "@id": {
-        "@replace": "id",
-        "@type": "iri",
-        "prefix": "https://theworldavatar.io/kg/contract/payment/obligation/"
-      },
-      "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/PaymentsAndSchedules/PaymentObligation",
-      "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/mandates": {
-        "@id": {
-          "@replace": "pricing model",
-          "@type": "iri"
-        }
+        "@replace": "pricing model",
+        "@type": "iri"
+      }
+    }
+  },
+  "@reverse": {
+    "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/confers": {
+      "@id": {
+        "@replace": "contract",
+        "@type": "iri"
       }
     }
   }
