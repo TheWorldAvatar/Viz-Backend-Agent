@@ -149,8 +149,18 @@ public class BillingService {
         .map(p -> Map.of(BillingResource.PRICING_MODEL_KEY, p))
         .collect(Collectors.toList());
     instance.put(BillingResource.PRICING_KEY, pricingModels);
-    return this.updateService.update(contractId, BillingResource.CONTRACT_MULTI_PRICING_RESOURCE, null, instance,
-        TrackActionType.IGNORED);
+    ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(contractId,
+        BillingResource.CONTRACT_MULTI_PRICING_RESOURCE, null, instance, TrackActionType.IGNORED);
+    if (response.getStatusCode() == HttpStatus.OK) {
+      Queue<SparqlBinding> accrualInstances = this.lifecycleQueryService.getInstances(
+          FileService.TASK_ACCRUAL_QUERY_RESOURCE, contractId);
+      while (!accrualInstances.isEmpty()) {
+        SparqlBinding accrualInstance = accrualInstances.poll();
+        this.addService.execSparqlConstructRules(LifecycleEventType.SERVICE_ACCRUAL.getId(),
+            accrualInstance.getFieldValue(QueryResource.IRI_KEY));
+      }
+    }
+    return response;
   }
 
   /**

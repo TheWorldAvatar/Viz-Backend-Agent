@@ -124,6 +124,20 @@ public class AddService {
   }
 
   /**
+   * Executes SPARQL construct rules.
+   * 
+   * @param resourceID The target resource identifier for the instance.
+   * @param iri        The target instance IRI.
+   */
+  public void execSparqlConstructRules(String resourceID, String iri) {
+    Model sparqlConstructRules = this.kgService.getShaclRules(resourceID, ShaclRuleType.SPARQL_RULE);
+    if (!sparqlConstructRules.isEmpty()) {
+      LOGGER.info("Detected SPARQL rules! Instantiating inferred instances to endpoint...");
+      this.kgService.execShaclRules(sparqlConstructRules, Rdf.iri(iri).getQueryString());
+    }
+  }
+
+  /**
    * Logs the activity for the target instance.
    * 
    * @param iri         The target instance IRI.
@@ -158,11 +172,15 @@ public class AddService {
 
     ResponseEntity<String> response = this.kgService.add(jsonString);
 
-    Model sparqlConstructRules = this.kgService.getShaclRules(resourceID, ShaclRuleType.SPARQL_RULE);
+    if (response.getStatusCode() != HttpStatus.OK) {
+      LOGGER.warn(response.getBody());
+      throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ADD_KEY));
+    }
+    this.execSparqlConstructRules(resourceID, instanceIri);
+
     Model otherRules = this.kgService.getShaclRules(resourceID, ShaclRuleType.TRIPLE_RULE);
-    if (response.getStatusCode() == HttpStatus.OK && (!sparqlConstructRules.isEmpty() || !otherRules.isEmpty())) {
-      LOGGER.info("Detected rules! Instantiating inferred instances to endpoint...");
-      this.kgService.execShaclRules(sparqlConstructRules, Rdf.iri(instanceIri).getQueryString());
+    if (!otherRules.isEmpty()) {
+      LOGGER.info("Detected triple rules! Instantiating inferred instances to endpoint...");
 
       Model dataModel = this.kgService.readStringModel(jsonString, Lang.JSONLD);
       Model inferredData = RuleUtil.executeRules(dataModel, otherRules, null, null);
@@ -178,17 +196,13 @@ public class AddService {
       }
     }
 
-    if (response.getStatusCode() == HttpStatus.OK) {
-      LOGGER.info(successLogMessage == null ? "Instantiation is successful!" : successLogMessage);
-      if (trackAction != TrackActionType.IGNORED) {
-        this.logActivity(instanceIri, trackAction);
-      }
-      return this.responseEntityBuilder.success(instanceIri,
-          LocalisationTranslator
-              .getMessage(messageResource == null ? LocalisationResource.SUCCESS_ADD_KEY : messageResource));
+    LOGGER.info(successLogMessage == null ? "Instantiation is successful!" : successLogMessage);
+    if (trackAction != TrackActionType.IGNORED) {
+      this.logActivity(instanceIri, trackAction);
     }
-    LOGGER.warn(response.getBody());
-    throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ADD_KEY));
+    return this.responseEntityBuilder.success(instanceIri,
+        LocalisationTranslator
+            .getMessage(messageResource == null ? LocalisationResource.SUCCESS_ADD_KEY : messageResource));
   }
 
   /**
