@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.48.1
+
+- Fixed the missing default filter options
+ 
 ## 1.48.0
 
 - Extend update pricing model to contract route to allow simultaneous changes for multiple pricing model

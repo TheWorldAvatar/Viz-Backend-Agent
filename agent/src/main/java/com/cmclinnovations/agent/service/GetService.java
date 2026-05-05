@@ -275,7 +275,7 @@ public class GetService {
    */
   public List<String> getAllFilterOptionsAsStrings(String resourceID, String field, String addStatements,
       String search, Map<String, Set<String>> filters) {
-    return this.queryFilterOptions(resourceID, field, addStatements, "", search, filters, false, false)
+    return this.queryFilterOptions(resourceID, field, addStatements, "", search, filters, true, false)
         .stream()
         .map(binding -> binding.getFieldValue(field))
         .toList();
