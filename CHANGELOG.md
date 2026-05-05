@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.48.2
+
+- Added lazy initialisation for authentication
+
 ## 1.48.1
 
 - Fixed the missing default filter options
