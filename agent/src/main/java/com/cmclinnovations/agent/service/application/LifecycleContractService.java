@@ -284,8 +284,7 @@ public class LifecycleContractService {
     String[] addStatements = this.genLifecycleStatements(eventType, new HashSet<>(), parsedFilters, originalField,
         false);
     List<String> options = this.getService.getAllFilterOptionsAsStrings(resourceID, originalField, addStatements[0],
-        search,
-        parsedFilters);
+        search, parsedFilters);
     if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
       return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();
     }
