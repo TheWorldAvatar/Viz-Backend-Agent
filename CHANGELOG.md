@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.49.0
+
+- Fixed default filter options for IDs and non-ID columns
+
 ## 1.48.2
 
 - Added lazy initialisation for authentication
