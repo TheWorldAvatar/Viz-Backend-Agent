@@ -56,9 +56,9 @@ public class LifecycleController {
   private static final Logger LOGGER = LogManager.getLogger(LifecycleController.class);
 
   public LifecycleController(ConcurrencyService concurrencyService, AddService addService, GetService getService,
-      DeleteService deleteService,
-      UpdateService updateService, DateTimeService dateTimeService, LifecycleContractService lifecycleContractService,
-      LifecycleTaskService lifecycleTaskService, ResponseEntityBuilder responseEntityBuilder) {
+      DeleteService deleteService, UpdateService updateService, DateTimeService dateTimeService,
+      LifecycleContractService lifecycleContractService, LifecycleTaskService lifecycleTaskService,
+      ResponseEntityBuilder responseEntityBuilder) {
     this.concurrencyService = concurrencyService;
     this.addService = addService;
     this.getService = getService;
@@ -77,9 +77,8 @@ public class LifecycleController {
   @PostMapping("/draft")
   public ResponseEntity<StandardApiResponse<?>> genContractLifecycle(@RequestBody Map<String, Object> params) {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
-    return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      return this.execGenContractLifecycle(params);
-    });
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY,
+        () -> this.execGenContractLifecycle(params));
   }
 
   private ResponseEntity<StandardApiResponse<?>> execGenContractLifecycle(Map<String, Object> params) {
@@ -137,7 +136,7 @@ public class LifecycleController {
     this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
     List<String> contractIds = TypeCastUtils.castToListObject(params.get(LifecycleResource.CONTRACT_KEY), String.class);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      ContractOperation operation = (contractId) -> {
+      ContractOperation operation = contractId -> {
         // Do not allow modifications if it has been approved
         if (this.lifecycleContractService.guardAgainstApproval(contractId)) {
           LOGGER.warn("Contract {} has already been approved and will not be reset!", contractId);
@@ -212,7 +211,7 @@ public class LifecycleController {
       String entityType = TypeCastUtils.castToObject(params.get("type"), String.class);
       Integer reqCopies = TypeCastUtils.castToObject(params.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY),
           Integer.class);
-      ContractOperation operation = (contractId) -> {
+      ContractOperation operation = contractId -> {
         Map<String, Object> contractDetails = this.lifecycleContractService.getContractDetails(contractId, entityType);
         Map<String, Object> schedule = this.lifecycleContractService.getContractSchedule(contractId);
         // Include schedule details into contract as some custom contract may require
@@ -298,7 +297,7 @@ public class LifecycleController {
     LOGGER.info("Received request to commence the services for a contract...");
     List<String> contractIds = TypeCastUtils.castToListObject(params.get(LifecycleResource.CONTRACT_KEY), String.class);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      ContractOperation operation = (contractId) -> {
+      ContractOperation operation = contractId -> {
         params.put(LifecycleResource.CONTRACT_KEY, contractId);
         return this.commenceContract(contractId, params);
       };
@@ -321,7 +320,8 @@ public class LifecycleController {
     }
     boolean hasError = this.lifecycleTaskService.genOrderReceivedOccurrences(contractId, null);
     if (hasError) {
-      LOGGER.warn(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY));
+      String partialErrorMsg = LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY);
+      LOGGER.warn(partialErrorMsg);
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY),
           HttpStatus.INTERNAL_SERVER_ERROR);
@@ -391,10 +391,9 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> bulkUpdateTaskEventDetails(
       @RequestBody Map<String, List<Map<String, Object>>> params) {
     try {
-      params.get("items").forEach(item -> {
-        this.updateTaskEventDetails(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), item);
-      });
-    } catch (IllegalArgumentException e) {
+      params.get("items")
+          .forEach(item -> this.updateTaskEventDetails(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), item));
+    } catch (IllegalArgumentException _) {
       LOGGER.error("Error encountered while bulk assigning dispatch details! Read error logs for more details");
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_DISPATCH_PARTIAL_KEY),
@@ -412,9 +411,8 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> rescheduleTask(@RequestBody Map<String, Object> params) {
     this.checkMissingParams(params, QueryResource.ID_KEY);
     this.checkMissingParams(params, LifecycleResource.RESCHEDULE_DATE_KEY);
-    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.rescheduleTask(params);
-    });
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.lifecycleTaskService.rescheduleTask(params));
   }
 
   /**
@@ -440,9 +438,8 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> continueTask(@RequestBody Map<String, Object> params) {
     String taskId = params.get(QueryResource.ID_KEY).toString();
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
-    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.continueTaskOnNextWorkingDay(taskId, contractId);
-    });
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.lifecycleTaskService.continueTaskOnNextWorkingDay(taskId, contractId));
   }
 
   /**
@@ -527,9 +524,8 @@ public class LifecycleController {
   @GetMapping("/status/{id}")
   public ResponseEntity<StandardApiResponse<?>> getContractStatus(@PathVariable String id) {
     LOGGER.info("Received request to retrieve the status for the contract: {}...", id);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      return this.lifecycleContractService.getContractStatus(id);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY,
+        () -> this.lifecycleContractService.getContractStatus(id));
   }
 
   /**
@@ -539,9 +535,8 @@ public class LifecycleController {
   @GetMapping("/schedule/{id}")
   public ResponseEntity<Map<String, Object>> getSchedule(@PathVariable String id) {
     LOGGER.info("Received request to retrieve the schedule for the contract: {}...", id);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.SCHEDULE_RESOURCE, () -> {
-      return this.lifecycleContractService.getSchedule(id);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.SCHEDULE_RESOURCE,
+        () -> this.lifecycleContractService.getSchedule(id));
   }
 
   /**
@@ -622,10 +617,9 @@ public class LifecycleController {
       default -> throw new IllegalArgumentException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     };
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
-      return this.lifecycleContractService.getContracts(type, label, eventType,
-          new PaginationState(page, limit, sortBy, true, allRequestParams), allRequestParams);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY,
+        () -> this.lifecycleContractService.getContracts(type, label, eventType,
+            new PaginationState(page, limit, sortBy, true, allRequestParams), allRequestParams));
   }
 
   /**
@@ -640,11 +634,11 @@ public class LifecycleController {
     Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrences(null, null, type, LifecycleEventType.SERVICE_ORDER_RECEIVED,
-          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams),
-          allRequestParams);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.lifecycleTaskService.getOccurrences(null, null, type, LifecycleEventType.SERVICE_ORDER_RECEIVED,
+            new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false,
+                allRequestParams),
+            allRequestParams));
   }
 
   /**
@@ -653,7 +647,7 @@ public class LifecycleController {
   @GetMapping("/service/outstanding/filter")
   public ResponseEntity<StandardApiResponse<?>> getAllOutstandingTaskFilters(
       @RequestParam Map<String, String> allRequestParams) {
-    LOGGER.info("Received request to retrieve filter options for contracts in progress...");
+    LOGGER.info("Received request to retrieve filter options for outstanding tasks...");
     String[] filterOptionParams = this.getFilterOptionParams(allRequestParams);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> options = this.lifecycleTaskService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
@@ -676,12 +670,12 @@ public class LifecycleController {
     Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type,
-          LifecycleEventType.SERVICE_ORDER_RECEIVED,
-          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams),
-          allRequestParams);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type,
+            LifecycleEventType.SERVICE_ORDER_RECEIVED,
+            new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false,
+                allRequestParams),
+            allRequestParams));
   }
 
   /**
@@ -698,12 +692,12 @@ public class LifecycleController {
     Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type,
-          LifecycleEventType.ACTIVE_SERVICE,
-          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams),
-          allRequestParams);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.lifecycleTaskService.getOccurrences(startTimestamp, endTimestamp, type,
+            LifecycleEventType.ACTIVE_SERVICE,
+            new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false,
+                allRequestParams),
+            allRequestParams));
   }
 
   /**
@@ -716,7 +710,7 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> getScheduledOrClosedTaskFilters(
       @PathVariable(name = "task") String taskType,
       @RequestParam Map<String, String> allRequestParams) {
-    LOGGER.info("Received request to retrieve filter options for contracts in progress...");
+    LOGGER.info("Received request to retrieve filter options for tasks in progress...");
     String[] filterOptionParams = this.getFilterOptionParams(allRequestParams);
     String startTimestamp = allRequestParams.remove(StringResource.START_TIMESTAMP_REQUEST_PARAM);
     String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
@@ -742,10 +736,10 @@ public class LifecycleController {
     Integer limit = Integer.valueOf(allRequestParams.get(StringResource.LIMIT_REQUEST_PARAM));
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.lifecycleTaskService.getOccurrences(contract, type,
-          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams));
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.lifecycleTaskService.getOccurrences(contract, type,
+            new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false,
+                allRequestParams)));
   }
 
   /**
@@ -803,7 +797,7 @@ public class LifecycleController {
         try {
           occurrenceId = this.lifecycleTaskService.getPreviousOccurrence(id, QueryResource.ID_KEY,
               orderTypeParams.eventType);
-        } catch (NullPointerException e) {
+        } catch (NullPointerException _) {
           // Fail silently to give blank form template given the missing previous
           occurrenceId = "form";
         }
@@ -850,7 +844,7 @@ public class LifecycleController {
     for (String contractId : contractIds) {
       try {
         singleContractOperation.apply(contractId);
-      } catch (IllegalArgumentException e) {
+      } catch (IllegalArgumentException _) {
         LOGGER.error(partialErrorWarning, contractId);
         hasError = true;
       }

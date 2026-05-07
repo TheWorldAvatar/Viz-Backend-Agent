@@ -218,7 +218,7 @@ public class JsonLdService {
   public JsonNode readObjectNode(String input) {
     try {
       return this.objectMapper.readTree(input);
-    } catch (JacksonException e) {
+    } catch (JacksonException _) {
       throw new IllegalStateException("Unable to read input as a JSON object.");
     }
   }

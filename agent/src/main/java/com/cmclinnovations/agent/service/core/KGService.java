@@ -220,7 +220,7 @@ public class KGService {
         String target;
         try {
           target = this.fileService.getTargetIri(resourceId).getQueryString();
-        } catch (InvalidRouteException e) {
+        } catch (InvalidRouteException _) {
           // specific handling for lifecycle event types
           LifecycleEventType eventType = LifecycleEventType.fromId(resourceId);
           if (eventType != null) {

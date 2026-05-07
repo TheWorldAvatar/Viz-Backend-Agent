@@ -113,7 +113,7 @@ public class StringResource {
       }
       String[] parts = iri.split("/");
       return parts[parts.length - 1];
-    } catch (IllegalArgumentException e) {
+    } catch (IllegalArgumentException _) {
       return iri;
     }
   }

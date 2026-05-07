@@ -119,11 +119,10 @@ public class VisBackendAgent {
     Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
-    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      // This route does not require further restriction on parent instances
-      return this.getService.getInstances(type, true,
-          new PaginationState(page, limit, sortBy, allRequestParams), allRequestParams);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(type, () ->
+    // This route does not require further restriction on parent instances
+    this.getService.getInstances(type, true,
+        new PaginationState(page, limit, sortBy, allRequestParams), allRequestParams));
   }
 
   /**
@@ -174,9 +173,8 @@ public class VisBackendAgent {
   @GetMapping("/{type}/{id}")
   public ResponseEntity<StandardApiResponse<?>> getInstance(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to get a specific instance of {}...", type);
-    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      return this.getService.getInstance(id, type, false);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(type,
+        () -> this.getService.getInstance(id, type, false));
   }
 
   /**
@@ -186,9 +184,7 @@ public class VisBackendAgent {
   @GetMapping("/changes/{type}/{id}")
   public ResponseEntity<StandardApiResponse<?>> getChangelog(@PathVariable String type, @PathVariable String id) {
     LOGGER.info("Received request to get the changelog for the instance of type {}...", type);
-    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      return this.getService.getChanges(type, id);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(type, () -> this.getService.getChanges(type, id));
   }
 
   /**
@@ -199,9 +195,7 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> getInstanceWithLabels(@PathVariable String type,
       @PathVariable String id) {
     LOGGER.info("Received request to get a specific instance of {} with human readable data...", type);
-    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      return this.getService.getInstance(id, type, true);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(type, () -> this.getService.getInstance(id, type, true));
   }
 
   /**
@@ -211,9 +205,8 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> getMatchingInstances(@PathVariable String type,
       @RequestBody Map<String, String> criterias) {
     LOGGER.info("Received request to get matching instances of {}...", type);
-    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      return this.getService.getMatchingInstances(type, criterias);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(type,
+        () -> this.getService.getMatchingInstances(type, criterias));
   }
 
   /**
@@ -222,10 +215,9 @@ public class VisBackendAgent {
   @GetMapping("/form/{type}")
   public ResponseEntity<StandardApiResponse<?>> getFormTemplate(@PathVariable(name = "type") String type) {
     LOGGER.info("Received request to get the form template for {}...", type);
-    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      // Access to this empty form is prefiltered on the UI and need not be enforced
-      return this.getService.getForm(type, false);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(type, () ->
+    // Access to this empty form is prefiltered on the UI and need not be enforced
+    this.getService.getForm(type, false));
   }
 
   /**
@@ -236,9 +228,8 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> retrieveFormTemplate(@PathVariable String type,
       @PathVariable String id) {
     LOGGER.info("Received request to get specific form template for {} ...", type);
-    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      return this.getService.getForm(id, type, false, null);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(type,
+        () -> this.getService.getForm(id, type, false, null));
   }
 
   /**
@@ -248,9 +239,7 @@ public class VisBackendAgent {
   @GetMapping("/type")
   public ResponseEntity<StandardApiResponse<?>> getConceptMetadata(@RequestParam(name = "uri") String uri) {
     LOGGER.info("Received request to get the metadata for the concept: {}...", uri);
-    return this.concurrencyService.executeInOptimisticReadLock(uri, () -> {
-      return this.getService.getConceptMetadata(uri);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(uri, () -> this.getService.getConceptMetadata(uri));
   }
 
   /**
@@ -260,9 +249,8 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> addInstance(@PathVariable String type,
       @RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to add one {}...", type);
-    return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.addService.instantiate(type, instance, TrackActionType.CREATION);
-    });
+    return this.concurrencyService.executeInWriteLock(type,
+        () -> this.addService.instantiate(type, instance, TrackActionType.CREATION));
   }
 
   /**
@@ -277,9 +265,7 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> removeEntity(@PathVariable String type, @PathVariable String id,
       @RequestParam(name = "branch_delete", required = false) String branchDelete) {
     LOGGER.info("Received request to delete {}...", type);
-    return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.deleteService.delete(type, id, branchDelete);
-    });
+    return this.concurrencyService.executeInWriteLock(type, () -> this.deleteService.delete(type, id, branchDelete));
   }
 
   /**
@@ -290,9 +276,8 @@ public class VisBackendAgent {
       @RequestBody Map<String, Object> updatedEntity) {
     LOGGER.info("Received request to update {}...", type);
 
-    return this.concurrencyService.executeInWriteLock(type, () -> {
-      return this.updateService.update(id, type, LocalisationResource.SUCCESS_UPDATE_KEY, updatedEntity,
-          TrackActionType.MODIFICATION);
-    });
+    return this.concurrencyService.executeInWriteLock(type,
+        () -> this.updateService.update(id, type, LocalisationResource.SUCCESS_UPDATE_KEY, updatedEntity,
+            TrackActionType.MODIFICATION));
   }
 }
