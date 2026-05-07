@@ -3,7 +3,6 @@ package com.cmclinnovations.agent.template.query;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -26,10 +25,11 @@ import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
 
 public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
   private Map<String, String> anonymousVariableMappings;
@@ -88,15 +88,15 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
   private Variable parseVariable(ObjectNode replacementNode) {
     // If it is an object, it is definitely a replacement object, and retrieving the
     // @replace key is sufficient;
-    String replacementId = replacementNode.path(ShaclResource.REPLACE_KEY).asText();
-    String replacementType = replacementNode.path(ShaclResource.TYPE_KEY).asText();
+    String replacementId = replacementNode.path(ShaclResource.REPLACE_KEY).asString();
+    String replacementType = replacementNode.path(ShaclResource.TYPE_KEY).asString();
     // Replacement IRI fields with prefixes should be generated as query variables
     // Code will attempt to retrieve existing query variable for the same prefix,
     // but if it is new, the variable will be incremented according to the mapping
     // size
     if (replacementType.equals(QueryResource.IRI_KEY) && replacementNode.has("prefix")) {
       // Generates a mapping key based on the replacement name and its prefix
-      String mappingKey = replacementId + replacementNode.path("prefix").asText();
+      String mappingKey = replacementId + replacementNode.path("prefix").asString();
       String idVar = this.anonymousVariableMappings.computeIfAbsent(mappingKey,
           k -> replacementId + this.anonymousVariableMappings.size());
       return QueryResource.genVariable(idVar);
@@ -145,18 +145,16 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       idNode = genBlankNode();
     }
     RdfSubject idTripleSubject = idNode.isObject() ? this.parseVariable((ObjectNode) idNode)
-        : Rdf.iri(((TextNode) idNode).textValue());
+        : Rdf.iri(((StringNode) idNode).stringValue());
 
-    Iterator<Map.Entry<String, JsonNode>> iterator = currentNode.fields();
-    while (iterator.hasNext()) {
-      Map.Entry<String, JsonNode> field = iterator.next();
+    for (Map.Entry<String, JsonNode> field : currentNode.properties()) {
       JsonNode objectNode = field.getValue();
       String predicate = field.getKey();
       switch (predicate) {
         case ShaclResource.TYPE_KEY:
           // Create the following query line for all @type fields
           RdfObject typeTripleObject = objectNode.isObject() ? this.parseVariable((ObjectNode) objectNode)
-              : Rdf.iri(((TextNode) objectNode).textValue());
+              : Rdf.iri(((StringNode) objectNode).stringValue());
           TriplePattern triplePattern = idTripleSubject.isA(typeTripleObject);
           deleteTemplate.delete(triplePattern);
 
@@ -175,7 +173,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
           ArrayNode branches = this.jsonLdService.getArrayNode(objectNode);
           ObjectNode matchingBranch = this.jsonLdService.genObjectNode();
           for (JsonNode branchNode : branches) {
-            if (branchNode.get(ShaclResource.BRANCH_KEY).asText().equals(branch)) {
+            if (branchNode.get(ShaclResource.BRANCH_KEY).asString().equals(branch)) {
               ObjectNode branchObj = (ObjectNode) branchNode;
               // Remove branch key as it should not be reused
               branchObj.remove(ShaclResource.BRANCH_KEY);
@@ -197,9 +195,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
                 "Invalid reverse predicate JSON-LD schema! Fields must be stored in an object!");
           } else if (objectNode.isObject()) {
             // Reverse fields must be an object that may contain one or multiple fields
-            Iterator<String> fieldIterator = objectNode.fieldNames();
-            while (fieldIterator.hasNext()) {
-              String reversePredicate = fieldIterator.next();
+            for (String reversePredicate : objectNode.propertyNames()) {
               this.parseNestedNode(currentNode.path(ShaclResource.ID_KEY), objectNode.path(reversePredicate),
                   Rdf.iri(reversePredicate), deleteTemplate, whereBranchPatterns, branch, true, optVarNames);
             }
@@ -246,7 +242,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       }
       RdfObject sparqlObject = targetTripleObjectNode.isObject()
           ? this.parseVariable((ObjectNode) targetTripleObjectNode)
-          : Rdf.iri(((TextNode) targetTripleObjectNode).textValue());
+          : Rdf.iri(((StringNode) targetTripleObjectNode).stringValue());
 
       // Add the triple statement directly to DELETE clause
       TriplePattern tripleStatement = subject.has(predicate, sparqlObject);
@@ -254,21 +250,21 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       GraphPattern wherePattern = tripleStatement;
 
       // But add optional clause when required for where clause
-      if (optVarNames.contains(objectNode.path(ShaclResource.REPLACE_KEY).asText()) || // literal
-          optVarNames.contains(objectNode.path(ShaclResource.ID_KEY).path(ShaclResource.REPLACE_KEY).asText()) // IRI
+      if (optVarNames.contains(objectNode.path(ShaclResource.REPLACE_KEY).asString()) || // literal
+          optVarNames.contains(objectNode.path(ShaclResource.ID_KEY).path(ShaclResource.REPLACE_KEY).asString()) // IRI
       ) {
         wherePattern = GraphPatterns.optional(tripleStatement);
       }
       // Further processing for array replacement types
       if (objectNode.has(ShaclResource.REPLACE_KEY)
-          && objectNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)
+          && objectNode.path(ShaclResource.TYPE_KEY).asString().equals(ShaclResource.ARRAY_KEY)
           && objectNode.has(ShaclResource.CONTENTS_KEY)) {
         // This should generate a DELETE query with a variable whenever IDs are detected
         ObjectNode arrayContents = this.getArrayReplacementContents(
             this.jsonLdService.getObjectNode(objectNode.path(ShaclResource.CONTENTS_KEY)),
-            objectNode.path(ShaclResource.REPLACE_KEY).asText());
+            objectNode.path(ShaclResource.REPLACE_KEY).asString());
         Queue<GraphPattern> arrayGraphPatterns = this.arrayPatternsMap.computeIfAbsent(
-            objectNode.path(ShaclResource.REPLACE_KEY).asText(),
+            objectNode.path(ShaclResource.REPLACE_KEY).asString(),
             v -> new ArrayDeque<>());
         // Add where pattern grouped within array statements
         arrayGraphPatterns.offer(wherePattern);
@@ -279,9 +275,9 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
 
       // No further processing required for objects intended for replacement, @value,
       if (!objectNode.has(ShaclResource.REPLACE_KEY) && !objectNode.has(ShaclResource.VAL_KEY) &&
-      // or a one line instance link to a TextNode eg: "@id" : "instanceIri"
+      // or a one line instance link to a StringNode eg: "@id" : "instanceIri"
           !(objectNode.has(ShaclResource.ID_KEY) && objectNode.size() == 1
-              && objectNode.path(ShaclResource.ID_KEY).isTextual())) {
+              && objectNode.path(ShaclResource.ID_KEY).isString())) {
         this.recursiveParseNode(deleteTemplate, whereBranchPatterns, (ObjectNode) objectNode, branch, optVarNames);
       }
       // For json arrays ie different objects with the same predicate, iterate through
@@ -299,7 +295,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
       } else if (objectNode.isDouble()) {
         triplePattern = subject.has(predicate, Rdf.literalOf(objectNode.asDouble()));
       } else {
-        triplePattern = subject.has(predicate, Rdf.literalOf(((TextNode) objectNode).textValue()));
+        triplePattern = subject.has(predicate, Rdf.literalOf(((StringNode) objectNode).stringValue()));
       }
       deleteTemplate.delete(triplePattern);
       this.updateWherePatterns(triplePattern, deleteTemplate, whereBranchPatterns);
@@ -328,7 +324,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     if (isReverse) {
       // For an reverse array
       if (objectNode.isObject() && objectNode.has(ShaclResource.REPLACE_KEY)
-          && objectNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)
+          && objectNode.path(ShaclResource.TYPE_KEY).asString().equals(ShaclResource.ARRAY_KEY)
           && objectNode.has(ShaclResource.CONTENTS_KEY)) {
         // First add the subject to array group statement
         RdfSubject reversedObjVar = this.parseVariable((ObjectNode) objectNode);
@@ -336,9 +332,9 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
         // to reversal
         ObjectNode arrayContents = this.getArrayReplacementContents(
             this.jsonLdService.getObjectNode(objectNode.path(ShaclResource.CONTENTS_KEY)),
-            objectNode.path(ShaclResource.REPLACE_KEY).asText());
+            objectNode.path(ShaclResource.REPLACE_KEY).asString());
         Queue<GraphPattern> arrayGraphPatterns = this.arrayPatternsMap.computeIfAbsent(
-            objectNode.path(ShaclResource.REPLACE_KEY).asText(),
+            objectNode.path(ShaclResource.REPLACE_KEY).asString(),
             v -> new ArrayDeque<>());
         // Explicitly only using the current subject as the reversed object, and the
         // current array ID as the reversed subject

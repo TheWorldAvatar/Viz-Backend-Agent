@@ -3,7 +3,6 @@ package com.cmclinnovations.agent.model;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -14,9 +13,11 @@ import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Holds the binding for each row in the SPARQL response. Each row has the
@@ -40,6 +41,7 @@ public class SparqlBinding {
    * should not be executed within the code base. JsonIgnore is also used in
    * several GET methods to support Jackson deserialisation without setters.
    */
+  @JsonCreator
   public SparqlBinding() {
     this.bindings = new HashMap<>();
     this.arrayBindingFields = new HashMap<>();
@@ -50,11 +52,9 @@ public class SparqlBinding {
    */
   public SparqlBinding(ObjectNode sparqlRow, List<String> variables) {
     this();
-    Iterator<Map.Entry<String, JsonNode>> iterator = sparqlRow.fields();
     Set<String> missingVariables = new HashSet<>();
     missingVariables.addAll(variables);
-    while (iterator.hasNext()) {
-      Map.Entry<String, JsonNode> sparqlCol = iterator.next();
+    for (Map.Entry<String, JsonNode> sparqlCol : sparqlRow.properties()) {
       JsonNode sparqlField = sparqlCol.getValue();
       String type = StringResource.getNodeString(sparqlField, "type");
       // Defaults to null if it is a URI, else it should be string
@@ -67,9 +67,7 @@ public class SparqlBinding {
       // Removes the variable from the missing list if available
       missingVariables.remove(sparqlCol.getKey());
     }
-    missingVariables.forEach(var -> {
-      this.bindings.put(var, null);
-    });
+    missingVariables.forEach(variable -> this.bindings.put(variable, null));
   }
 
   /**
@@ -113,7 +111,7 @@ public class SparqlBinding {
       Map<String, SparqlResponseField> currentArrayFields = new HashMap<>();
 
       if (bestMatchGroup != null) {
-        arrayVars.get(bestMatchGroup).forEach((field) -> {
+        arrayVars.get(bestMatchGroup).forEach(field -> {
           SparqlResponseField fieldResponse = this.getFieldResponse(field);
           if (fieldResponse != null) {
             currentArrayFields.put(field, fieldResponse);
@@ -136,7 +134,7 @@ public class SparqlBinding {
   public void addFieldArray(SparqlBinding secBinding, Map<String, Set<String>> arrayVars) {
     String bestMatchGroup = ShaclResource.findBestMatchingGroup(secBinding.getFields(), arrayVars);
     Map<String, SparqlResponseField> targetMergedArrayFields = new HashMap<>();
-    arrayVars.get(bestMatchGroup).forEach((field) -> {
+    arrayVars.get(bestMatchGroup).forEach(field -> {
       SparqlResponseField fieldResponse = secBinding.getFieldResponse(field);
       if (fieldResponse != null) {
         targetMergedArrayFields.put(field, fieldResponse);

@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -38,9 +37,10 @@ import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 @Service
 public class AddService {
@@ -167,7 +167,7 @@ public class AddService {
   private ResponseEntity<StandardApiResponse<?>> instantiateJsonLd(JsonNode jsonLdSchema, String resourceID,
       String successLogMessage, String messageResource, TrackActionType trackAction) {
     LOGGER.info("Adding instance to endpoint...");
-    String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asText();
+    String instanceIri = jsonLdSchema.path(ShaclResource.ID_KEY).asString();
     String jsonString = jsonLdSchema.toString();
 
     ResponseEntity<String> response = this.kgService.add(jsonString);
@@ -238,26 +238,26 @@ public class AddService {
     if (currentNode.has(ShaclResource.REPLACE_KEY)) {
       if (parentNode != null) {
         // Add a different interaction for schedule types
-        if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(LifecycleResource.SCHEDULE_RESOURCE)) {
+        if (currentNode.path(ShaclResource.TYPE_KEY).asString().equals(LifecycleResource.SCHEDULE_RESOURCE)) {
           this.replaceDayOfWeekSchedule(parentNode, parentField, replacements);
           // When parsing an array for an object node
-        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)) {
+        } else if (currentNode.path(ShaclResource.TYPE_KEY).asString().equals(ShaclResource.ARRAY_KEY)) {
           ArrayNode resultArray = this.genFieldArray(currentNode, replacements);
           parentNode.set(parentField, resultArray);
           // Parse literal with data types differently
-        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(QueryResource.LITERAL_TYPE)
+        } else if (currentNode.path(ShaclResource.TYPE_KEY).asString().equals(QueryResource.LITERAL_TYPE)
             && currentNode.has(ShaclResource.DATA_TYPE_PROPERTY)) {
           String replacement = this.jsonLdService.getReplacementValue(currentNode, replacements);
           if (replacement.isEmpty()) { // Remove empty replacements
             parentNode.remove(parentField);
           } else {
             ObjectNode literalNode = this.jsonLdService.genLiteral(replacement,
-                currentNode.path(ShaclResource.DATA_TYPE_PROPERTY).asText());
+                currentNode.path(ShaclResource.DATA_TYPE_PROPERTY).asString());
             parentNode.set(parentField, literalNode);
           }
           // IRIs that are not assigned to @id or @type should belong within a nested @id
           // object
-        } else if (currentNode.path(ShaclResource.TYPE_KEY).asText().equals(QueryResource.IRI_KEY)
+        } else if (currentNode.path(ShaclResource.TYPE_KEY).asString().equals(QueryResource.IRI_KEY)
             && !(parentField.equals(ShaclResource.ID_KEY) || parentField.equals(ShaclResource.TYPE_KEY))) {
           String replacement = this.jsonLdService.getReplacementValue(currentNode, replacements);
           if (replacement.isEmpty()) { // Remove empty replacements
@@ -283,7 +283,7 @@ public class AddService {
     } else {
       // Else recursively go deeper into the JSON object to find other replacements
       Queue<String> fieldNames = new ArrayDeque<>();
-      currentNode.fieldNames().forEachRemaining(fieldNames::offer);
+      currentNode.propertyNames().forEach(fieldNames::offer);
       while (!fieldNames.isEmpty()) {
         String fieldName = fieldNames.poll();
         JsonNode childNode = currentNode.get(fieldName);
@@ -298,7 +298,7 @@ public class AddService {
           // Extract the matched option with the specific branch name
           ObjectNode matchedOption = this.jsonLdService.genObjectNode();
           for (JsonNode branchNode : branches) {
-            if (branchNode.get(ShaclResource.BRANCH_KEY).asText().equals(branchAdd)) {
+            if (branchNode.get(ShaclResource.BRANCH_KEY).asString().equals(branchAdd)) {
               ObjectNode branchObj = (ObjectNode) branchNode;
               // Remove branch key as it should not be reused
               branchObj.remove(ShaclResource.BRANCH_KEY);
@@ -307,9 +307,7 @@ public class AddService {
           }
 
           // Iterate and append each property in the target node to the current node
-          Iterator<String> matchedOptionFieldNames = matchedOption.fieldNames();
-          while (matchedOptionFieldNames.hasNext()) {
-            String currentOptionField = matchedOptionFieldNames.next();
+          for (String currentOptionField : matchedOption.propertyNames()) {
             this.recursiveReplacePlaceholders(matchedOption, currentNode, currentOptionField,
                 replacements);
             JsonNode matchedField = matchedOption.path(currentOptionField);
@@ -333,7 +331,7 @@ public class AddService {
             for (int i = 0; i < childrenNodes.size(); i++) {
               ObjectNode currentChildNode = this.jsonLdService.getObjectNode(childrenNodes.get(i));
               // If child node is an array field
-              if (currentChildNode.path(ShaclResource.TYPE_KEY).asText().equals(ShaclResource.ARRAY_KEY)) {
+              if (currentChildNode.path(ShaclResource.TYPE_KEY).asString().equals(ShaclResource.ARRAY_KEY)) {
                 ArrayNode resultArray = this.genFieldArray(currentChildNode, replacements);
                 // Store the results and removable index
                 for (JsonNode element : resultArray) {
@@ -370,13 +368,12 @@ public class AddService {
     ArrayNode resultArray = this.jsonLdService.genArrayNode();
     ObjectNode arrayTemplate = this.jsonLdService.getObjectNode(replacementNode.path(ShaclResource.CONTENTS_KEY));
 
-    String arrayFieldName = replacementNode.path(ShaclResource.REPLACE_KEY).asText();
+    String arrayFieldName = replacementNode.path(ShaclResource.REPLACE_KEY).asString();
     List<Map<String, Object>> arrayFields = (List<Map<String, Object>>) replacements.get(arrayFieldName);
     arrayFields.forEach(arrayField -> {
       Map<String, Object> currentFields = new HashMap<>(arrayField);
-      arrayField.forEach((key, value) -> {
-        currentFields.put(key.replaceFirst(arrayFieldName + ShaclResource.WHITE_SPACE, ""), value);
-      });
+      arrayField.forEach(
+          (key, value) -> currentFields.put(key.replaceFirst(arrayFieldName + ShaclResource.WHITE_SPACE, ""), value));
       // Copy the template to prevent any modification
       ObjectNode currentArrayItem = arrayTemplate.deepCopy();
       currentFields.put(QueryResource.ID_KEY, UUID.randomUUID()); // generate a new ID key for each item in the array

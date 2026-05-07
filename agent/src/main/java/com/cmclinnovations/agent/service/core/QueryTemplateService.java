@@ -26,9 +26,10 @@ import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.SearchQueryTemplateFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 @Service
 public class QueryTemplateService {
@@ -282,7 +283,7 @@ public class QueryTemplateService {
    * 
    * @param resourceID The target resource identifier for the instance.
    */
-  private JsonNode getJsonLDResource(String resourceID) {
+  private ObjectNode getJsonLDResource(String resourceID) {
     // Retrieve the default lifecycle resources if available
     String filePath = LifecycleResource.getLifecycleResourceFilePath(resourceID);
     try {
@@ -304,6 +305,6 @@ public class QueryTemplateService {
     if (!contents.isObject()) {
       throw new IllegalArgumentException("Invalid JSON-LD format! Please ensure the file starts with an JSON object.");
     }
-    return contents;
+    return (ObjectNode) contents;
   }
 }

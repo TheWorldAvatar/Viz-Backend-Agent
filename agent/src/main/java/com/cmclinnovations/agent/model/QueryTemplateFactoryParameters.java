@@ -8,7 +8,7 @@ import java.util.Queue;
 import java.util.Set;
 
 import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 
 public record QueryTemplateFactoryParameters(
     Queue<Queue<SparqlBinding>> bindings,
