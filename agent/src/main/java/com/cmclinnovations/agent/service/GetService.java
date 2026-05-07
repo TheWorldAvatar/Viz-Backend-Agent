@@ -250,7 +250,7 @@ public class GetService {
     String iri = this.queryTemplateService.getIri(resourceID);
     addStatements += this.getQueryStatementsForTargetFields(resourceID, iri, pagination.getSortedFields(),
         pagination.getFilters());
-    SelectQuery allInstancesQueryObj = this.queryTemplateService.getAllIdsQueryTemplate(iri, pagination, true, false);
+    SelectQuery allInstancesQueryObj = this.queryTemplateService.getAllInstancesQueryTemplate(iri, pagination, true, false);
     String allInstancesQuery = this.queryTemplateService.addStringStatements(allInstancesQueryObj, addStatements);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> {
@@ -275,7 +275,8 @@ public class GetService {
    */
   public List<String> getAllFilterOptionsAsStrings(String resourceID, String field, String addStatements,
       String search, Map<String, Set<String>> filters) {
-    return this.queryFilterOptions(resourceID, field, addStatements, "", search, filters, true, false)
+    return this.queryFilterOptions(resourceID, field, addStatements, "", search,
+        filters, field.equals(QueryResource.ID_KEY), false)
         .stream()
         .map(binding -> binding.getFieldValue(field))
         .toList();
@@ -354,7 +355,7 @@ public class GetService {
           + search.toLowerCase()
           + "\"))";
     }
-    SelectQuery allInstancesQueryObj = this.queryTemplateService.getAllIdsQueryTemplate(iri,
+    SelectQuery allInstancesQueryObj = this.queryTemplateService.getAllInstancesQueryTemplate(iri,
         new PaginationState(0, 21, "+" + field, new HashMap<>()), requireId, requireIri);
     if (!addVar.isEmpty()) {
       allInstancesQueryObj.select(QueryResource.genVariable(addVar));
