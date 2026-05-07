@@ -1,6 +1,6 @@
 # First stage: build war file
 #==================================================================================================
-FROM maven:3.9.9-eclipse-temurin-21 AS builder
+FROM maven:3.9.15-eclipse-temurin-25 AS builder
 
 # Copy Maven settings templates and credentials
 COPY /credentials /root/credentials
@@ -48,7 +48,7 @@ CMD mvn test
 
 # Production stage: copy the downloaded dependency from first stage into a new image and build into an app
 #==================================================================================================
-FROM tomcat:10.1.28-jre21-temurin AS agent
+FROM tomcat:10.1-jre25-temurin AS agent
 
 # Transfer and rename the war file to agent
 COPY --from=builder /root/agent/target/*.war $CATALINA_HOME/webapps/vis-backend-agent.war

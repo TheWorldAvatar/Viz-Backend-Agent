@@ -131,9 +131,9 @@ public class LifecycleTaskService {
         search,
         parsedFilters);
     if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
-      return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();
+      return options.stream().map(LocalisationTranslator::getScheduleTypeFromRecurrence).toList();
     } else if (originalField.equals(LifecycleResource.EVENT_KEY)) {
-      return options.stream().map(option -> LocalisationTranslator.getEvent(option)).toList();
+      return options.stream().map(LocalisationTranslator::getEvent).toList();
     }
     return options;
   }
@@ -566,7 +566,7 @@ public class LifecycleTaskService {
       try {
         this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, TrackActionType.CREATION);
         // Error logs for any specified occurrence
-      } catch (IllegalStateException e) {
+      } catch (IllegalStateException _) {
         LOGGER.error("Error encountered while creating order for {} on {}! Read error logs for more details",
             contract, occurrenceDate);
         hasError = true;

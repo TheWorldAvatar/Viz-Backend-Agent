@@ -1,8 +1,6 @@
 package com.cmclinnovations.agent.component.repository;
 
-import java.io.IOException;
 import java.io.StringWriter;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,11 +31,12 @@ import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.stack.clients.blazegraph.BlazegraphClient;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 @Component
 public class KGRepository {
@@ -45,7 +44,7 @@ public class KGRepository {
     String shaclNamespace;
 
     private final RestClient client;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper objectMapper;
     private final FileService fileService;
     private final LoggingService loggingService;
     private final QueryTemplateService queryTemplateService;
@@ -65,7 +64,7 @@ public class KGRepository {
     public KGRepository(FileService fileService, LoggingService loggingService,
             QueryTemplateService queryTemplateService) {
         this.client = RestClient.create();
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = new JsonMapper();
         this.fileService = fileService;
         this.loggingService = loggingService;
         this.queryTemplateService = queryTemplateService;
@@ -236,7 +235,7 @@ public class KGRepository {
             JsonNode variables = sparqlResponse.path("head")
                     .path("vars");
             return new JsonNode[] { bindings, variables };
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOGGER.error(e);
             throw new IllegalArgumentException(e);
         }
@@ -256,8 +255,8 @@ public class KGRepository {
                     .filter(JsonNode::isObject) // Ensure they are object node so that we can type cast
                     .map(row -> new SparqlBinding((ObjectNode) row, variableSet))
                     .collect(Collectors.toCollection(ArrayList::new));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        } catch (JacksonException e) {
+            throw new IllegalArgumentException(e);
         }
     }
 

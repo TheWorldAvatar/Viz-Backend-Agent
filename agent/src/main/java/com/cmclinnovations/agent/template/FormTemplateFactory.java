@@ -21,10 +21,10 @@ import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 public class FormTemplateFactory {
   private final AuthenticationService authenticationService;
@@ -139,13 +139,13 @@ public class FormTemplateFactory {
     // else, path are used for object nodes
     for (JsonNode field : fields) {
       if (field.has(ShaclResource.TYPE_KEY)) {
-        String type = field.path(ShaclResource.TYPE_KEY).get(0).asText();
+        String type = field.path(ShaclResource.TYPE_KEY).get(0).asString();
         if (type.equals(ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_SHAPE)) {
           this.properties.offer(field);
         } else if (type.equals(ShaclResource.SHACL_PREFIX + ShaclResource.PROPERTY_GROUP)) {
-          this.groups.put(field.path(ShaclResource.ID_KEY).asText(), field);
+          this.groups.put(field.path(ShaclResource.ID_KEY).asString(), field);
         } else if (type.equals(ShaclResource.SHACL_PREFIX + ShaclResource.NODE_SHAPE)) {
-          this.nodes.put(field.path(ShaclResource.ID_KEY).asText(), field);
+          this.nodes.put(field.path(ShaclResource.ID_KEY).asString(), field);
         } else {
           LOGGER.error("Invalid input node! Only property shape, property group, and node shape is allowed.");
           throw new IllegalArgumentException(
@@ -172,7 +172,7 @@ public class FormTemplateFactory {
       if (this.authenticationService.isAuthenticationEnabled()
           && currentProperty.has(ShaclResource.TWA_FORM_PREFIX + ShaclResource.ROLE_PROPERTY)) {
         String unmappedPropertyRoles = currentProperty.path(ShaclResource.TWA_FORM_PREFIX + ShaclResource.ROLE_PROPERTY)
-            .get(0).path(ShaclResource.VAL_KEY).asText();
+            .get(0).path(ShaclResource.VAL_KEY).asString();
         // Skip this iteration if permission is not given
         if (this.authenticationService.isUnauthorised(userRoles, unmappedPropertyRoles)) {
           continue;
@@ -192,7 +192,7 @@ public class FormTemplateFactory {
           typedTargetNode.add(belongsToObjectNode);
         }
         for (JsonNode nodePropertyNode : typedTargetNode) {
-          String nodeId = nodePropertyNode.path(ShaclResource.ID_KEY).asText();
+          String nodeId = nodePropertyNode.path(ShaclResource.ID_KEY).asString();
           Map<String, Map<String, Object>> nodeProperties = altProperties.getOrDefault(nodeId, new HashMap<>());
           this.parseProperty(currentProperty, defaultVals, nodeProperties);
           altProperties.put(nodeId, nodeProperties);
@@ -249,7 +249,7 @@ public class FormTemplateFactory {
     // When there is a group
     if (property.has(ShaclResource.SHACL_PREFIX + ShaclResource.GROUP_PROPERTY)) {
       String groupId = property.path(ShaclResource.SHACL_PREFIX + ShaclResource.GROUP_PROPERTY)
-          .get(0).path(ShaclResource.ID_KEY).asText();
+          .get(0).path(ShaclResource.ID_KEY).asString();
       // Retrieve existing group in parsed model if available, or else, generate one
       // from the associated group
       Map<String, Object> group = resultMappings.getOrDefault(groupId,
@@ -265,7 +265,7 @@ public class FormTemplateFactory {
       resultMappings.put(groupId, group);
     } else {
       // Without a group, simply use the ID as hash key
-      resultMappings.put(property.path(ShaclResource.ID_KEY).asText(),
+      resultMappings.put(property.path(ShaclResource.ID_KEY).asString(),
           this.parseInputModel(property, defaultVals));
     }
   }
@@ -280,19 +280,17 @@ public class FormTemplateFactory {
   private Map<String, Object> parseInputModel(JsonNode input, Map<String, Object> defaultVals) {
     Map<String, Object> inputModel = new HashMap<>();
     // Transform each field into a suitable JSON format
-    Iterator<Map.Entry<String, JsonNode>> iterator = input.fields();
-    while (iterator.hasNext()) {
-      Map.Entry<String, JsonNode> shapeFieldEntry = iterator.next();
+    for (Map.Entry<String, JsonNode> shapeFieldEntry : input.properties()) {
       String shapeField = shapeFieldEntry.getKey();
       JsonNode shapeFieldNode = shapeFieldEntry.getValue();
       switch (shapeField) {
         case ShaclResource.ID_KEY:
           // Id will always be a string
-          inputModel.put(shapeField, shapeFieldNode.asText());
+          inputModel.put(shapeField, shapeFieldNode.asString());
           break;
         case ShaclResource.TYPE_KEY:
           // Type will always be enclosed in a string array of one item
-          inputModel.put(shapeField, shapeFieldNode.get(0).asText());
+          inputModel.put(shapeField, shapeFieldNode.get(0).asString());
           break;
         case ShaclResource.SHACL_NAME_PROPERTY:
           Map<String, Object> nameLiteral = this.jsonLdService.convertValue(shapeFieldNode.get(0),
@@ -307,10 +305,10 @@ public class FormTemplateFactory {
               inputModel.put(ShaclResource.DEFAULT_VAL_PROPERTY, defaultVals.get(parsedField));
               // Retrieve field from array group if not found
             } else if (input.has(ShaclResource.SHACL_GROUP_PROPERTY)) {
-              String groupId = input.get(ShaclResource.SHACL_GROUP_PROPERTY).get(0).get(ShaclResource.ID_KEY).asText();
+              String groupId = input.get(ShaclResource.SHACL_GROUP_PROPERTY).get(0).get(ShaclResource.ID_KEY).asString();
               String groupName = this.groups.get(groupId).get(ShaclResource.RDFS_PREFIX + ShaclResource.LABEL_PROPERTY)
                   .get(0)
-                  .get(ShaclResource.VAL_KEY).asText()
+                  .get(ShaclResource.VAL_KEY).asString()
                   .replace(ShaclResource.WHITE_SPACE, "_");
               if (defaultVals.containsKey(groupName)) {
                 List<Map<String, SparqlResponseField>> defaultArrayVals = (List<Map<String, SparqlResponseField>>) defaultVals
@@ -339,8 +337,8 @@ public class FormTemplateFactory {
           if (defaultVals.isEmpty() || defaultVals.containsKey(fieldName)) {
             JsonNode defaultValueNode = shapeFieldNode.get(0);
             String defaultVal = defaultValueNode.has(ShaclResource.ID_KEY)
-                ? defaultValueNode.get(ShaclResource.ID_KEY).asText()
-                : defaultValueNode.get(ShaclResource.VAL_KEY).asText();
+                ? defaultValueNode.get(ShaclResource.ID_KEY).asString()
+                : defaultValueNode.get(ShaclResource.VAL_KEY).asString();
             String fieldType = input.has(ShaclResource.SHACL_IN_PROPERTY)
                 || input.has(ShaclResource.SHACL_CLASS_PROPERTY) ? QueryResource.URI_TYPE : QueryResource.LITERAL_TYPE;
             SparqlResponseField defaultValNode = new SparqlResponseField(fieldType, defaultVal, "", "");
@@ -366,11 +364,11 @@ public class FormTemplateFactory {
         case ShaclResource.SHACL_IN_PROPERTY:
           ArrayNode inArray = (ArrayNode) shapeFieldNode;
           // Iterate and remove any blank node values
-          Iterator<JsonNode> elements = inArray.elements();
+          Iterator<JsonNode> elements = inArray.iterator();
           while (elements.hasNext()) {
             JsonNode currentElement = elements.next();
             if (currentElement.isObject()) {
-              String valueConstraint = currentElement.get(ShaclResource.ID_KEY).asText();
+              String valueConstraint = currentElement.get(ShaclResource.ID_KEY).asString();
               if (valueConstraint.startsWith("_:")) {
                 elements.remove(); // Remove the current blank node
                 break; // break iteration if blank node is found assuming only one blank node

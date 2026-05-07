@@ -12,16 +12,17 @@ import org.springframework.stereotype.Service;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 @Service
 public class JsonLdService {
-  private final ObjectMapper objectMapper;
+  private final JsonMapper objectMapper;
 
   private static final Logger LOGGER = LogManager.getLogger(JsonLdService.class);
 
@@ -31,7 +32,7 @@ public class JsonLdService {
    * 
    * @param objectMapper The JSON object mapper.
    */
-  public JsonLdService(ObjectMapper objectMapper) {
+  public JsonLdService(JsonMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 
@@ -43,9 +44,9 @@ public class JsonLdService {
    *                        corresponding node.
    */
   public String getReplacementValue(ObjectNode replacementNode, Map<String, Object> replacements) {
-    String replacementType = replacementNode.path(ShaclResource.TYPE_KEY).asText();
+    String replacementType = replacementNode.path(ShaclResource.TYPE_KEY).asString();
     // Iterate through the replacements and find the relevant key for replacement
-    String replacementId = replacementNode.path(ShaclResource.REPLACE_KEY).asText();
+    String replacementId = replacementNode.path(ShaclResource.REPLACE_KEY).asString();
     String altReplacementId = replacementId.replaceAll("\\s+", "_");
     String targetKey = "";
     for (String key : replacements.keySet()) {
@@ -67,7 +68,8 @@ public class JsonLdService {
     // For non-matching targets
     if (targetKey.isEmpty()) {
       // If optional, ignores it and continue
-      if (replacementNode.has(ShaclResource.OPTIONAL_KEY) && replacementNode.path(ShaclResource.OPTIONAL_KEY).asBoolean()) {
+      if (replacementNode.has(ShaclResource.OPTIONAL_KEY)
+          && replacementNode.path(ShaclResource.OPTIONAL_KEY).asBoolean()) {
         return "";
       } else {
         LOGGER.error("Missing {} in request payload!", replacementId);
@@ -85,7 +87,7 @@ public class JsonLdService {
         return replacements.get(targetKey).toString();
       } else {
         // If a prefix is present, extract the identifer and append the prefix
-        return prefixNode.asText() + StringResource.getLocalName(replacements.get(targetKey).toString());
+        return prefixNode.asString() + StringResource.getLocalName(replacements.get(targetKey).toString());
       }
     } else {
       LOGGER.error("Invalid replacement type {} for {}!", replacementType, replacementId);
@@ -216,7 +218,7 @@ public class JsonLdService {
   public JsonNode readObjectNode(String input) {
     try {
       return this.objectMapper.readTree(input);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException _) {
       throw new IllegalStateException("Unable to read input as a JSON object.");
     }
   }

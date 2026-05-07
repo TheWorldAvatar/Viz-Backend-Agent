@@ -40,10 +40,10 @@ import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 import com.cmclinnovations.stack.clients.blazegraph.BlazegraphClient;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
 import uk.ac.cam.cares.jps.base.query.RemoteStoreClient;
 
 @Service
@@ -183,7 +183,7 @@ public class KGService {
         .body(String.class);
     try {
       return this.objectMapper.readValue(results, ArrayNode.class);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       LOGGER.error(e);
       throw new IllegalArgumentException(e);
     }
@@ -220,7 +220,7 @@ public class KGService {
         String target;
         try {
           target = this.fileService.getTargetIri(resourceId).getQueryString();
-        } catch (InvalidRouteException e) {
+        } catch (InvalidRouteException _) {
           // specific handling for lifecycle event types
           LifecycleEventType eventType = LifecycleEventType.fromId(resourceId);
           if (eventType != null) {

@@ -23,8 +23,9 @@ import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class FileService {
@@ -128,7 +129,7 @@ public class FileService {
       for (String replacement : replacements) {
         contents = contents.replaceFirst(REPLACEMENT_TARGET, replacement);
       }
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException _) {
       throw new FileSystemNotFoundException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FILE_KEY, resourceFilePath));
     } catch (IOException e) {
@@ -148,7 +149,7 @@ public class FileService {
     JsonNode resourceNode;
     try (InputStream inputStream = this.resourceLoader.getResource(resourceFilePath).getInputStream()) {
       resourceNode = this.objectMapper.readTree(inputStream);
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException _) {
       throw new FileSystemNotFoundException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FILE_KEY, resourceFilePath));
     } catch (IOException e) {
@@ -219,7 +220,7 @@ public class FileService {
         return "";
       }
       return this.objectMapper.treeToValue(resourceNode, String.class);
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException _) {
       throw new FileSystemNotFoundException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FILE_KEY, resourceFilePath));
     } catch (IOException e) {

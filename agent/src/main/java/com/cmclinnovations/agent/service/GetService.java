@@ -42,7 +42,8 @@ import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+
+import tools.jackson.databind.node.ArrayNode;
 
 @Service
 public class GetService {
@@ -51,6 +52,7 @@ public class GetService {
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final String SUCCESSFUL_REQUEST_MSG = "Request has been completed successfully!";
+  private static final String GET_FORM_LOG_MSG = "Retrieving the form template for {}...";
   private static final Logger LOGGER = LogManager.getLogger(GetService.class);
 
   /**
@@ -87,7 +89,7 @@ public class GetService {
    * @param criterias  All the available search criteria inputs.
    */
   public ResponseEntity<StandardApiResponse<?>> getMatchingInstances(String resourceID, Map<String, String> criterias) {
-    LOGGER.debug("Retrieving the form template for {} ...", resourceID);
+    LOGGER.debug(GET_FORM_LOG_MSG, resourceID);
     String iri = this.queryTemplateService.getIri(resourceID);
     // Parses the criteria keys to ensure it uses _ instead of white spaces
     Map<String, String> parsedCriterias = criterias.entrySet().stream()
@@ -139,10 +141,9 @@ public class GetService {
       // Removes the first instance from results as the core instance
       SparqlBinding firstInstance = results.poll();
       // Iterate over each result binding to append arrays if required
-      results.stream().forEach(result -> {
-        // No need to initialise arrays as no array vars can be passed
-        firstInstance.addFieldArray(result, new HashMap<>());
-      });
+      results.stream().forEach(result ->
+      // No need to initialise arrays as no array vars can be passed
+      firstInstance.addFieldArray(result, new HashMap<>()));
       return firstInstance;
     }
     if (results.size() == 1) {
@@ -747,7 +748,7 @@ public class GetService {
    */
   public ResponseEntity<StandardApiResponse<?>> getForm(String targetId, String resourceID,
       boolean isReplacement, LifecycleEventType eventType) {
-    LOGGER.debug("Retrieving the form template for {} ...", resourceID);
+    LOGGER.debug(GET_FORM_LOG_MSG, resourceID);
     Map<String, Object> currentEntity = new HashMap<>();
     ResponseEntity<StandardApiResponse<?>> currentEntityResponse;
     if (eventType == null) {
@@ -786,7 +787,7 @@ public class GetService {
    */
   private ResponseEntity<StandardApiResponse<?>> getForm(String resourceID, boolean isReplacement,
       Map<String, Object> currentEntity) {
-    LOGGER.debug("Retrieving the form template for {} ...", resourceID);
+    LOGGER.debug(GET_FORM_LOG_MSG, resourceID);
     String query = this.queryTemplateService.getFormQuery(resourceID, isReplacement);
     // SHACL restrictions are stored at a different endpoint
     String endpoint = this.kgService.getShaclEndpoint();

@@ -8,22 +8,26 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
 
-import javax.annotation.Nonnull;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.JacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import tools.jackson.databind.DefaultTyping;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import tools.jackson.databind.jsontype.PolymorphicTypeValidator;
 
 @Configuration
 public class RedisCacheConfig {
@@ -33,16 +37,23 @@ public class RedisCacheConfig {
     private static final String PASSWORD_SECRET = "/run/secrets/redis_password";
 
     @Bean
-    public RedisCacheConfiguration cacheConfiguration() {
-        ObjectMapper om = new ObjectMapper();
-        // Makes all public and private fields visible for serialisation/deserialisation
-        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        // Transform type information during serialisation
-        om.activateDefaultTyping(om.getPolymorphicTypeValidator(), ObjectMapper.DefaultTyping.NON_FINAL);
-        @Nonnull
-        Jackson2JsonRedisSerializer<@Nonnull Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(om,
+    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+        PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
+                .allowIfBaseType(Object.class)
+                .build();
+        JsonMapper om = JsonMapper.builder()
+                // Makes all public and private fields visible for serialisation/deserialisation
+                .changeDefaultVisibility(vc -> vc
+                        .withVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY))
+                // Transform type information during serialisation
+                .activateDefaultTyping(
+                        ptv,
+                        DefaultTyping.NON_FINAL)
+                .findAndAddModules()
+                .build();
+        JacksonJsonRedisSerializer<Object> jacksonJsonRedisSerializer = new JacksonJsonRedisSerializer<>(om,
                 Object.class);
-        return RedisCacheConfiguration.defaultCacheConfig()
+        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofDays(7))
                 .disableCachingNullValues()
                 // String Serializer for keys
@@ -52,7 +63,11 @@ public class RedisCacheConfig {
                 // Jackson JSON Serializer for values
                 .serializeValuesWith(
                         RedisSerializationContext.SerializationPair
-                                .fromSerializer(jackson2JsonRedisSerializer));
+                                .fromSerializer(jacksonJsonRedisSerializer));
+
+        return RedisCacheManager.builder(connectionFactory)
+                .cacheDefaults(config)
+                .build();
     }
 
     @Bean

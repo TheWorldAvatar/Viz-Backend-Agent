@@ -144,7 +144,7 @@ public class LifecycleContractService {
     StandardApiResponse<?> response = this.getService.getInstance(contractId, entityType, false).getBody();
     return ((Map<String, Object>) response.data().items().get(0))
         .entrySet().stream()
-        .filter((entry) -> entry.getKey() != QueryResource.ID_KEY && entry.getKey() != QueryResource.IRI_KEY)
+        .filter(entry -> !entry.getKey().equals(QueryResource.ID_KEY) && !entry.getKey().equals(QueryResource.IRI_KEY))
         .collect(Collectors.toMap(
             Map.Entry::getKey,
             entry -> {
@@ -212,7 +212,7 @@ public class LifecycleContractService {
           rawSchedule.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY));
       // The day of week for daily tasks will follow today
       if (rawSchedule.getFieldValue(
-          LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY) == LifecycleResource.RECURRENCE_DAILY_TASK) {
+          LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).equals(LifecycleResource.RECURRENCE_DAILY_TASK)) {
         draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
       } else {
         Map<String, SparqlResponseField> schedule = rawSchedule.get().entrySet().stream()
@@ -286,7 +286,7 @@ public class LifecycleContractService {
     List<String> options = this.getService.getAllFilterOptionsAsStrings(resourceID, originalField, addStatements[0],
         search, parsedFilters);
     if (originalField.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
-      return options.stream().map(option -> LocalisationTranslator.getScheduleTypeFromRecurrence(option)).toList();
+      return options.stream().map(LocalisationTranslator::getScheduleTypeFromRecurrence).toList();
     }
     return options;
   }

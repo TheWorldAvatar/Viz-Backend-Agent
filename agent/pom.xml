@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.cmclinnovations</groupId>
 	<artifactId>vis-backend-agent</artifactId>
-	<version>1.49.0</version>
+	<version>1.50.0</version>
 	<packaging>war</packaging>
 	<name>vis-backend-agent</name>
 	<url />
@@ -28,7 +28,7 @@
 		<url />
 	</scm>
 	<properties>
-		<java.version>21</java.version>
+		<java.version>25</java.version>
 	</properties>
 
 	<repositories>

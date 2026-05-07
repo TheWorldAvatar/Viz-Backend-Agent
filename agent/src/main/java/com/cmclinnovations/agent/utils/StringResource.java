@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 public class StringResource {
   public static final String FIELD_REQUEST_PARAM = "field";
@@ -62,7 +62,7 @@ public class StringResource {
       }
       return defaultOption;
     }
-    return fieldNode.asText();
+    return fieldNode.asString();
   }
 
   /**
@@ -113,7 +113,7 @@ public class StringResource {
       }
       String[] parts = iri.split("/");
       return parts[parts.length - 1];
-    } catch (IllegalArgumentException e) {
+    } catch (IllegalArgumentException _) {
       return iri;
     }
   }
