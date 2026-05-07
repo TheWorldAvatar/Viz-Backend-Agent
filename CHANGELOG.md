@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.50.0
+
+- Bump to Java 25 and Spring 4
+- Code formatting
+
 ## 1.49.0
 
 - Fixed default filter options for IDs and non-ID columns
@@ -11,7 +16,7 @@
 ## 1.48.1
 
 - Fixed the missing default filter options
- 
+
 ## 1.48.0
 
 - Extend update pricing model to contract route to allow simultaneous changes for multiple pricing model
