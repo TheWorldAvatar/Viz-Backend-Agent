@@ -98,7 +98,7 @@ public class QueryTemplateService {
   }
 
   /**
-   * Retrieves the query template to get all IDs associated with instances. A
+   * Retrieves the query template to get all instances. A
    * placeholder class is used and MUST be replaced to get the right ids.
    * 
    * @param nodeShapeReplacement The statement to target the node shape.
@@ -107,7 +107,7 @@ public class QueryTemplateService {
    * @param requireId            If the results should include ID.
    * @param requireIri           If the results should include IRI variable.
    */
-  public SelectQuery getAllIdsQueryTemplate(String nodeShapeReplacement, PaginationState pagination, boolean requireId,
+  public SelectQuery getAllInstancesQueryTemplate(String nodeShapeReplacement, PaginationState pagination, boolean requireId,
       boolean requireIri) {
     // If pagination is not given, no limits and offset should be set
     SelectQuery query = QueryResource.getSelectQuery(true, pagination.getLimit())
