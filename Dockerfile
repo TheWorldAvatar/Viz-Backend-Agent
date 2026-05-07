@@ -50,6 +50,8 @@ CMD mvn test
 #==================================================================================================
 FROM tomcat:10.1-jre25-temurin AS agent
 
+ENV CATALINA_OPTS="--enable-preview"
+
 # Transfer and rename the war file to agent
 COPY --from=builder /root/agent/target/*.war $CATALINA_HOME/webapps/vis-backend-agent.war
 # Expose port
