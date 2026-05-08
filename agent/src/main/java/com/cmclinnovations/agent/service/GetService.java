@@ -23,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.component.ParallelTaskExecutor;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
@@ -251,7 +252,8 @@ public class GetService {
     String iri = this.queryTemplateService.getIri(resourceID);
     addStatements += this.getQueryStatementsForTargetFields(resourceID, iri, pagination.getSortedFields(),
         pagination.getFilters());
-    SelectQuery allInstancesQueryObj = this.queryTemplateService.getAllInstancesQueryTemplate(iri, pagination, true, false);
+    SelectQuery allInstancesQueryObj = this.queryTemplateService.getAllInstancesQueryTemplate(iri, pagination, true,
+        false);
     String allInstancesQuery = this.queryTemplateService.addStringStatements(allInstancesQueryObj, addStatements);
     return this.kgService.query(allInstancesQuery, SparqlEndpointType.MIXED).stream()
         .map(binding -> {
@@ -419,16 +421,25 @@ public class GetService {
   public ResponseEntity<StandardApiResponse<?>> getInstances(String resourceID, boolean requireLabel,
       PaginationState pagination, Map<String, String> filters) {
     LOGGER.debug("Retrieving all instances of {} ...", resourceID);
-    Queue<List<String>> ids = this.getAllIds(resourceID, "", pagination);
-    DataManifest<Queue<SparqlBinding>> instanceManifest = this.execGetInstancesWithVirtualResults(resourceID,
-        requireLabel, ids, "", new ArrayList<>());
-    return this.responseEntityBuilder.success(null,
-        this.getCount(resourceID, filters),
-        this.getCount(resourceID, new HashMap<>()),
-        instanceManifest.columns(),
-        instanceManifest.data().stream()
-            .map(SparqlBinding::get)
-            .toList());
+    var results = ParallelTaskExecutor.execParallelQueryTasks(
+        () -> {
+          Queue<List<String>> ids = this.getAllIds(resourceID, "", pagination);
+          DataManifest<Queue<SparqlBinding>> instanceManifest = this.execGetInstancesWithVirtualResults(resourceID,
+              requireLabel, ids, "", new ArrayList<>());
+          List<Map<String, Object>> data = instanceManifest.data().stream()
+              .map(SparqlBinding::get)
+              .toList();
+          return new DataManifest<>(data, instanceManifest.columns());
+        },
+        () -> this.getCount(resourceID, filters),
+        () -> this.getCount(resourceID, new HashMap<>()));
+
+    return this.responseEntityBuilder.success(
+        null,
+        results.filteredCount(),
+        results.totalCount(),
+        results.data().columns(),
+        results.data().data());
   }
 
   /**
