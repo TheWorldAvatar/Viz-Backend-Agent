@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cmclinnovations.agent.component.ParallelTaskExecutor;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
@@ -63,16 +64,25 @@ public class ReportingController {
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       PaginationState pagination = new PaginationState(page, limit, sortBy, allRequestParams);
-      Queue<List<String>> ids = this.getService.getAllIds(type, "", pagination);
-      DataManifest<Queue<SparqlBinding>> instanceManifest = this.getService.getInstances(type, true, ids,
-          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, List.of(BillingResource.FLAG_COLUMN_META_PAYLOAD));
-      return this.responseEntityBuilder.success(null,
-          this.getService.getCount(type, allRequestParams),
-          this.getService.getCount(type, new HashMap<>()),
-          instanceManifest.columns(),
-          instanceManifest.data().stream()
-              .map(SparqlBinding::get)
-              .toList());
+      var results = ParallelTaskExecutor.execParallelQueryTasks(
+          () -> {
+            Queue<List<String>> ids = this.getService.getAllIds(type, "", pagination);
+            DataManifest<Queue<SparqlBinding>> instanceManifest = this.getService.getInstances(type, true, ids,
+                BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, List.of(BillingResource.FLAG_COLUMN_META_PAYLOAD));
+            List<Map<String, Object>> data = instanceManifest.data().stream()
+                .map(SparqlBinding::get)
+                .toList();
+            return new DataManifest<>(data, instanceManifest.columns());
+          },
+          () -> this.getService.getCount(type, allRequestParams),
+          () -> this.getService.getCount(type, new HashMap<>()));
+
+      return this.responseEntityBuilder.success(
+          null,
+          results.filteredCount(),
+          results.totalCount(),
+          results.data().columns(),
+          results.data().data());
     });
   }
 

@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.component.ParallelTaskExecutor;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
@@ -172,14 +173,17 @@ public class LifecycleTaskService {
    */
   public ResponseEntity<StandardApiResponse<?>> getOccurrences(String startTimestamp, String endTimestamp,
       String entityType, LifecycleEventType eventType, PaginationState pagination, Map<String, String> filters) {
-    DataManifest<List<Map<String, Object>>> occurrenceManifest = this.queryOccurrences(startTimestamp, endTimestamp,
-        entityType, eventType, pagination);
-    LOGGER.info("Successfuly retrieved tasks!");
-    return this.responseEntityBuilder.success(null,
-        this.getOccurrenceCount(entityType, startTimestamp, endTimestamp, eventType, filters),
-        this.getOccurrenceCount(entityType, startTimestamp, endTimestamp, eventType, new HashMap<>()),
-        occurrenceManifest.columns(),
-        occurrenceManifest.data());
+    var results = ParallelTaskExecutor.execParallelQueryTasks(
+        () -> this.queryOccurrences(startTimestamp, endTimestamp, entityType, eventType, pagination),
+        () -> this.getOccurrenceCount(entityType, startTimestamp, endTimestamp, eventType, filters),
+        () -> this.getOccurrenceCount(entityType, startTimestamp, endTimestamp, eventType, new HashMap<>()));
+
+    return this.responseEntityBuilder.success(
+        null,
+        results.filteredCount(),
+        results.totalCount(),
+        results.data().columns(),
+        results.data().data());
   }
 
   /**
