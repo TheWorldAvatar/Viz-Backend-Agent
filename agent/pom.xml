@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.cmclinnovations</groupId>
 	<artifactId>vis-backend-agent</artifactId>
-	<version>1.50.0</version>
+	<version>1.50.1</version>
 	<packaging>war</packaging>
 	<name>vis-backend-agent</name>
 	<url />
@@ -119,11 +119,26 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<jvmArguments>--enable-preview</jvmArguments>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<compilerArgs>
+						<arg>--enable-preview</arg>
+					</compilerArgs>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
+					<compilerArgs>
+						<arg>--enable-preview</arg>
+					</compilerArgs>
 					<environmentVariables>
 						<NAMESPACE>kb</NAMESPACE>
 					</environmentVariables>

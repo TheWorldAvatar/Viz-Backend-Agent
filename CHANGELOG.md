@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.50.1
+
+- Execute sequential independent queries in parallel to improve performance
+- Code formatting
+
 ## 1.50.0
 
 - Bump to Java 25 and Spring 4

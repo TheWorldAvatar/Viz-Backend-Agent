@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
+import com.cmclinnovations.agent.component.ParallelTaskExecutor;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
@@ -305,27 +306,38 @@ public class LifecycleContractService {
   public ResponseEntity<StandardApiResponse<?>> getContracts(String resourceID, boolean requireLabel,
       LifecycleEventType eventType, PaginationState pagination, Map<String, String> filters) {
     LOGGER.debug("Retrieving all contracts...");
-    List<ColumnMetaPayload> contractColumns = new ArrayList<>(this.lifecycleColumnMeta);
-    if (eventType.equals(LifecycleEventType.APPROVED) || eventType.equals(LifecycleEventType.ARCHIVE_COMPLETION)) {
-      contractColumns.add(
-          new ColumnMetaPayload(LifecycleResource.STATUS_KEY, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
-    }
-    if (eventType.equals(LifecycleEventType.ARCHIVE_COMPLETION)) {
-      contractColumns.add(
-          new ColumnMetaPayload("final_remarks", QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
-    }
-    String[] addStatements = this.genLifecycleStatements(eventType, pagination.getSortedFields(),
-        pagination.getFilters(), "", true);
-    Queue<List<String>> ids = this.getService.getAllIds(resourceID, addStatements[0], pagination);
-    DataManifest<Queue<SparqlBinding>> instanceManifest = this.getService.getInstances(resourceID, requireLabel, ids,
-        addStatements[1], contractColumns);
-    return this.responseEntityBuilder.success(null,
-        this.getContractCount(resourceID, eventType, filters),
-        this.getContractCount(resourceID, eventType, new HashMap<>()),
-        instanceManifest.columns(),
-        instanceManifest.data().stream()
-            .map(binding -> this.lifecycleQueryService.parseLifecycleBinding(binding.get()))
-            .toList());
+    var results = ParallelTaskExecutor.execParallelQueryTasks(
+        () -> {
+          List<ColumnMetaPayload> contractColumns = new ArrayList<>(this.lifecycleColumnMeta);
+          if (eventType.equals(LifecycleEventType.APPROVED)
+              || eventType.equals(LifecycleEventType.ARCHIVE_COMPLETION)) {
+            contractColumns.add(
+                new ColumnMetaPayload(LifecycleResource.STATUS_KEY, QueryResource.LITERAL_TYPE,
+                    ShaclResource.XSD_STRING));
+          }
+          if (eventType.equals(LifecycleEventType.ARCHIVE_COMPLETION)) {
+            contractColumns.add(
+                new ColumnMetaPayload("final_remarks", QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
+          }
+          String[] addStatements = this.genLifecycleStatements(eventType, pagination.getSortedFields(),
+              pagination.getFilters(), "", true);
+          Queue<List<String>> ids = this.getService.getAllIds(resourceID, addStatements[0], pagination);
+          DataManifest<Queue<SparqlBinding>> instanceManifest = this.getService.getInstances(resourceID, requireLabel,
+              ids, addStatements[1], contractColumns);
+          List<Map<String, Object>> data = instanceManifest.data().stream()
+              .map(binding -> this.lifecycleQueryService.parseLifecycleBinding(binding.get()))
+              .toList();
+          return new DataManifest<>(data, instanceManifest.columns());
+        },
+        () -> this.getContractCount(resourceID, eventType, filters),
+        () -> this.getContractCount(resourceID, eventType, new HashMap<>()));
+
+    return this.responseEntityBuilder.success(
+        null,
+        results.filteredCount(),
+        results.totalCount(),
+        results.data().columns(),
+        results.data().data());
   }
 
   /**

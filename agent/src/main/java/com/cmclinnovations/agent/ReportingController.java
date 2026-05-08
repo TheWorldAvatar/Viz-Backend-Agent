@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cmclinnovations.agent.component.ParallelTaskExecutor;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
@@ -63,16 +64,25 @@ public class ReportingController {
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       PaginationState pagination = new PaginationState(page, limit, sortBy, allRequestParams);
-      Queue<List<String>> ids = this.getService.getAllIds(type, "", pagination);
-      DataManifest<Queue<SparqlBinding>> instanceManifest = this.getService.getInstances(type, true, ids,
-          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, List.of(BillingResource.FLAG_COLUMN_META_PAYLOAD));
-      return this.responseEntityBuilder.success(null,
-          this.getService.getCount(type, allRequestParams),
-          this.getService.getCount(type, new HashMap<>()),
-          instanceManifest.columns(),
-          instanceManifest.data().stream()
-              .map(SparqlBinding::get)
-              .toList());
+      var results = ParallelTaskExecutor.execParallelQueryTasks(
+          () -> {
+            Queue<List<String>> ids = this.getService.getAllIds(type, "", pagination);
+            DataManifest<Queue<SparqlBinding>> instanceManifest = this.getService.getInstances(type, true, ids,
+                BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, List.of(BillingResource.FLAG_COLUMN_META_PAYLOAD));
+            List<Map<String, Object>> data = instanceManifest.data().stream()
+                .map(SparqlBinding::get)
+                .toList();
+            return new DataManifest<>(data, instanceManifest.columns());
+          },
+          () -> this.getService.getCount(type, allRequestParams),
+          () -> this.getService.getCount(type, new HashMap<>()));
+
+      return this.responseEntityBuilder.success(
+          null,
+          results.filteredCount(),
+          results.totalCount(),
+          results.data().columns(),
+          results.data().data());
     });
   }
 
@@ -111,9 +121,8 @@ public class ReportingController {
   @GetMapping("/contract/pricing/form/{id}")
   public ResponseEntity<StandardApiResponse<?>> getPricingForm(@PathVariable String id) {
     LOGGER.info("Received request to get the form template for pricing model...");
-    return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
-      return this.getService.getForm(id, BillingResource.CONTRACT_PRICING_RESOURCE, false, null);
-    });
+    return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION,
+        () -> this.getService.getForm(id, BillingResource.CONTRACT_PRICING_RESOURCE, false, null));
   }
 
   /**
@@ -122,10 +131,9 @@ public class ReportingController {
   @GetMapping("/service/charge/{id}")
   public ResponseEntity<StandardApiResponse<?>> getServiceCharges(@PathVariable String id) {
     LOGGER.info("Received request to get the service charges for a task...");
-    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.responseEntityBuilder.success(
-          List.of(this.billingService.getServiceCharges(id)));
-    });
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.responseEntityBuilder.success(
+            List.of(this.billingService.getServiceCharges(id))));
   }
 
   /**
@@ -139,12 +147,12 @@ public class ReportingController {
     Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.billingService.getBillableOccurrences(type,
-          // Target account field will be included directly in the filter parameters
-          new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, allRequestParams),
-          allRequestParams);
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.billingService.getBillableOccurrences(type,
+            // Target account field will be included directly in the filter parameters
+            new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false,
+                allRequestParams),
+            allRequestParams));
   }
 
   /**
@@ -155,9 +163,8 @@ public class ReportingController {
   public ResponseEntity<StandardApiResponse<?>> getBillableTaskFilters(
       @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve filter options for billable tasks...");
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE, () -> {
-      return this.responseEntityBuilder.success(this.billingService.getBillableFilters(allRequestParams));
-    });
+    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.responseEntityBuilder.success(this.billingService.getBillableFilters(allRequestParams)));
   }
 
   /**
@@ -166,9 +173,8 @@ public class ReportingController {
   @PostMapping("/account")
   public ResponseEntity<StandardApiResponse<?>> createCustomerAccount(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to create a new customer account...");
-    return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
-      return this.billingService.genCustomerAccountInstance(instance);
-    });
+    return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE,
+        () -> this.billingService.genCustomerAccountInstance(instance));
   }
 
   /**
@@ -177,9 +183,8 @@ public class ReportingController {
   @PostMapping("/account/price")
   public ResponseEntity<StandardApiResponse<?>> assignPricingPlansToAccount(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to assign pricing model to account...");
-    return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
-      return this.billingService.assignPricingPlansToAccount(instance);
-    });
+    return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE,
+        () -> this.billingService.assignPricingPlansToAccount(instance));
   }
 
   /**
@@ -188,9 +193,8 @@ public class ReportingController {
   @PostMapping("/account/invoice")
   public ResponseEntity<StandardApiResponse<?>> createInvoice(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to create a new invoice for a customer...");
-    return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
-      return this.billingService.genAccountInvoice(instance);
-    });
+    return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE,
+        () -> this.billingService.genAccountInvoice(instance));
   }
 
   /**
@@ -199,9 +203,8 @@ public class ReportingController {
   @PostMapping("/contract/pricing")
   public ResponseEntity<StandardApiResponse<?>> assignPricingToContract(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to update pricing model...");
-    return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
-      return this.billingService.assignPricingPlanToContract(instance);
-    });
+    return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION,
+        () -> this.billingService.assignPricingPlanToContract(instance));
   }
 
   /**
@@ -222,8 +225,7 @@ public class ReportingController {
   @PutMapping("/contract/pricing")
   public ResponseEntity<StandardApiResponse<?>> updatePricingToContract(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to update pricing model...");
-    return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION, () -> {
-      return this.billingService.updatePricingPlanToContract(instance);
-    });
+    return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION,
+        () -> this.billingService.updatePricingPlanToContract(instance));
   }
 }
