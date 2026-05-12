@@ -1027,3 +1027,5 @@ Users can apply filters by appending query parameters to the URL:
 - **Single General Fields**: `field=value`
 - **Multiple General Fields**: `field=val1|val2` - separate multiple values using the pipe (|) delimiter
 - **Date ranges**: `field=YYYY-MM-DD..YYYY-MM-DD` - use the same date for both bounds to filter by a single day
+- **Single numeric fields**: `field=operatorVal` - expressions using operator and value eg `gt50.00`; valid operators include `eq`(equals), `neq`(not equals), `gt`(greater than), `gte`(greater than or equal to), `lt`(less than), and `lte`(less than or equal to)
+- **Multiple numeric fields**: `field=operatorVal&operatorVal2` - separate multiple values using the ampersand (&) delimiter
