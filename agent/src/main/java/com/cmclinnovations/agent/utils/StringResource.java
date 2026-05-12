@@ -153,31 +153,36 @@ public class StringResource {
     return filters.entrySet()
         .stream()
         .map(entry -> {
-          Set<String> valueSet;
-          // Parse filters for date
-          Matcher matcher = DATE_RANGE_FILTER_PATTERN.matcher(entry.getValue());
-          if (matcher.find()) {
-            String startFilterDate = matcher.group(1);
-            String endFilterDate = matcher.group(2);
-            valueSet = new LinkedHashSet<>();
-            // Add a date key to handle the date filter differently later
-            valueSet.add(LifecycleResource.DATE_KEY);
-            valueSet.add(startFilterDate);
-            if (!startFilterDate.equals(endFilterDate)) {
-              valueSet.add(endFilterDate);
-            }
-          } else {
-            valueSet = Arrays.stream(entry.getValue().split("\\|"))
-                .map(string -> string.equals(QueryResource.NULL_KEY) ? string
-                    : "\"" + string.trim()
-                        .replace("\\", "\\\\")
-                        .replaceAll("\\r?\\n", "\\\\n") + "\"")
-                .collect(Collectors.toSet());
-          }
+          Set<String> valueSet = StringResource.parseFilterValue(entry.getValue());
           return Map.entry(
               LifecycleResource.revertLifecycleSpecialFields(entry.getKey(), isContract),
               valueSet);
         })
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  private static Set<String> parseFilterValue(String value) {
+    Set<String> valueSet = new LinkedHashSet<>();
+    // Parse filters for date
+    Matcher matcher = DATE_RANGE_FILTER_PATTERN.matcher(value);
+    if (matcher.find()) {
+      String startFilterDate = matcher.group(1);
+      String endFilterDate = matcher.group(2);
+      // Add a date key to handle the date filter differently later
+      valueSet.add(LifecycleResource.DATE_KEY);
+      valueSet.add(startFilterDate);
+      if (!startFilterDate.equals(endFilterDate)) {
+        valueSet.add(endFilterDate);
+      }
+      // Early termination for date filters
+      return valueSet;
+    }
+
+    return Arrays.stream(value.split("\\|"))
+        .map(string -> string.equals(QueryResource.NULL_KEY) ? string
+            : "\"" + string.trim()
+                .replace("\\", "\\\\")
+                .replaceAll("\\r?\\n", "\\\\n") + "\"")
+        .collect(Collectors.toSet());
   }
 }
