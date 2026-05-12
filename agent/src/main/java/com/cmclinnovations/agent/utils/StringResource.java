@@ -169,7 +169,9 @@ public class StringResource {
           } else {
             valueSet = Arrays.stream(entry.getValue().split("\\|"))
                 .map(string -> string.equals(QueryResource.NULL_KEY) ? string
-                    : "\"" + string.trim() + "\"")
+                    : "\"" + string.trim()
+                        .replace("\\", "\\\\")
+                        .replaceAll("\\r?\\n", "\\\\n") + "\"")
                 .collect(Collectors.toSet());
           }
           return Map.entry(
