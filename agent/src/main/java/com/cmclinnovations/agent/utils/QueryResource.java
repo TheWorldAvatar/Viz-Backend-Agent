@@ -120,8 +120,10 @@ public class QueryResource {
     public static final String FIXED_DATE_SCHEDULE_DATE_KEY = "schedule entry date";
     public static final String LITERAL_TYPE = "literal";
     public static final String URI_TYPE = "uri";
+    public static final String NUMERIC_TYPE = "numeric";
 
     public static final String DATE_FILTER_TEMPLATE = "xsd:date(?{0}){1}\"{2}\"^^xsd:date";
+    public static final String NUMERIC_FILTER_TEMPLATE = "xsd:decimal(?{0}){1}\"{2}\"^^xsd:decimal";
 
     public static final String HISTORY_ACTIVITY_RESOURCE = "activity";
     public static final String HISTORY_AGENT_RESOURCE = "agent";
@@ -372,6 +374,17 @@ public class QueryResource {
                                 MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, "<=",
                                         dateFilters.get(1))));
             }
+        } else if (filters.contains(QueryResource.NUMERIC_TYPE)) {
+            builder.append(query);
+
+            List<String> numericFilters = new ArrayList<>(filters);
+            numericFilters.remove(QueryResource.NUMERIC_TYPE);
+            for (int i = 0; i < numericFilters.size(); i += 2) {
+                builder.append(QueryResource.filter(
+                        MessageFormat.format(QueryResource.NUMERIC_FILTER_TEMPLATE, field,
+                                QueryResource.getNumericFilterOperator(numericFilters.get(i)),
+                                numericFilters.get(i + 1))));
+            }
         } else {
             // When there are null filter values, the user has requested for blank values,
             // and this should be excluded from the query via a MINUS clause
@@ -396,6 +409,31 @@ public class QueryResource {
                     builder.append(valuesClause);
                 }
             }
+        }
+    }
+
+    /**
+     * Retrieve the operator for numeric filter based on the operator.
+     * 
+     * @param operator The operator type. Valid operators include eq, neq, gt, gte,
+     *                 lt, lte.
+     */
+    private static String getNumericFilterOperator(String operator) {
+        switch (operator) {
+            case "eq":
+                return "=";
+            case "neq":
+                return "!=";
+            case "gt":
+                return ">";
+            case "gte":
+                return ">=";
+            case "lt":
+                return "<";
+            case "lte":
+                return "<=";
+            default:
+                throw new IllegalArgumentException("Invalid operator: " + operator);
         }
     }
 
