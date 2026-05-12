@@ -983,12 +983,13 @@ To assign a new pricing model of a specific contract, users must send a `POST` r
 }
 ```
 
-To update multiple pricing models for a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/contract/pricing`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters:
+To update multiple pricing models for a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/contract/pricing`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters. Note that the `disableTracking` parameter will disable the changelog creation is set to `true`.
 
 ```json
 {
   "id": "identifier of the contract",
-  "pricing": ["a list of pricing model instances", "second instance"]
+  "pricing": ["a list of pricing model instances", "second instance"],
+  "disableTracking": false
 }
 ```
 
