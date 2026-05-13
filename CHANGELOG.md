@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.50.3
+
+- Added a flag to disable tracking for price adjustments
+
 ## 1.50.2
 
 - Fixed multi-line and slashes in string filters for sparql query
