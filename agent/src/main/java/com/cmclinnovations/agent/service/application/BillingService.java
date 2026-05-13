@@ -140,6 +140,8 @@ public class BillingService {
    */
   public ResponseEntity<StandardApiResponse<?>> updatePricingPlanToContract(Map<String, Object> instance) {
     String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
+    Boolean disableTracking = TypeCastUtils.castToObject(instance.get(QueryResource.DISABLE_TRACKING_KEY),
+        Boolean.class);
     SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
     String contractIri = contract.getFieldValue(QueryResource.IRI_KEY);
     instance.put(LifecycleResource.CONTRACT_KEY, contractIri);
@@ -153,7 +155,9 @@ public class BillingService {
     ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(contractId,
         BillingResource.CONTRACT_MULTI_PRICING_RESOURCE, null, instance, TrackActionType.IGNORED);
     if (response.getStatusCode() == HttpStatus.OK) {
-      this.addService.logActivity(contractIri, TrackActionType.ADJUSTMENT_PRICING);
+      if (!disableTracking) {
+        this.addService.logActivity(contractIri, TrackActionType.ADJUSTMENT_PRICING);
+      }
 
       Queue<SparqlBinding> accrualInstances = this.lifecycleQueryService.getInstances(
           FileService.TASK_ACCRUAL_QUERY_RESOURCE, contractId);
