@@ -122,8 +122,10 @@ public class QueryResource {
 
     public static final String LITERAL_TYPE = "literal";
     public static final String URI_TYPE = "uri";
+    public static final String NUMERIC_TYPE = "numeric";
 
     public static final String DATE_FILTER_TEMPLATE = "xsd:date(?{0}){1}\"{2}\"^^xsd:date";
+    public static final String NUMERIC_FILTER_TEMPLATE = "xsd:decimal(?{0}){1}\"{2}\"^^xsd:decimal";
 
     public static final String HISTORY_ACTIVITY_RESOURCE = "activity";
     public static final String HISTORY_AGENT_RESOURCE = "agent";
@@ -357,9 +359,27 @@ public class QueryResource {
                     }).collect(Collectors.toSet());
             String valuesClause = QueryResource.values(field, parsedFilters);
             builder.append(valuesClause);
-        } else if (filters.contains(LifecycleResource.DATE_KEY)) {
-            builder.append(query);
+        } else {
+            // For default filters without any blanks, add clause to restrict them
+            // Blank/Null filters will be parsed with a MINUS clause
+            if (!filters.contains(QueryResource.NULL_KEY)) {
+                builder.append(query);
+            }
+            QueryResource.genDefaultDatatypeFilters(query, field, filters, builder);
+        }
+    }
 
+    /**
+     * Generate the default data type filters.
+     * 
+     * @param query   The query to be added.
+     * @param field   The field of interest.
+     * @param filters The list of filter values to target by.
+     * @param builder Stores the output.
+     */
+    public static void genDefaultDatatypeFilters(String query, String field, Set<String> filters,
+            StringBuilder builder) {
+        if (filters.contains(LifecycleResource.DATE_KEY)) {
             List<String> dateFilters = new ArrayList<>(filters);
             dateFilters.remove(LifecycleResource.DATE_KEY);
             // If there is only one date, ensure field matches the selected date
@@ -374,30 +394,58 @@ public class QueryResource {
                                 MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, "<=",
                                         dateFilters.get(1))));
             }
-        } else {
+        } else if (filters.contains(QueryResource.NUMERIC_TYPE)) {
+            List<String> numericFilters = new ArrayList<>(filters);
+            numericFilters.remove(QueryResource.NUMERIC_TYPE);
+            for (int i = 0; i < numericFilters.size(); i += 2) {
+                builder.append(QueryResource.filter(
+                        MessageFormat.format(QueryResource.NUMERIC_FILTER_TEMPLATE, field,
+                                QueryResource.getNumericFilterOperator(numericFilters.get(i)),
+                                numericFilters.get(i + 1))));
+            }
             // When there are null filter values, the user has requested for blank values,
             // and this should be excluded from the query via a MINUS clause
-            if (filters.contains(QueryResource.NULL_KEY)) {
-                String minusStatement = QueryResource.minus(query);
-                // If there is only one null filter, this should merely be a MINUS clause
-                if (filters.size() == 1) {
-                    builder.append(minusStatement);
-                } else {
-                    // When there are multiple filters, MINUS and default clause with values should
-                    // be provided; Remove the null key before generating the VALUES clause
-                    filters.remove(QueryResource.NULL_KEY);
-                    String valuesClause = QueryResource.values(field, filters);
-                    builder.append(QueryResource.union(minusStatement, query + valuesClause));
-                }
+        } else if (filters.contains(QueryResource.NULL_KEY)) {
+            String minusStatement = QueryResource.minus(query);
+            // If there is only one null filter, this should merely be a MINUS clause
+            if (filters.size() == 1) {
+                builder.append(minusStatement);
             } else {
-                // For default filters, add clause to restrict them
-                // But only add VALUES if they are available
-                builder.append(query);
-                if (!filters.isEmpty()) {
-                    String valuesClause = QueryResource.values(field, filters);
-                    builder.append(valuesClause);
-                }
+                // When there are multiple filters, MINUS and default clause with values should
+                // be provided; Remove the null key before generating the VALUES clause
+                filters.remove(QueryResource.NULL_KEY);
+                String valuesClause = QueryResource.values(field, filters);
+                builder.append(QueryResource.union(minusStatement, query + valuesClause));
             }
+            // For default string filters, only include VALUES if they are available
+        } else if (!filters.isEmpty()) {
+            String valuesClause = QueryResource.values(field, filters);
+            builder.append(valuesClause);
+        }
+    }
+
+    /**
+     * Retrieve the operator for numeric filter based on the operator.
+     * 
+     * @param operator The operator type. Valid operators include eq, neq, gt, gte,
+     *                 lt, lte.
+     */
+    private static String getNumericFilterOperator(String operator) {
+        switch (operator) {
+            case "eq":
+                return "=";
+            case "neq":
+                return "!=";
+            case "gt":
+                return ">";
+            case "gte":
+                return ">=";
+            case "lt":
+                return "<";
+            case "lte":
+                return "<=";
+            default:
+                throw new IllegalArgumentException("Invalid operator: " + operator);
         }
     }
 

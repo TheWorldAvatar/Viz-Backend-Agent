@@ -31,6 +31,8 @@ public class StringResource {
   public static final String INVALID_SHACL_ERROR_MSG = "Invalid knowledge model! SHACL restrictions have not been defined/instantiated in the knowledge graph.";
   public static final Pattern DATE_RANGE_FILTER_PATTERN = Pattern
       .compile("(\\d{4}-\\d{2}-\\d{2})\\.\\.(\\d{4}-\\d{2}-\\d{2})");
+  public static final Pattern NUMERIC_FILTER_PATTERN = Pattern
+      .compile("(eq|neq|gt|lt|gte|lte)(\\d+(?:\\.\\d+)?)");
 
   // Private constructor to prevent instantiation
   private StringResource() {
@@ -153,31 +155,56 @@ public class StringResource {
     return filters.entrySet()
         .stream()
         .map(entry -> {
-          Set<String> valueSet;
-          // Parse filters for date
-          Matcher matcher = DATE_RANGE_FILTER_PATTERN.matcher(entry.getValue());
-          if (matcher.find()) {
-            String startFilterDate = matcher.group(1);
-            String endFilterDate = matcher.group(2);
-            valueSet = new LinkedHashSet<>();
-            // Add a date key to handle the date filter differently later
-            valueSet.add(LifecycleResource.DATE_KEY);
-            valueSet.add(startFilterDate);
-            if (!startFilterDate.equals(endFilterDate)) {
-              valueSet.add(endFilterDate);
-            }
-          } else {
-            valueSet = Arrays.stream(entry.getValue().split("\\|"))
-                .map(string -> string.equals(QueryResource.NULL_KEY) ? string
-                    : "\"" + string.trim()
-                        .replace("\\", "\\\\")
-                        .replaceAll("\\r?\\n", "\\\\n") + "\"")
-                .collect(Collectors.toSet());
-          }
+          Set<String> valueSet = StringResource.parseFilterValue(entry.getValue());
           return Map.entry(
               LifecycleResource.revertLifecycleSpecialFields(entry.getKey(), isContract),
               valueSet);
         })
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  /**
+   * Parses the filter value into suitable values.
+   * 
+   * @param value Input value for parsing.
+   */
+  private static Set<String> parseFilterValue(String value) {
+    Set<String> valueSet = new LinkedHashSet<>();
+    // Parse filters for date
+    Matcher dateMatcher = DATE_RANGE_FILTER_PATTERN.matcher(value);
+    if (dateMatcher.find()) {
+      String startFilterDate = dateMatcher.group(1);
+      String endFilterDate = dateMatcher.group(2);
+      // Add a date key to handle the date filter differently later
+      valueSet.add(LifecycleResource.DATE_KEY);
+      valueSet.add(startFilterDate);
+      if (!startFilterDate.equals(endFilterDate)) {
+        valueSet.add(endFilterDate);
+      }
+      // Early termination for date filters
+      return valueSet;
+    }
+
+    // Parse filters for numbers
+    Matcher numericMatcher = NUMERIC_FILTER_PATTERN.matcher(value);
+    if (numericMatcher.find()) {
+      valueSet.add(QueryResource.NUMERIC_TYPE);
+      // Execute the extraction first before moving to the next match
+      do {
+        String operator = numericMatcher.group(1);
+        String number = numericMatcher.group(2);
+        valueSet.add(operator);
+        valueSet.add(number);
+      } while (numericMatcher.find());
+
+      return valueSet;
+    }
+
+    return Arrays.stream(value.split("\\|"))
+        .map(string -> string.equals(QueryResource.NULL_KEY) ? string
+            : "\"" + string.trim()
+                .replace("\\", "\\\\")
+                .replaceAll("\\r?\\n", "\\\\n") + "\"")
+        .collect(Collectors.toSet());
   }
 }
