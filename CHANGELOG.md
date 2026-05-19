@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.51.0
+
+- Extended filters for numeric filters
+
 ## 1.50.3
 
 - Added a flag to disable tracking for price adjustments
