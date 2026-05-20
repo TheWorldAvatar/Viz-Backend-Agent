@@ -314,7 +314,7 @@ public class ShaclRuleProcesser {
      */
 
     private String getIriClause(String field, List<String> iris) {
-        return "\n" + QueryResource.values(field, iris);
+        return "\n" + QueryResource.values(iris, field);
     }
 
     /**
