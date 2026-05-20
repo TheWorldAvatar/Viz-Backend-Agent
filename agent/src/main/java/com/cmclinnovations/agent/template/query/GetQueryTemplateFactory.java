@@ -20,6 +20,7 @@ import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 public class GetQueryTemplateFactory extends QueryTemplateFactory {
@@ -105,23 +106,27 @@ public class GetQueryTemplateFactory extends QueryTemplateFactory {
       object = filter;
       selectTemplate.where(Expressions.bind(Expressions.str(filter), QueryResource.ID_VAR));
       if (currentIds.size() > 1) {
-        valuesClause += QueryResource.values(QueryResource.EVENT_ID_VAR.getVarName(),
-            List.of(Rdf.iri(currentIds.get(1)).getQueryString()));
+        valuesClause += QueryResource.values(List.of(Rdf.iri(currentIds.get(1)).getQueryString()),
+            QueryResource.EVENT_ID_VAR.getVarName());
       }
     } else if (filterIds.size() > 1) {
       List<String> idValues = new ArrayList<>();
-      List<String> eventIdValues = new ArrayList<>();
+      List<String> idAndEventIdValues = new ArrayList<>();
       while (!filterIds.isEmpty()) {
         List<String> currentIds = filterIds.poll();
         String currentId = Rdf.literalOf(currentIds.get(0)).getQueryString();
-        idValues.add(currentId);
         if (currentIds.size() > 1) {
-          eventIdValues.add(Rdf.iri(currentIds.get(1)).getQueryString());
+          idAndEventIdValues
+              .add("(" + currentId + ShaclResource.WHITE_SPACE + Rdf.iri(currentIds.get(1)).getQueryString() + ")");
+        } else {
+          idValues.add(currentId);
         }
       }
-      valuesClause += QueryResource.values(QueryResource.ID_KEY, idValues);
-      if (!eventIdValues.isEmpty()) {
-        valuesClause += QueryResource.values(QueryResource.EVENT_ID_VAR.getVarName(), eventIdValues);
+      if (!idAndEventIdValues.isEmpty()) {
+        valuesClause += QueryResource.values(idAndEventIdValues, QueryResource.ID_KEY,
+            QueryResource.EVENT_ID_VAR.getVarName());
+      } else {
+        valuesClause += QueryResource.values(idValues, QueryResource.ID_KEY);
       }
     }
     selectTemplate.where(QueryResource.IRI_VAR.has(QueryResource.DC_TERM_ID, object));

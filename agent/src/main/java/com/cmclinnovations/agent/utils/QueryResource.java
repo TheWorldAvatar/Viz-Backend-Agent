@@ -278,16 +278,28 @@ public class QueryResource {
     }
 
     /**
-     * Generate a VALUES clause for the specific field and values
+     * Generate a VALUES clause for the specific field and values. If there are
+     * multiple fields, please ensure the values are wrapped in a bracket before
+     * using this function.
      * 
-     * @param field  The field of interest.
+     * @param fields A variable number of fields of interest.
      * @param values The values to be inserted into the VALUES clause.
      */
-    public static String values(String field, Collection<String> values) {
+    public static String values(Collection<String> values, String... fields) {
         StringBuilder valuesBuilder = new StringBuilder();
-        valuesBuilder.append("VALUES ?")
-                .append(field)
-                .append(" {");
+        valuesBuilder.append("VALUES ");
+        if (fields.length > 1) {
+            valuesBuilder.append("(");
+            for (String field : fields) {
+                valuesBuilder.append(ShaclResource.WHITE_SPACE)
+                        .append(QueryResource.genVariable(field).getQueryString());
+            }
+            valuesBuilder.append(")");
+        } else {
+            String firstVar = QueryResource.genVariable(fields[0]).getQueryString();
+            valuesBuilder.append(firstVar);
+        }
+        valuesBuilder.append(" {");
         values.forEach(value -> {
             valuesBuilder.append(ShaclResource.WHITE_SPACE)
                     .append(value);
@@ -346,7 +358,7 @@ public class QueryResource {
                             .append(")");
                 }
             } else {
-                String valuesClause = QueryResource.values(field, parsedFilters);
+                String valuesClause = QueryResource.values(parsedFilters, field);
                 builder.append(valuesClause);
             }
             // Special parsing for events at task level
@@ -357,7 +369,7 @@ public class QueryResource {
                         String eventStatusContent = eventStatus.substring(1, eventStatus.length() - 1);
                         return LocalisationTranslator.getEventFromLocalisedEventKey(eventStatusContent);
                     }).collect(Collectors.toSet());
-            String valuesClause = QueryResource.values(field, parsedFilters);
+            String valuesClause = QueryResource.values(parsedFilters, field);
             builder.append(valuesClause);
         } else {
             // For default filters without any blanks, add clause to restrict them
@@ -414,12 +426,12 @@ public class QueryResource {
                 // When there are multiple filters, MINUS and default clause with values should
                 // be provided; Remove the null key before generating the VALUES clause
                 filters.remove(QueryResource.NULL_KEY);
-                String valuesClause = QueryResource.values(field, filters);
+                String valuesClause = QueryResource.values(filters, field);
                 builder.append(QueryResource.union(minusStatement, query + valuesClause));
             }
             // For default string filters, only include VALUES if they are available
         } else if (!filters.isEmpty()) {
-            String valuesClause = QueryResource.values(field, filters);
+            String valuesClause = QueryResource.values(filters, field);
             builder.append(valuesClause);
         }
     }
