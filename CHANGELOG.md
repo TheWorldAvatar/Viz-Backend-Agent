@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.51.1
+
+- Combine VALUES clause for event id and id to improve speed
+
 ## 1.51.0
 
 - Extended filters for numeric filters
