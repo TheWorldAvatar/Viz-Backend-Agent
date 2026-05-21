@@ -54,11 +54,12 @@ public class LocalisationResource {
   public static final String ERROR_INVALID_METHOD_KEY = ERROR_PREFIX + "invalid.method";
   public static final String ERROR_INVALID_ROUTE_KEY = ERROR_PREFIX + "invalid.route";
   public static final String ERROR_INVALID_SERVER_KEY = ERROR_PREFIX + "invalid.server";
-  public static final String LABEL_SINGLE_SERVICE_KEY = LABEL_PREFIX + "single.service";
-  public static final String LABEL_ALTERNATE_DAY_SERVICE_KEY = LABEL_PREFIX + "alt.day.service";
-  public static final String LABEL_PERPETUAL_SERVICE_KEY = LABEL_PREFIX + "perpetual.service";
-  public static final String LABEL_REGULAR_SERVICE_KEY = LABEL_PREFIX + "regular.service";
-  public static final String LABEL_FIXED_DATE_SERVICE_KEY = LABEL_PREFIX + "fixed.date.service";
+
+  public static final String SINGLE_SERVICE_KEY = "singleService";
+  public static final String ALTERNATE_DAY_SERVICE_KEY = "alternateService";
+  public static final String PERPETUAL_SERVICE_KEY = "perpetualService";
+  public static final String REGULAR_SERVICE_KEY = "regularService";
+  public static final String FIXED_DATE_SERVICE_KEY = "fixedService";
 
   public static final String EVENT_STATUS_ASSIGNED_KEY = "assigned";
   public static final String EVENT_STATUS_CANCELLED_KEY = "cancelled";

@@ -120,14 +120,12 @@ public class LocalisationTranslator {
    */
   public static String getScheduleTypeFromRecurrence(String recurrence) {
     return switch (recurrence) {
-      case null -> getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY);
-      case "" -> getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY);
-      case LifecycleResource.RECURRENCE_FIXED_DATE_TASK ->
-        getMessage(LocalisationResource.LABEL_FIXED_DATE_SERVICE_KEY);
-      case LifecycleResource.RECURRENCE_DAILY_TASK -> getMessage(LocalisationResource.LABEL_SINGLE_SERVICE_KEY);
-      case LifecycleResource.RECURRENCE_ALT_DAY_TASK ->
-        getMessage(LocalisationResource.LABEL_ALTERNATE_DAY_SERVICE_KEY);
-      default -> getMessage(LocalisationResource.LABEL_REGULAR_SERVICE_KEY);
+      case null -> LocalisationResource.PERPETUAL_SERVICE_KEY;
+      case "" -> LocalisationResource.PERPETUAL_SERVICE_KEY;
+      case LifecycleResource.RECURRENCE_FIXED_DATE_TASK -> LocalisationResource.FIXED_DATE_SERVICE_KEY;
+      case LifecycleResource.RECURRENCE_DAILY_TASK -> LocalisationResource.SINGLE_SERVICE_KEY;
+      case LifecycleResource.RECURRENCE_ALT_DAY_TASK -> LocalisationResource.ALTERNATE_DAY_SERVICE_KEY;
+      default -> LocalisationResource.REGULAR_SERVICE_KEY;
     };
   }
 }
