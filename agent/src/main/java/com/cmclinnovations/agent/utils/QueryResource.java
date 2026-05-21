@@ -323,27 +323,21 @@ public class QueryResource {
             builder.append(query); // Append general query
             boolean hasRegularService = filters.stream()
                     .anyMatch(scheduleType -> scheduleType.substring(1, scheduleType.length() - 1).equals(
-                            LocalisationTranslator.getMessage(LocalisationResource.LABEL_REGULAR_SERVICE_KEY)));
+                            LocalisationTranslator.getMessage(LocalisationResource.REGULAR_SERVICE_KEY)));
             Set<String> parsedFilters = filters.stream()
                     // Filter out regular service
                     .filter(scheduleType -> !scheduleType.substring(1, scheduleType.length() - 1).equals(
-                            LocalisationTranslator.getMessage(LocalisationResource.LABEL_REGULAR_SERVICE_KEY)))
+                            LocalisationTranslator.getMessage(LocalisationResource.REGULAR_SERVICE_KEY)))
                     .map(scheduleType -> {
                         String scheduleTypeContent = scheduleType.substring(1, scheduleType.length() - 1);
-                        if (scheduleTypeContent.equals(
-                                LocalisationTranslator.getMessage(LocalisationResource.LABEL_PERPETUAL_SERVICE_KEY))) {
+                        if (scheduleTypeContent.equals(LocalisationResource.PERPETUAL_SERVICE_KEY)) {
                             return LifecycleResource.EMPTY_STRING;
                         } else if (scheduleTypeContent
-                                .equals(LocalisationTranslator
-                                        .getMessage(LocalisationResource.LABEL_SINGLE_SERVICE_KEY))) {
+                                .equals(LocalisationResource.SINGLE_SERVICE_KEY)) {
                             return LifecycleResource.RECURRENCE_DAILY_TASK_STRING;
-                        } else if (scheduleTypeContent.equals(
-                                LocalisationTranslator
-                                        .getMessage(LocalisationResource.LABEL_ALTERNATE_DAY_SERVICE_KEY))) {
+                        } else if (scheduleTypeContent.equals(LocalisationResource.ALTERNATE_DAY_SERVICE_KEY)) {
                             return LifecycleResource.RECURRENCE_ALT_DAY_TASK_STRING;
-                        } else if (scheduleTypeContent.equals(
-                                LocalisationTranslator
-                                        .getMessage(LocalisationResource.LABEL_FIXED_DATE_SERVICE_KEY))) {
+                        } else if (scheduleTypeContent.equals(LocalisationResource.FIXED_DATE_SERVICE_KEY)) {
                             return LifecycleResource.RECURRENCE_FIXED_DATE_TASK_STRING;
                         }
                         return scheduleType;
