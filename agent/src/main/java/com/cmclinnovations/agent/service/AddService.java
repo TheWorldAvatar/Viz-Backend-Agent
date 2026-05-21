@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -308,7 +309,10 @@ public class AddService {
           }
 
           // Iterate and append each property in the target node to the current node
-          for (String currentOptionField : matchedOption.propertyNames()) {
+          List<String> matchedFieldNames = new ArrayList<>();
+          matchedOption.propertyNames().forEach(matchedFieldNames::add);
+
+          for (String currentOptionField : matchedFieldNames) {
             this.recursiveReplacePlaceholders(matchedOption, currentNode, currentOptionField,
                 replacements);
             JsonNode matchedField = matchedOption.path(currentOptionField);
