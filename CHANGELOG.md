@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.51.2
+
+- Fixed broken instantiation process with branches
+
 ## 1.51.1
 
 - Combine VALUES clause for event id and id to improve speed
