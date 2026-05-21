@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.51.3
+
+- Removed translations for schedule type and pass the keys directly
+
 ## 1.51.2
 
 - Fixed broken instantiation process with branches
