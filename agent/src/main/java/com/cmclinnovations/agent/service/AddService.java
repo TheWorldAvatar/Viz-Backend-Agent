@@ -303,6 +303,7 @@ public class AddService {
               // Remove branch key as it should not be reused
               branchObj.remove(ShaclResource.BRANCH_KEY);
               matchedOption = branchObj;
+              break;
             }
           }
 
