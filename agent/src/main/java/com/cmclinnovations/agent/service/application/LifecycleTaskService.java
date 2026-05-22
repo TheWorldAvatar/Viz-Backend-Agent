@@ -321,12 +321,13 @@ public class LifecycleTaskService {
         sortedFields, serviceEventFilters);
     // Non-closed tasks should not have the closed related statements
     if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
-      addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
+      String completeQueryStatements = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
           sortedFields, serviceEventFilters);
-      addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,
+      String cancelQueryStatements = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,
           sortedFields, serviceEventFilters);
-      addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
+      String reportQueryStatements = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
           sortedFields, serviceEventFilters);
+      addFilterQueries += QueryResource.union(completeQueryStatements, cancelQueryStatements, reportQueryStatements);
     }
     statementMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
         statementMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + addFilterQueries);

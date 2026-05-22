@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
@@ -269,12 +270,10 @@ public class QueryResource {
      *                        separate UNION clauses.
      */
     public static String union(String firstStatements, String... statements) {
-        StringBuilder unionBuilder = new StringBuilder();
-        unionBuilder.append("{").append(firstStatements).append("}");
-        for (String currentStatements : statements) {
-            unionBuilder.append("UNION{").append(currentStatements).append("}");
-        }
-        return unionBuilder.toString();
+        return Stream.concat(Stream.of(firstStatements), Stream.of(statements))
+                .filter(statement -> statement != null && !statement.trim().isEmpty())
+                .map(statement -> "{" + statement + "}")
+                .collect(Collectors.joining(" UNION "));
     }
 
     /**
