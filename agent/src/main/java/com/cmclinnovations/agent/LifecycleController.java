@@ -213,7 +213,7 @@ public class LifecycleController {
           Integer.class);
       ContractOperation operation = contractId -> {
         Map<String, Object> contractDetails = this.lifecycleContractService.getContractDetails(contractId, entityType);
-        Map<String, Object> schedule = this.lifecycleContractService.getContractSchedule(contractId);
+        Map<String, Object> schedule = this.lifecycleContractService.getCopyContractSchedule(contractId);
         // Include schedule details into contract as some custom contract may require
         // the details
         contractDetails.putAll(schedule);

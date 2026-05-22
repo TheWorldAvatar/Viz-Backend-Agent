@@ -170,16 +170,16 @@ public class LifecycleContractService {
   }
 
   /**
-   * Retrieve contract details and return a map.
+   * Retrieve existing schedule details of a contract and create a copy with a new date.
    * 
    * @param contractId The target contract id.
    * @param entityType The entity type.
    */
-  public Map<String, Object> getContractSchedule(String contractId) {
+  public Map<String, Object> getCopyContractSchedule(String contractId) {
     SparqlBinding rawSchedule = this.lifecycleQueryService.querySchedule(contractId);
     // convert to draft schedule details
     Map<String, Object> draftDetails = new HashMap<>();
-    String today = this.dateTimeService.getCurrentDate();
+    String newDate = this.dateTimeService.getFutureDate(this.dateTimeService.getCurrentDate(), 1); // default to tomorrow
     // Keep time window
     draftDetails.put("time slot start", rawSchedule.getFieldValue(QueryResource.SCHEDULE_START_TIME_VAR.getVarName()));
     draftDetails.put("time slot end", rawSchedule.getFieldValue(QueryResource.SCHEDULE_END_TIME_VAR.getVarName()));
@@ -202,19 +202,19 @@ public class LifecycleContractService {
           .collect(Collectors.toList());
       draftDetails.put(QueryResource.FIXED_DATE_SCHEDULE_KEY, entryDateStrings);
     } else {
-      draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, today);
+      draftDetails.put(LifecycleResource.SCHEDULE_START_DATE_KEY, newDate);
       // perpetual service has no end date
       if (rawSchedule.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).equals("")) {
         draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, "");
       } else {
-        draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, today);
+        draftDetails.put(LifecycleResource.SCHEDULE_END_DATE_KEY, newDate);
       }
       draftDetails.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY,
           rawSchedule.getFieldValue(LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY));
       // The day of week for daily tasks will follow today
       if (rawSchedule.getFieldValue(
           LifecycleResource.SCHEDULE_RECURRENCE_PLACEHOLDER_KEY).equals(LifecycleResource.RECURRENCE_DAILY_TASK)) {
-        draftDetails.put(this.dateTimeService.getCurrentDayOfWeek(), true);
+        draftDetails.put(this.dateTimeService.getDayOfWeek(newDate), true);
       } else {
         Map<String, SparqlResponseField> schedule = rawSchedule.get().entrySet().stream()
             .collect(Collectors.toMap(

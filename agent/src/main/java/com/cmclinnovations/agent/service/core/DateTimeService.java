@@ -93,6 +93,17 @@ public class DateTimeService {
   }
 
   /**
+   * Get the day of the week for a given date string as full lowercase english.
+   * * @param dateString The date string in YYYY-MM-DD format.
+   */
+  public String getDayOfWeek(String dateString) {
+    return this.parseDate(dateString)
+        .getDayOfWeek()
+        .getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+        .toLowerCase();
+  }
+
+  /**
    * Get current date time in YYYY-MM-DDTHH:MM:SS format.
    */
   public String getCurrentDateTime() {
