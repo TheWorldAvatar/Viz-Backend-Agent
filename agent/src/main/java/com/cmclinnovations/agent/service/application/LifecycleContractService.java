@@ -170,12 +170,12 @@ public class LifecycleContractService {
   }
 
   /**
-   * Retrieve contract details and return a map.
+   * Retrieve existing schedule details of a contract and create a copy with a new date.
    * 
    * @param contractId The target contract id.
    * @param entityType The entity type.
    */
-  public Map<String, Object> getContractSchedule(String contractId) {
+  public Map<String, Object> getCopyContractSchedule(String contractId) {
     SparqlBinding rawSchedule = this.lifecycleQueryService.querySchedule(contractId);
     // convert to draft schedule details
     Map<String, Object> draftDetails = new HashMap<>();
