@@ -317,16 +317,16 @@ public class LifecycleTaskService {
       serviceEventFilters.put(field, new HashSet<>());
     }
     // Get statements for dispatch events that matches any sort/filter criteria
-    String addFilterQueries = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+    String addFilterQueries = this.genServiceEventsQueryStatements(field, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
         sortedFields, serviceEventFilters);
     // Non-closed tasks should not have the closed related statements
     if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
-      String completeQueryStatements = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
+      String completeQueryStatements = this.genServiceEventsQueryStatements(field, LifecycleEventType.SERVICE_EXECUTION,
           sortedFields, serviceEventFilters);
-      String cancelQueryStatements = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,
-          sortedFields, serviceEventFilters);
-      String reportQueryStatements = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
-          sortedFields, serviceEventFilters);
+      String cancelQueryStatements = this.genServiceEventsQueryStatements(field,
+          LifecycleEventType.SERVICE_CANCELLATION, sortedFields, serviceEventFilters);
+      String reportQueryStatements = this.genServiceEventsQueryStatements(field,
+          LifecycleEventType.SERVICE_INCIDENT_REPORT, sortedFields, serviceEventFilters);
       addFilterQueries += QueryResource.union(completeQueryStatements, cancelQueryStatements, reportQueryStatements);
     }
     statementMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
@@ -380,12 +380,13 @@ public class LifecycleTaskService {
    * Generates the query statements for service events such as dispatch, complete,
    * cancel, and report if required.
    * 
+   * @param filterField    Optional filter specific field name.
    * @param lifecycleEvent Target event type.
    * @param sortedFields   Set of fields for sorting that should be included.
    * @param filters        Filters with name and values.
    */
-  private String genServiceEventsQueryStatements(LifecycleEventType lifecycleEvent, Set<String> sortedFields,
-      Map<String, Set<String>> filters) {
+  private String genServiceEventsQueryStatements(String filterField, LifecycleEventType lifecycleEvent,
+      Set<String> sortedFields, Map<String, Set<String>> filters) {
     Map<String, String> filteredStatementMappings = this.getService.getStatementMappingsForTargetFields(
         lifecycleEvent.getShaclReplacement(), sortedFields, filters);
     if (filteredStatementMappings.isEmpty()) {
@@ -399,8 +400,10 @@ public class LifecycleTaskService {
     for (Map.Entry<String, String> entry : filteredStatementMappings.entrySet()) {
       String key = entry.getKey();
       String statement = entry.getValue();
-      // For sorted fields, they will be wrapped with optionals
-      if (key.equals(StringResource.SORT_KEY)) {
+      // For sorted fields or target filter field, the entire statement is optional
+      // Note that the event target query statement must be wrapped within the clause
+      // to be correct
+      if (key.equals(StringResource.SORT_KEY) || (key.equals(filterField) && filters.get(key).isEmpty())) {
         queryBuilder.append(QueryResource.optional(eventTargetQueryStatement + statement));
         continue;
       }
@@ -408,13 +411,6 @@ public class LifecycleTaskService {
       // For blank filters with no other values, statements are encapsulated in MINUS
       if (filterValues.contains(QueryResource.NULL_KEY) && filterValues.size() == 1) {
         queryBuilder.append(QueryResource.minus(eventTargetQueryStatement + statement));
-        continue;
-      }
-
-      // When retrieving filter options, the entire statement clause is optional
-      if (filterValues.isEmpty()) {
-        queryBuilder
-            .append(QueryResource.optional(eventTargetQueryStatement + statement));
         continue;
       }
 
