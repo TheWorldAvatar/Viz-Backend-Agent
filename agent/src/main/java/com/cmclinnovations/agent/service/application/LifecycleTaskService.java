@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.service.application;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -31,6 +32,7 @@ import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
+import com.cmclinnovations.agent.service.application.LifecycleTaskService.ServiceEventFilterQueryManifest;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
@@ -61,6 +63,9 @@ public class LifecycleTaskService {
   static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
   private static final boolean IS_CONTRACT = false;
+
+  final record ServiceEventFilterQueryManifest(String query, boolean hasFilterField, boolean hasActiveFilters) {
+  }
 
   /**
    * Constructs a new service with the following dependencies.
@@ -318,16 +323,34 @@ public class LifecycleTaskService {
     }
     // Get statements for dispatch events that matches any sort/filter criteria
     String addFilterQueries = this.genServiceEventsQueryStatements(field, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-        sortedFields, serviceEventFilters);
+        sortedFields, serviceEventFilters).query();
     // Non-closed tasks should not have the closed related statements
     if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
-      String completeQueryStatements = this.genServiceEventsQueryStatements(field, LifecycleEventType.SERVICE_EXECUTION,
-          sortedFields, serviceEventFilters);
-      String cancelQueryStatements = this.genServiceEventsQueryStatements(field,
+      ServiceEventFilterQueryManifest completeQueryStatements = this.genServiceEventsQueryStatements(field,
+          LifecycleEventType.SERVICE_EXECUTION, sortedFields, serviceEventFilters);
+      ServiceEventFilterQueryManifest cancelQueryStatements = this.genServiceEventsQueryStatements(field,
           LifecycleEventType.SERVICE_CANCELLATION, sortedFields, serviceEventFilters);
-      String reportQueryStatements = this.genServiceEventsQueryStatements(field,
+      ServiceEventFilterQueryManifest reportQueryStatements = this.genServiceEventsQueryStatements(field,
           LifecycleEventType.SERVICE_INCIDENT_REPORT, sortedFields, serviceEventFilters);
-      addFilterQueries += QueryResource.union(completeQueryStatements, cancelQueryStatements, reportQueryStatements);
+      List<ServiceEventFilterQueryManifest> queryManifests = List
+          .of(completeQueryStatements, cancelQueryStatements, reportQueryStatements);
+      boolean hasAtLeastOneActiveAndFilterField = queryManifests.stream()
+          .anyMatch(manifest -> manifest.hasActiveFilters() && manifest.hasFilterField());
+      List<String> nonEmptyQueryStatements = queryManifests.stream()
+          .filter(manifest -> manifest.query() != null && !manifest.query().trim().isEmpty()
+              && !(hasAtLeastOneActiveAndFilterField && manifest.hasFilterField() && !manifest.hasActiveFilters))
+          .map(manifest -> manifest.query())
+          .toList();
+      // When only one query meets the criteria, add them directly
+      if (nonEmptyQueryStatements.size() == 1) {
+        addFilterQueries += nonEmptyQueryStatements.get(0);
+        // When multiple queries meet the filter/sort criteria
+      } else if (!nonEmptyQueryStatements.isEmpty()) {
+        String[] parsedStatements = nonEmptyQueryStatements.toArray(String[]::new);
+        String unionStatement = QueryResource.union(parsedStatements[0],
+            Arrays.copyOfRange(parsedStatements, 1, parsedStatements.length));
+        addFilterQueries += unionStatement;
+      }
     }
     statementMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
         statementMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + addFilterQueries);
@@ -385,12 +408,13 @@ public class LifecycleTaskService {
    * @param sortedFields   Set of fields for sorting that should be included.
    * @param filters        Filters with name and values.
    */
-  private String genServiceEventsQueryStatements(String filterField, LifecycleEventType lifecycleEvent,
+  private ServiceEventFilterQueryManifest genServiceEventsQueryStatements(String filterField,
+      LifecycleEventType lifecycleEvent,
       Set<String> sortedFields, Map<String, Set<String>> filters) {
     Map<String, String> filteredStatementMappings = this.getService.getStatementMappingsForTargetFields(
         lifecycleEvent.getShaclReplacement(), sortedFields, filters);
     if (filteredStatementMappings.isEmpty()) {
-      return "";
+      return new ServiceEventFilterQueryManifest("", false, false);
     }
     boolean addEventStatement = false;
     StringBuilder queryBuilder = new StringBuilder();
@@ -437,7 +461,11 @@ public class LifecycleTaskService {
       queryBuilder.append(eventTargetQueryStatement);
     }
     // replace all iri variables with the event variable
-    return queryBuilder.toString().replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
+    String query = queryBuilder.toString().replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
+    return new ServiceEventFilterQueryManifest(query, filteredStatementMappings.keySet().contains(filterField),
+        // Active filter is true if there is at least two mappings AND if there is one
+        // field but does not contain the filter
+        !(filteredStatementMappings.size() == 1 && filteredStatementMappings.keySet().contains(filterField)));
   }
 
   /**

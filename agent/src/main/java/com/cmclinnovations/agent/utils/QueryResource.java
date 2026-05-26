@@ -525,5 +525,6 @@ public class QueryResource {
         return input.stream()
                 .map(ArrayDeque::new)
                 .collect(Collectors.toCollection(ArrayDeque::new));
+
     }
 }
