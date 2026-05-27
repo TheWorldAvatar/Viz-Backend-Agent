@@ -431,7 +431,9 @@ public class LifecycleTaskService {
         queryBuilder.append(QueryResource.optional(eventTargetQueryStatement + statement));
         continue;
       }
-      Set<String> filterValues = filters.get(key);
+      // Use a copy to prevent modifications to the original set
+      Set<String> oriFilterValues = filters.get(key);
+      Set<String> filterValues = new LinkedHashSet<>(oriFilterValues);
       // For blank filters with no other values, statements are encapsulated in MINUS
       if (filterValues.contains(QueryResource.NULL_KEY) && filterValues.size() == 1) {
         queryBuilder.append(QueryResource.minus(eventTargetQueryStatement + statement));
