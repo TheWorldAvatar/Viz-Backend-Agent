@@ -482,11 +482,12 @@ public class LifecycleTaskService {
       addEventStatement = true;
     }
 
+    String query = queryBuilder.toString();
     if (addEventStatement) {
-      queryBuilder.append(eventTargetQueryStatement);
+      query = eventTargetQueryStatement + query;
     }
     // replace all iri variables with the event variable
-    String query = queryBuilder.toString().replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
+    query = query.replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
     return new ServiceEventFilterQueryManifest(query, filteredStatementMappings.keySet().contains(filterField),
         // Active filter is true if there are at least two mappings OR if there is one
         // field but does not contain the filter
