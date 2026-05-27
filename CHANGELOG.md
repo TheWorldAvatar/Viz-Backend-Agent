@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.51.4
+
+- Default to tomorrow when cloning contracts
+
 ## 1.51.3
 
 - Removed translations for schedule type and pass the keys directly

@@ -3,7 +3,7 @@ version: "3.9"
 services:
   agent:
     container_name: vis-backend-agent-test
-    image: ghcr.io/theworldavatar/vis-backend-agent-test:1.51.4-broken-lifecycle-custom-event-filters-SNAPSHOT
+    image: ghcr.io/theworldavatar/vis-backend-agent-test:1.51.5-broken-lifecycle-custom-event-filters-SNAPSHOT
     build:
       context: ..
       target: test
