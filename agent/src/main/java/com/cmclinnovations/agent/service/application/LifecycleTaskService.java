@@ -65,7 +65,7 @@ public class LifecycleTaskService {
   private static final boolean IS_CONTRACT = false;
 
   final record ServiceEventFilterQueryManifest(String query, boolean hasFilterField, boolean hasActiveFilters,
-      boolean hasOneOptionalField, boolean hasOneMinusFilter) {
+      boolean onlyOptionalField, boolean onlyMinusFilter) {
   }
 
   /**
@@ -336,16 +336,13 @@ public class LifecycleTaskService {
       List<ServiceEventFilterQueryManifest> queryManifests = List
           .of(completeQueryStatements, cancelQueryStatements, reportQueryStatements);
 
-      boolean hasAtLeastOneActiveAndFilterField = queryManifests.stream()
-          .anyMatch(manifest -> manifest.hasActiveFilters() && manifest.hasFilterField());
       boolean hasAllOptionalFields = queryManifests.stream()
-          .allMatch(manifest -> manifest.hasOneOptionalField() && !manifest.hasActiveFilters);
+          .allMatch(manifest -> manifest.onlyOptionalField() && !manifest.hasActiveFilters);
       boolean hasAllMinusFields = queryManifests.stream()
-          .allMatch(manifest -> manifest.hasOneMinusFilter() && !manifest.hasFilterField);
+          .allMatch(manifest -> manifest.onlyMinusFilter() && !manifest.hasFilterField);
 
       List<String> nonEmptyQueryStatements = queryManifests.stream()
-          .filter(manifest -> manifest.query() != null && !manifest.query().trim().isEmpty()
-              && !(hasAtLeastOneActiveAndFilterField && manifest.hasFilterField() && !manifest.hasActiveFilters))
+          .filter(manifest -> manifest.query() != null && !manifest.query().trim().isEmpty())
           .map(manifest -> {
             if (hasAllOptionalFields) {
               return QueryResource.getClauseContents(manifest.query(), true);
@@ -436,8 +433,8 @@ public class LifecycleTaskService {
       return new ServiceEventFilterQueryManifest("", false, false, false, false);
     }
     boolean addEventStatement = false;
-    boolean hasOptionalClause = false;
-    boolean hasMinusClause = false;
+    boolean hasOptionalClause = true;
+    boolean hasMinusClause = true;
     StringBuilder queryBuilder = new StringBuilder();
     String eventVar = QueryResource.genVariable(lifecycleEvent.getId() + "_event").getQueryString();
     String eventTargetQueryStatement = LifecycleResource.genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent);
@@ -450,7 +447,7 @@ public class LifecycleTaskService {
       // to be correct
       if (key.equals(StringResource.SORT_KEY) || (key.equals(filterField) && filters.get(key).isEmpty())) {
         queryBuilder.append(QueryResource.optional(eventTargetQueryStatement + statement));
-        hasOptionalClause = true;
+        hasMinusClause = false;
         continue;
       }
       // Use a copy to prevent modifications to the original set
@@ -458,8 +455,8 @@ public class LifecycleTaskService {
       Set<String> filterValues = new LinkedHashSet<>(oriFilterValues);
       // For blank filters with no other values, statements are encapsulated in MINUS
       if (filterValues.contains(QueryResource.NULL_KEY) && filterValues.size() == 1) {
-        hasMinusClause = true;
         queryBuilder.append(QueryResource.minus(eventTargetQueryStatement + statement));
+        hasOptionalClause = false;
         continue;
       }
 
@@ -470,6 +467,8 @@ public class LifecycleTaskService {
         QueryResource.genDefaultDatatypeFilters(eventTargetQueryStatement + statement, key, filterValues,
             filterExpression);
         queryBuilder.append(filterExpression.toString());
+        hasOptionalClause = false;
+        hasMinusClause = false;
         continue;
       }
 
@@ -480,6 +479,8 @@ public class LifecycleTaskService {
       queryBuilder.append(statement)
           .append(filterExpression.toString());
       addEventStatement = true;
+      hasOptionalClause = false;
+      hasMinusClause = false;
     }
 
     String query = queryBuilder.toString();
@@ -492,10 +493,10 @@ public class LifecycleTaskService {
         // Active filter is true if there are at least two mappings OR if there is one
         // field but does not contain the filter
         filteredStatementMappings.size() > 1 || !filteredStatementMappings.keySet().contains(filterField),
-        // Check if only one optional clause remains
-        filteredStatementMappings.size() == 1 && hasOptionalClause,
-        // Check if only one minus clause remains
-        filteredStatementMappings.size() == 1 && hasMinusClause);
+        // Check if all clauses is wrapped in optional clause
+        filteredStatementMappings.size() > 0 && hasOptionalClause,
+        // Check if all clauses is wrapped in minus clause
+        filteredStatementMappings.size() > 0 && hasMinusClause);
   }
 
   /**
