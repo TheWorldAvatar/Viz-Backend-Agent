@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.51.5
+
+- Fixed assignment, completed, cancelled, and reported filters
+
 ## 1.51.4
 
 - Default to tomorrow when cloning contracts

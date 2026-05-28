@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.service.application;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -31,6 +32,7 @@ import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
+import com.cmclinnovations.agent.service.application.LifecycleTaskService.ServiceEventFilterQueryManifest;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
@@ -61,6 +63,10 @@ public class LifecycleTaskService {
   static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
   private static final boolean IS_CONTRACT = false;
+
+  final record ServiceEventFilterQueryManifest(String query, boolean hasFilterField, boolean hasActiveFilters,
+      boolean onlyOptionalField, boolean onlyMinusFilter) {
+  }
 
   /**
    * Constructs a new service with the following dependencies.
@@ -311,33 +317,67 @@ public class LifecycleTaskService {
         eventType.equals(LifecycleEventType.ACTIVE_SERVICE));
     Map<String, String> statementMappings = this.lifecycleQueryFactory.getServiceTasksQuery(null,
         targetStartEndDates[0], targetStartEndDates[1], eventType);
-    Map<String, String> filterExpressions = new HashMap<>();
     Map<String, Set<String>> serviceEventFilters = new HashMap<>(filters);
     if (!field.isEmpty()) {
       // Override the field value for filter options, as it should ignore them
       serviceEventFilters.put(field, new HashSet<>());
     }
     // Get statements for dispatch events that matches any sort/filter criteria
-    String addFilterQueries = this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-        sortedFields, serviceEventFilters, filterExpressions);
+    String addFilterQueries = this.genServiceEventsQueryStatements(field, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+        sortedFields, serviceEventFilters).query();
     // Non-closed tasks should not have the closed related statements
     if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
-      addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_EXECUTION,
-          sortedFields, serviceEventFilters, filterExpressions);
-      addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_CANCELLATION,
-          sortedFields, serviceEventFilters, filterExpressions);
-      addFilterQueries += this.genServiceEventsQueryStatements(LifecycleEventType.SERVICE_INCIDENT_REPORT,
-          sortedFields, serviceEventFilters, filterExpressions);
+      ServiceEventFilterQueryManifest completeQueryStatements = this.genServiceEventsQueryStatements(field,
+          LifecycleEventType.SERVICE_EXECUTION, sortedFields, serviceEventFilters);
+      ServiceEventFilterQueryManifest cancelQueryStatements = this.genServiceEventsQueryStatements(field,
+          LifecycleEventType.SERVICE_CANCELLATION, sortedFields, serviceEventFilters);
+      ServiceEventFilterQueryManifest reportQueryStatements = this.genServiceEventsQueryStatements(field,
+          LifecycleEventType.SERVICE_INCIDENT_REPORT, sortedFields, serviceEventFilters);
+      List<ServiceEventFilterQueryManifest> queryManifests = List
+          .of(completeQueryStatements, cancelQueryStatements, reportQueryStatements);
+
+      boolean hasAllOptionalFields = queryManifests.stream()
+          .allMatch(manifest -> manifest.onlyOptionalField() && !manifest.hasActiveFilters);
+      boolean hasAllMinusFields = queryManifests.stream()
+          .allMatch(manifest -> manifest.onlyMinusFilter() && !manifest.hasFilterField);
+
+      List<String> nonEmptyQueryStatements = queryManifests.stream()
+          .filter(manifest -> manifest.query() != null && !manifest.query().trim().isEmpty())
+          .map(manifest -> {
+            if (hasAllOptionalFields) {
+              return QueryResource.getClauseContents(manifest.query(), true);
+            } else if (hasAllMinusFields) {
+              return QueryResource.getClauseContents(manifest.query(), false);
+            }
+            return manifest.query();
+          })
+          .toList();
+      // When only one query meets the criteria, add them directly
+      if (nonEmptyQueryStatements.size() == 1) {
+        addFilterQueries += nonEmptyQueryStatements.get(0);
+        // When multiple queries meet the filter/sort criteria
+      } else if (!nonEmptyQueryStatements.isEmpty()) {
+        String[] parsedStatements = nonEmptyQueryStatements.toArray(String[]::new);
+        String unionStatement = QueryResource.union(parsedStatements[0],
+            Arrays.copyOfRange(parsedStatements, 1, parsedStatements.length));
+        if (hasAllOptionalFields) {
+          unionStatement = QueryResource.optional(unionStatement);
+        } else if (hasAllMinusFields) {
+          unionStatement = QueryResource.minus(unionStatement);
+        }
+        addFilterQueries += unionStatement;
+      }
     }
-    statementMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
-        statementMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + addFilterQueries);
 
     Map<String, String> extendedMappings = this.lifecycleQueryFactory
         .insertExtendedLastModifiedFilters(statementMappings);
+    // The add filters are only required for getting IDs and not the main query
+    extendedMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
+        statementMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + addFilterQueries);
     // Include an empty date statement to support filtering
     extendedMappings.put(LifecycleResource.DATE_KEY, "");
     String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
-        filters, field) + filterExpressions.values().stream().collect(Collectors.joining("\n"));
+        filters, field);
     if (reqOriStatements) {
       return new String[] { lifecycleStatements,
           statementMappings.values().stream().collect(Collectors.joining("\n")) };
@@ -380,39 +420,84 @@ public class LifecycleTaskService {
    * Generates the query statements for service events such as dispatch, complete,
    * cancel, and report if required.
    * 
-   * @param lifecycleEvent    Target event type.
-   * @param sortedFields      Set of fields for sorting that should be included.
-   * @param filters           Filters with name and values.
-   * @param filterExpressions Mappings to store the current filter expressions
-   *                          when added.
+   * @param filterField    Optional filter specific field name.
+   * @param lifecycleEvent Target event type.
+   * @param sortedFields   Set of fields for sorting that should be included.
+   * @param filters        Filters with name and values.
    */
-  private String genServiceEventsQueryStatements(LifecycleEventType lifecycleEvent, Set<String> sortedFields,
-      Map<String, Set<String>> filters, Map<String, String> filterExpressions) {
+  private ServiceEventFilterQueryManifest genServiceEventsQueryStatements(String filterField,
+      LifecycleEventType lifecycleEvent,
+      Set<String> sortedFields, Map<String, Set<String>> filters) {
     Map<String, String> filteredStatementMappings = this.getService.getStatementMappingsForTargetFields(
         lifecycleEvent.getShaclReplacement(), sortedFields, filters);
     if (filteredStatementMappings.isEmpty()) {
-      return "";
+      return new ServiceEventFilterQueryManifest("", false, false, false, false);
     }
+    boolean addEventStatement = false;
+    boolean hasOptionalClause = true;
+    boolean hasMinusClause = true;
     StringBuilder queryBuilder = new StringBuilder();
-    filteredStatementMappings.forEach((key, value) -> {
-      if (key.equals(StringResource.SORT_KEY)) {
-        queryBuilder.append(value);
-      } else {
-        Set<String> filterValues = filters.get(key);
-        if (!filterValues.contains(QueryResource.NULL_KEY)) {
-          queryBuilder.append(value);
-        }
-        filterExpressions.computeIfAbsent(key, expression -> {
-          StringBuilder filterExpression = new StringBuilder();
-          QueryResource.genDefaultDatatypeFilters(value, key, filterValues, filterExpression);
-          return filterExpression.toString();
-        });
-      }
-    });
     String eventVar = QueryResource.genVariable(lifecycleEvent.getId() + "_event").getQueryString();
-    return QueryResource.optional(
-        LifecycleResource.genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent)
-            + queryBuilder.toString().replace(QueryResource.IRI_VAR.getQueryString(), eventVar));
+    String eventTargetQueryStatement = LifecycleResource.genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent);
+
+    for (Map.Entry<String, String> entry : filteredStatementMappings.entrySet()) {
+      String key = entry.getKey();
+      String statement = entry.getValue();
+      // For sorted fields or target filter field, the entire statement is optional
+      // Note that the event target query statement must be wrapped within the clause
+      // to be correct
+      if (key.equals(StringResource.SORT_KEY) || (key.equals(filterField) && filters.get(key).isEmpty())) {
+        queryBuilder.append(QueryResource.optional(eventTargetQueryStatement + statement));
+        hasMinusClause = false;
+        continue;
+      }
+      // Use a copy to prevent modifications to the original set
+      Set<String> oriFilterValues = filters.get(key);
+      Set<String> filterValues = new LinkedHashSet<>(oriFilterValues);
+      // For blank filters with no other values, statements are encapsulated in MINUS
+      if (filterValues.contains(QueryResource.NULL_KEY) && filterValues.size() == 1) {
+        queryBuilder.append(QueryResource.minus(eventTargetQueryStatement + statement));
+        hasOptionalClause = false;
+        continue;
+      }
+
+      StringBuilder filterExpression = new StringBuilder();
+      // For other filters where null may be mixed in, first generate a VALUES clause
+      // without any null by removing the value
+      if (filterValues.contains(QueryResource.NULL_KEY)) {
+        QueryResource.genDefaultDatatypeFilters(eventTargetQueryStatement + statement, key, filterValues,
+            filterExpression);
+        queryBuilder.append(filterExpression.toString());
+        hasOptionalClause = false;
+        hasMinusClause = false;
+        continue;
+      }
+
+      // Else simply attach them as they are
+      // Do not add event statement here as there may be duplicates with multiple
+      // active filters
+      QueryResource.genDefaultDatatypeFilters(statement, key, filterValues, filterExpression);
+      queryBuilder.append(statement)
+          .append(filterExpression.toString());
+      addEventStatement = true;
+      hasOptionalClause = false;
+      hasMinusClause = false;
+    }
+
+    String query = queryBuilder.toString();
+    if (addEventStatement) {
+      query = eventTargetQueryStatement + query;
+    }
+    // replace all iri variables with the event variable
+    query = query.replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
+    return new ServiceEventFilterQueryManifest(query, filteredStatementMappings.keySet().contains(filterField),
+        // Active filter is true if there are at least two mappings OR if there is one
+        // field but does not contain the filter
+        filteredStatementMappings.size() > 1 || !filteredStatementMappings.keySet().contains(filterField),
+        // Check if all clauses is wrapped in optional clause
+        filteredStatementMappings.size() > 0 && hasOptionalClause,
+        // Check if all clauses is wrapped in minus clause
+        filteredStatementMappings.size() > 0 && hasMinusClause);
   }
 
   /**

@@ -9,7 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
@@ -130,6 +133,9 @@ public class QueryResource {
     public static final String HISTORY_ACTIVITY_RESOURCE = "activity";
     public static final String HISTORY_AGENT_RESOURCE = "agent";
     public static final String MESSAGE_RESOURCE = "message";
+
+    private static final Pattern OPTIONAL_CLAUSE_PATTERN = Pattern.compile("OPTIONAL\\s*\\{(.*?)\\}", Pattern.DOTALL);
+    private static final Pattern MINUS_CLAUSE_PATTERN = Pattern.compile("MINUS\\s*\\{(.*?)\\}", Pattern.DOTALL);
 
     // Private constructor to prevent instantiation
     private QueryResource() {
@@ -269,12 +275,10 @@ public class QueryResource {
      *                        separate UNION clauses.
      */
     public static String union(String firstStatements, String... statements) {
-        StringBuilder unionBuilder = new StringBuilder();
-        unionBuilder.append("{").append(firstStatements).append("}");
-        for (String currentStatements : statements) {
-            unionBuilder.append("UNION{").append(currentStatements).append("}");
-        }
-        return unionBuilder.toString();
+        return Stream.concat(Stream.of(firstStatements), Stream.of(statements))
+                .filter(statement -> statement != null && !statement.trim().isEmpty())
+                .map(statement -> "{" + statement + "}")
+                .collect(Collectors.joining(" UNION "));
     }
 
     /**
@@ -526,5 +530,29 @@ public class QueryResource {
         return input.stream()
                 .map(ArrayDeque::new)
                 .collect(Collectors.toCollection(ArrayDeque::new));
+    }
+
+    /**
+     * Gets the contents of the OPTIONAL or MINUS clause.
+     * 
+     * @param input      the input for parsing
+     * @param isOptional indicates if it is optional or minus clause
+     */
+    public static String getClauseContents(String input, boolean isOptional) {
+        Matcher matcher = isOptional ? OPTIONAL_CLAUSE_PATTERN.matcher(input) : MINUS_CLAUSE_PATTERN.matcher(input);
+        StringBuilder contents = new StringBuilder();
+        StringBuffer leftoverText = new StringBuffer();
+
+        while (matcher.find()) {
+            contents.append(matcher.group(1).trim());
+            matcher.appendReplacement(leftoverText, "");
+        }
+
+        matcher.appendTail(leftoverText);
+        String remainingStatements = leftoverText.toString().trim();
+        if (!remainingStatements.isEmpty()) {
+            contents.append(remainingStatements);
+        }
+        return contents.toString();
     }
 }
