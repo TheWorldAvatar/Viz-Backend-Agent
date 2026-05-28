@@ -368,11 +368,12 @@ public class LifecycleTaskService {
         addFilterQueries += unionStatement;
       }
     }
-    statementMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
-        statementMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + addFilterQueries);
 
     Map<String, String> extendedMappings = this.lifecycleQueryFactory
         .insertExtendedLastModifiedFilters(statementMappings);
+    // The add filters are only required for getting IDs and not the main query
+    extendedMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
+        statementMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + addFilterQueries);
     // Include an empty date statement to support filtering
     extendedMappings.put(LifecycleResource.DATE_KEY, "");
     String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
