@@ -30,10 +30,12 @@ import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
+import com.cmclinnovations.agent.service.application.BillingService;
 import com.cmclinnovations.agent.service.application.LifecycleContractService;
 import com.cmclinnovations.agent.service.application.LifecycleTaskService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
+import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
@@ -49,6 +51,7 @@ public class LifecycleController {
   private final DeleteService deleteService;
   private final UpdateService updateService;
   private final DateTimeService dateTimeService;
+  private final BillingService billingService;
   private final LifecycleContractService lifecycleContractService;
   private final LifecycleTaskService lifecycleTaskService;
   private final ResponseEntityBuilder responseEntityBuilder;
@@ -57,14 +60,15 @@ public class LifecycleController {
 
   public LifecycleController(ConcurrencyService concurrencyService, AddService addService, GetService getService,
       DeleteService deleteService, UpdateService updateService, DateTimeService dateTimeService,
-      LifecycleContractService lifecycleContractService, LifecycleTaskService lifecycleTaskService,
-      ResponseEntityBuilder responseEntityBuilder) {
+      BillingService billingService, LifecycleContractService lifecycleContractService,
+      LifecycleTaskService lifecycleTaskService, ResponseEntityBuilder responseEntityBuilder) {
     this.concurrencyService = concurrencyService;
     this.addService = addService;
     this.getService = getService;
     this.deleteService = deleteService;
     this.updateService = updateService;
     this.dateTimeService = dateTimeService;
+    this.billingService = billingService;
     this.lifecycleContractService = lifecycleContractService;
     this.lifecycleTaskService = lifecycleTaskService;
     this.responseEntityBuilder = responseEntityBuilder;
@@ -100,10 +104,10 @@ public class LifecycleController {
   }
 
   /**
-   * Create a contract instance and immediately draft its lifecycle (stages,
-   * events) in a single request, setting it in draft state ie
-   * awaiting approval. Combines the separate create + draft calls to remove a
-   * network round-trip
+   * Create a contract instance, draft its lifecycle (stages, events and
+   * schedule) and assign any pricing models in a single request, setting it in
+   * draft state ie awaiting approval. Combines the separate create, draft and
+   * pricing calls to remove two network round-trips.
    */
   @PostMapping("/draft/new")
   public ResponseEntity<StandardApiResponse<?>> genContractAndDraft(@RequestBody Map<String, Object> params) {
@@ -111,6 +115,9 @@ public class LifecycleController {
     String type = TypeCastUtils.castToObject(params.get("type"), String.class);
     LOGGER.info("Received request to create and draft a new {} contract...", type);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
+      // Pricing models are assigned separately below, so keep them out of the
+      // contract/draft instantiation
+      Object pricingModels = params.remove(BillingResource.PRICING_KEY);
       // create the contract instance: the generated id is set into params
       // as a side effect and the IRI is returned in the response
       ResponseEntity<StandardApiResponse<?>> createResponse = this.addService.instantiate(type, params,
@@ -119,10 +126,27 @@ public class LifecycleController {
       // lifecycle and schedule
       params.put(LifecycleResource.CONTRACT_KEY, createResponse.getBody().data().id());
       this.execGenContractLifecycle(params);
-      // Return the contract-creation response so the caller keeps the IRI/id for
-      // the (still separate) pricing call
+      // assign each pricing model to the newly drafted contract, if any
+      this.assignContractPricing(params.get(QueryResource.ID_KEY), pricingModels);
+      // Return the contract-creation response so the caller keeps the contract IRI/id
       return createResponse;
     });
+  }
+
+  /**
+   * Assign each of the given pricing models to the target contract.
+   */
+  private void assignContractPricing(Object contractId, Object pricingModels) {
+    if (pricingModels == null) {
+      return;
+    }
+    String id = TypeCastUtils.castToObject(contractId, String.class);
+    for (String pricingModel : TypeCastUtils.castToListObject(pricingModels, String.class)) {
+      Map<String, Object> pricingParams = new HashMap<>();
+      pricingParams.put(QueryResource.ID_KEY, id);
+      pricingParams.put(BillingResource.PRICING_KEY, pricingModel);
+      this.billingService.assignPricingPlanToContract(pricingParams);
+    }
   }
 
   /**
