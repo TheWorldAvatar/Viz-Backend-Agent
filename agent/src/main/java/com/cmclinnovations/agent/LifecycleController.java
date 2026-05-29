@@ -178,6 +178,67 @@ public class LifecycleController {
   }
 
   /**
+   * Update a contract instance, re-draft its lifecycle (stages, events and
+   * schedule) and update any pricing models in a single request. Combines the
+   * separate update, draft and pricing calls to remove two network round-trips.
+   */
+  @PutMapping("/draft/new")
+  public ResponseEntity<StandardApiResponse<?>> updateContractAndDraft(@RequestBody Map<String, Object> params) {
+    this.checkMissingParams(params, "type");
+    String type = TypeCastUtils.castToObject(params.get("type"), String.class);
+    String targetId = params.get(QueryResource.ID_KEY).toString();
+    LOGGER.info("Received request to update and re-draft a {} contract...", type);
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
+      Object pricingModels = params.remove(BillingResource.PRICING_KEY);
+      // update the contract instance
+      ResponseEntity<StandardApiResponse<?>> updateResponse = this.updateService.update(
+          targetId, type, LocalisationResource.SUCCESS_UPDATE_KEY, params, TrackActionType.MODIFICATION);
+      if (!updateResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return updateResponse;
+      }
+      // re-draft the lifecycle and schedule
+      // Do not allow modifications if it has been approved
+      if (this.lifecycleContractService.guardAgainstApproval(targetId)) {
+        return this.responseEntityBuilder.error(
+            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY),
+            HttpStatus.CONFLICT);
+      }
+      // Add current date into parameters
+      params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
+      params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
+      params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
+      ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.updateContractSchedule(params);
+      if (!scheduleResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return scheduleResponse;
+      }
+      ResponseEntity<StandardApiResponse<?>> draftResponse = this.updateService.update(
+          targetId, LifecycleResource.LIFECYCLE_RESOURCE, LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY,
+          params, TrackActionType.IGNORED);
+      if (!draftResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return draftResponse;
+      }
+      // update the pricing models, if any
+      this.updateContractPricing(targetId, pricingModels);
+      // Return the contract-update response so the caller keeps the IRI/id
+      return updateResponse;
+    });
+  }
+
+  /**
+   * Update the pricing models assigned to the target contract. 
+   */
+  private void updateContractPricing(String contractId, Object pricingModels) {
+    if (pricingModels == null) {
+      return;
+    }
+    Map<String, Object> pricingParams = new HashMap<>();
+    pricingParams.put(QueryResource.ID_KEY, contractId);
+    pricingParams.put(BillingResource.PRICING_KEY, pricingModels);
+    pricingParams.put(QueryResource.DISABLE_TRACKING_KEY, true);
+    this.billingService.updatePricingPlanToContract(pricingParams);
+  }
+
+  /**
    * Reset the draft contract's status to pending.
    */
   @PutMapping("/draft/reset")
