@@ -100,6 +100,32 @@ public class LifecycleController {
   }
 
   /**
+   * Create a contract instance and immediately draft its lifecycle (stages,
+   * events) in a single request, setting it in draft state ie
+   * awaiting approval. Combines the separate create + draft calls to remove a
+   * network round-trip
+   */
+  @PostMapping("/draft/new")
+  public ResponseEntity<StandardApiResponse<?>> genContractAndDraft(@RequestBody Map<String, Object> params) {
+    this.checkMissingParams(params, "type");
+    String type = TypeCastUtils.castToObject(params.get("type"), String.class);
+    LOGGER.info("Received request to create and draft a new {} contract...", type);
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
+      // create the contract instance: the generated id is set into params
+      // as a side effect and the IRI is returned in the response
+      ResponseEntity<StandardApiResponse<?>> createResponse = this.addService.instantiate(type, params,
+          TrackActionType.CREATION);
+      // hand the new contract IRI to the draft logic to generate the
+      // lifecycle and schedule
+      params.put(LifecycleResource.CONTRACT_KEY, createResponse.getBody().data().id());
+      this.execGenContractLifecycle(params);
+      // Return the contract-creation response so the caller keeps the IRI/id for
+      // the (still separate) pricing call
+      return createResponse;
+    });
+  }
+
+  /**
    * Update the draft contract's lifecycle details in the knowledge graph.
    */
   @PutMapping("/draft")
