@@ -1,7 +1,9 @@
 package com.cmclinnovations.agent.component;
 
+import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.StructuredTaskScope;
+import java.util.concurrent.StructuredTaskScope.Joiner;
 import java.util.concurrent.StructuredTaskScope.Subtask;
 
 import org.springframework.security.concurrent.DelegatingSecurityContextCallable;
@@ -34,7 +36,9 @@ public class ParallelTaskExecutor {
 
         SecurityContext context = SecurityContextHolder.getContext();
 
-        try (var scope = StructuredTaskScope.open()) {
+        try (var scope = StructuredTaskScope.open(
+                Joiner.<Object>allSuccessfulOrThrow(),
+                config -> config.withTimeout(Duration.ofMinutes(1)))) {
             var dataSubtask = scope.fork(new DelegatingSecurityContextCallable<>(dataTask, context));
 
             Subtask<Integer> filteredSubtask = scope

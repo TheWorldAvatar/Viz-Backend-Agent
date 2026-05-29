@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.51.6
+
+- Ensure connections through FedX are closed on completion
+- Added timeout to virtual threads
+
 ## 1.51.5
 
 - Fixed assignment, completed, cancelled, and reported filters
