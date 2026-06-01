@@ -678,14 +678,6 @@ public class LifecycleTaskService {
   public ResponseEntity<StandardApiResponse<?>> continueTaskToday(String taskId, String contractId) {
     LOGGER.info("Generating the task for the next working day...");
     String currentDateTime = this.dateTimeService.getCurrentDateTime();
-    Queue<SparqlBinding> nextEvents = this.lifecycleQueryService.getContractEventQuery(contractId,
-        this.dateTimeService.getDateFromDateTime(currentDateTime),
-        LifecycleEventType.SERVICE_ORDER_RECEIVED);
-    if (!nextEvents.isEmpty()) {
-      return this.responseEntityBuilder.error(
-          LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_TASK_KEY),
-          HttpStatus.CONFLICT);
-    }
     // First instantiate the order received occurrence
     Map<String, Object> params = new HashMap<>();
     // Contract ID is mandatory to help generate the other related parameters
