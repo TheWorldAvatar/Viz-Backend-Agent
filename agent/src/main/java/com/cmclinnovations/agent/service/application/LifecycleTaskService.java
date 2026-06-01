@@ -669,13 +669,13 @@ public class LifecycleTaskService {
   }
 
   /**
-   * Continues the task on next working day by generating a new occurrence for the
-   * order received and dispatch event of a specified contract.
+   * Continues the task today by generating a new occurrence for the order
+   * received and dispatch event of a specified contract.
    * 
    * @param taskId     The latest task ID.
    * @param contractId Target contract.
    */
-  public ResponseEntity<StandardApiResponse<?>> continueTaskOnNextWorkingDay(String taskId, String contractId) {
+  public ResponseEntity<StandardApiResponse<?>> continueTaskToday(String taskId, String contractId) {
     LOGGER.info("Generating the task for the next working day...");
     String currentDateTime = this.dateTimeService.getCurrentDateTime();
     Queue<SparqlBinding> nextEvents = this.lifecycleQueryService.getContractEventQuery(contractId,
