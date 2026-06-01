@@ -107,7 +107,7 @@ public class DateTimeService {
    * Get current date time in YYYY-MM-DDTHH:MM:SS format.
    */
   public String getCurrentDateTime() {
-    return LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    return LocalDateTime.now().format(this.timeFormatter);
   }
 
   /**
