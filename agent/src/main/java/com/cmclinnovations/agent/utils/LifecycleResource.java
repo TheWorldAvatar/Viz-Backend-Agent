@@ -108,13 +108,14 @@ public class LifecycleResource {
    * @param eventType The target event type to support a unique instance IRI
    * @param params    The source and destination of parameter mappings.
    */
-  public static void genIdAndInstanceParameters(String prefix, LifecycleEventType eventType,
+  public static String genIdAndInstanceParameters(String prefix, LifecycleEventType eventType,
       Map<String, Object> params) {
     String identifier = params.containsKey(QueryResource.ID_KEY) ? params.get(QueryResource.ID_KEY).toString()
         : UUID.randomUUID().toString();
     params.putIfAbsent(QueryResource.ID_KEY, identifier);
     params.put(LifecycleResource.INSTANCE_KEY,
         prefix + "/" + eventType.getId() + "/" + identifier);
+    return identifier;
   }
 
   /**

@@ -688,18 +688,17 @@ public class LifecycleTaskService {
     // stage instance
     String defaultPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
     params.remove(QueryResource.ID_KEY);
-    LifecycleResource.genIdAndInstanceParameters(defaultPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
+    String newTaskId = LifecycleResource.genIdAndInstanceParameters(defaultPrefix,
+        LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
 
     ResponseEntity<StandardApiResponse<?>> orderInstantiatedResponse = this.addService.instantiate(
         LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, TrackActionType.IGNORED);
     if (orderInstantiatedResponse.getStatusCode() == HttpStatus.OK) {
       LOGGER.info("Retrieving the current dispatch details...");
-      String prevDispatchId = this.getPreviousOccurrence(taskId, QueryResource.ID_KEY,
+      ResponseEntity<StandardApiResponse<?>> prevDispatchResponse = this.getService.getInstance(taskId,
           LifecycleEventType.SERVICE_ORDER_DISPATCHED);
-      ResponseEntity<StandardApiResponse<?>> response = this.getService.getInstance(prevDispatchId,
-          LifecycleEventType.SERVICE_ORDER_DISPATCHED);
-      if (response.getStatusCode() == HttpStatus.OK) {
-        Map<String, String> currentEntity = ((Map<String, Object>) response.getBody().data().items()
+      if (prevDispatchResponse.getStatusCode() == HttpStatus.OK) {
+        Map<String, String> currentEntity = ((Map<String, Object>) prevDispatchResponse.getBody().data().items()
             .get(0)).entrySet().stream()
             .collect(Collectors.toMap(
                 Map.Entry::getKey,
@@ -709,7 +708,8 @@ public class LifecycleTaskService {
                     : ""));
         params.putAll(currentEntity);
         params.put(LifecycleResource.REMARKS_KEY, ORDER_DISPATCH_MESSAGE);
-        params.remove(QueryResource.ID_KEY);
+        // Ensure new task ID is kept
+        params.put(QueryResource.ID_KEY, newTaskId);
         LifecycleResource.genIdAndInstanceParameters(defaultPrefix, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
             params);
         params.put(LifecycleResource.ORDER_KEY, orderInstantiatedResponse.getBody().data().id());
