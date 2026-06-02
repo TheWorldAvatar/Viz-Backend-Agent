@@ -261,8 +261,15 @@ public class LifecycleTaskService {
    * 2) cancel: Cancel any upcoming service
    */
   public ResponseEntity<StandardApiResponse<?>> performSingleServiceAction(String type, Map<String, Object> params) {
-    params.put(LifecycleResource.ORDER_KEY, this.getPreviousOccurrenceEnum(params)); // get previous event enum
     LifecycleEventType eventType = LifecycleEventType.fromId(type.toLowerCase());
+    String taskId = params.get(QueryResource.ID_KEY).toString();
+    String prevEventIri = this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY,
+        LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+    if (prevEventIri == null) {
+      prevEventIri = this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY,
+          LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    }
+    params.put(LifecycleResource.ORDER_KEY, prevEventIri);
     switch (eventType) {
       case LifecycleEventType.SERVICE_CANCELLATION:
         LOGGER.info("Received request to cancel the upcoming service...");
@@ -832,46 +839,5 @@ public class LifecycleTaskService {
     SparqlBinding instance = this.lifecycleQueryService
         .getInstance(FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, true, latestEventId, eventType.getEvent());
     return instance == null ? null : instance.getFieldValue(fieldKey);
-  }
-
-  /**
-   * Retrieves the previous occurrence instance based on its event type.
-   * 
-   * @param eventType Target event type to query for.
-   * @param params    Mappings containing the contract and date value for the
-   *                  query.
-   */
-  private SparqlBinding getPreviousOccurrence(LifecycleEventType eventType, Map<String, Object> params) {
-    Queue<SparqlBinding> results = this.lifecycleQueryService
-        .getContractEventQuery(params.get(LifecycleResource.CONTRACT_KEY).toString(),
-            params.get(LifecycleResource.DATE_KEY).toString(), eventType);
-    if (results.isEmpty()) {
-      return null;
-    }
-    return results.poll();
-  }
-
-  /**
-   * Retrieves the enum of the previous occurrence instance.
-   * 
-   * @param params Mappings containing the contract and date value for the query.
-   */
-  public String getPreviousOccurrenceEnum(Map<String, Object> params) {
-    // try getting complete or cancel or issue event
-    if (this.getPreviousOccurrence(LifecycleEventType.SERVICE_EXECUTION, params) != null) {
-      return "4";
-    }
-    if (this.getPreviousOccurrence(LifecycleEventType.SERVICE_CANCELLATION, params) != null) {
-      return "3";
-    }
-    if (this.getPreviousOccurrence(LifecycleEventType.SERVICE_INCIDENT_REPORT, params) != null) {
-      return "2";
-    }
-    // try getting dispatch event first
-    if (this.getPreviousOccurrence(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-        params) != null) {
-      return "1";
-    }
-    return "0";
   }
 }

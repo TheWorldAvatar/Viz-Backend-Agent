@@ -119,28 +119,6 @@ public class LifecycleResource {
   }
 
   /**
-   * Retrieve the event type associated with the order enum number.
-   * 
-   * @param orderEnum The target enum number.
-   */
-  public static LifecycleEventType getEventClassFromOrderEnum(String orderEnum) {
-    switch (orderEnum) {
-      case "0":
-        return LifecycleEventType.SERVICE_ORDER_RECEIVED;
-      case "1":
-        return LifecycleEventType.SERVICE_ORDER_DISPATCHED;
-      case "2":
-        return LifecycleEventType.SERVICE_INCIDENT_REPORT;
-      case "3":
-        return LifecycleEventType.SERVICE_CANCELLATION;
-      case "4":
-        return LifecycleEventType.SERVICE_EXECUTION;
-      default:
-        throw new IllegalArgumentException("Invalid order enum number!");
-    }
-  }
-
-  /**
    * Retrieve the lifecycle resource file path associated with the resource ID.
    * 
    * @param resourceID The identifier for the resource.

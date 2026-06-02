@@ -116,16 +116,6 @@ public class LifecycleQueryService {
 
     params.put(LifecycleResource.EVENT_KEY, eventType.getEvent());
     params.putIfAbsent(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
-    // Update the order enum with the specific event instance if it exist
-    params.computeIfPresent(LifecycleResource.ORDER_KEY, (key, value) -> {
-      String orderEnum = value.toString();
-      return this
-          .getContractEventQuery(params.get(LifecycleResource.CONTRACT_KEY).toString(),
-              params.get(LifecycleResource.DATE_KEY).toString(),
-              LifecycleResource.getEventClassFromOrderEnum(orderEnum))
-          .poll()
-          .getFieldValue(QueryResource.IRI_KEY);
-    });
   }
 
   /**
