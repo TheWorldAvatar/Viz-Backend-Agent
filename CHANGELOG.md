@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.52.1
+
+- Updated lifecycle query statement to improve performance
+
 ## 1.52.0
 
 - Tasks are now continued on the current day instead of next working date
