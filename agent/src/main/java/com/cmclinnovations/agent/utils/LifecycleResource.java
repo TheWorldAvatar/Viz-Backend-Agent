@@ -108,35 +108,14 @@ public class LifecycleResource {
    * @param eventType The target event type to support a unique instance IRI
    * @param params    The source and destination of parameter mappings.
    */
-  public static void genIdAndInstanceParameters(String prefix, LifecycleEventType eventType,
+  public static String genIdAndInstanceParameters(String prefix, LifecycleEventType eventType,
       Map<String, Object> params) {
     String identifier = params.containsKey(QueryResource.ID_KEY) ? params.get(QueryResource.ID_KEY).toString()
         : UUID.randomUUID().toString();
     params.putIfAbsent(QueryResource.ID_KEY, identifier);
     params.put(LifecycleResource.INSTANCE_KEY,
         prefix + "/" + eventType.getId() + "/" + identifier);
-  }
-
-  /**
-   * Retrieve the event type associated with the order enum number.
-   * 
-   * @param orderEnum The target enum number.
-   */
-  public static LifecycleEventType getEventClassFromOrderEnum(String orderEnum) {
-    switch (orderEnum) {
-      case "0":
-        return LifecycleEventType.SERVICE_ORDER_RECEIVED;
-      case "1":
-        return LifecycleEventType.SERVICE_ORDER_DISPATCHED;
-      case "2":
-        return LifecycleEventType.SERVICE_INCIDENT_REPORT;
-      case "3":
-        return LifecycleEventType.SERVICE_CANCELLATION;
-      case "4":
-        return LifecycleEventType.SERVICE_EXECUTION;
-      default:
-        throw new IllegalArgumentException("Invalid order enum number!");
-    }
+    return identifier;
   }
 
   /**

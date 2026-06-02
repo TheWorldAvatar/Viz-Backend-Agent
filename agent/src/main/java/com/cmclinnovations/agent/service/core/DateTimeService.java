@@ -107,20 +107,7 @@ public class DateTimeService {
    * Get current date time in YYYY-MM-DDTHH:MM:SS format.
    */
   public String getCurrentDateTime() {
-    return LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-  }
-
-  /**
-   * Get next working date (excluding weekend) in YYYY-MM-DD time format.
-   */
-  public String getNextWorkingDate() {
-    LocalDate today = LocalDate.now();
-    long daysToAdd = switch (today.getDayOfWeek()) {
-      case DayOfWeek.FRIDAY -> 3;
-      case DayOfWeek.SATURDAY -> 2;
-      default -> 1;
-    };
-    return today.plusDays(daysToAdd).atStartOfDay().format(this.timeFormatter);
+    return LocalDateTime.now().format(this.timeFormatter);
   }
 
   /**

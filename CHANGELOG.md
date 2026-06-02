@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.52.0
+
+- Tasks are now continued on the current day instead of next working date
+- Removal of order enums
+
 ## 1.51.6
 
 - Ensure connections through FedX are closed on completion
