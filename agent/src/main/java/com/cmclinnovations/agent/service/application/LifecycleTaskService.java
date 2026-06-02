@@ -262,7 +262,6 @@ public class LifecycleTaskService {
    */
   public ResponseEntity<StandardApiResponse<?>> performSingleServiceAction(String type, Map<String, Object> params) {
     params.put(LifecycleResource.ORDER_KEY, this.getPreviousOccurrenceEnum(params)); // get previous event enum
-    this.getOrderTask(params);
     LifecycleEventType eventType = LifecycleEventType.fromId(type.toLowerCase());
     switch (eventType) {
       case LifecycleEventType.SERVICE_CANCELLATION:
@@ -795,13 +794,14 @@ public class LifecycleTaskService {
         eventType.getStage()).getFieldValue(QueryResource.IRI_KEY);
     params.put(LifecycleResource.STAGE_KEY, stage);
     params.put(LifecycleResource.REMARKS_KEY, remarksMsg);
+
+    String orderId = params.get(QueryResource.ID_KEY).toString();
     // Get the task ID for the order received event
-    String[] orderTask = this.getOrderTask(params);
     String previousOccurrenceIri = null;
     for (LifecycleEventType fallbackEvent : fallbackEvents) {
-      SparqlBinding previousOccurrence = this.getPreviousOccurrence(fallbackEvent, params);
-      if (previousOccurrence != null) {
-        previousOccurrenceIri = previousOccurrence.getFieldValue(QueryResource.IRI_KEY);
+      previousOccurrenceIri = this.getPreviousOccurrence(orderId, QueryResource.IRI_KEY,
+          fallbackEvent);
+      if (previousOccurrenceIri != null) {
         break;
       }
     }
@@ -809,10 +809,12 @@ public class LifecycleTaskService {
       throw new NullPointerException("No valid previous occurrence found!");
     }
     params.put(LifecycleResource.ORDER_KEY, previousOccurrenceIri);
-    ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(orderTask[0], eventType.getId(),
+    String orderEventIri = this.getPreviousOccurrence(orderId, QueryResource.IRI_KEY,
+        LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(orderId, eventType.getId(),
         successMsgId, params, TrackActionType.IGNORED);
     if (response.getStatusCode() == HttpStatus.OK) {
-      this.addService.logActivity(orderTask[1], action);
+      this.addService.logActivity(orderEventIri, action);
     }
     return response;
   }
@@ -827,26 +829,9 @@ public class LifecycleTaskService {
    * @param eventType     Target event type to query for.
    */
   public String getPreviousOccurrence(String latestEventId, String fieldKey, LifecycleEventType eventType) {
-    return this.lifecycleQueryService
-        .getInstance(FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, latestEventId, eventType.getEvent())
-        .getFieldValue(fieldKey);
-  }
-
-  /**
-   * Retrieves the order received event task references such as task ID and IRI
-   * respectively. This would also update the task ID in the input mappings.
-   * 
-   * @param params Mappings containing the contract and date value for the query.
-   */
-  private String[] getOrderTask(Map<String, Object> params) {
-    SparqlBinding taskOrder = this.getPreviousOccurrence(LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
-    String taskId = taskOrder.getFieldValue(QueryResource.ID_KEY);
-    if (taskId != null) {
-      params.put(QueryResource.ID_KEY, taskId);
-    } else {
-      throw new IllegalStateException("Invalid date range! No task is found for the specified contract and date.");
-    }
-    return new String[] { taskId, taskOrder.getFieldValue(QueryResource.IRI_KEY) };
+    SparqlBinding instance = this.lifecycleQueryService
+        .getInstance(FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, true, latestEventId, eventType.getEvent());
+    return instance == null ? null : instance.getFieldValue(fieldKey);
   }
 
   /**

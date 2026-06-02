@@ -122,9 +122,10 @@ public class GetService {
    * Retrieve only the specific instance based on the query. The query must have
    * iri as its variable.
    * 
-   * @param query Query for execution.
+   * @param query      Query for execution.
+   * @param returnNull Indicates if null is returnable or not.
    */
-  public SparqlBinding getInstance(String query) {
+  public SparqlBinding getInstance(String query, boolean returnNull) {
     LOGGER.debug("Retrieving an instance...");
     Queue<SparqlBinding> results = this.getInstances(query);
     if (results.size() > 1) {
@@ -151,6 +152,9 @@ public class GetService {
       return results.poll();
     }
     if (results.isEmpty()) {
+      if (returnNull) {
+        return null;
+      }
       LOGGER.error("No valid instance found!");
       throw new NullPointerException("No valid instance found!");
     }
