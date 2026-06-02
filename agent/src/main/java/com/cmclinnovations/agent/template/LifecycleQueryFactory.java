@@ -233,7 +233,7 @@ public class LifecycleQueryFactory {
                         + ". BIND(xsd:date(" + eventDatePlaceholderVar + ") AS " + eventDateVar
                         + ")"
                         + eventIdVar
-                        + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> ?any_event_type;"
+                        + " a <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence>;"
                         + " <https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event."
                         + eventTargetStatements
                         + filterDateStatement
