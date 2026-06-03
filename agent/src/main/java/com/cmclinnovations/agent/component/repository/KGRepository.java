@@ -135,9 +135,10 @@ public class KGRepository {
      * @return the query results.
      */
     public List<SparqlBinding> query(String query, List<String> endpoints) {
+        FedXRepository repository = null;
         try {
             StringWriter stringWriter = new StringWriter();
-            FedXRepository repository = FedXFactory.createSparqlFederation(endpoints);
+            repository = FedXFactory.createSparqlFederation(endpoints);
             try (FedXRepositoryConnection conn = repository.getConnection()) {
                 this.loggingService.logQuery(query, LOGGER);
                 TupleQuery tq = conn.prepareTupleQuery(query);
@@ -155,6 +156,14 @@ public class KGRepository {
             }
         } catch (Exception e) {
             LOGGER.error(e);
+        } finally {
+            if (repository != null && repository.isInitialized()) {
+                try {
+                    repository.shutDown();
+                } catch (RepositoryException e) {
+                    LOGGER.error("Failed to shut down FedX repository", e);
+                }
+            }
         }
         return new ArrayList<>();
     }

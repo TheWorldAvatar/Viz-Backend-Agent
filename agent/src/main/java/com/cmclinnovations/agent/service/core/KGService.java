@@ -363,13 +363,13 @@ public class KGService {
     // Group them by the IRI key
     Map<String, List<SparqlBinding>> groupedBindings = firstQueue.stream()
         .collect(Collectors.groupingBy(binding -> {
-          String id = binding.containsField(QueryResource.IRI_KEY)
-              ? binding.getFieldValue(QueryResource.IRI_KEY)
-              : binding.getFieldValue(QueryResource.ID_KEY);
-          // If this is a lifecycle event occurrence, group them by date and id
-          if (binding.containsField(QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY).getVarName())) {
-            return id + binding.getFieldValue(LifecycleResource.DATE_KEY);
-          }
+          // If this is a lifecycle event occurrence, group them by event id
+          String id = binding.containsField(QueryResource.EVENT_ID_VAR.getVarName())
+              ? binding.getFieldValue(QueryResource.EVENT_ID_VAR.getVarName())
+              // Else group them by IRI if available or else id
+              : binding.containsField(QueryResource.IRI_KEY)
+                  ? binding.getFieldValue(QueryResource.IRI_KEY)
+                  : binding.getFieldValue(QueryResource.ID_KEY);
           return id;
         }));
     // For the same IRI, combine them using the add field array method

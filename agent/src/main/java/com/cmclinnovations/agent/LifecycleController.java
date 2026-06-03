@@ -550,7 +550,7 @@ public class LifecycleController {
     String taskId = params.get(QueryResource.ID_KEY).toString();
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
-        () -> this.lifecycleTaskService.continueTaskOnNextWorkingDay(taskId, contractId));
+        () -> this.lifecycleTaskService.continueTaskToday(taskId, contractId));
   }
 
   /**
@@ -905,11 +905,10 @@ public class LifecycleController {
         occurrenceId = id;
         // Search for previous occurrence to retrieve
       } else {
-        try {
-          occurrenceId = this.lifecycleTaskService.getPreviousOccurrence(id, QueryResource.ID_KEY,
-              orderTypeParams.eventType);
-        } catch (NullPointerException _) {
-          // Fail silently to give blank form template given the missing previous
+        occurrenceId = this.lifecycleTaskService.getPreviousOccurrence(id, QueryResource.ID_KEY,
+            orderTypeParams.eventType);
+        // Give blank form template given the missing previous
+        if (occurrenceId == null) {
           occurrenceId = "form";
         }
       }

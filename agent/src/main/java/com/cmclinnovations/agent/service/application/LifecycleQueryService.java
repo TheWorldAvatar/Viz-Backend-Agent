@@ -51,14 +51,26 @@ public class LifecycleQueryService {
   }
 
   /**
-   * Get one instance value using a default query based on the resource ID.
+   * Get one instance value using a default query based on the resource ID. Throws
+   * an exception for null.
    * 
    * @param resourceId   The identifier of the query resource.
    * @param replacements Replacements for at least one [target] value.
    */
   public SparqlBinding getInstance(String resourceId, String... replacements) {
+    return this.getInstance(resourceId, false, replacements);
+  }
+
+  /**
+   * Get one instance value using a default query based on the resource ID.
+   * 
+   * @param resourceId   The identifier of the query resource.
+   * @param returnNull   Indicates if null is returnable or not.
+   * @param replacements Replacements for at least one [target] value.
+   */
+  public SparqlBinding getInstance(String resourceId, boolean returnNull, String... replacements) {
     String query = this.fileService.getContentsWithReplacement(resourceId, replacements);
-    return this.getService.getInstance(query);
+    return this.getService.getInstance(query, returnNull);
   }
 
   /**
@@ -104,16 +116,6 @@ public class LifecycleQueryService {
 
     params.put(LifecycleResource.EVENT_KEY, eventType.getEvent());
     params.putIfAbsent(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
-    // Update the order enum with the specific event instance if it exist
-    params.computeIfPresent(LifecycleResource.ORDER_KEY, (key, value) -> {
-      String orderEnum = value.toString();
-      return this
-          .getContractEventQuery(params.get(LifecycleResource.CONTRACT_KEY).toString(),
-              params.get(LifecycleResource.DATE_KEY).toString(),
-              LifecycleResource.getEventClassFromOrderEnum(orderEnum))
-          .poll()
-          .getFieldValue(QueryResource.IRI_KEY);
-    });
   }
 
   /**
