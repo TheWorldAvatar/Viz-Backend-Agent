@@ -381,6 +381,9 @@ public class LifecycleTaskService {
         }
         addFilterQueries += unionStatement;
       }
+
+      addFilterQueries += this.genServiceEventsQueryStatements(field, LifecycleEventType.SERVICE_EXEMPT,
+          sortedFields, serviceEventFilters).query();
     }
 
     Map<String, String> extendedMappings = this.lifecycleQueryFactory
