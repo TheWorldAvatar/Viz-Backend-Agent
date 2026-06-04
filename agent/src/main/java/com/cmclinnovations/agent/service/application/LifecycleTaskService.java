@@ -472,40 +472,42 @@ public class LifecycleTaskService {
       // Use a copy to prevent modifications to the original set
       Set<String> oriFilterValues = filters.get(key);
       Set<String> filterValues = new LinkedHashSet<>(oriFilterValues);
-      // For blank filters with no other values, statements are encapsulated in MINUS
+      // For blank filters with no other values, anchor the event statement OUTSIDE the MINUS
       if (filterValues.contains(QueryResource.NULL_KEY) && filterValues.size() == 1) {
-        queryBuilder.append(QueryResource.minus(eventTargetQueryStatement + statement));
+        queryBuilder.append(eventTargetQueryStatement)
+                    .append(QueryResource.minus(statement));
         hasOptionalClause = false;
         continue;
       }
 
       StringBuilder filterExpression = new StringBuilder();
-      // For other filters where null may be mixed in, first generate a VALUES clause
-      // without any null by removing the value
+      // For mixed (blanks + specific values), generate a UNION arm for each
       if (filterValues.contains(QueryResource.NULL_KEY)) {
-        QueryResource.genDefaultDatatypeFilters(eventTargetQueryStatement + statement, key, filterValues,
-            filterExpression);
-        queryBuilder.append(filterExpression.toString());
+        // Arm 1: The anchored blank-filtering MINUS block
+        String blankArm = eventTargetQueryStatement + QueryResource.minus(statement);
+        
+        // Arm 2: The standard values block matching the specific string
+        StringBuilder mixedFilterExpr = new StringBuilder();
+        QueryResource.genDefaultDatatypeFilters(statement, key, filterValues, mixedFilterExpr);
+        String valueArm = eventTargetQueryStatement + statement + mixedFilterExpr.toString();
+        
+        // Combine them into a local UNION arm
+        queryBuilder.append(QueryResource.union(blankArm, valueArm));
         hasOptionalClause = false;
         hasMinusClause = false;
         continue;
       }
 
-      // Else simply attach them as they are
-      // Do not add event statement here as there may be duplicates with multiple
-      // active filters
+      // Else simply attach standard value filters matching the specific string
       QueryResource.genDefaultDatatypeFilters(statement, key, filterValues, filterExpression);
-      queryBuilder.append(statement)
-          .append(filterExpression.toString());
-      addEventStatement = true;
+      queryBuilder.append(eventTargetQueryStatement)
+                  .append(statement)
+                  .append(filterExpression.toString());
       hasOptionalClause = false;
       hasMinusClause = false;
     }
 
     String query = queryBuilder.toString();
-    if (addEventStatement) {
-      query = eventTargetQueryStatement + query;
-    }
     // replace all iri variables with the event variable
     query = query.replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
     return new ServiceEventFilterQueryManifest(query, filteredStatementMappings.keySet().contains(filterField),
