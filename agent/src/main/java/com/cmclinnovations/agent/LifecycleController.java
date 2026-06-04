@@ -87,8 +87,7 @@ public class LifecycleController {
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
       // The pricing model is assigned separately below, so keep it out of the
       // contract/draft instantiation
-      Object pricingModelValue = params.remove(BillingResource.PRICING_KEY);
-      String pricingModel = pricingModelValue != null ? pricingModelValue.toString() : null;
+      String pricingModel = params.containsKey(BillingResource.PRICING_KEY) ? params.remove(BillingResource.PRICING_KEY).toString() : null;
       // create the contract instance: the generated id is set into params
       // as a side effect and the IRI is returned in the response
       ResponseEntity<StandardApiResponse<?>> createResponse = this.addService.instantiate(type, params,
