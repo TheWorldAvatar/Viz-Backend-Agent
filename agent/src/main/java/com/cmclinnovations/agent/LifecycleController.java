@@ -74,7 +74,7 @@ public class LifecycleController {
     this.responseEntityBuilder = responseEntityBuilder;
   }
 
-    /**
+  /**
    * Create a contract instance, draft its lifecycle (stages, events and
    * schedule) and assign any pricing models in a single request, setting it in
    * draft state ie awaiting approval.
@@ -83,11 +83,13 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> genContractAndDraft(@RequestBody Map<String, Object> params) {
     this.checkMissingParams(params, "type");
     String type = TypeCastUtils.castToObject(params.get("type"), String.class);
-    LOGGER.info("Received request to create and draft a new {} contract...", type);
+    LOGGER.info("Received request to draft a new contract...");
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
       // The pricing model is assigned separately below, so keep it out of the
       // contract/draft instantiation
-      String pricingModel = params.containsKey(BillingResource.PRICING_KEY) ? params.remove(BillingResource.PRICING_KEY).toString() : null;
+      String pricingModel = params.containsKey(BillingResource.PRICING_KEY)
+          ? params.remove(BillingResource.PRICING_KEY).toString()
+          : null;
       // create the contract instance: the generated id is set into params
       // as a side effect and the IRI is returned in the response
       ResponseEntity<StandardApiResponse<?>> createResponse = this.addService.instantiate(type, params,
@@ -102,14 +104,14 @@ public class LifecycleController {
         Map<String, Object> pricingParams = new HashMap<>();
         pricingParams.put(QueryResource.ID_KEY, params.get(QueryResource.ID_KEY));
         pricingParams.put(BillingResource.PRICING_KEY, pricingModel);
-        // pass the IRI of the newly created contract to skip the redundant contract lookup query
+        // pass the IRI of the newly created contract to skip the redundant contract
+        // lookup query
         this.billingService.assignPricingPlanToContract(pricingParams, contractIri);
       }
       // Return the contract-creation response so the caller keeps the contract IRI/id
       return createResponse;
     });
   }
-
 
   private ResponseEntity<StandardApiResponse<?>> execGenContractLifecycle(Map<String, Object> params) {
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
@@ -138,9 +140,10 @@ public class LifecycleController {
     this.checkMissingParams(params, "type");
     String type = TypeCastUtils.castToObject(params.get("type"), String.class);
     String targetId = params.get(QueryResource.ID_KEY).toString();
-    LOGGER.info("Received request to update and re-draft a {} contract...", type);
+    LOGGER.info("Received request to update draft contract...");
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> pricingModel = TypeCastUtils.castToListObject(params.remove(BillingResource.PRICING_KEY), String.class);
+      List<String> pricingModel = TypeCastUtils.castToListObject(params.remove(BillingResource.PRICING_KEY),
+          String.class);
       // update the contract instance
       ResponseEntity<StandardApiResponse<?>> updateResponse = this.updateService.update(
           targetId, type, LocalisationResource.SUCCESS_UPDATE_KEY, params, TrackActionType.MODIFICATION);
