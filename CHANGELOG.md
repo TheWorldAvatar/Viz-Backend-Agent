@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.52.2
+
+- Fixed instantiation of service exemption events
+- Added missing filters for service exemption events
+- Updated documentation
+
 ## 1.52.1
 
 - Updated lifecycle query statement to improve performance
