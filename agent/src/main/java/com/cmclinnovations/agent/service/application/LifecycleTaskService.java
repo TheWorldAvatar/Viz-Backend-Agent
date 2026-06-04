@@ -841,7 +841,7 @@ public class LifecycleTaskService {
     for (LifecycleEventType fallbackEvent : events) {
       previousOccurrenceIri = this.getPreviousOccurrence(eventId, QueryResource.IRI_KEY, fallbackEvent);
       if (previousOccurrenceIri != null) {
-        break;
+        return previousOccurrenceIri;
       }
     }
     if (previousOccurrenceIri == null) {
