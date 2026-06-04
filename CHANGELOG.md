@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.53.0
+
+- Combined contract creation, draft lifecycle and pricing assignment into a single `POST /contracts/draft` request
+- Combined contract update, draft lifecycle and pricing update into a single `PUT /contracts/draft` request
+- Updated documentation
+
 ## 1.52.2
 
 - Fixed instantiation of service exemption events

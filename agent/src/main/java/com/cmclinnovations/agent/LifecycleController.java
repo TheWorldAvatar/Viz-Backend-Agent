@@ -30,10 +30,12 @@ import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
+import com.cmclinnovations.agent.service.application.BillingService;
 import com.cmclinnovations.agent.service.application.LifecycleContractService;
 import com.cmclinnovations.agent.service.application.LifecycleTaskService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
+import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
@@ -49,6 +51,7 @@ public class LifecycleController {
   private final DeleteService deleteService;
   private final UpdateService updateService;
   private final DateTimeService dateTimeService;
+  private final BillingService billingService;
   private final LifecycleContractService lifecycleContractService;
   private final LifecycleTaskService lifecycleTaskService;
   private final ResponseEntityBuilder responseEntityBuilder;
@@ -57,28 +60,45 @@ public class LifecycleController {
 
   public LifecycleController(ConcurrencyService concurrencyService, AddService addService, GetService getService,
       DeleteService deleteService, UpdateService updateService, DateTimeService dateTimeService,
-      LifecycleContractService lifecycleContractService, LifecycleTaskService lifecycleTaskService,
-      ResponseEntityBuilder responseEntityBuilder) {
+      BillingService billingService, LifecycleContractService lifecycleContractService,
+      LifecycleTaskService lifecycleTaskService, ResponseEntityBuilder responseEntityBuilder) {
     this.concurrencyService = concurrencyService;
     this.addService = addService;
     this.getService = getService;
     this.deleteService = deleteService;
     this.updateService = updateService;
     this.dateTimeService = dateTimeService;
+    this.billingService = billingService;
     this.lifecycleContractService = lifecycleContractService;
     this.lifecycleTaskService = lifecycleTaskService;
     this.responseEntityBuilder = responseEntityBuilder;
   }
 
   /**
-   * Create a contract lifecycle (stages and events) for the specified contract,
-   * and set it in draft state ie awaiting approval.
+   * Create a contract instance, draft its lifecycle (stages, events and
+   * schedule) and assign any pricing models in a single request, setting it in
+   * draft state ie awaiting approval.
    */
   @PostMapping("/draft")
-  public ResponseEntity<StandardApiResponse<?>> genContractLifecycle(@RequestBody Map<String, Object> params) {
-    this.checkMissingParams(params, LifecycleResource.CONTRACT_KEY);
-    return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY,
-        () -> this.execGenContractLifecycle(params));
+  public ResponseEntity<StandardApiResponse<?>> genContractAndDraft(@RequestBody Map<String, Object> params) {
+    this.checkMissingParams(params, "type");
+    String type = TypeCastUtils.castToObject(params.get("type"), String.class);
+    LOGGER.info("Received request to draft a new contract...");
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
+      // create the contract instance
+      ResponseEntity<StandardApiResponse<?>> createResponse = this.addService.instantiate(type, params,
+          TrackActionType.CREATION);
+      // Store contract IRI from response
+      String contractIri = createResponse.getBody().data().id();
+      params.put(LifecycleResource.CONTRACT_KEY, contractIri);
+      this.execGenContractLifecycle(params);
+      // assign the pricing model to the newly drafted contract, if any
+      if (params.containsKey(BillingResource.PRICING_KEY)) {
+        this.billingService.assignPricingPlanToContract(params);
+      }
+      // Return the contract-creation response so the caller keeps the contract IRI/id
+      return createResponse;
+    });
   }
 
   private ResponseEntity<StandardApiResponse<?>> execGenContractLifecycle(Map<String, Object> params) {
@@ -94,36 +114,55 @@ public class LifecycleController {
         LifecycleResource.LIFECYCLE_RESOURCE, params, "The lifecycle of the contract has been successfully drafted!",
         LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY, TrackActionType.IGNORED);
     this.genContractSchedule(params);
-    // Log out successful message, and return the original response
     LOGGER.info("Contract has been successfully drafted!");
     return response;
   }
 
   /**
-   * Update the draft contract's lifecycle details in the knowledge graph.
+   * Update a contract instance, re-draft its lifecycle (stages, events and
+   * schedule) and update any pricing models in a single request.
    */
   @PutMapping("/draft")
-  public ResponseEntity<StandardApiResponse<?>> updateDraftContract(@RequestBody Map<String, Object> params) {
+  public ResponseEntity<StandardApiResponse<?>> updateContractAndDraft(@RequestBody Map<String, Object> params) {
+    this.checkMissingParams(params, "type");
+    String type = TypeCastUtils.castToObject(params.get("type"), String.class);
+    String targetId = params.get(QueryResource.ID_KEY).toString();
     LOGGER.info("Received request to update draft contract...");
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      String targetId = params.get(QueryResource.ID_KEY).toString();
       // Do not allow modifications if it has been approved
       if (this.lifecycleContractService.guardAgainstApproval(targetId)) {
         return this.responseEntityBuilder.error(
             LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY),
             HttpStatus.CONFLICT);
       }
+      ResponseEntity<StandardApiResponse<?>> updateResponse = this.updateService.update(
+          targetId, type, LocalisationResource.SUCCESS_UPDATE_KEY, params, TrackActionType.MODIFICATION);
+      if (!updateResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return updateResponse;
+      }
+      // Store contract IRI from response
+      String contractIri = updateResponse.getBody().data().id();
+      params.put(LifecycleResource.CONTRACT_KEY, contractIri);
       // Add current date into parameters
       params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
       params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
       params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_AMENDED_STATUS);
       ResponseEntity<StandardApiResponse<?>> scheduleResponse = this.updateContractSchedule(params);
-      if (scheduleResponse.getStatusCode() == HttpStatus.OK) {
-        return this.updateService.update(
-            targetId, LifecycleResource.LIFECYCLE_RESOURCE, LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY,
-            params, TrackActionType.IGNORED);
+      if (!scheduleResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return scheduleResponse;
       }
-      return scheduleResponse;
+      ResponseEntity<StandardApiResponse<?>> draftResponse = this.updateService.update(
+          targetId, LifecycleResource.LIFECYCLE_RESOURCE, LocalisationResource.SUCCESS_CONTRACT_DRAFT_UPDATE_KEY,
+          params, TrackActionType.IGNORED);
+      if (!draftResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return draftResponse;
+      }
+      // update the pricing model, if any
+      if (params.containsKey(BillingResource.PRICING_KEY)) {
+        params.put(QueryResource.DISABLE_TRACKING_KEY, true);
+        this.billingService.updatePricingPlanToContract(params);
+      }
+      return updateResponse;
     });
   }
 

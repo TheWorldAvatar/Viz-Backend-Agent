@@ -571,54 +571,27 @@ where `{id}`is the requested contract ID. A successful request will return:
 
 #### 2.6.2 Draft route
 
-This endpoint serves to draft a new contract, inclusive of its lifecycle and the schedule, or retrieve all draft contracts that are awaiting approval.
+This endpoint serves to **create or update a contract, inclusive of its lifecycle, schedule, and pricing model**, or retrieve all draft contracts that are awaiting approval.
 
 > New/Edit draft contract
 
-Users can _EITHER_ send a `POST` request to create a new instance _OR_ send a `PUT` request to update the draft contract at the following endpoint:
+Users can _EITHER_ send a `POST` request to create a new contract _OR_ send a `PUT` request to update an existing draft contract at the following endpoint:
 
 ```
 <baseURL>/vis-backend-agent/contracts/draft
 ```
 
-Note that this route will interact with the [schedule route](#263-schedule-route) directly, and users should not sent a separate request to the schedule route unless they wish to interact with the schedule. The draft route will require the following `JSON` request parameters:
+NNote that this route will interact with the [Add route](#251-add-route)/[Update route](#253-update-route), [schedule route](#263-schedule-route), and [pricing route](#272-financial-record-route) directly. Users should **NOT** send separate requests to those routes unless they wish to interact with the respective routes separately.
+
+The draft route will require the following `JSON` request parameters. It will also require the fields from the [schedule route](#263-schedule-route).
 
 ```json
 {
   /* parameters */
-  "id": "An identifier for the lifecycle",
-  "contract": "The target contract IRI",
-  "start date": "Date when the first service is to be delivered in the YYYY-MM-DD format",
-  "end date": "Date of the final service in the YYYY-MM-DD format; If optional, use empty string",
-  "time slot start": "Beginning of the time window during which the service is scheduled to be delivered in the HH:MM format",
-  "time slot end": "End of the time window during which the service is scheduled to be delivered in the HH:MM format",
-  "recurrence": "Service interval in the ISO 8601 format eg P1D P7D P2D; If optional, use empty string",
-  "monday": "A boolean indicating if the service should occur on a monday",
-  "tuesday": "A boolean indicating if the service should occur on a tuesday",
-  "wednesday": "A boolean indicating if the service should occur on a wednesday",
-  "thursday": "A boolean indicating if the service should occur on a thursday",
-  "friday": "A boolean indicating if the service should occur on a friday",
-  "saturday": "A boolean indicating if the service should occur on a saturday",
-  "sunday": "A boolean indicating if the service should occur on a sunday",
-  "branch_add": "Mandatory parameter for branch to add when there is a form branching",
-  "branch_delete": "Mandatory parameter for branch to delete when there is a form branching"
-}
-```
-
-For contracts with fixed date schedules, the following `JSON` request parameters should be supplied:
-
-```json
-{
-  /* parameters */
-  "id": "An identifier for the lifecycle",
-  "contract": "The target contract IRI",
-  "start date": "Date when the first service is to be delivered in the YYYY-MM-DD format",
-  "end date": "Date of the final service in the YYYY-MM-DD format",
-  "time slot start": "Beginning of the time window during which the service is scheduled to be delivered in the HH:MM format",
-  "time slot end": "End of the time window during which the service is scheduled to be delivered in the HH:MM format",
-  "schedule entry": [
-    {"schedule entry date": "Date when each service is to be delivered in the YYYY-MM-DD format"}
-  ],
+  "id": "An identifier for the contract",
+  "type": "The requested identifier that must correspond to the target contract class in `./resources/application-form.json`",
+  "schedule...": "For related schedule fields, please check the schedule route",  
+  "pricing": "Optional. The IRI of the pricing model to assign to the new or edited contract",
   "branch_add": "Mandatory parameter for branch to add when there is a form branching",
   "branch_delete": "Mandatory parameter for branch to delete when there is a form branching"
 }
@@ -680,8 +653,9 @@ Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/sch
 2. `end_date`: Service end date in the `YYYY-MM-DD` format
 3. `start_time`: The expected starting time of the time slot that services are delivered in the `HH:MM` format
 4. `end_time`: The expected ending time of the time slot that services are delivered in the `HH:MM` format
-5. `recurrence`: The recurrence interval between services eg `P1D`, `P2D`, `P7D`, `P14D`...
-6. `monday` ~ `sunday`: Variables indicating if the service should be delivered on the corresponding day of week
+5. `recurrence`: **[Non-Fixed date schedules]** The recurrence interval between services eg `P1D`, `P2D`, `P7D`, `P14D`...
+6. `monday` ~ `sunday`: **[Non-Fixed date schedules]** Variables indicating if the service should be delivered on the corresponding day of week
+7. `schedule entry`: **[Fixed date schedule]** An array of dates for delivery based on `schedule entry date`
 
 > Schedule upcoming tasks
 
@@ -700,18 +674,27 @@ Note that this route does require the following `JSON` request parameters:
   /* parameters */
   "id": "An identifier for the scheduler",
   "contract": "The target contract IRI",
+  "start date": "Date when the first service is to be delivered in the YYYY-MM-DD format",
+  "end date": "Date of the final service in the YYYY-MM-DD format; If optional, use empty string",
   "time slot start": "Beginning of the time window during which the service is scheduled to be delivered in the HH:MM format",
   "time slot end": "End of the time window during which the service is scheduled to be delivered in the HH:MM format",
-  "recurrence": "Service interval in the ISO 8601 format eg P1D P7D P2D",
-  "monday": "A boolean indicating if the service should occur on a monday",
-  "tuesday": "A boolean indicating if the service should occur on a tuesday",
-  "wednesday": "A boolean indicating if the service should occur on a wednesday",
-  "thursday": "A boolean indicating if the service should occur on a thursday",
-  "friday": "A boolean indicating if the service should occur on a friday",
-  "saturday": "A boolean indicating if the service should occur on a saturday",
-  "sunday": "A boolean indicating if the service should occur on a sunday"
+  "recurrence": "[Non-fixed date schedule] Service interval in the ISO 8601 format eg P1D P7D P2D",
+  "monday": "[Non-fixed date schedule] A boolean indicating if the service should occur on a monday",
+  "tuesday": "[Non-fixed date schedule] A boolean indicating if the service should occur on a tuesday",
+  "wednesday": "[Non-fixed date schedule] A boolean indicating if the service should occur on a wednesday",
+  "thursday": "[Non-fixed date schedule] A boolean indicating if the service should occur on a thursday",
+  "friday": "[Non-fixed date schedule] A boolean indicating if the service should occur on a friday",
+  "saturday": "[Non-fixed date schedule] A boolean indicating if the service should occur on a saturday",
+  "sunday": "[Non-fixed date schedule] A boolean indicating if the service should occur on a sunday",
+  "schedule entry": [
+    {"schedule entry date": "[Fixed date schedule] Date when each service is to be delivered in the YYYY-MM-DD format"}
+    ...
+  ],
 }
 ```
+
+> [!IMPORTANT]  
+> Users should only send either the recurrence/day of week OR the schedule entry fields based on the schedule type. Only fixed date schedules should use schedule type
 
 A successful request will return:
 

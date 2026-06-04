@@ -112,10 +112,21 @@ public class BillingService {
   }
 
   /**
+   * Adds the contract IRI into the instance params.
+   *
+   * @param instance Request parameters containing the contract ID.
+   */
+  public void addContractIri(Map<String, Object> instance) {
+    String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
+    SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
+    instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
+  }
+
+  /**
    * Assigns a pricing plan to the target contract.
    * 
-   * @param instance Request parameters containing the IRI for pricing model and
-   *                 the contract ID.
+   * @param instance Request parameters containing the IRI for pricing model
+   *                 and the contract ID.
    */
   public ResponseEntity<StandardApiResponse<?>> assignPricingPlanToContract(Map<String, Object> instance) {
     String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
@@ -126,25 +137,22 @@ public class BillingService {
       throw new IllegalArgumentException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_PRICING_KEY));
     }
-    SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
-    instance.put(LifecycleResource.CONTRACT_KEY, contract.getFieldValue(QueryResource.IRI_KEY));
     return this.addService.instantiate(BillingResource.CONTRACT_PRICING_RESOURCE, contractId, instance, null, null,
         TrackActionType.IGNORED);
   }
 
   /**
    * Updates the pricing plan for the target contract.
-   * 
-   * @param instance Request parameters containing the IRI for pricing model and
-   *                 the contract ID.
+   *
+   * @param instance    Request parameters containing the IRI for pricing model
+   *                    and the contract ID.
+   * @param contractIri The IRI of the target contract.
    */
   public ResponseEntity<StandardApiResponse<?>> updatePricingPlanToContract(Map<String, Object> instance) {
     String contractId = TypeCastUtils.castToObject(instance.get(QueryResource.ID_KEY), String.class);
+    String contractIri = TypeCastUtils.castToObject(instance.get(LifecycleResource.CONTRACT_KEY), String.class);
     Boolean disableTracking = TypeCastUtils.castToObject(instance.get(QueryResource.DISABLE_TRACKING_KEY),
         Boolean.class);
-    SparqlBinding contract = this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId);
-    String contractIri = contract.getFieldValue(QueryResource.IRI_KEY);
-    instance.put(LifecycleResource.CONTRACT_KEY, contractIri);
     List<Map<String, String>> pricingModels = TypeCastUtils
         .castToListObject(instance.get(BillingResource.PRICING_KEY), String.class)
         .stream()
