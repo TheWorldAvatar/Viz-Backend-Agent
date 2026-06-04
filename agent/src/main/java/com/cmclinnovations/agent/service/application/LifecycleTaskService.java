@@ -489,7 +489,15 @@ public class LifecycleTaskService {
         if (filterValues.contains(QueryResource.NULL_KEY)) {
           StringBuilder mixedFilterExpr = new StringBuilder();
           QueryResource.genDefaultDatatypeFilters(statement, key, filterValues, mixedFilterExpr);
-          queryBuilder.append(mixedFilterExpr.toString());
+          // Inject the event target query statement anchor inside the first arm 
+          // of the nested UNION block to prevent the standalone MINUS clause from running in 
+          // an isolated variable scope, which causes blank option wipeouts.
+          String mixedStr = mixedFilterExpr.toString();
+          if (mixedStr.contains("{MINUS{")) {
+            mixedStr = mixedStr.replace("{MINUS{", "{" + eventTargetQueryStatement + "MINUS{");
+          }
+          
+          queryBuilder.append(mixedStr);
           continue;
         }
 
