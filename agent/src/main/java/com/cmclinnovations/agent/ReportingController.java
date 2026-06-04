@@ -204,7 +204,10 @@ public class ReportingController {
   public ResponseEntity<StandardApiResponse<?>> assignPricingToContract(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to update pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION,
-        () -> this.billingService.assignPricingPlanToContract(instance));
+        () -> {
+          this.billingService.addContractIri(instance);
+          return this.billingService.assignPricingPlanToContract(instance);
+        });
   }
 
   /**
@@ -226,6 +229,9 @@ public class ReportingController {
   public ResponseEntity<StandardApiResponse<?>> updatePricingToContract(@RequestBody Map<String, Object> instance) {
     LOGGER.info("Received request to update pricing model...");
     return this.concurrencyService.executeInWriteLock(BillingResource.PAYMENT_OBLIGATION,
-        () -> this.billingService.updatePricingPlanToContract(instance));
+        () -> {
+          this.billingService.addContractIri(instance);
+          return this.billingService.updatePricingPlanToContract(instance);
+        });
   }
 }

@@ -591,14 +591,11 @@ The draft route will require the following `JSON` request parameters. It will al
   "id": "An identifier for the contract",
   "type": "The requested identifier that must correspond to the target contract class in `./resources/application-form.json`",
   "schedule...": "For related schedule fields, please check the schedule route",  
-  "pricing": "Optional. The IRI of the pricing model to assign to the new contract; When updating the contract, this should be a list of pricing models",
+  "pricing": "Optional. The IRI of the pricing model to assign to the new or edited contract",
   "branch_add": "Mandatory parameter for branch to add when there is a form branching",
   "branch_delete": "Mandatory parameter for branch to delete when there is a form branching"
 }
 ```
-
-> [!IMPORTANT]  
-> Pricing is only a single IRI for a new draft contract (`POST`) but is an array of pricing models for editing draft contracts (`PUT`)
 
 A successful request will return:
 

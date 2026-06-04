@@ -85,28 +85,16 @@ public class LifecycleController {
     String type = TypeCastUtils.castToObject(params.get("type"), String.class);
     LOGGER.info("Received request to draft a new contract...");
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      // The pricing model is assigned separately below, so keep it out of the
-      // contract/draft instantiation
-      String pricingModel = params.containsKey(BillingResource.PRICING_KEY)
-          ? params.remove(BillingResource.PRICING_KEY).toString()
-          : null;
-      // create the contract instance: the generated id is set into params
-      // as a side effect and the IRI is returned in the response
+      // create the contract instance
       ResponseEntity<StandardApiResponse<?>> createResponse = this.addService.instantiate(type, params,
           TrackActionType.CREATION);
+      // Store contract IRI from response
       String contractIri = createResponse.getBody().data().id();
-      // hand the new contract IRI to the draft logic to generate the
-      // lifecycle and schedule
       params.put(LifecycleResource.CONTRACT_KEY, contractIri);
       this.execGenContractLifecycle(params);
       // assign the pricing model to the newly drafted contract, if any
-      if (pricingModel != null) {
-        Map<String, Object> pricingParams = new HashMap<>();
-        pricingParams.put(QueryResource.ID_KEY, params.get(QueryResource.ID_KEY));
-        pricingParams.put(BillingResource.PRICING_KEY, pricingModel);
-        // pass the IRI of the newly created contract to skip the redundant contract
-        // lookup query
-        this.billingService.assignPricingPlanToContract(pricingParams, contractIri);
+      if (params.containsKey(BillingResource.PRICING_KEY)) {
+        this.billingService.assignPricingPlanToContract(params);
       }
       // Return the contract-creation response so the caller keeps the contract IRI/id
       return createResponse;
@@ -126,7 +114,6 @@ public class LifecycleController {
         LifecycleResource.LIFECYCLE_RESOURCE, params, "The lifecycle of the contract has been successfully drafted!",
         LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY, TrackActionType.IGNORED);
     this.genContractSchedule(params);
-    // Log out successful message, and return the original response
     LOGGER.info("Contract has been successfully drafted!");
     return response;
   }
@@ -142,8 +129,6 @@ public class LifecycleController {
     String targetId = params.get(QueryResource.ID_KEY).toString();
     LOGGER.info("Received request to update draft contract...");
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      List<String> pricingModel = TypeCastUtils.castToListObject(params.remove(BillingResource.PRICING_KEY),
-          String.class);
       // Do not allow modifications if it has been approved
       if (this.lifecycleContractService.guardAgainstApproval(targetId)) {
         return this.responseEntityBuilder.error(
@@ -155,6 +140,9 @@ public class LifecycleController {
       if (!updateResponse.getStatusCode().equals(HttpStatus.OK)) {
         return updateResponse;
       }
+      // Store contract IRI from response
+      String contractIri = updateResponse.getBody().data().id();
+      params.put(LifecycleResource.CONTRACT_KEY, contractIri);
       // Add current date into parameters
       params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
       params.put(LifecycleResource.CURRENT_DATE_KEY, this.dateTimeService.getCurrentDateTime());
@@ -170,17 +158,10 @@ public class LifecycleController {
         return draftResponse;
       }
       // update the pricing model, if any
-      if (pricingModel != null) {
-        Map<String, Object> pricingParams = new HashMap<>();
-        pricingParams.put(QueryResource.ID_KEY, targetId);
-        pricingParams.put(BillingResource.PRICING_KEY, pricingModel);
-        pricingParams.put(QueryResource.DISABLE_TRACKING_KEY, true);
-        // pass the known IRI (sent as the contract field) to skip the redundant
-        // contract lookup query
-        this.billingService.updatePricingPlanToContract(pricingParams,
-            TypeCastUtils.castToObject(params.get(LifecycleResource.CONTRACT_KEY), String.class));
+      if (params.containsKey(BillingResource.PRICING_KEY)) {
+        params.put(QueryResource.DISABLE_TRACKING_KEY, true);
+        this.billingService.updatePricingPlanToContract(params);
       }
-      // Return the contract-update response so the caller keeps the IRI/id
       return updateResponse;
     });
   }
