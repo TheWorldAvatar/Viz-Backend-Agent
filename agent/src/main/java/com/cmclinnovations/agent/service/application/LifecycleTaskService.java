@@ -259,6 +259,7 @@ public class LifecycleTaskService {
    * Performs a service action for a specific service action. Valid types include:
    * 1) report: Reports any unfulfilled service delivery
    * 2) cancel: Cancel any upcoming service
+   * 3) exempt: Exempts any service from billing accrual
    */
   public ResponseEntity<StandardApiResponse<?>> performSingleServiceAction(String type, Map<String, Object> params) {
     LifecycleEventType eventType = LifecycleEventType.fromId(type.toLowerCase());

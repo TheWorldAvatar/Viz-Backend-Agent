@@ -419,6 +419,7 @@ public class LifecycleController {
    * Route to perform a service action on a specific service. Valid types include:
    * 1) report: Reports any unfulfilled service delivery
    * 2) cancel: Cancel any upcoming service
+   * 3) exempt: Exempts any service from billing accrual
    */
   @PostMapping("/service/{type}")
   public ResponseEntity<StandardApiResponse<?>> performServiceAction(@PathVariable String type,
