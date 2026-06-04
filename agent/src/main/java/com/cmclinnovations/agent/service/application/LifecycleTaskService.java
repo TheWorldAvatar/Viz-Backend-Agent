@@ -451,16 +451,68 @@ public class LifecycleTaskService {
     if (filteredStatementMappings.isEmpty()) {
       return new ServiceEventFilterQueryManifest("", false, false, false, false);
     }
-    boolean addEventStatement = false;
+    
     boolean hasOptionalClause = true;
     boolean hasMinusClause = true;
     StringBuilder queryBuilder = new StringBuilder();
     String eventVar = QueryResource.genVariable(lifecycleEvent.getId() + "_event").getQueryString();
     String eventTargetQueryStatement = LifecycleResource.genOccurrenceTargetQueryStatement(eventVar, lifecycleEvent);
 
+    // When multiple filters are applicable for the same event, we need to combine them in the same query block
+    if (filteredStatementMappings.size() > 1) {
+      // To safely combine multiple filters (blanks, values, or mixed) without variable scope clashing, 
+      // anchor the event target query at the beginning of the block once.
+      // All inner cases then append raw statements sequentially. This forces a logical AND intersection 
+      // behind a single cohesive parent path, preventing cross-contamination between parallel event fields.
+
+      queryBuilder.append(eventTargetQueryStatement);
+
+      for (Map.Entry<String, String> entry : filteredStatementMappings.entrySet()) {
+        String key = entry.getKey();
+        String statement = entry.getValue();
+        Set<String> filterValues = new LinkedHashSet<>(filters.get(key));
+
+        // For sorted fields or target filter field, the entire statement is optional
+        if (key.equals(StringResource.SORT_KEY) || (key.equals(filterField) && filterValues.isEmpty())) {
+          queryBuilder.append(QueryResource.optional(statement));
+          continue;
+        }
+
+        // Pure Blank Filter
+        // Chaining separate MINUS blocks consecutively creates a strict logical AND exclusion
+        if (filterValues.contains(QueryResource.NULL_KEY) && filterValues.size() == 1) {
+          queryBuilder.append(QueryResource.minus(statement));
+          continue;
+        }
+
+        // Mixed (Blanks + Specific Value Match strings)
+        if (filterValues.contains(QueryResource.NULL_KEY)) {
+          StringBuilder mixedFilterExpr = new StringBuilder();
+          QueryResource.genDefaultDatatypeFilters(statement, key, filterValues, mixedFilterExpr);
+          queryBuilder.append(mixedFilterExpr.toString());
+          continue;
+        }
+
+        // Values Only Match for this property
+        StringBuilder filterExpression = new StringBuilder();
+        QueryResource.genDefaultDatatypeFilters(statement, key, filterValues, filterExpression);
+        queryBuilder.append(statement).append(filterExpression.toString());
+      }
+
+      // replace all iri variables with the event variable
+      String query = queryBuilder.toString().replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
+
+      // Flag Override for Multi-Filter Manifests
+      // Prevent calling function to wrap the combined multi-property block in a global macro-wrapper
+      return new ServiceEventFilterQueryManifest(query, filteredStatementMappings.keySet().contains(filterField),
+          true, false, false);
+    }
+
+    // When only one filter is applicable, we can directly wrap the entire block with the appropriate macro based on the filter type
     for (Map.Entry<String, String> entry : filteredStatementMappings.entrySet()) {
       String key = entry.getKey();
       String statement = entry.getValue();
+
       // For sorted fields or target filter field, the entire statement is optional
       // Note that the event target query statement must be wrapped within the clause
       // to be correct
@@ -469,10 +521,11 @@ public class LifecycleTaskService {
         hasMinusClause = false;
         continue;
       }
+      
       // Use a copy to prevent modifications to the original set
       Set<String> oriFilterValues = filters.get(key);
       Set<String> filterValues = new LinkedHashSet<>(oriFilterValues);
-      // For blank filters with no other values, anchor the event statement OUTSIDE the MINUS
+      // For blank filters with no other values, statements are encapsulated in MINUS
       if (filterValues.contains(QueryResource.NULL_KEY) && filterValues.size() == 1) {
         queryBuilder.append(eventTargetQueryStatement)
                     .append(QueryResource.minus(statement));
@@ -483,15 +536,15 @@ public class LifecycleTaskService {
       StringBuilder filterExpression = new StringBuilder();
       // For mixed (blanks + specific values), generate a UNION arm for each
       if (filterValues.contains(QueryResource.NULL_KEY)) {
-        // Arm 1: The anchored blank-filtering MINUS block
+        // The anchored blank-filtering MINUS block
         String blankArm = eventTargetQueryStatement + QueryResource.minus(statement);
         
-        // Arm 2: The standard values block matching the specific string
+        // The standard values block matching the specific string
         StringBuilder mixedFilterExpr = new StringBuilder();
         QueryResource.genDefaultDatatypeFilters(statement, key, filterValues, mixedFilterExpr);
         String valueArm = eventTargetQueryStatement + statement + mixedFilterExpr.toString();
         
-        // Combine them into a local UNION arm
+        // Combine them into a local UNION
         queryBuilder.append(QueryResource.union(blankArm, valueArm));
         hasOptionalClause = false;
         hasMinusClause = false;
@@ -510,6 +563,7 @@ public class LifecycleTaskService {
     String query = queryBuilder.toString();
     // replace all iri variables with the event variable
     query = query.replace(QueryResource.IRI_VAR.getQueryString(), eventVar);
+    
     return new ServiceEventFilterQueryManifest(query, filteredStatementMappings.keySet().contains(filterField),
         // Active filter is true if there are at least two mappings OR if there is one
         // field but does not contain the filter
