@@ -358,6 +358,9 @@ To add a new instance, users must send a POST request with their corresponding p
 
 where `{type}` is the requested identifier that must correspond to a target file name in`./resources/application-service.json`. The request parameters will depend on the `JSON-LD` file defined. More information on the required schema can be found in [this section](./resources/README.md#21-instantiation).
 
+> [!TIP]
+> For **primary contract entities** (entities that own a lifecycle), use the [Draft route](#262-draft-route) instead. A single `POST` to `/contracts/draft` creates the contract, drafts its lifecycle/schedule and optionally assigns a pricing model — there is no need to call this route first.
+
 > [!IMPORTANT]
 > **Conditional Branching:**
 > If the target `JSON-LD` template utilises the @branch directive, the request body MUST include the `branch_add` key to specify which branch to instantiate.
@@ -415,6 +418,9 @@ To update an instance, users must send a PUT request with their corresponding pa
 ```
 
 where `{type}` is the requested identifier that must correspond to a target file name in`./resources/application-service.json`, and `{id}` is the specific instance's identifier. The request parameters will depend on the `JSON-LD` file defined for adding a new instance. More information on the required schema can be found in [this section](./resources/README.md#21-instantiation).
+
+> [!TIP]
+> For **primary contract entities**, use the [Draft route](#262-draft-route) instead. A single `PUT` to `/contracts/draft` updates the contract entity, re-drafts its lifecycle/schedule and updates the pricing model in one request.
 
 A successful request will return:
 
@@ -571,23 +577,29 @@ where `{id}`is the requested contract ID. A successful request will return:
 
 #### 2.6.2 Draft route
 
-This endpoint serves to draft a new contract, inclusive of its lifecycle and the schedule, or retrieve all draft contracts that are awaiting approval.
+This endpoint serves to **create or update a contract instance together with its lifecycle, schedule and (optionally) its pricing model in a single request**, or retrieve all draft contracts that are awaiting approval.
 
 > New/Edit draft contract
 
-Users can _EITHER_ send a `POST` request to create a new instance _OR_ send a `PUT` request to update the draft contract at the following endpoint:
+Users can _EITHER_ send a `POST` request to create a new contract _OR_ send a `PUT` request to update an existing draft contract at the following endpoint:
 
 ```
 <baseURL>/vis-backend-agent/contracts/draft
 ```
 
-Note that this route will interact with the [schedule route](#263-schedule-route) directly, and users should not sent a separate request to the schedule route unless they wish to interact with the schedule. The draft route will require the following `JSON` request parameters:
+Note that this route handles the entire draft flow in one locked operation — it creates (or updates) the contract instance itself, then drafts (or re-drafts) its lifecycle and schedule, then assigns (or updates) the pricing model when one is supplied. Callers should **not** separately call the [Add route](#251-add-route)/[Update route](#253-update-route) for the contract for primary contract entities — this endpoint covers all of them.
+
+Note that this route will interact with the [schedule route](#263-schedule-route) directly, and users should not sent a separate request to the schedule route unless they wish to interact with the schedule.
+
+**`POST` — create a contract and draft it**
+
+The `POST` request body merges the contract entity fields with the schedule/lifecycle fields and an optional pricing model IRI. The required `JSON` parameters are:
 
 ```json
 {
   /* parameters */
-  "id": "An identifier for the lifecycle",
-  "contract": "The target contract IRI",
+  "type": "The requested identifier that must correspond to the target contract class in `./resources/application-form.json`",
+  "id": "An identifier for the lifecycle (and the new contract instance)",
   "start date": "Date when the first service is to be delivered in the YYYY-MM-DD format",
   "end date": "Date of the final service in the YYYY-MM-DD format; If optional, use empty string",
   "time slot start": "Beginning of the time window during which the service is scheduled to be delivered in the HH:MM format",
@@ -600,18 +612,19 @@ Note that this route will interact with the [schedule route](#263-schedule-route
   "friday": "A boolean indicating if the service should occur on a friday",
   "saturday": "A boolean indicating if the service should occur on a saturday",
   "sunday": "A boolean indicating if the service should occur on a sunday",
+  "pricing": "Optional. The IRI of the pricing model to assign to the new contract",
   "branch_add": "Mandatory parameter for branch to add when there is a form branching",
   "branch_delete": "Mandatory parameter for branch to delete when there is a form branching"
 }
 ```
 
-For contracts with fixed date schedules, the following `JSON` request parameters should be supplied:
+For contracts with fixed date schedules, send the same body but replace the recurrence/weekday fields with `schedule entry`:
 
 ```json
 {
   /* parameters */
-  "id": "An identifier for the lifecycle",
-  "contract": "The target contract IRI",
+  "type": "The requested identifier that must correspond to the target contract class in `./resources/application-form.json`",
+  "id": "An identifier for the lifecycle (and the new contract instance)",
   "start date": "Date when the first service is to be delivered in the YYYY-MM-DD format",
   "end date": "Date of the final service in the YYYY-MM-DD format",
   "time slot start": "Beginning of the time window during which the service is scheduled to be delivered in the HH:MM format",
@@ -619,10 +632,40 @@ For contracts with fixed date schedules, the following `JSON` request parameters
   "schedule entry": [
     {"schedule entry date": "Date when each service is to be delivered in the YYYY-MM-DD format"}
   ],
+  "pricing": "Optional. The IRI of the pricing model to assign to the new contract ",
   "branch_add": "Mandatory parameter for branch to add when there is a form branching",
   "branch_delete": "Mandatory parameter for branch to delete when there is a form branching"
 }
 ```
+
+> [!NOTE]
+> The contract IRI is **not** supplied on `POST` — it is generated server-side from the freshly-created contract instance and used internally for the lifecycle, schedule and (optional) pricing steps. The response `data.id` contains the new contract IRI.
+
+**`PUT` — update an existing draft contract**
+
+The `PUT` body must additionally include the existing contract IRI in the `contract` field and may include a `pricing` array of pricing model IRIs:
+
+```json
+{
+  /* parameters */
+  "type": "The requested identifier that must correspond to the target contract class in `./resources/application-form.json`",
+  "id": "The existing contract's identifier",
+  "contract": "The IRI of the existing contract being edited",
+  "start date": "Date when the first service is to be delivered in the YYYY-MM-DD format",
+  "end date": "Date of the final service in the YYYY-MM-DD format; If optional, use empty string",
+  "time slot start": "Beginning of the time window in the HH:MM format",
+  "time slot end": "End of the time window in the HH:MM format",
+  "recurrence": "Service interval in the ISO 8601 format eg P1D P7D P2D; If optional, use empty string",
+  "monday": "A boolean indicating if the service should occur on a monday",
+  /* ...other weekday booleans OR `schedule entry` for fixed date schedules */
+  "pricing": "Optional. Either a single pricing model IRI or an array of IRIs to assign to the contract.",
+  "branch_add": "Mandatory parameter for branch to add when there is a form branching",
+  "branch_delete": "Mandatory parameter for branch to delete when there is a form branching"
+}
+```
+
+> [!IMPORTANT]
+> Editing an **approved** contract via this route returns `409 CONFLICT` — the lifecycle is guarded against modifications once approved.
 
 A successful request will return:
 
@@ -982,6 +1025,9 @@ To assign a new pricing model of a specific contract, users must send a `POST` r
   "pricing": "pricing model instance"
 }
 ```
+
+> [!TIP]
+> When the pricing model is being assigned at contract creation time, include `pricing` in the body of the [Draft route](#262-draft-route) `POST` instead — the draft route assigns it as part of the same locked operation. The standalone endpoint here is intended for assigning pricing to a contract that already exists.
 
 To update multiple pricing models for a specific contract, users must send a `PUT` request with their corresponding parameters to `<baseURL>/vis-backend-agent/report/contract/pricing`. The agent uses a predefined `JSON-LD` file to perform the update and it will require the following request body parameters. Note that the `disableTracking` parameter will disable the changelog creation is set to `true`.
 
