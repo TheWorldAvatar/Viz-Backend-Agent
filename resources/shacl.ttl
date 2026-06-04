@@ -104,6 +104,24 @@ base:ServiceReportOccurrenceShape
     sh:maxCount 1 ;
   ] .
 
+base:ServiceAccrualExemptionOccurrenceShape
+  a sh:NodeShape ;
+  sh:targetClass fibo-fbc-pas-fpas:ContractLifecycleEventOccurrence ;
+  sh:property [
+    sh:path fibo-fnd-rel-rel:exemplifies ;
+    sh:hasValue ontoservice:ServiceAccrualExemptionEvent ;
+  ] ;
+  sh:property [
+    sh:name "billing remarks";
+    sh:description "Describe the reason of exempting this billable.";
+    sh:order 1;
+    sh:path rdfs:comment ;
+    sh:datatype xsd:string ;
+    twa:singleLine false ;
+    sh:minCount 0 ;
+    sh:maxCount 1 ;
+  ] .
+
 base:ServicAccrualOccurrenceShape
   a sh:NodeShape ;
   sh:targetClass fibo-fbc-pas-fpas:ContractLifecycleEventOccurrence ;

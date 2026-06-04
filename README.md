@@ -852,6 +852,7 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/se
 ```json
 {
   /* parameters */
+  "id": "The ID of the previous task",
   "contract": "The target contract IRI",
   "remarks": "Remarks for the report",
   "date": "Date of the unfulfilled service in the YYYY-MM-DD format; Date must be in the past or today"
@@ -867,6 +868,7 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/se
 ```json
 {
   /* parameters */
+  "id": "The ID of the previous task",
   "contract": "The target contract IRI",
   "remarks": "Remarks for the cancellation",
   "date": "Upcoming service date to be cancelled in the YYYY-MM-DD format; Date must be today or in future"
@@ -884,6 +886,21 @@ Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/ser
   /* parameters */
   "contract": "The target contract IRI",
   "date": "Scheduled date of the order delivery in the YYYY-MM-DD format"
+}
+```
+
+> Service accrual exemption
+
+Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/exempt/form` endpoint to retrieve the form template associated with the service accrual exemption event. Note that this will require `SHACL` restrictions to be defined and instantiated into the knowledge graph. A sample `ServiceAccrualExemptionOccurrenceShape` is defined in `./resources/shacl.ttl`.
+
+Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/service/exempt` endpoint to exempt a service task from accrual. Note that this route does require the following `JSON` request parameters:
+
+```json
+{
+  /* parameters */
+  "id": "The ID of the previous task",
+  "contract": "The target contract IRI",
+  "date": "date of the task in the YYYY-MM-DD format"
 }
 ```
 
