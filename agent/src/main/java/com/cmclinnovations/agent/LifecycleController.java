@@ -144,18 +144,16 @@ public class LifecycleController {
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> pricingModel = TypeCastUtils.castToListObject(params.remove(BillingResource.PRICING_KEY),
           String.class);
-      // update the contract instance
-      ResponseEntity<StandardApiResponse<?>> updateResponse = this.updateService.update(
-          targetId, type, LocalisationResource.SUCCESS_UPDATE_KEY, params, TrackActionType.MODIFICATION);
-      if (!updateResponse.getStatusCode().equals(HttpStatus.OK)) {
-        return updateResponse;
-      }
-      // re-draft the lifecycle and schedule
       // Do not allow modifications if it has been approved
       if (this.lifecycleContractService.guardAgainstApproval(targetId)) {
         return this.responseEntityBuilder.error(
             LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_APPROVED_NO_ACTION_KEY),
             HttpStatus.CONFLICT);
+      }
+      ResponseEntity<StandardApiResponse<?>> updateResponse = this.updateService.update(
+          targetId, type, LocalisationResource.SUCCESS_UPDATE_KEY, params, TrackActionType.MODIFICATION);
+      if (!updateResponse.getStatusCode().equals(HttpStatus.OK)) {
+        return updateResponse;
       }
       // Add current date into parameters
       params.put(LifecycleResource.DATE_KEY, this.dateTimeService.getCurrentDate());
