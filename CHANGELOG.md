@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.53.1
+
+- Fixed broken terminate contracts function
+- Fixed broken archived contract query
+
 ## 1.53.0
 
 - Combined contract creation, draft lifecycle and pricing assignment into a single `POST /contracts/draft` request
