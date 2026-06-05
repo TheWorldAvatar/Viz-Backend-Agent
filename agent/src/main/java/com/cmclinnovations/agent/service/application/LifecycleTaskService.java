@@ -351,13 +351,19 @@ public class LifecycleTaskService {
       List<ServiceEventFilterQueryManifest> queryManifests = List
           .of(completeQueryStatements, cancelQueryStatements, reportQueryStatements);
 
-      boolean hasAllOptionalFields = queryManifests.stream()
+      // Filter down to manifests that are actually participating (non-empty queries)
+      List<ServiceEventFilterQueryManifest> activeManifests = queryManifests.stream()
+          .filter(manifest -> manifest.query() != null && !manifest.query().trim().isEmpty())
+          .toList();
+
+      // Evaluate structural wrapping types ONLY across the active filters
+      boolean hasAllOptionalFields = !activeManifests.isEmpty() && activeManifests.stream()
           .allMatch(manifest -> manifest.onlyOptionalField() && !manifest.hasActiveFilters);
-      boolean hasAllMinusFields = queryManifests.stream()
+      boolean hasAllMinusFields = !activeManifests.isEmpty() && activeManifests.stream()
           .allMatch(manifest -> manifest.onlyMinusFilter() && !manifest.hasFilterField);
 
-      List<String> nonEmptyQueryStatements = queryManifests.stream()
-          .filter(manifest -> manifest.query() != null && !manifest.query().trim().isEmpty())
+      // Extract the inner clauses safely using the refined global rules
+      List<String> nonEmptyQueryStatements = activeManifests.stream()
           .map(manifest -> {
             if (hasAllOptionalFields) {
               return QueryResource.getClauseContents(manifest.query(), true);
@@ -369,8 +375,14 @@ public class LifecycleTaskService {
           .toList();
       // When only one query meets the criteria, add them directly
       if (nonEmptyQueryStatements.size() == 1) {
-        addFilterQueries += nonEmptyQueryStatements.get(0);
-        // When multiple queries meet the filter/sort criteria
+        String statement = nonEmptyQueryStatements.get(0);
+        if (hasAllOptionalFields) {
+          statement = QueryResource.optional(statement);
+        } else if (hasAllMinusFields) {
+          statement = QueryResource.minus(statement);
+        }
+        addFilterQueries += statement;
+        
       } else if (!nonEmptyQueryStatements.isEmpty()) {
         String[] parsedStatements = nonEmptyQueryStatements.toArray(String[]::new);
         String unionStatement = QueryResource.union(parsedStatements[0],
