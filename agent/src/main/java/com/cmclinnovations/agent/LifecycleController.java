@@ -26,6 +26,7 @@ import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
+import com.cmclinnovations.agent.model.util.LifecycleTask;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
@@ -543,12 +544,12 @@ public class LifecycleController {
   private ResponseEntity<StandardApiResponse<?>> updateTaskOfTerminatedContract(Map<String, Object> params,
       String contractId, String entityType, String taskAction, String startTimestamp, String endTimestamp) {
 
-    List<String> occurrenceDates = this.lifecycleTaskService.getOccurrenceDateByContract(
+    List<LifecycleTask> lifecycleTasks = this.lifecycleTaskService.getOccurrencesByContract(
         startTimestamp, endTimestamp, entityType, contractId);
 
-    if (occurrenceDates != null && !occurrenceDates.isEmpty()) {
+    if (lifecycleTasks != null && !lifecycleTasks.isEmpty()) {
       ResponseEntity<StandardApiResponse<?>> updateResponse = this.lifecycleTaskService
-          .updateTaskOfTerminatedContract(params, occurrenceDates, taskAction);
+          .updateTaskOfTerminatedContract(params, lifecycleTasks, taskAction);
 
       if (!updateResponse.getStatusCode().equals(HttpStatus.OK)) {
         return updateResponse; // Early exit on failure
