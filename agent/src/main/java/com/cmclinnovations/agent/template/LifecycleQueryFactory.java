@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.template;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -341,16 +342,12 @@ public class LifecycleQueryFactory {
                 statementMappings.put("final_remarks",
                         "OPTIONAL {?event <http://www.w3.org/2000/01/rdf-schema#comment> ?final_remarks . }");
                 // for archive contract, look for complete, rescind, or terminated
-                String completeEventStatement = GraphPatterns.and(
-                        GraphPatterns.union(
-                                eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-                                        Rdf.iri(LifecycleResource.EVENT_CONTRACT_COMPLETION)),
-                                eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-                                        Rdf.iri(LifecycleResource.EVENT_CONTRACT_RESCISSION)),
-                                eventVar.has(QueryResource.FIBO_FND_REL_REL_EXEMPLIFIES,
-                                        Rdf.iri(LifecycleResource.EVENT_CONTRACT_TERMINATION))))
-                        .getQueryString();
-                coreQueryBuilder.append(lifecycleStatement).append(completeEventStatement);
+                String archivedEventStatement = QueryResource.values(
+                        List.of(Rdf.iri(LifecycleResource.EVENT_CONTRACT_COMPLETION).getQueryString(),
+                                Rdf.iri(LifecycleResource.EVENT_CONTRACT_RESCISSION).getQueryString(),
+                                Rdf.iri(LifecycleResource.EVENT_CONTRACT_TERMINATION).getQueryString()),
+                        "event_type");
+                coreQueryBuilder.append(lifecycleStatement).append(archivedEventStatement);
                 this.appendArchivedStateQuery(coreQueryBuilder);
                 break;
             default:
