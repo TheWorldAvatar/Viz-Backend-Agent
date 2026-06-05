@@ -29,6 +29,7 @@ import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.model.util.DataManifest;
+import com.cmclinnovations.agent.model.util.LifecycleTask;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
@@ -219,7 +220,7 @@ public class LifecycleTaskService {
    * @param entityType     Target resource ID.
    * @param contractId     The ID of the contract to filter occurrences by.
    */
-  public List<String> getOccurrenceDateByContract(String startTimestamp, String endTimestamp,
+  public List<LifecycleTask> getOccurrencesByContract(String startTimestamp, String endTimestamp,
       String entityType, String contractId) {
     Map<String, String> filter = new HashMap<>();
     filter.put("id", contractId);
@@ -227,10 +228,17 @@ public class LifecycleTaskService {
         StringResource.DEFAULT_SORT_BY + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false, filter);
     DataManifest<List<Map<String, Object>>> occurrenceManifest = this.queryOccurrences(startTimestamp, endTimestamp,
         entityType, LifecycleEventType.SERVICE_ORDER_RECEIVED, pagination);
+    String eventIdVar = QueryResource.EVENT_ID_VAR.getVarName();
     return occurrenceManifest.data().stream()
-        .filter(occurrenceMap -> occurrenceMap.containsKey(LifecycleResource.DATE_KEY))
-        .map(occurrenceMap -> (SparqlResponseField) occurrenceMap.get(LifecycleResource.DATE_KEY))
-        .map(SparqlResponseField::value)
+        .filter(occurrenceMap -> occurrenceMap.containsKey(LifecycleResource.DATE_KEY)
+            && occurrenceMap.containsKey(eventIdVar))
+        .map(occurrenceMap -> {
+          String date = TypeCastUtils
+              .castToObject(occurrenceMap.get(LifecycleResource.DATE_KEY), SparqlResponseField.class).value();
+          String eventId = TypeCastUtils.castToObject(occurrenceMap.get(eventIdVar), SparqlResponseField.class).value();
+          eventId = StringResource.getLocalName(eventId);
+          return new LifecycleTask(eventId, date);
+        })
         .collect(Collectors.toList());
   }
 
@@ -239,13 +247,12 @@ public class LifecycleTaskService {
    * identified by their dates.
    */
   public ResponseEntity<StandardApiResponse<?>> updateTaskOfTerminatedContract(Map<String, Object> params,
-      List<String> dates,
-      String type) {
+      List<LifecycleTask> tasks, String type) {
     ResponseEntity<StandardApiResponse<?>> lastSuccessfulResponse = null;
-    for (String date : dates) {
+    for (LifecycleTask task : tasks) {
       Map<String, Object> dateParams = new HashMap<>(params);
-      dateParams.put(LifecycleResource.DATE_KEY, date);
-      dateParams.remove(QueryResource.ID_KEY);
+      dateParams.put(QueryResource.ID_KEY, task.id());
+      dateParams.put(LifecycleResource.DATE_KEY, task.date());
       ResponseEntity<StandardApiResponse<?>> response = this.performSingleServiceAction(type, dateParams);
       if (!response.getStatusCode().equals(HttpStatus.OK)) {
         return response;
