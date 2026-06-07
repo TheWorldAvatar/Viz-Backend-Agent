@@ -344,9 +344,43 @@ public class LifecycleTaskService {
       // Override the field value for filter options, as it should ignore them
       serviceEventFilters.put(field, new HashSet<>());
     }
+    // Get combined filter statements for events that matches any sort/filter criteria
+    String addFilterQueries = this.buildTaskEventFilterQueries(field, sortedFields, serviceEventFilters, eventType);
+
+    Map<String, String> extendedMappings = this.lifecycleQueryFactory
+        .insertExtendedLastModifiedFilters(statementMappings);
+    // The add filters are only required for getting IDs and not the main query
+    extendedMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
+        statementMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + addFilterQueries);
+    // Include an empty date statement to support filtering
+    extendedMappings.put(LifecycleResource.DATE_KEY, "");
+    String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
+        filters, field);
+    if (reqOriStatements) {
+      return new String[] { lifecycleStatements,
+          statementMappings.values().stream().collect(Collectors.joining("\n")) };
+    } else {
+      return new String[] { lifecycleStatements };
+    }
+  }
+
+  /**
+   * Builds the filter queries for task events based on the provided parameters.
+   *
+   * @param field              The field for which to build filter queries.
+   * @param sortedFields       The set of fields for sorting.
+   * @param serviceEventFilters The map of service event filters.
+   * @param eventType          The lifecycle event type.
+   * @return The combined filter queries as a string.
+   */
+  private String buildTaskEventFilterQueries(String field, Set<String> sortedFields,
+    Map<String, Set<String>> serviceEventFilters, LifecycleEventType eventType) {
+    
     // Get statements for dispatch events that matches any sort/filter criteria
-    String addFilterQueries = this.genServiceEventsQueryStatements(field, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-        sortedFields, serviceEventFilters).query();
+    
+    String addFilterQueries = this.genServiceEventsQueryStatements(field,
+        LifecycleEventType.SERVICE_ORDER_DISPATCHED, sortedFields, serviceEventFilters).query();
+
     // Non-closed tasks should not have the closed related statements
     if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
       ServiceEventFilterQueryManifest completeQueryStatements = this.genServiceEventsQueryStatements(field,
@@ -355,6 +389,7 @@ public class LifecycleTaskService {
           LifecycleEventType.SERVICE_CANCELLATION, sortedFields, serviceEventFilters);
       ServiceEventFilterQueryManifest reportQueryStatements = this.genServiceEventsQueryStatements(field,
           LifecycleEventType.SERVICE_INCIDENT_REPORT, sortedFields, serviceEventFilters);
+
       List<ServiceEventFilterQueryManifest> queryManifests = List
           .of(completeQueryStatements, cancelQueryStatements, reportQueryStatements);
 
@@ -374,6 +409,7 @@ public class LifecycleTaskService {
             return manifest.query();
           })
           .toList();
+
       // When only one query meets the criteria, add them directly
       if (nonEmptyQueryStatements.size() == 1) {
         addFilterQueries += nonEmptyQueryStatements.get(0);
@@ -394,21 +430,7 @@ public class LifecycleTaskService {
           sortedFields, serviceEventFilters).query();
     }
 
-    Map<String, String> extendedMappings = this.lifecycleQueryFactory
-        .insertExtendedLastModifiedFilters(statementMappings);
-    // The add filters are only required for getting IDs and not the main query
-    extendedMappings.put(LifecycleResource.LIFECYCLE_RESOURCE,
-        statementMappings.get(LifecycleResource.LIFECYCLE_RESOURCE) + addFilterQueries);
-    // Include an empty date statement to support filtering
-    extendedMappings.put(LifecycleResource.DATE_KEY, "");
-    String lifecycleStatements = this.lifecycleQueryService.genLifecycleStatements(extendedMappings, sortedFields,
-        filters, field);
-    if (reqOriStatements) {
-      return new String[] { lifecycleStatements,
-          statementMappings.values().stream().collect(Collectors.joining("\n")) };
-    } else {
-      return new String[] { lifecycleStatements };
-    }
+    return "\n" + addFilterQueries;
   }
 
   /**
