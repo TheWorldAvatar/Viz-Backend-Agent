@@ -374,78 +374,204 @@ public class LifecycleTaskService {
    * @return The combined filter queries as a string.
    */
   private String buildTaskEventFilterQueries(String field, Set<String> sortedFields,
-    Map<String, Set<String>> serviceEventFilters, LifecycleEventType eventType) {
-    
+    Map<String, Set<String>> serviceEventFilters, LifecycleEventType rootEventType) {
+
+    // Gather all required statements for properties
     List<LifecycleEventType> lifecycleEventsChecklist = new ArrayList<>();
     lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_ORDER_DISPATCHED);
 
-    if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
+    if (rootEventType.equals(LifecycleEventType.ACTIVE_SERVICE) || rootEventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
       lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_EXECUTION);
       lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_CANCELLATION);
       lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_INCIDENT_REPORT);
       lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_EXEMPT);
     }
 
-    // for all properties, check all event types
-
     Map<String, Map<LifecycleEventType, String>> propertyToEventMappings = this.genPropertyEventMappings(field,
         sortedFields, serviceEventFilters, lifecycleEventsChecklist);
     
-    // Get statements for dispatch events that matches any sort/filter criteria
-    
-    String addFilterQueries = this.genServiceEventsQueryStatements(field,
-        LifecycleEventType.SERVICE_ORDER_DISPATCHED, sortedFields, serviceEventFilters).query();
+    // Identify operation mode
+    StringBuilder finalQueryAccumulator = new StringBuilder();
+    boolean isLookupMode = field != null && !field.isEmpty() && serviceEventFilters.containsKey(field)
+        && serviceEventFilters.get(field).isEmpty();
 
-    // Non-closed tasks should not have the closed related statements
-    if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
-      ServiceEventFilterQueryManifest completeQueryStatements = this.genServiceEventsQueryStatements(field,
-          LifecycleEventType.SERVICE_EXECUTION, sortedFields, serviceEventFilters);
-      ServiceEventFilterQueryManifest cancelQueryStatements = this.genServiceEventsQueryStatements(field,
-          LifecycleEventType.SERVICE_CANCELLATION, sortedFields, serviceEventFilters);
-      ServiceEventFilterQueryManifest reportQueryStatements = this.genServiceEventsQueryStatements(field,
-          LifecycleEventType.SERVICE_INCIDENT_REPORT, sortedFields, serviceEventFilters);
-
-      List<ServiceEventFilterQueryManifest> queryManifests = List
-          .of(completeQueryStatements, cancelQueryStatements, reportQueryStatements);
-
-      boolean hasAllOptionalFields = queryManifests.stream()
-          .allMatch(manifest -> manifest.onlyOptionalField() && !manifest.hasActiveFilters);
-      boolean hasAllMinusFields = queryManifests.stream()
-          .allMatch(manifest -> manifest.onlyMinusFilter() && !manifest.hasFilterField);
-
-      List<String> nonEmptyQueryStatements = queryManifests.stream()
-          .filter(manifest -> manifest.query() != null && !manifest.query().trim().isEmpty())
-          .map(manifest -> {
-            if (hasAllOptionalFields) {
-              return QueryResource.getClauseContents(manifest.query(), true);
-            } else if (hasAllMinusFields) {
-              return QueryResource.getClauseContents(manifest.query(), false);
-            }
-            return manifest.query();
-          })
-          .toList();
-
-      // When only one query meets the criteria, add them directly
-      if (nonEmptyQueryStatements.size() == 1) {
-        addFilterQueries += nonEmptyQueryStatements.get(0);
-        // When multiple queries meet the filter/sort criteria
-      } else if (!nonEmptyQueryStatements.isEmpty()) {
-        String[] parsedStatements = nonEmptyQueryStatements.toArray(String[]::new);
-        String unionStatement = QueryResource.union(parsedStatements[0],
-            Arrays.copyOfRange(parsedStatements, 1, parsedStatements.length));
-        if (hasAllOptionalFields) {
-          unionStatement = QueryResource.optional(unionStatement);
-        } else if (hasAllMinusFields) {
-          unionStatement = QueryResource.minus(unionStatement);
-        }
-        addFilterQueries += unionStatement;
-      }
-
-      addFilterQueries += this.genServiceEventsQueryStatements(field, LifecycleEventType.SERVICE_EXEMPT,
-          sortedFields, serviceEventFilters).query();
+    // Separate background filters from the active lookup field
+    Set<String> backgroundProperties = new LinkedHashSet<>(serviceEventFilters.keySet());
+    if (isLookupMode) {
+      backgroundProperties.remove(field);
     }
 
-    return "\n" + addFilterQueries;
+    // Explicitly clean out the sort key from background filtering structures
+    backgroundProperties.remove(StringResource.SORT_KEY);
+
+    // Process filtering constraints
+    for (String propertyKey : backgroundProperties) {
+      if (propertyKey.equals(StringResource.SORT_KEY)) {
+        continue;
+      }
+
+      Map<LifecycleEventType, String> matchedEvents = propertyToEventMappings.get(propertyKey);
+      if (matchedEvents == null || matchedEvents.isEmpty()) {
+        continue;
+      }
+
+      String propertyValueVar = "?" + propertyKey;
+      List<String> unifiedEventBlocks = new ArrayList<>();
+      List<String> eventVarsInvolved = new ArrayList<>();
+
+      for (Map.Entry<LifecycleEventType, String> entry : matchedEvents.entrySet()) {
+        LifecycleEventType currentEventType = entry.getKey();
+        String pathStatement = entry.getValue();
+
+        // Dynamically build a completely unique variable name for this specific property block
+        String uniqueVarStr = currentEventType.getId() + "_event_" + propertyKey;
+        String uniqueEventVar = QueryResource.genVariable(uniqueVarStr).getQueryString();
+
+        // Generate the dynamic anchor statement bound to our new unique variable name
+        String dynamicAnchor = LifecycleResource.genOccurrenceTargetQueryStatement(uniqueEventVar, currentEventType);
+
+        // Replace the property path placeholder with the exact same unique variable name
+        pathStatement = pathStatement.replace(QueryResource.IRI_VAR.getQueryString(), uniqueEventVar);
+
+        String trimmedPath = pathStatement.trim();
+        String finalizedPath = trimmedPath.endsWith(".") ? trimmedPath : trimmedPath + " .";
+        String fullEventPropertyPath = "{ " + dynamicAnchor + " " + finalizedPath + " }";
+
+        unifiedEventBlocks.add(fullEventPropertyPath);
+        eventVarsInvolved.add(uniqueEventVar);
+      }
+
+      if (unifiedEventBlocks.isEmpty()) {
+        continue;
+      }
+
+      String combinedGraphPath;
+      if (unifiedEventBlocks.size() == 1) {
+        combinedGraphPath = unifiedEventBlocks.get(0);
+      } else {
+        String[] blocksArray = unifiedEventBlocks.toArray(String[]::new);
+        combinedGraphPath = QueryResource.union(blocksArray[0],
+            Arrays.copyOfRange(blocksArray, 1, blocksArray.length));
+      }
+
+      Set<String> filterValues = serviceEventFilters.get(propertyKey);
+      if (filterValues == null || filterValues.isEmpty()) {
+        continue;
+      }
+
+      StringBuilder filterClauseBuilder = new StringBuilder();
+
+      // Handle value injection
+      if (filterValues.contains(QueryResource.NUMERIC_TYPE)) {
+        filterClauseBuilder.append("{ ").append(combinedGraphPath).append(" }\n");
+
+        String numericalFilterExpression = QueryResource.genNumericalFilterExpression(propertyKey, filterValues);
+        filterClauseBuilder.append(numericalFilterExpression).append("\n");
+      }
+      else {
+        // handle string-base filtering
+        String valuesListString = "";
+        if (filterValues.size() > 1 || (filterValues.size() == 1 && !filterValues.contains(QueryResource.NULL_KEY))) {
+          List<String> explicitValues = filterValues.stream()
+              .filter(val -> !val.equals(QueryResource.NULL_KEY))
+              .toList();
+          valuesListString = String.join(", ", explicitValues);
+        }
+
+        // Blank-Only Selection
+        if (filterValues.contains(QueryResource.NULL_KEY) && filterValues.size() == 1) {
+          filterClauseBuilder.append("OPTIONAL { ").append(combinedGraphPath).append(" }\n");
+          filterClauseBuilder.append("FILTER(!BOUND(").append(propertyValueVar).append("))\n");
+        }
+        // Mixed Selection - Explicit values OR Blanks
+        // NOTE: Keeping this as is since genDefaultDatatypeFilters uses MINUS, which we intentionally bypassed here
+        else if (filterValues.contains(QueryResource.NULL_KEY)) {
+          filterClauseBuilder.append("OPTIONAL { ").append(combinedGraphPath).append(" }\n");
+
+          List<String> eventNotBoundConditions = eventVarsInvolved.stream()
+              .map(eVar -> "!BOUND(" + eVar + ")")
+              .toList();
+          String eventsNotBoundCombined = String.join(" && ", eventNotBoundConditions);
+
+          filterClauseBuilder.append("FILTER((").append(eventsNotBoundCombined).append(") || ")
+              .append(propertyValueVar).append(" IN (").append(valuesListString).append("))\n");
+        }
+        // Strict selection with explicit values only
+        else {
+          filterClauseBuilder.append("{ ").append(combinedGraphPath).append(" }\n");
+          filterClauseBuilder.append("FILTER(").append(propertyValueVar).append(" IN (").append(valuesListString)
+              .append("))\n");
+        }
+      }
+
+      finalQueryAccumulator.append(filterClauseBuilder.toString());
+    }
+
+    // Process sorting constraints after all filtering constraints have been applied
+    if (propertyToEventMappings.containsKey(StringResource.SORT_KEY)) {
+      Map<LifecycleEventType, String> matchedEvents = propertyToEventMappings.get(StringResource.SORT_KEY);
+      if (matchedEvents != null && !matchedEvents.isEmpty()) {
+
+        for (Map.Entry<LifecycleEventType, String> entry : matchedEvents.entrySet()) {
+          LifecycleEventType currentEventType = entry.getKey();
+          String sortPathStatement = entry.getValue();
+
+          // Isolate sorting scope using a distinct "_sort" variable suffix
+          String sortVarStr = currentEventType.getId() + "_event_sort";
+          String uniqueSortEventVar = QueryResource.genVariable(sortVarStr).getQueryString();
+
+          // Build the anchor statement and swap placeholders
+          String dynamicAnchor = LifecycleResource.genOccurrenceTargetQueryStatement(uniqueSortEventVar, currentEventType);
+          sortPathStatement = sortPathStatement.replace(QueryResource.IRI_VAR.getQueryString(), uniqueSortEventVar);
+
+          String trimmedPath = sortPathStatement.trim();
+          String finalizedPath = trimmedPath.endsWith(".") ? trimmedPath : trimmedPath + " .";
+          
+          finalQueryAccumulator.append("OPTIONAL { ")
+                               .append(dynamicAnchor).append(" ")
+                               .append(finalizedPath)
+                               .append(" }\n");
+        }
+      }
+    }
+
+    // Handle active options lookup
+    if (isLookupMode) {
+      Map<LifecycleEventType, String> matchedEvents = propertyToEventMappings.get(field);
+      if (matchedEvents != null && !matchedEvents.isEmpty()) {
+        List<String> unifiedEventBlocks = new ArrayList<>();
+
+        for (Map.Entry<LifecycleEventType, String> entry : matchedEvents.entrySet()) {
+          LifecycleEventType currentEventType = entry.getKey();
+          String pathStatement = entry.getValue();
+
+          String lookupVarStr = currentEventType.getId() + "_event_lookup";
+          String lookupEventVar = QueryResource.genVariable(lookupVarStr).getQueryString();
+
+          String lookupAnchor = LifecycleResource.genOccurrenceTargetQueryStatement(lookupEventVar, currentEventType);
+          pathStatement = pathStatement.replace(QueryResource.IRI_VAR.getQueryString(), lookupEventVar);
+
+          String trimmedPath = pathStatement.trim();
+          String finalizedPath = trimmedPath.endsWith(".") ? trimmedPath : trimmedPath + " .";
+          String fullEventPropertyPath = "{ " + lookupAnchor + " " + finalizedPath + " }";
+          unifiedEventBlocks.add(fullEventPropertyPath);
+        }
+
+        if (!unifiedEventBlocks.isEmpty()) {
+          String combinedGraphPath;
+          if (unifiedEventBlocks.size() == 1) {
+            combinedGraphPath = unifiedEventBlocks.get(0);
+          } else {
+            String[] blocksArray = unifiedEventBlocks.toArray(String[]::new);
+            combinedGraphPath = QueryResource.union(blocksArray[0],
+                Arrays.copyOfRange(blocksArray, 1, blocksArray.length));
+          }
+          finalQueryAccumulator.append("OPTIONAL { ").append(combinedGraphPath).append(" }\n");
+        }
+      }
+    }
+
+    return "\n" + finalQueryAccumulator.toString();
   }
 
   /**
