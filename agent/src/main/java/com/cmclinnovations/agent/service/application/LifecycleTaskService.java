@@ -376,6 +376,21 @@ public class LifecycleTaskService {
   private String buildTaskEventFilterQueries(String field, Set<String> sortedFields,
     Map<String, Set<String>> serviceEventFilters, LifecycleEventType eventType) {
     
+    List<LifecycleEventType> lifecycleEventsChecklist = new ArrayList<>();
+    lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+
+    if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
+      lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_EXECUTION);
+      lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_CANCELLATION);
+      lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_INCIDENT_REPORT);
+      lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_EXEMPT);
+    }
+
+    // for all properties, check all event types
+
+    Map<String, Map<LifecycleEventType, String>> propertyToEventMappings = this.genPropertyEventMappings(field,
+        sortedFields, serviceEventFilters, lifecycleEventsChecklist);
+    
     // Get statements for dispatch events that matches any sort/filter criteria
     
     String addFilterQueries = this.genServiceEventsQueryStatements(field,
@@ -431,6 +446,51 @@ public class LifecycleTaskService {
     }
 
     return "\n" + addFilterQueries;
+  }
+
+  /**
+   * Generates property-centric event mappings based on the provided parameters.
+   *
+   * @param field                The field for which to generate mappings.
+   * @param sortedFields         The set of sorted fields.
+   * @param serviceEventFilters  The map of service event filters.
+   * @param lifecycleEventsChecklist  The list of lifecycle events to check.
+   * @return A map of property-centric event mappings.
+   */
+  private Map<String, Map<LifecycleEventType, String>> genPropertyEventMappings(String field, Set<String> sortedFields,
+      Map<String, Set<String>> serviceEventFilters,
+      List<LifecycleEventType> lifecycleEventsChecklist) {
+
+    // stores all matched statements for all event types
+    Map<LifecycleEventType, Map<String, String>> globalLifecycleMappings = new HashMap<>();
+
+    for (LifecycleEventType lifecycleEvent : lifecycleEventsChecklist) {
+
+      Map<String, String> filteredStatementMappings = this.getService.getStatementMappingsForTargetFields(
+          lifecycleEvent.getShaclReplacement(), sortedFields, serviceEventFilters);
+      globalLifecycleMappings.put(lifecycleEvent, filteredStatementMappings);
+    }
+
+    // Pivot the data structure to be property-centric
+    
+    Map<String, Map<LifecycleEventType, String>> propertyToEventMappings = new HashMap<>();
+    for (Map.Entry<LifecycleEventType, Map<String, String>> eventEntry : globalLifecycleMappings.entrySet()) {
+      LifecycleEventType eventTypeKey = eventEntry.getKey();
+      Map<String, String> propertyMappings = eventEntry.getValue();
+
+      if (propertyMappings != null) {
+        for (Map.Entry<String, String> propEntry : propertyMappings.entrySet()) {
+          String propertyKey = propEntry.getKey();
+          String sparqlStatement = propEntry.getValue();
+
+          // Compute or create the inner map for this specific property
+          propertyToEventMappings.computeIfAbsent(propertyKey, k -> new HashMap<>())
+              .put(eventTypeKey, sparqlStatement);
+        }
+      }
+    }
+
+    return propertyToEventMappings;
   }
 
   /**
