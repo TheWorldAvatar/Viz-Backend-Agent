@@ -405,14 +405,8 @@ public class QueryResource {
                                         dateFilters.get(1))));
             }
         } else if (filters.contains(QueryResource.NUMERIC_TYPE)) {
-            List<String> numericFilters = new ArrayList<>(filters);
-            numericFilters.remove(QueryResource.NUMERIC_TYPE);
-            for (int i = 0; i < numericFilters.size(); i += 2) {
-                builder.append(QueryResource.filter(
-                        MessageFormat.format(QueryResource.NUMERIC_FILTER_TEMPLATE, field,
-                                QueryResource.getNumericFilterOperator(numericFilters.get(i)),
-                                numericFilters.get(i + 1))));
-            }
+            String numericalFiltersStr = genNumericalFilterExpression(field, filters);
+            builder.append(numericalFiltersStr);
             // When there are null filter values, the user has requested for blank values,
             // and this should be excluded from the query via a MINUS clause
         } else if (filters.contains(QueryResource.NULL_KEY)) {
@@ -432,6 +426,35 @@ public class QueryResource {
             String valuesClause = QueryResource.values(filters, field);
             builder.append(valuesClause);
         }
+    }
+
+    /**
+     * Generate the numerical filter expression for the numerical filters. The
+     * filters should be in the format of operator followed by the target value.
+     * 
+     * @param propertyKey The property key of interest.
+     * @param filters     The set of filters provided by the user.
+     */
+    public static String genNumericalFilterExpression(String propertyKey, Set<String> filters) {
+        StringBuilder builder = new StringBuilder();
+
+        List<String> numericFilters = new ArrayList<>(filters);
+        numericFilters.remove(QueryResource.NUMERIC_TYPE);
+
+        for (int i = 0; i < numericFilters.size(); i += 2) {
+            String operatorCode = numericFilters.get(i);
+            String targetValue = numericFilters.get(i + 1);
+
+            String parsedOperator = QueryResource.getNumericFilterOperator(operatorCode);
+
+            builder.append(QueryResource.filter(
+                    MessageFormat.format(QueryResource.NUMERIC_FILTER_TEMPLATE,
+                            propertyKey,
+                            parsedOperator,
+                            targetValue)));
+        }
+
+        return builder.toString();
     }
 
     /**
