@@ -358,22 +358,23 @@ public class LifecycleTaskService {
   /**
    * Builds the filter queries for task events based on the provided parameters.
    *
-   * @param field               The field for which to build filter queries.
-   * @param sortedFields        The set of fields for sorting.
-   * @param filters             The map of service event filters.
-   * @param eventType           The lifecycle event type.
+   * @param field        The field for which to build filter queries.
+   * @param sortedFields The set of fields for sorting.
+   * @param filters      The map of service event filters.
+   * @param eventType    The lifecycle event type.
    * @return The combined filter queries as a string.
    */
   private String buildTaskEventFilterQueries(String field, Set<String> sortedFields,
       Map<String, Set<String>> filters, LifecycleEventType rootEventType) {
 
-    // Create a modifiable copy of the filters to adjust for the lookup field if necessary
+    // Create a modifiable copy of the filters to adjust for the lookup field if
+    // necessary
     Map<String, Set<String>> serviceEventFilters = new HashMap<>(filters);
     if (!field.isEmpty()) {
       // Override the field value for filter options, as it should ignore them
       serviceEventFilters.put(field, new HashSet<>());
     }
-    
+
     // Gather all required statements for properties
     List<LifecycleEventType> lifecycleEventsChecklist = new ArrayList<>();
     lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_ORDER_DISPATCHED);
@@ -425,18 +426,12 @@ public class LifecycleTaskService {
         // property block
         String uniqueVarStr = currentEventType.getId() + "_event_" + propertyKey;
         String uniqueEventVar = QueryResource.genVariable(uniqueVarStr).getQueryString();
-
-        // Generate the dynamic anchor statement bound to our new unique variable name
-        String dynamicAnchor = LifecycleResource.genOccurrenceTargetQueryStatement(uniqueEventVar, currentEventType);
-
-        // Replace the property path placeholder with the exact same unique variable
-        // name
-        String pathStatement = entry.getValue().replace(QueryResource.IRI_VAR.getQueryString(), uniqueEventVar).trim();
-        String finalizedPath = pathStatement.endsWith(".") ? pathStatement : pathStatement + " .";
-        String fullEventPropertyPath = "{ " + dynamicAnchor + " " + finalizedPath + " }";
-
-        unifiedEventBlocks.add(fullEventPropertyPath);
         eventVarsInvolved.add(uniqueEventVar);
+
+        String innerPathContent = prepareEventPropertyPath(entry.getValue(), currentEventType, uniqueEventVar);
+        String fullEventPropertyPath = "{ " + innerPathContent + " }";
+        unifiedEventBlocks.add(fullEventPropertyPath);
+
       }
 
       if (unifiedEventBlocks.isEmpty()) {
@@ -456,7 +451,7 @@ public class LifecycleTaskService {
       // Handle value injection for date type
       if (filterValues.contains(LifecycleResource.DATE_KEY)) {
         filterClauseBuilder.append("{ ").append(combinedGraphPath).append(" }\n");
-        
+
         String dateFiltersStr = QueryResource.genDateFilterExpression(propertyKey, filterValues);
         filterClauseBuilder.append(dateFiltersStr).append("\n");
       } else if (filterValues.contains(QueryResource.NUMERIC_TYPE)) {
@@ -492,7 +487,8 @@ public class LifecycleTaskService {
               .toList();
           String eventsNotBoundCombined = String.join(" && ", eventNotBoundConditions);
 
-          String mixedExpr = "(" + eventsNotBoundCombined + ") || " + propertyValueVar + " IN (" + valuesListString + ")";
+          String mixedExpr = "(" + eventsNotBoundCombined + ") || " + propertyValueVar + " IN (" + valuesListString
+              + ")";
           filterClauseBuilder.append(QueryResource.filter(mixedExpr)).append("\n");
         }
         // Strict selection with explicit values only
@@ -513,24 +509,11 @@ public class LifecycleTaskService {
 
         for (Map.Entry<LifecycleEventType, String> entry : matchedEvents.entrySet()) {
           LifecycleEventType currentEventType = entry.getKey();
-          String sortPathStatement = entry.getValue();
-
-          // Isolate sorting scope using a distinct "_sort" variable suffix
           String sortVarStr = currentEventType.getId() + "_event_sort";
           String uniqueSortEventVar = QueryResource.genVariable(sortVarStr).getQueryString();
 
-          // Build the anchor statement and swap placeholders
-          String dynamicAnchor = LifecycleResource.genOccurrenceTargetQueryStatement(uniqueSortEventVar,
-              currentEventType);
-          sortPathStatement = sortPathStatement.replace(QueryResource.IRI_VAR.getQueryString(), uniqueSortEventVar);
-
-          String trimmedPath = sortPathStatement.trim();
-          String finalizedPath = trimmedPath.endsWith(".") ? trimmedPath : trimmedPath + " .";
-
-          // Combine the dynamic anchor and finalized path into a single inner statement
-          String innerOptionalContent = dynamicAnchor + " " + finalizedPath;
-
-          // Pass it to the helper function and append it to the accumulator
+          String innerOptionalContent = this.prepareEventPropertyPath(entry.getValue(), currentEventType,
+              uniqueSortEventVar);
           finalQueryAccumulator.append(QueryResource.optional(innerOptionalContent)).append("\n");
         }
       }
@@ -544,29 +527,16 @@ public class LifecycleTaskService {
 
         for (Map.Entry<LifecycleEventType, String> entry : matchedEvents.entrySet()) {
           LifecycleEventType currentEventType = entry.getKey();
-          String pathStatement = entry.getValue();
-
           String lookupVarStr = currentEventType.getId() + "_event_lookup";
           String lookupEventVar = QueryResource.genVariable(lookupVarStr).getQueryString();
 
-          String lookupAnchor = LifecycleResource.genOccurrenceTargetQueryStatement(lookupEventVar, currentEventType);
-          pathStatement = pathStatement.replace(QueryResource.IRI_VAR.getQueryString(), lookupEventVar);
-
-          String trimmedPath = pathStatement.trim();
-          String finalizedPath = trimmedPath.endsWith(".") ? trimmedPath : trimmedPath + " .";
-          String fullEventPropertyPath = "{ " + lookupAnchor + " " + finalizedPath + " }";
-          unifiedEventBlocks.add(fullEventPropertyPath);
+          String innerPathContent = this.prepareEventPropertyPath(entry.getValue(), currentEventType, lookupEventVar);
+          unifiedEventBlocks.add("{ " + innerPathContent + " }");
         }
 
         if (!unifiedEventBlocks.isEmpty()) {
-          String combinedGraphPath;
-          if (unifiedEventBlocks.size() == 1) {
-            combinedGraphPath = unifiedEventBlocks.get(0);
-          } else {
-            String[] blocksArray = unifiedEventBlocks.toArray(String[]::new);
-            combinedGraphPath = QueryResource.union(blocksArray[0],
-                Arrays.copyOfRange(blocksArray, 1, blocksArray.length));
-          }
+          String combinedGraphPath = QueryResource.union(unifiedEventBlocks.get(0),
+              unifiedEventBlocks.stream().skip(1).toArray(String[]::new));
 
           finalQueryAccumulator.append(QueryResource.optional(combinedGraphPath)).append("\n");
         }
@@ -574,6 +544,25 @@ public class LifecycleTaskService {
     }
 
     return "\n" + finalQueryAccumulator.toString();
+  }
+
+  /*
+   * Prepares the property path for a given event type and variable.
+   *
+   * @param pathStatement The SPARQL path statement.
+   * @param eventType     The lifecycle event type.
+   * @param uniqueEventVar The unique variable for the event.
+   * @return The prepared event property path.
+   */
+  private String prepareEventPropertyPath(String pathStatement, LifecycleEventType eventType, String uniqueEventVar) {
+    // Generate the dynamic anchor statement bound to the explicit variable
+    String anchor = LifecycleResource.genOccurrenceTargetQueryStatement(uniqueEventVar, eventType);
+
+    // Swap the placeholder and clean up trailing punctuation
+    String replacedPath = pathStatement.replace(QueryResource.IRI_VAR.getQueryString(), uniqueEventVar).trim();
+    String finalizedPath = replacedPath.endsWith(".") ? replacedPath : replacedPath + " .";
+
+    return anchor + " " + finalizedPath;
   }
 
   /**
