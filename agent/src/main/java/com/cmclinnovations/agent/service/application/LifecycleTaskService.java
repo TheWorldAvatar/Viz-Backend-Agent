@@ -334,14 +334,9 @@ public class LifecycleTaskService {
         eventType.equals(LifecycleEventType.ACTIVE_SERVICE));
     Map<String, String> statementMappings = this.lifecycleQueryFactory.getServiceTasksQuery(null,
         targetStartEndDates[0], targetStartEndDates[1], eventType);
-    Map<String, Set<String>> serviceEventFilters = new HashMap<>(filters);
-    if (!field.isEmpty()) {
-      // Override the field value for filter options, as it should ignore them
-      serviceEventFilters.put(field, new HashSet<>());
-    }
     // Get combined filter statements for events that matches any sort/filter
     // criteria
-    String addFilterQueries = this.buildTaskEventFilterQueries(field, sortedFields, serviceEventFilters, eventType);
+    String addFilterQueries = this.buildTaskEventFilterQueries(field, sortedFields, filters, eventType);
 
     Map<String, String> extendedMappings = this.lifecycleQueryFactory
         .insertExtendedLastModifiedFilters(statementMappings);
@@ -365,13 +360,20 @@ public class LifecycleTaskService {
    *
    * @param field               The field for which to build filter queries.
    * @param sortedFields        The set of fields for sorting.
-   * @param serviceEventFilters The map of service event filters.
+   * @param filters             The map of service event filters.
    * @param eventType           The lifecycle event type.
    * @return The combined filter queries as a string.
    */
   private String buildTaskEventFilterQueries(String field, Set<String> sortedFields,
-      Map<String, Set<String>> serviceEventFilters, LifecycleEventType rootEventType) {
+      Map<String, Set<String>> filters, LifecycleEventType rootEventType) {
 
+    // Create a modifiable copy of the filters to adjust for the lookup field if necessary
+    Map<String, Set<String>> serviceEventFilters = new HashMap<>(filters);
+    if (!field.isEmpty()) {
+      // Override the field value for filter options, as it should ignore them
+      serviceEventFilters.put(field, new HashSet<>());
+    }
+    
     // Gather all required statements for properties
     List<LifecycleEventType> lifecycleEventsChecklist = new ArrayList<>();
     lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_ORDER_DISPATCHED);
@@ -418,7 +420,6 @@ public class LifecycleTaskService {
 
       for (Map.Entry<LifecycleEventType, String> entry : matchedEvents.entrySet()) {
         LifecycleEventType currentEventType = entry.getKey();
-        String pathStatement = entry.getValue();
 
         // Dynamically build a completely unique variable name for this specific
         // property block
@@ -430,10 +431,8 @@ public class LifecycleTaskService {
 
         // Replace the property path placeholder with the exact same unique variable
         // name
-        pathStatement = pathStatement.replace(QueryResource.IRI_VAR.getQueryString(), uniqueEventVar);
-
-        String trimmedPath = pathStatement.trim();
-        String finalizedPath = trimmedPath.endsWith(".") ? trimmedPath : trimmedPath + " .";
+        String pathStatement = entry.getValue().replace(QueryResource.IRI_VAR.getQueryString(), uniqueEventVar).trim();
+        String finalizedPath = pathStatement.endsWith(".") ? pathStatement : pathStatement + " .";
         String fullEventPropertyPath = "{ " + dynamicAnchor + " " + finalizedPath + " }";
 
         unifiedEventBlocks.add(fullEventPropertyPath);
