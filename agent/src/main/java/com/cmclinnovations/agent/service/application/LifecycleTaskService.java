@@ -384,7 +384,7 @@ public class LifecycleTaskService {
       lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_EXEMPT);
     }
 
-    Map<String, Map<LifecycleEventType, String>> propertyToEventMappings = this.genPropertyEventMappings(field,
+    Map<String, Map<LifecycleEventType, String>> propertyToEventMappings = this.genPropertyEventMappings(
         sortedFields, serviceEventFilters, lifecycleEventsChecklist);
 
     // Identify operation mode
@@ -580,13 +580,12 @@ public class LifecycleTaskService {
   /**
    * Generates property-centric event mappings based on the provided parameters.
    *
-   * @param field                    The field for which to generate mappings.
    * @param sortedFields             The set of sorted fields.
    * @param serviceEventFilters      The map of service event filters.
    * @param lifecycleEventsChecklist The list of lifecycle events to check.
    * @return A map of property-centric event mappings.
    */
-  private Map<String, Map<LifecycleEventType, String>> genPropertyEventMappings(String field, Set<String> sortedFields,
+  private Map<String, Map<LifecycleEventType, String>> genPropertyEventMappings(Set<String> sortedFields,
       Map<String, Set<String>> serviceEventFilters,
       List<LifecycleEventType> lifecycleEventsChecklist) {
 
