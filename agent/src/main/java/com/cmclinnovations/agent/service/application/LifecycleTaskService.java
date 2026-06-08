@@ -339,7 +339,8 @@ public class LifecycleTaskService {
       // Override the field value for filter options, as it should ignore them
       serviceEventFilters.put(field, new HashSet<>());
     }
-    // Get combined filter statements for events that matches any sort/filter criteria
+    // Get combined filter statements for events that matches any sort/filter
+    // criteria
     String addFilterQueries = this.buildTaskEventFilterQueries(field, sortedFields, serviceEventFilters, eventType);
 
     Map<String, String> extendedMappings = this.lifecycleQueryFactory
@@ -362,20 +363,21 @@ public class LifecycleTaskService {
   /**
    * Builds the filter queries for task events based on the provided parameters.
    *
-   * @param field              The field for which to build filter queries.
-   * @param sortedFields       The set of fields for sorting.
+   * @param field               The field for which to build filter queries.
+   * @param sortedFields        The set of fields for sorting.
    * @param serviceEventFilters The map of service event filters.
-   * @param eventType          The lifecycle event type.
+   * @param eventType           The lifecycle event type.
    * @return The combined filter queries as a string.
    */
   private String buildTaskEventFilterQueries(String field, Set<String> sortedFields,
-    Map<String, Set<String>> serviceEventFilters, LifecycleEventType rootEventType) {
+      Map<String, Set<String>> serviceEventFilters, LifecycleEventType rootEventType) {
 
     // Gather all required statements for properties
     List<LifecycleEventType> lifecycleEventsChecklist = new ArrayList<>();
     lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_ORDER_DISPATCHED);
 
-    if (rootEventType.equals(LifecycleEventType.ACTIVE_SERVICE) || rootEventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
+    if (rootEventType.equals(LifecycleEventType.ACTIVE_SERVICE)
+        || rootEventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
       lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_EXECUTION);
       lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_CANCELLATION);
       lifecycleEventsChecklist.add(LifecycleEventType.SERVICE_INCIDENT_REPORT);
@@ -384,7 +386,7 @@ public class LifecycleTaskService {
 
     Map<String, Map<LifecycleEventType, String>> propertyToEventMappings = this.genPropertyEventMappings(field,
         sortedFields, serviceEventFilters, lifecycleEventsChecklist);
-    
+
     // Identify operation mode
     StringBuilder finalQueryAccumulator = new StringBuilder();
     boolean isLookupMode = field != null && !field.isEmpty() && serviceEventFilters.containsKey(field)
@@ -418,14 +420,16 @@ public class LifecycleTaskService {
         LifecycleEventType currentEventType = entry.getKey();
         String pathStatement = entry.getValue();
 
-        // Dynamically build a completely unique variable name for this specific property block
+        // Dynamically build a completely unique variable name for this specific
+        // property block
         String uniqueVarStr = currentEventType.getId() + "_event_" + propertyKey;
         String uniqueEventVar = QueryResource.genVariable(uniqueVarStr).getQueryString();
 
         // Generate the dynamic anchor statement bound to our new unique variable name
         String dynamicAnchor = LifecycleResource.genOccurrenceTargetQueryStatement(uniqueEventVar, currentEventType);
 
-        // Replace the property path placeholder with the exact same unique variable name
+        // Replace the property path placeholder with the exact same unique variable
+        // name
         pathStatement = pathStatement.replace(QueryResource.IRI_VAR.getQueryString(), uniqueEventVar);
 
         String trimmedPath = pathStatement.trim();
@@ -440,14 +444,8 @@ public class LifecycleTaskService {
         continue;
       }
 
-      String combinedGraphPath;
-      if (unifiedEventBlocks.size() == 1) {
-        combinedGraphPath = unifiedEventBlocks.get(0);
-      } else {
-        String[] blocksArray = unifiedEventBlocks.toArray(String[]::new);
-        combinedGraphPath = QueryResource.union(blocksArray[0],
-            Arrays.copyOfRange(blocksArray, 1, blocksArray.length));
-      }
+      String combinedGraphPath = QueryResource.union(unifiedEventBlocks.get(0),
+          unifiedEventBlocks.stream().skip(1).toArray(String[]::new));
 
       Set<String> filterValues = serviceEventFilters.get(propertyKey);
       if (filterValues == null || filterValues.isEmpty()) {
@@ -462,8 +460,7 @@ public class LifecycleTaskService {
 
         String numericalFilterExpression = QueryResource.genNumericalFilterExpression(propertyKey, filterValues);
         filterClauseBuilder.append(numericalFilterExpression).append("\n");
-      }
-      else {
+      } else {
         // handle string-base filtering
         String valuesListString = "";
         if (filterValues.size() > 1 || (filterValues.size() == 1 && !filterValues.contains(QueryResource.NULL_KEY))) {
@@ -475,27 +472,29 @@ public class LifecycleTaskService {
 
         // Blank-Only Selection
         if (filterValues.contains(QueryResource.NULL_KEY) && filterValues.size() == 1) {
-          filterClauseBuilder.append("OPTIONAL { ").append(combinedGraphPath).append(" }\n");
-          filterClauseBuilder.append("FILTER(!BOUND(").append(propertyValueVar).append("))\n");
+          filterClauseBuilder.append(QueryResource.optional(combinedGraphPath)).append("\n");
+          String blankExpr = "!BOUND(" + propertyValueVar + ")";
+          filterClauseBuilder.append(QueryResource.filter(blankExpr)).append("\n");
         }
         // Mixed Selection - Explicit values OR Blanks
-        // NOTE: Keeping this as is since genDefaultDatatypeFilters uses MINUS, which we intentionally bypassed here
+        // NOTE: Keeping this as is since genDefaultDatatypeFilters uses MINUS, which we
+        // intentionally bypassed here
         else if (filterValues.contains(QueryResource.NULL_KEY)) {
-          filterClauseBuilder.append("OPTIONAL { ").append(combinedGraphPath).append(" }\n");
+          filterClauseBuilder.append(QueryResource.optional(combinedGraphPath)).append("\n");
 
           List<String> eventNotBoundConditions = eventVarsInvolved.stream()
               .map(eVar -> "!BOUND(" + eVar + ")")
               .toList();
           String eventsNotBoundCombined = String.join(" && ", eventNotBoundConditions);
 
-          filterClauseBuilder.append("FILTER((").append(eventsNotBoundCombined).append(") || ")
-              .append(propertyValueVar).append(" IN (").append(valuesListString).append("))\n");
+          String mixedExpr = "(" + eventsNotBoundCombined + ") || " + propertyValueVar + " IN (" + valuesListString + ")";
+          filterClauseBuilder.append(QueryResource.filter(mixedExpr)).append("\n");
         }
         // Strict selection with explicit values only
         else {
           filterClauseBuilder.append("{ ").append(combinedGraphPath).append(" }\n");
-          filterClauseBuilder.append("FILTER(").append(propertyValueVar).append(" IN (").append(valuesListString)
-              .append("))\n");
+          String strictExpr = propertyValueVar + " IN (" + valuesListString + ")";
+          filterClauseBuilder.append(QueryResource.filter(strictExpr)).append("\n");
         }
       }
 
@@ -516,16 +515,18 @@ public class LifecycleTaskService {
           String uniqueSortEventVar = QueryResource.genVariable(sortVarStr).getQueryString();
 
           // Build the anchor statement and swap placeholders
-          String dynamicAnchor = LifecycleResource.genOccurrenceTargetQueryStatement(uniqueSortEventVar, currentEventType);
+          String dynamicAnchor = LifecycleResource.genOccurrenceTargetQueryStatement(uniqueSortEventVar,
+              currentEventType);
           sortPathStatement = sortPathStatement.replace(QueryResource.IRI_VAR.getQueryString(), uniqueSortEventVar);
 
           String trimmedPath = sortPathStatement.trim();
           String finalizedPath = trimmedPath.endsWith(".") ? trimmedPath : trimmedPath + " .";
-          
-          finalQueryAccumulator.append("OPTIONAL { ")
-                               .append(dynamicAnchor).append(" ")
-                               .append(finalizedPath)
-                               .append(" }\n");
+
+          // Combine the dynamic anchor and finalized path into a single inner statement
+          String innerOptionalContent = dynamicAnchor + " " + finalizedPath;
+
+          // Pass it to the helper function and append it to the accumulator
+          finalQueryAccumulator.append(QueryResource.optional(innerOptionalContent)).append("\n");
         }
       }
     }
@@ -561,7 +562,8 @@ public class LifecycleTaskService {
             combinedGraphPath = QueryResource.union(blocksArray[0],
                 Arrays.copyOfRange(blocksArray, 1, blocksArray.length));
           }
-          finalQueryAccumulator.append("OPTIONAL { ").append(combinedGraphPath).append(" }\n");
+
+          finalQueryAccumulator.append(QueryResource.optional(combinedGraphPath)).append("\n");
         }
       }
     }
@@ -572,10 +574,10 @@ public class LifecycleTaskService {
   /**
    * Generates property-centric event mappings based on the provided parameters.
    *
-   * @param field                The field for which to generate mappings.
-   * @param sortedFields         The set of sorted fields.
-   * @param serviceEventFilters  The map of service event filters.
-   * @param lifecycleEventsChecklist  The list of lifecycle events to check.
+   * @param field                    The field for which to generate mappings.
+   * @param sortedFields             The set of sorted fields.
+   * @param serviceEventFilters      The map of service event filters.
+   * @param lifecycleEventsChecklist The list of lifecycle events to check.
    * @return A map of property-centric event mappings.
    */
   private Map<String, Map<LifecycleEventType, String>> genPropertyEventMappings(String field, Set<String> sortedFields,
@@ -593,7 +595,7 @@ public class LifecycleTaskService {
     }
 
     // Pivot the data structure to be property-centric
-    
+
     Map<String, Map<LifecycleEventType, String>> propertyToEventMappings = new HashMap<>();
     for (Map.Entry<LifecycleEventType, Map<String, String>> eventEntry : globalLifecycleMappings.entrySet()) {
       LifecycleEventType eventTypeKey = eventEntry.getKey();
