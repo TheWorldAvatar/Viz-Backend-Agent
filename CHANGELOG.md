@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.54.0
+
+- Re-factored lifecycle event property filtering and sorting mechanism
+
 ## 1.53.1
 
 - Fixed broken terminate contracts function
