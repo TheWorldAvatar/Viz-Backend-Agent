@@ -110,11 +110,14 @@ public class LifecycleController {
     params.put(LifecycleResource.EVENT_STATUS_KEY, LifecycleResource.EVENT_PENDING_STATUS);
     LOGGER.info("Received request to generate a new lifecycle for contract <{}>...", contractId);
     // Methods will throw an error if they fail and no status checker is required
-    // Instantiates the lifecycle first before adding schedule parameters
+    // The service-execution schedule is now inlined inside the lifecycle template,
+    // so a single instantiation creates both the lifecycle and its schedule.
+    String lifecycleResource = params.containsKey(QueryResource.FIXED_DATE_SCHEDULE_KEY)
+        ? LifecycleResource.LIFECYCLE_AD_HOC_RESOURCE
+        : LifecycleResource.LIFECYCLE_REGULAR_RESOURCE;
     ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
-        LifecycleResource.LIFECYCLE_RESOURCE, params, "The lifecycle of the contract has been successfully drafted!",
+        lifecycleResource, params, "The lifecycle of the contract has been successfully drafted!",
         LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY, TrackActionType.IGNORED);
-    this.genContractSchedule(params);
     LOGGER.info("Contract has been successfully drafted!");
     return response;
   }

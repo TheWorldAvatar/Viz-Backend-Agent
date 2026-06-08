@@ -1,0 +1,254 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": {
+    "@replace": "id",
+    "@type": "iri",
+    "prefix": "https://www.theworldavatar.io/kg/lifecycle/"
+  },
+  "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleOccurrence",
+  "@reverse": {
+    "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle": {
+      "@id": {
+        "@replace": "contract",
+        "@type": "iri"
+      }
+    }
+  },
+  "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies": {
+    "@id": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycle"
+  },
+  "https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring": {
+    "@id": {
+      "@replace": "id",
+      "@type": "iri",
+      "prefix": "https://www.theworldavatar.io/kg/lifecycle/period/"
+    },
+    "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/DatePeriod",
+    "https://www.omg.org/spec/Commons/DatesAndTimes/hasStartDate": {
+      "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://www.theworldavatar.io/kg/lifecycle/date/"
+      }
+    },
+    "https://www.omg.org/spec/Commons/DatesAndTimes/hasEndDate": {
+      "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://www.theworldavatar.io/kg/lifecycle/date/end/"
+      }
+    }
+  },
+  "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage": [
+    {
+      "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://www.theworldavatar.io/kg/lifecycle/creation/"
+      },
+      "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleStageOccurrence",
+      "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies": {
+        "@id": "https://www.theworldavatar.com/kg/ontoservice/CreationStage"
+      },
+      "https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring": {
+        "@id": {
+          "@replace": "id",
+          "@type": "iri",
+          "prefix": "https://www.theworldavatar.io/kg/lifecycle/creation/occurrence/period/"
+        },
+        "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/DatePeriod",
+        "https://www.omg.org/spec/Commons/DatesAndTimes/hasStartDate": {
+          "@id": {
+            "@replace": "id",
+            "@type": "iri",
+            "prefix": "https://www.theworldavatar.io/kg/lifecycle/date/"
+          },
+          "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/Date",
+          "https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue": {
+            "@replace": "date",
+            "@type": "literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#date"
+          }
+        },
+        "https://www.omg.org/spec/Commons/DatesAndTimes/hasEndDate": {
+          "@id": {
+            "@replace": "id",
+            "@type": "iri",
+            "prefix": "https://www.theworldavatar.io/kg/lifecycle/date/start/"
+          },
+          "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/Date",
+          "https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue": {
+            "@replace": "start date",
+            "@type": "literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#date"
+          }
+        }
+      },
+      "https://www.omg.org/spec/Commons/Collections/comprises": {
+        "@id": {
+          "@replace": "id",
+          "@type": "iri",
+          "prefix": "https://www.theworldavatar.io/kg/lifecycle/creation/create/"
+        },
+        "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence",
+        "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate": {
+          "@replace": "current date",
+          "@type": "literal",
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
+        },
+        "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies": {
+          "@id": "https://www.theworldavatar.com/kg/ontoservice/ContractCreation"
+        },
+        "https://www.omg.org/spec/Commons/Designators/describes": {
+          "@id": {
+            "@replace": "event status",
+            "@type": "iri"
+          }
+        }
+      }
+    },
+    {
+      "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://www.theworldavatar.io/kg/lifecycle/service/"
+      },
+      "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleStageOccurrence",
+      "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies": {
+        "@id": "https://www.theworldavatar.com/kg/ontoservice/ServiceExecutionStage"
+      },
+      "https://www.omg.org/spec/Commons/DatesAndTimes/succeeds": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://www.theworldavatar.io/kg/lifecycle/creation/"
+      },
+      "https://www.omg.org/spec/Commons/PartiesAndSituations/holdsDuring": {
+        "@id": {
+          "@replace": "id",
+          "@type": "iri",
+          "prefix": "https://www.theworldavatar.io/kg/lifecycle/service/period/"
+        },
+        "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/DatePeriod",
+        "https://www.omg.org/spec/Commons/DatesAndTimes/hasStartDate": {
+          "@id": {
+            "@replace": "id",
+            "@type": "iri",
+            "prefix": "https://www.theworldavatar.io/kg/lifecycle/date/start/"
+          }
+        },
+        "https://www.omg.org/spec/Commons/DatesAndTimes/hasEndDate": {
+          "@id": {
+            "@replace": "id",
+            "@type": "iri",
+            "prefix": "https://www.theworldavatar.io/kg/lifecycle/date/end/"
+          },
+          "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/Date",
+          "https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue": {
+            "@replace": "end date",
+            "@type": "literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#date"
+          }
+        }
+      },
+      "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule": {
+        "@id": {
+          "@replace": "id",
+          "@type": "iri",
+          "prefix": "https://www.theworldavatar.io/kg/agreement/schedule/"
+        },
+        "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule",
+        "https://www.omg.org/spec/Commons/DatesAndTimes/hasStartDate": {
+          "@id": {
+            "@replace": "id",
+            "@type": "iri",
+            "prefix": "https://www.theworldavatar.io/kg/lifecycle/date/start/"
+          }
+        },
+        "https://www.omg.org/spec/Commons/DatesAndTimes/hasTimePeriod": {
+          "@id": {
+            "@replace": "id",
+            "@type": "iri",
+            "prefix": "https://www.theworldavatar.io/kg/agreement/schedule/slot/"
+          },
+          "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/ExplicitTimePeriod",
+          "https://www.omg.org/spec/Commons/DatesAndTimes/hasStart": {
+            "@id": {
+              "@replace": "id",
+              "@type": "iri",
+              "prefix": "https://www.theworldavatar.io/kg/agreement/schedule/slot/start/"
+            },
+            "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/TimeOfDay",
+            "https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue": {
+              "@replace": "time slot start",
+              "@type": "literal",
+              "datatype": "http://www.w3.org/2001/XMLSchema#time"
+            }
+          },
+          "https://www.omg.org/spec/Commons/DatesAndTimes/hasEndTime": {
+            "@id": {
+              "@replace": "id",
+              "@type": "iri",
+              "prefix": "https://www.theworldavatar.io/kg/agreement/schedule/slot/end/"
+            },
+            "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/TimeOfDay",
+            "https://www.omg.org/spec/Commons/DatesAndTimes/hasTimeValue": {
+              "@replace": "time slot end",
+              "@type": "literal",
+              "datatype": "http://www.w3.org/2001/XMLSchema#time"
+            }
+          }
+        },
+        "https://www.omg.org/spec/Commons/Collections/hasMember": [
+          {
+            "@replace": "schedule entry",
+            "@type": "array",
+            "@contents": {
+              "@id": {
+                "@replace": "id",
+                "@type": "iri",
+                "prefix": "https://www.theworldavatar.io/kg/agreement/schedule/entry/"
+              },
+              "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocScheduleEntry",
+              "https://www.omg.org/spec/Commons/DatesAndTimes/hasDate": {
+                "@id": {
+                  "@replace": "id",
+                  "@type": "iri",
+                  "prefix": "https://www.theworldavatar.io/kg/agreement/schedule/entry/date/"
+                },
+                "@type": "https://www.omg.org/spec/Commons/DatesAndTimes/Date",
+                "https://www.omg.org/spec/Commons/DatesAndTimes/hasDateValue": {
+                  "@replace": "schedule entry date",
+                  "@type": "literal",
+                  "datatype": "http://www.w3.org/2001/XMLSchema#date"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "@id": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://www.theworldavatar.io/kg/lifecycle/expiration/"
+      },
+      "@type": "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleStageOccurrence",
+      "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies": {
+        "@id": "https://www.theworldavatar.com/kg/ontoservice/ExpirationStage"
+      },
+      "https://www.omg.org/spec/Commons/DatesAndTimes/succeeds": {
+        "@replace": "id",
+        "@type": "iri",
+        "prefix": "https://www.theworldavatar.io/kg/lifecycle/service/"
+      },
+      "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate": {
+        "@replace": "end date",
+        "@type": "literal",
+        "datatype": "http://www.w3.org/2001/XMLSchema#date"
+      }
+    }
+  ]
+}
