@@ -390,29 +390,11 @@ public class QueryResource {
     public static void genDefaultDatatypeFilters(String query, String field, Set<String> filters,
             StringBuilder builder) {
         if (filters.contains(LifecycleResource.DATE_KEY)) {
-            List<String> dateFilters = new ArrayList<>(filters);
-            dateFilters.remove(LifecycleResource.DATE_KEY);
-            // If there is only one date, ensure field matches the selected date
-            if (dateFilters.size() == 1) {
-                builder.append(QueryResource.filter(
-                        MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, "=", dateFilters.get(0))));
-                // If there is two dates, ensure field matches the selected date range
-            } else {
-                builder.append(QueryResource.filter(
-                        MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, ">=", dateFilters.get(0))
-                                + "&&" +
-                                MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, "<=",
-                                        dateFilters.get(1))));
-            }
+            String dateFiltersStr = QueryResource.genDateFilterExpression(field, filters);
+            builder.append(dateFiltersStr);
         } else if (filters.contains(QueryResource.NUMERIC_TYPE)) {
-            List<String> numericFilters = new ArrayList<>(filters);
-            numericFilters.remove(QueryResource.NUMERIC_TYPE);
-            for (int i = 0; i < numericFilters.size(); i += 2) {
-                builder.append(QueryResource.filter(
-                        MessageFormat.format(QueryResource.NUMERIC_FILTER_TEMPLATE, field,
-                                QueryResource.getNumericFilterOperator(numericFilters.get(i)),
-                                numericFilters.get(i + 1))));
-            }
+            String numericalFiltersStr = QueryResource.genNumericalFilterExpression(field, filters);
+            builder.append(numericalFiltersStr);
             // When there are null filter values, the user has requested for blank values,
             // and this should be excluded from the query via a MINUS clause
         } else if (filters.contains(QueryResource.NULL_KEY)) {
@@ -432,6 +414,56 @@ public class QueryResource {
             String valuesClause = QueryResource.values(filters, field);
             builder.append(valuesClause);
         }
+    }
+
+    public static String genDateFilterExpression(String field, Set<String> filters) {
+        StringBuilder builder = new StringBuilder();
+        
+        List<String> dateFilters = new ArrayList<>(filters);
+        dateFilters.remove(LifecycleResource.DATE_KEY);
+        // If there is only one date, ensure field matches the selected date
+        if (dateFilters.size() == 1) {
+            builder.append(QueryResource.filter(
+                    MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, "=", dateFilters.get(0))));
+            // If there is two dates, ensure field matches the selected date range
+        } else {
+            builder.append(QueryResource.filter(
+                    MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, ">=", dateFilters.get(0))
+                            + "&&" +
+                            MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, "<=",
+                                    dateFilters.get(1))));
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Generate the numerical filter expression for the numerical filters. The
+     * filters should be in the format of operator followed by the target value.
+     * 
+     * @param field   The field of interest.
+     * @param filters The set of filters provided by the user.
+     */
+    public static String genNumericalFilterExpression(String field, Set<String> filters) {
+        StringBuilder builder = new StringBuilder();
+
+        List<String> numericFilters = new ArrayList<>(filters);
+        numericFilters.remove(QueryResource.NUMERIC_TYPE);
+
+        for (int i = 0; i < numericFilters.size(); i += 2) {
+            String operatorCode = numericFilters.get(i);
+            String targetValue = numericFilters.get(i + 1);
+
+            String parsedOperator = QueryResource.getNumericFilterOperator(operatorCode);
+
+            builder.append(QueryResource.filter(
+                    MessageFormat.format(QueryResource.NUMERIC_FILTER_TEMPLATE,
+                            field,
+                            parsedOperator,
+                            targetValue)));
+        }
+
+        return builder.toString();
     }
 
     /**
