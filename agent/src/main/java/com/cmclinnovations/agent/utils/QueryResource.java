@@ -390,22 +390,10 @@ public class QueryResource {
     public static void genDefaultDatatypeFilters(String query, String field, Set<String> filters,
             StringBuilder builder) {
         if (filters.contains(LifecycleResource.DATE_KEY)) {
-            List<String> dateFilters = new ArrayList<>(filters);
-            dateFilters.remove(LifecycleResource.DATE_KEY);
-            // If there is only one date, ensure field matches the selected date
-            if (dateFilters.size() == 1) {
-                builder.append(QueryResource.filter(
-                        MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, "=", dateFilters.get(0))));
-                // If there is two dates, ensure field matches the selected date range
-            } else {
-                builder.append(QueryResource.filter(
-                        MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, ">=", dateFilters.get(0))
-                                + "&&" +
-                                MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, "<=",
-                                        dateFilters.get(1))));
-            }
+            String dateFiltersStr = QueryResource.genDateFilterExpression(field, filters);
+            builder.append(dateFiltersStr);
         } else if (filters.contains(QueryResource.NUMERIC_TYPE)) {
-            String numericalFiltersStr = genNumericalFilterExpression(field, filters);
+            String numericalFiltersStr = QueryResource.genNumericalFilterExpression(field, filters);
             builder.append(numericalFiltersStr);
             // When there are null filter values, the user has requested for blank values,
             // and this should be excluded from the query via a MINUS clause
@@ -428,14 +416,35 @@ public class QueryResource {
         }
     }
 
+    public static String genDateFilterExpression(String field, Set<String> filters) {
+        StringBuilder builder = new StringBuilder();
+        
+        List<String> dateFilters = new ArrayList<>(filters);
+        dateFilters.remove(LifecycleResource.DATE_KEY);
+        // If there is only one date, ensure field matches the selected date
+        if (dateFilters.size() == 1) {
+            builder.append(QueryResource.filter(
+                    MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, "=", dateFilters.get(0))));
+            // If there is two dates, ensure field matches the selected date range
+        } else {
+            builder.append(QueryResource.filter(
+                    MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, ">=", dateFilters.get(0))
+                            + "&&" +
+                            MessageFormat.format(QueryResource.DATE_FILTER_TEMPLATE, field, "<=",
+                                    dateFilters.get(1))));
+        }
+
+        return builder.toString();
+    }
+
     /**
      * Generate the numerical filter expression for the numerical filters. The
      * filters should be in the format of operator followed by the target value.
      * 
-     * @param propertyKey The property key of interest.
-     * @param filters     The set of filters provided by the user.
+     * @param field   The field of interest.
+     * @param filters The set of filters provided by the user.
      */
-    public static String genNumericalFilterExpression(String propertyKey, Set<String> filters) {
+    public static String genNumericalFilterExpression(String field, Set<String> filters) {
         StringBuilder builder = new StringBuilder();
 
         List<String> numericFilters = new ArrayList<>(filters);
@@ -449,7 +458,7 @@ public class QueryResource {
 
             builder.append(QueryResource.filter(
                     MessageFormat.format(QueryResource.NUMERIC_FILTER_TEMPLATE,
-                            propertyKey,
+                            field,
                             parsedOperator,
                             targetValue)));
         }

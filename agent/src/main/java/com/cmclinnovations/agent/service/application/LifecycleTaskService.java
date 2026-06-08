@@ -454,8 +454,14 @@ public class LifecycleTaskService {
 
       StringBuilder filterClauseBuilder = new StringBuilder();
 
-      // Handle value injection
-      if (filterValues.contains(QueryResource.NUMERIC_TYPE)) {
+      // Handle value injection for date type
+      if (filterValues.contains(LifecycleResource.DATE_KEY)) {
+        filterClauseBuilder.append("{ ").append(combinedGraphPath).append(" }\n");
+        
+        String dateFiltersStr = QueryResource.genDateFilterExpression(propertyKey, filterValues);
+        filterClauseBuilder.append(dateFiltersStr).append("\n");
+      } else if (filterValues.contains(QueryResource.NUMERIC_TYPE)) {
+        // Handle value injection for numerical type
         filterClauseBuilder.append("{ ").append(combinedGraphPath).append(" }\n");
 
         String numericalFilterExpression = QueryResource.genNumericalFilterExpression(propertyKey, filterValues);
