@@ -410,7 +410,7 @@ public class LifecycleTaskService {
         continue;
       }
 
-      String propertyValueVar = "?" + propertyKey;
+      String propertyValueVar = QueryResource.genVariable(propertyKey).getQueryString();
       List<String> unifiedEventBlocks = new ArrayList<>();
       List<String> eventVarsInvolved = new ArrayList<>();
 
