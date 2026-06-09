@@ -213,6 +213,7 @@ public class KGService {
   public Set<String> getSparqlOptionalParameters(String resourceId) {
     switch (resourceId) {
       case LifecycleResource.SCHEDULE_RESOURCE, LifecycleResource.LIFECYCLE_RESOURCE,
+          LifecycleResource.LIFECYCLE_REGULAR_SCHEDULE_RESOURCE, LifecycleResource.LIFECYCLE_AD_HOC_SCHEDULE_RESOURCE,
           LifecycleResource.FIXED_DATE_SCHEDULE_RESOURCE:
         // these are special resources where all properties are mandatory
         return Collections.emptySet();
