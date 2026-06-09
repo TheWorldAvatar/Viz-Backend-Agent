@@ -113,10 +113,10 @@ public class LifecycleController {
     // The service-execution schedule is now inlined inside the lifecycle template,
     // so a single instantiation creates both the lifecycle and its schedule.
     String lifecycleResource = params.containsKey(QueryResource.FIXED_DATE_SCHEDULE_KEY)
-        ? LifecycleResource.LIFECYCLE_AD_HOC_RESOURCE
-        : LifecycleResource.LIFECYCLE_REGULAR_RESOURCE;
+        ? LifecycleResource.LIFECYCLE_AD_HOC_SCHEDULE_RESOURCE
+        : LifecycleResource.LIFECYCLE_REGULAR_SCHEDULE_RESOURCE;
     ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(
-        lifecycleResource, params, "The lifecycle of the contract has been successfully drafted!",
+        lifecycleResource, params, "The lifecycle and the schedule of the contract have been successfully drafted!",
         LocalisationResource.SUCCESS_CONTRACT_DRAFT_KEY, TrackActionType.IGNORED);
     LOGGER.info("Contract has been successfully drafted!");
     return response;

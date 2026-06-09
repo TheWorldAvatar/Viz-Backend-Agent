@@ -56,10 +56,10 @@ public class FileService {
   public static final String CHANGELOG_TASK_RESOURCE = QUERY_GET_DIR + "changelog/task_changes.sparql";
 
   public static final String LIFECYCLE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/lifecycle.jsonld";
-  public static final String LIFECYCLE_REGULAR_JSON_LD_RESOURCE = CLASS_PATH_DIR
-      + "jsonld/lifecycle_regular.jsonld";
-  public static final String LIFECYCLE_AD_HOC_JSON_LD_RESOURCE = CLASS_PATH_DIR
-      + "jsonld/lifecycle_ad_hock.jsonld";
+  public static final String LIFECYCLE_REGULAR_SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/lifecycle_regular_schedule.jsonld";
+  public static final String LIFECYCLE_AD_HOC_SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/lifecycle_ad_hoc_schedule.jsonld";
   public static final String CUSTOMER_ACCOUNT_JSON_LD_RESOURCE = CLASS_PATH_DIR
       + "jsonld/accounts/customer_account.jsonld";
   public static final String ACCOUNT_INVOICE_JSON_LD_RESOURCE = CLASS_PATH_DIR

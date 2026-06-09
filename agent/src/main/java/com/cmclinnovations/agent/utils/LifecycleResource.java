@@ -15,8 +15,8 @@ import com.cmclinnovations.agent.service.core.FileService;
 
 public class LifecycleResource {
   public static final String LIFECYCLE_RESOURCE = "lifecycle";
-  public static final String LIFECYCLE_REGULAR_RESOURCE = "lifecycle_regular";
-  public static final String LIFECYCLE_AD_HOC_RESOURCE = "lifecycle_ad_hock";
+  public static final String LIFECYCLE_REGULAR_SCHEDULE_RESOURCE = "lifecycle_regular_schedule";
+  public static final String LIFECYCLE_AD_HOC_SCHEDULE_RESOURCE = "lifecycle_ad_hoc_schedule";
   public static final String SCHEDULE_RESOURCE = "schedule";
   public static final String FIXED_DATE_SCHEDULE_RESOURCE = "fixed_date_schedule";
   public static final String TASK_RESOURCE = "task";
@@ -129,10 +129,10 @@ public class LifecycleResource {
     switch (resourceID) {
       case LifecycleResource.LIFECYCLE_RESOURCE:
         return FileService.LIFECYCLE_JSON_LD_RESOURCE;
-      case LifecycleResource.LIFECYCLE_REGULAR_RESOURCE:
-        return FileService.LIFECYCLE_REGULAR_JSON_LD_RESOURCE;
-      case LifecycleResource.LIFECYCLE_AD_HOC_RESOURCE:
-        return FileService.LIFECYCLE_AD_HOC_JSON_LD_RESOURCE;
+      case LifecycleResource.LIFECYCLE_REGULAR_SCHEDULE_RESOURCE:
+        return FileService.LIFECYCLE_REGULAR_SCHEDULE_JSON_LD_RESOURCE;
+      case LifecycleResource.LIFECYCLE_AD_HOC_SCHEDULE_RESOURCE:
+        return FileService.LIFECYCLE_AD_HOC_SCHEDULE_JSON_LD_RESOURCE;
       case BillingResource.CUSTOMER_ACCOUNT_RESOURCE:
         return FileService.CUSTOMER_ACCOUNT_JSON_LD_RESOURCE;
       case BillingResource.CUSTOMER_ACCOUNT_INVOICE_RESOURCE:

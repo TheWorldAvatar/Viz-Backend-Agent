@@ -581,7 +581,7 @@ Users can _EITHER_ send a `POST` request to create a new contract _OR_ send a `P
 <baseURL>/vis-backend-agent/contracts/draft
 ```
 
-NNote that this route will interact with the [Add route](#251-add-route)/[Update route](#253-update-route), [schedule route](#263-schedule-route), and [pricing route](#272-financial-record-route) directly. Users should **NOT** send separate requests to those routes unless they wish to interact with the respective routes separately.
+Note that this route will interact with the [Add route](#251-add-route)/[Update route](#253-update-route) and [pricing route](#272-financial-record-route) directly, and it creates the contract schedule as part of drafting the lifecycle (the `POST` create path inlines the schedule into the lifecycle, while the `PUT` update path re-drafts it via the [schedule route](#263-schedule-route)). Users should **NOT** send separate requests to those routes unless they wish to interact with the respective routes separately.
 
 The draft route will require the following `JSON` request parameters. It will also require the fields from the [schedule route](#263-schedule-route).
 
@@ -659,7 +659,7 @@ Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/sch
 
 > Schedule upcoming tasks
 
-This endpoint serves to assign the upcoming schedule for the services for the specified contract. **WARNING**: It is not intended that this route is called directly, as the [draft route](#262-draft-route) will call this route when a request is received. Users can _EITHER_ send a `POST` request to create a new instance _OR_ send a `PUT` request to update the draft lifecycle at the following endpoint:
+This endpoint serves to assign the upcoming schedule for the services for the specified contract. **WARNING**: It is not intended that this route is called directly. When a contract is drafted, the [draft route](#262-draft-route) creates the schedule as part of the lifecycle: the `POST` create path inlines the schedule into the lifecycle template, while the `PUT` update path re-drafts the schedule through this route. Users can _EITHER_ send a `POST` request to create a new instance _OR_ send a `PUT` request to update the draft lifecycle at the following endpoint:
 
 ```
 
