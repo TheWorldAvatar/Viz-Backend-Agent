@@ -126,9 +126,11 @@ public class QueryResource {
     public static final String LITERAL_TYPE = "literal";
     public static final String URI_TYPE = "uri";
     public static final String NUMERIC_TYPE = "numeric";
+    public static final String TIME_TYPE = "time";
 
     public static final String DATE_FILTER_TEMPLATE = "xsd:date(?{0}){1}\"{2}\"^^xsd:date";
     public static final String NUMERIC_FILTER_TEMPLATE = "xsd:decimal(?{0}){1}\"{2}\"^^xsd:decimal";
+    public static final String TIME_FILTER_TEMPLATE = "STR(?{0}){1}\"{2}\"";
 
     public static final String HISTORY_ACTIVITY_RESOURCE = "activity";
     public static final String HISTORY_AGENT_RESOURCE = "agent";
@@ -392,6 +394,9 @@ public class QueryResource {
         if (filters.contains(LifecycleResource.DATE_KEY)) {
             String dateFiltersStr = QueryResource.genDateFilterExpression(field, filters);
             builder.append(dateFiltersStr);
+        } else if (filters.contains(QueryResource.TIME_TYPE)) {
+            String timeFiltersStr = QueryResource.genTimeFilterExpression(field, filters);
+            builder.append(timeFiltersStr);
         } else if (filters.contains(QueryResource.NUMERIC_TYPE)) {
             String numericalFiltersStr = QueryResource.genNumericalFilterExpression(field, filters);
             builder.append(numericalFiltersStr);
@@ -489,6 +494,28 @@ public class QueryResource {
             default:
                 throw new IllegalArgumentException("Invalid operator: " + operator);
         }
+    }
+
+    public static String genTimeFilterExpression(String field, Set<String> filters) {
+        StringBuilder builder = new StringBuilder();
+
+        List<String> numericFilters = new ArrayList<>(filters);
+        numericFilters.remove(QueryResource.TIME_TYPE);
+
+        for (int i = 0; i < numericFilters.size(); i += 2) {
+            String operatorCode = numericFilters.get(i);
+            String targetValue = numericFilters.get(i + 1);
+
+            String parsedOperator = QueryResource.getNumericFilterOperator(operatorCode);
+
+            builder.append(QueryResource.filter(
+                    MessageFormat.format(QueryResource.TIME_FILTER_TEMPLATE,
+                            field,
+                            parsedOperator,
+                            targetValue)));
+        }
+
+        return builder.toString();
     }
 
     /**
