@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.57.0
+
+- Fixed filtering of time datatype
+
 ## 1.56.0
 
 - Added optional dependency check before deleting instances

@@ -33,6 +33,8 @@ public class StringResource {
       .compile("(\\d{4}-\\d{2}-\\d{2})\\.\\.(\\d{4}-\\d{2}-\\d{2})");
   public static final Pattern NUMERIC_FILTER_PATTERN = Pattern
       .compile("(eq|neq|gt|lt|gte|lte)(\\d+(?:\\.\\d+)?)");
+  public static final Pattern TIME_FILTER_PATTERN = Pattern
+      .compile("(eq|neq|gt|lt|gte|lte)(\\d{2}:\\d{2})");
 
   // Private constructor to prevent instantiation
   private StringResource() {
@@ -183,6 +185,21 @@ public class StringResource {
       }
       // Early termination for date filters
       return valueSet;
+    }
+
+    // Parse filters for time
+    Matcher timeMatcher = TIME_FILTER_PATTERN.matcher(value);
+    if (timeMatcher.find()) {
+        // Replace with your actual constant for time types if named differently
+        valueSet.add(QueryResource.TIME_TYPE); 
+        do {
+            String operator = timeMatcher.group(1);
+            String timeStr = timeMatcher.group(2);
+            valueSet.add(operator);
+            valueSet.add(timeStr);
+        } while (timeMatcher.find());
+
+        return valueSet;
     }
 
     // Parse filters for numbers
