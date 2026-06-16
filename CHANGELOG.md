@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.56.0
+
+- Added optional dependency check before deleting instances
+
 ## 1.55.0
 
 - Inlined the service-execution schedule into the contract lifecycle template so drafting a contract instantiates the lifecycle and its schedule in a single knowledge-graph write (separate `lifecycle_regular_schedule` and `lifecycle_ad_hoc_schedule` templates selected by schedule type)
