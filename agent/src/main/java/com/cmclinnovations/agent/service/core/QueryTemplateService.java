@@ -211,6 +211,24 @@ public class QueryTemplateService {
   }
 
   /**
+   * Retrieves the query to check for dependency for the target instance.
+   * 
+   * @param resourceID The target resource identifier.
+   * @param id         The target instance identifier.
+   */
+  public String getSafeguardQuery(String resourceID, String id) {
+    String filePath = "";
+    try {
+      String fileName = this.fileService.getTargetFileName(resourceID);
+      filePath = FileService.SPRING_FILE_PATH_PREFIX + FileService.SAFEGUARD_QUERY_DIR + fileName + ".sparql";
+      return this.fileService.getContentsWithReplacement(filePath, id);
+    } catch (FileSystemNotFoundException e) {
+      // If it doesn't exist, return blank
+      return "";
+    }
+  }
+
+  /**
    * Generates the form template as a JSON object.
    * 
    * @param shaclFormInputs the form inputs queried from the SHACL restrictions.

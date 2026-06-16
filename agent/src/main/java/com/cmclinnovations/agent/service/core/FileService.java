@@ -37,6 +37,7 @@ public class FileService {
   public static final String APPLICATION_FORM_RESOURCE = RESOURCE_DIR + "application-form.json";
   public static final String APPLICATION_SERVICE_RESOURCE = RESOURCE_DIR + "application-service.json";
   public static final String JSON_LD_DIR = RESOURCE_DIR + "jsonld/";
+  public static final String SAFEGUARD_QUERY_DIR = RESOURCE_DIR + "safeguard/";
 
   private static final String CLASS_PATH_DIR = "classpath:";
   private static final String QUERY_DIR = CLASS_PATH_DIR + "query/";

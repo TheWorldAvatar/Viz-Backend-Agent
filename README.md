@@ -386,6 +386,8 @@ To delete an instance, users must send a DELETE request to
 
 where `{type}` is the requested identifier that must correspond to a target file name in`./resources/application-service.json`, and `{id}` is the specific instance's identifier. The instance representation will be deleted according to the `JSON-LD` file defined for adding a new instance. More information on the required schema can be found in [this section](./resources/README.md#21-instantiation).
 
+If a corresponding safeguard SPARQL query file exists, the agent will first execute the query to check for any dependent data before performing the requested delete. More information can be found in [this section](./resources/README.md#23-deletion).
+
 > [!IMPORTANT]
 > **Conditional Branching:**
 > If the target instance involves branching, you MUST append the `branch_delete` query parameter to specify the branch to be removed.

@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -265,7 +266,15 @@ public class VisBackendAgent {
   public ResponseEntity<StandardApiResponse<?>> removeEntity(@PathVariable String type, @PathVariable String id,
       @RequestParam(name = "branch_delete", required = false) String branchDelete) {
     LOGGER.info("Received request to delete {}...", type);
-    return this.concurrencyService.executeInWriteLock(type, () -> this.deleteService.delete(type, id, branchDelete));
+    return this.concurrencyService.executeInWriteLock(type, () -> {
+      // Perform optional checks before deleting
+      String errorMsg = this.deleteService.safeguard(type, id);
+      if (errorMsg.isEmpty()) {
+        return this.deleteService.delete(type, id, branchDelete);
+      } else {
+         return this.responseEntityBuilder.error(errorMsg, HttpStatus.BAD_REQUEST);
+      }
+    });
   }
 
   /**
