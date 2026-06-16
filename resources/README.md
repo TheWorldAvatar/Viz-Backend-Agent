@@ -26,6 +26,7 @@ This directory provides examples for different applications of the agent.
       - [2.1.2 Form Branch](#212-form-branch)
       - [2.1.3 Service Lifecycle](#213-service-lifecycle)
     - [2.2 Geocoding](#22-geocoding)
+    - [2.3 Deletion](#23-deletion)
   - [3. Appendix](#3-appendix)
     - [3.1 TWA-SHACL extension](#31-twa-shacl-extension)
 
@@ -901,6 +902,15 @@ base:ServiceLocationShape
     sh:maxCount 1 ;
   ] .
 ```
+
+### 2.3 Deletion
+
+The agent will perform a dependency check before deleting an instance if a query is provided. A SPARQL file matching the name of the `JSON-LD` file should be placed in the `safeguard` directory. **The query must follow the constraints below:**
+
+- It must have a `"[target]"` placeholder for the instance ID.
+- It must return the `?dependent` variable, which will be used to construct the error message in case of dependency conflict.
+
+An example dependency check query can be found in `./safeguard/example.sparql`.
 
 ## 3. Appendix
 
