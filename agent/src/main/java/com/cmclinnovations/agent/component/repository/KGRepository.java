@@ -40,14 +40,13 @@ import tools.jackson.databind.node.ObjectNode;
 
 @Component
 public class KGRepository {
-    @Value("${SHACL_NAMESPACE}")
-    String shaclNamespace;
-
     private final RestClient client;
     private final JsonMapper objectMapper;
     private final FileService fileService;
     private final LoggingService loggingService;
     private final QueryTemplateService queryTemplateService;
+    private final String shaclNamespace;
+    private final String shaclEndpoint;
 
     private static final String DEFAULT_NAMESPACE = "kb";
     private static final String RDF_LIST_PATH_PREFIX = "/rdf:rest";
@@ -62,12 +61,15 @@ public class KGRepository {
      * this behaviour.
      */
     public KGRepository(FileService fileService, LoggingService loggingService,
-            QueryTemplateService queryTemplateService) {
+            QueryTemplateService queryTemplateService, @Value("${SHACL_NAMESPACE}") String shaclNamespace) {
         this.client = RestClient.create();
         this.objectMapper = new JsonMapper();
         this.fileService = fileService;
         this.loggingService = loggingService;
         this.queryTemplateService = queryTemplateService;
+        this.shaclNamespace = shaclNamespace;
+        this.shaclEndpoint = BlazegraphClient.getInstance().getRemoteStoreClient(this.shaclNamespace)
+                .getQueryEndpoint();
     }
 
     /**
@@ -94,10 +96,8 @@ public class KGRepository {
     /**
      * Retrieves the SHACL endpoint URL.
      */
-    @Cacheable(value = "shaclendpoint")
     public String getShaclEndpoint() {
-        return BlazegraphClient.getInstance().getRemoteStoreClient(this.shaclNamespace)
-                .getQueryEndpoint();
+        return this.shaclEndpoint;
     }
 
     /**
