@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.57.1
+
+- Store SHACL endpoint in memory instead of cache
+
 ## 1.57.0
 
 - Fixed filtering of time datatype
