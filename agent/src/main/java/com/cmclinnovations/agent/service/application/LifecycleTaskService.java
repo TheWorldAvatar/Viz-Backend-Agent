@@ -685,27 +685,23 @@ public class LifecycleTaskService {
         () -> {
           String occurrenceQueryString = this.genOccurrenceEventQuery(varSequences, eventIds, eventType,
               lifecycleStatements[2]);
-          Queue<SparqlBinding> queue = this.getService.getInstances(occurrenceQueryString);
-          return new DataManifest<>(queue, new ArrayList<>(varSequences));
+          Queue<SparqlBinding> instances = this.getService.getInstances(occurrenceQueryString);
+          return new DataManifest<>(instances, new ArrayList<>());
         });
 
     // Unpack query results
-    DataManifest<Queue<SparqlBinding>> resultsManifest = parallelResults.get(0);
-    Queue<SparqlBinding> occurrenceResultQueue = parallelResults.get(1).data();
+    DataManifest<Queue<SparqlBinding>> coreEntityResultManifest = parallelResults.get(0);
+    Queue<SparqlBinding> taskInstances = parallelResults.get(1).data();
 
     // Combine results from entity query and event query
-
-    // Convert results to map with IDs as the keys
-    Map<String, Map<String, Object>> primaryById = mapBindingsById(resultsManifest.data(), QueryResource.ID_KEY);
-    Map<String, Map<String, Object>> eventById = mapBindingsById(occurrenceResultQueue,
+    Map<String, Map<String, Object>> primaryById = mapBindingsById(coreEntityResultManifest.data(),
+        QueryResource.ID_KEY);
+    Map<String, Map<String, Object>> eventById = mapBindingsById(taskInstances,
         QueryResource.EVENT_ID_VAR.getVarName());
 
     // Merge data of primary entity and event
     List<Map<String, Object>> mergedData = new ArrayList<>();
     for (List<String> pair : idEventIdPairs) {
-      if (pair.size() < 2) {
-        continue;
-      }
       Map<String, Object> mergedRow = new LinkedHashMap<>();
       Map<String, Object> primaryRow = primaryById.get(pair.get(0));
       Map<String, Object> eventRow = eventById.get(pair.get(1));
@@ -721,21 +717,10 @@ public class LifecycleTaskService {
     }
 
     // Merge column metadata
-    List<ColumnMetaPayload> mergedColumns = new ArrayList<>(resultsManifest.columns());
+    List<ColumnMetaPayload> mergedColumns = new ArrayList<>(coreEntityResultManifest.columns());
     mergedColumns.addAll(varSequences);
 
     return new DataManifest<>(mergedData, mergedColumns);
-  }
-
-  private Map<String, Map<String, Object>> mapBindingsById(Collection<SparqlBinding> bindings, String idKey) {
-    return bindings.stream().map(binding -> Map.entry(
-        binding.getFieldValue(idKey),
-        this.lifecycleQueryService.parseLifecycleBinding(binding.get())))
-        .collect(Collectors.toMap(
-            Map.Entry::getKey,
-            Map.Entry::getValue,
-            (existing, replacement) -> existing,
-            LinkedHashMap::new));
   }
 
   private String genOccurrenceEventQuery(Set<ColumnMetaPayload> varSequences, Queue<String> eventIds,
@@ -782,6 +767,17 @@ public class LifecycleTaskService {
     queryString += QueryResource.values(eventIds, QueryResource.EVENT_ID_VAR.getVarName());
     queryString += "}";
     return queryString;
+  }
+
+  private Map<String, Map<String, Object>> mapBindingsById(Collection<SparqlBinding> bindings, String idKey) {
+    return bindings.stream().map(binding -> Map.entry(
+        binding.getFieldValue(idKey),
+        this.lifecycleQueryService.parseLifecycleBinding(binding.get())))
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            Map.Entry::getValue,
+            (existing, replacement) -> existing,
+            LinkedHashMap::new));
   }
 
   /**
