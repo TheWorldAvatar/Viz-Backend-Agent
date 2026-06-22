@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.component;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.StructuredTaskScope;
@@ -58,26 +59,34 @@ public class ParallelTaskExecutor {
         }
     }
 
-    public static <T> List<T> execDualParallelQueries(Callable<T> task1, Callable<T> task2) {
+    /**
+     * Executes a variable of query tasks in parallel using Structured Concurrency.
+     * 
+     * @param tasks A variable number of tasks to perform.
+     */
+    public static <T> List<T> execParallelQueries(Callable<T>... tasks) {
         SecurityContext context = SecurityContextHolder.getContext();
 
         try (var scope = StructuredTaskScope.open(
                 Joiner.<T>allSuccessfulOrThrow(),
                 config -> config.withTimeout(Duration.ofMinutes(1)))) {
 
-            // Fork both tasks asynchronously
-            Subtask<T> subtask1 = scope.fork(new DelegatingSecurityContextCallable<>(task1, context));
-            Subtask<T> subtask2 = scope.fork(new DelegatingSecurityContextCallable<>(task2, context));
+            // Fork all tasks asynchronously
+            List<Subtask<T>> subtasks = Arrays.stream(tasks)
+                    .map(task -> scope.fork(new DelegatingSecurityContextCallable<>(task, context)))
+                    .toList();
 
             try {
-                scope.join(); // Block until both complete or timeout
+                scope.join(); // Block until all complete, one fails, or timeout occurs
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new ParallelInterruptedException("One of the parallel tasks has been interrupted: ", e);
             }
 
-            // Return the results in the exact requested order
-            return List.of(subtask1.get(), subtask2.get());
+            // Gather and return results in the original order of the input tasks
+            return subtasks.stream()
+                    .map(Subtask::get)
+                    .toList();
         }
     }
 }

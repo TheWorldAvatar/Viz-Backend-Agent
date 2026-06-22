@@ -689,7 +689,7 @@ public class LifecycleTaskService {
     String occurrenceQueryString = this.genOccurrenceEventQueryStatement(varSequences, eventIdQueue, addQuery);
 
     // Execute primary entity and event queries in parallel
-    List<DataManifest<Queue<SparqlBinding>>> parallelResults = ParallelTaskExecutor.execDualParallelQueries(
+    List<DataManifest<Queue<SparqlBinding>>> parallelResults = ParallelTaskExecutor.execParallelQueries(
         // Query for entity
         () -> this.getService.getInstances(entityType, true, idQueue, entityQuery, new ArrayList<>(entityVarSequences)),
         // Query for event
