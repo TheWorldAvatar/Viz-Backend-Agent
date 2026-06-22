@@ -768,25 +768,6 @@ public class LifecycleController {
   }
 
   /**
-   * Retrieve all tasks for the specified contract.
-   */
-  @GetMapping("/service/{id}")
-  public ResponseEntity<StandardApiResponse<?>> getAllTasksForTargetContract(
-      @PathVariable(name = "id") String contract,
-      @RequestParam Map<String, String> allRequestParams) {
-    LOGGER.info("Received request to retrieve services in progress for a specified contract...");
-    String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
-    Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
-    Integer limit = Integer.valueOf(allRequestParams.get(StringResource.LIMIT_REQUEST_PARAM));
-    String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
-    allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
-    return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE,
-        () -> this.lifecycleTaskService.getOccurrences(contract, type,
-            new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false,
-                allRequestParams)));
-  }
-
-  /**
    * Retrieve the details for the specific task.
    */
   @GetMapping("/task/{id}")

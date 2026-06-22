@@ -149,26 +149,6 @@ public class LifecycleTaskService {
 
   /**
    * Retrieve all service related occurrences in the lifecycle for the specified
-   * date.
-   * 
-   * @param contract   The contract identifier.
-   * @param entityType Target resource ID.
-   * @param pagination Pagination state to filter results.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getOccurrences(String contract, String entityType,
-      PaginationState pagination) {
-    // Map<String, String> lifecycleStatements =
-    // this.lifecycleQueryFactory.getServiceTasksQuery(contract, null, null,
-    // null);
-    // List<Map<String, Object>> occurrences =
-    // this.executeOccurrenceQuery(entityType, lifecycleStatements, null,
-    // pagination);
-    LOGGER.info("Successfuly retrieved all associated services!");
-    return this.responseEntityBuilder.success(null, "Under construction");
-  }
-
-  /**
-   * Retrieve all service related occurrences in the lifecycle for the specified
    * date(s).
    * 
    * @param startTimestamp Start timestamp in UNIX format.
