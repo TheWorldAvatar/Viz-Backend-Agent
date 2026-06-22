@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.58.0
+
+- Re-factored task query to run in parallel for faster query performance
+
 ## 1.57.1
 
 - Store SHACL endpoint in memory instead of cache
