@@ -670,8 +670,9 @@ public class LifecycleTaskService {
     // Query for primary entity
     Set<ColumnMetaPayload> entityVarSequences = new LinkedHashSet<>(this.taskEntityColumnMeta);
     String entityQuery = lifecycleStatements[1];
-    DataManifest<Queue<SparqlBinding>> resultsManifest = this.getService.getInstances(entityType, true, idQueue,
-        entityQuery, new ArrayList<>(entityVarSequences));
+    // DataManifest<Queue<SparqlBinding>> resultsManifest =
+    // this.getService.getInstances(entityType, true, idQueue,
+    // entityQuery, new ArrayList<>(entityVarSequences));
 
     // Query for event
 
@@ -685,7 +686,21 @@ public class LifecycleTaskService {
       addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXEMPT, varSequences);
     }
     String occurrenceQueryString = this.genOccurrenceEventQueryStatement(varSequences, eventIdQueue, addQuery);
-    Queue<SparqlBinding> occurrenceResultQueue = this.getService.getInstances(occurrenceQueryString);
+    // Queue<SparqlBinding> occurrenceResultQueue =
+    // this.getService.getInstances(occurrenceQueryString);
+
+    List<DataManifest<Queue<SparqlBinding>>> parallelResults = ParallelTaskExecutor.execDualParallelQueries(
+        // Query for entity
+        () -> this.getService.getInstances(entityType, true, idQueue, entityQuery, new ArrayList<>(entityVarSequences)),
+        // Query for event
+        () -> {
+          Queue<SparqlBinding> queue = this.getService.getInstances(occurrenceQueryString);
+          return new DataManifest<>(queue, new ArrayList<>(varSequences));
+        });
+
+    // Unpack your assignments right below
+    DataManifest<Queue<SparqlBinding>> resultsManifest = parallelResults.get(0);
+    Queue<SparqlBinding> occurrenceResultQueue = parallelResults.get(1).data();
 
     // Combine results from entity query and event query
 
@@ -694,7 +709,7 @@ public class LifecycleTaskService {
     Map<String, Map<String, Object>> eventById = mapBindingsById(occurrenceResultQueue,
         QueryResource.EVENT_ID_VAR.getVarName());
 
-    // Merge data of primary entity and event    
+    // Merge data of primary entity and event
     List<Map<String, Object>> mergedData = new ArrayList<>();
     for (List<String> pair : originalIds) {
       if (pair.size() < 2) {
