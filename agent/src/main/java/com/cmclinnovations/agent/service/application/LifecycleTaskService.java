@@ -675,12 +675,7 @@ public class LifecycleTaskService {
       eventIds.offer(Collections.singletonList(eventId));
     }
 
-    // Query preparation for primary entity
-    Set<ColumnMetaPayload> entityVarSequences = new LinkedHashSet<>(this.taskEntityColumnMeta);
-    String entityQuery = lifecycleStatements[1];
-
     // Query preparation for event
-
     Set<ColumnMetaPayload> varSequences = new LinkedHashSet<>(this.taskColumnMeta);
     String addQuery = lifecycleStatements[2];
     addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
@@ -695,8 +690,8 @@ public class LifecycleTaskService {
     // Execute primary entity and event queries in parallel
     List<DataManifest<Queue<SparqlBinding>>> parallelResults = ParallelTaskExecutor.execParallelQueries(
         // Query for entity
-        () -> this.getService.getInstances(entityType, true, uniqueIds, entityQuery,
-            new ArrayList<>(entityVarSequences)),
+        () -> this.getService.getInstances(entityType, true, uniqueIds, lifecycleStatements[1],
+            new ArrayList<>(this.taskEntityColumnMeta)),
         // Query for event
         () -> {
           Queue<SparqlBinding> queue = this.getService.getInstances(occurrenceQueryString);
