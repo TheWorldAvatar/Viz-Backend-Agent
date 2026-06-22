@@ -657,24 +657,25 @@ public class LifecycleTaskService {
     List<List<String>> originalIds = new ArrayList<>(ids); // make it a persistent copy
 
     // Initialise separate queues for primary entity and events
-    Queue<List<String>> idQueue = new LinkedList<>();
-    Queue<List<String>> eventIdQueue = new LinkedList<>();
+    Set<List<String>> uniqueIdSet = new LinkedHashSet<>();
+    Set<List<String>> uniqueEventIdSet = new LinkedHashSet<>();
 
     for (List<String> pair : originalIds) {
       if (pair != null && pair.size() >= 2) {
-        idQueue.add(Collections.singletonList(pair.get(0)));
-        eventIdQueue.add(Collections.singletonList(pair.get(1)));
+        uniqueIdSet.add(Collections.singletonList(pair.get(0)));
+        uniqueEventIdSet.add(Collections.singletonList(pair.get(1)));
       }
     }
 
-    // Query for primary entity
+    // Convert back to queue
+    Queue<List<String>> idQueue = new LinkedList<>(uniqueIdSet);
+    Queue<List<String>> eventIdQueue = new LinkedList<>(uniqueEventIdSet);
+
+    // Query preparation for primary entity
     Set<ColumnMetaPayload> entityVarSequences = new LinkedHashSet<>(this.taskEntityColumnMeta);
     String entityQuery = lifecycleStatements[1];
-    // DataManifest<Queue<SparqlBinding>> resultsManifest =
-    // this.getService.getInstances(entityType, true, idQueue,
-    // entityQuery, new ArrayList<>(entityVarSequences));
 
-    // Query for event
+    // Query preparation for event
 
     Set<ColumnMetaPayload> varSequences = new LinkedHashSet<>(this.taskColumnMeta);
     String addQuery = lifecycleStatements[2];
@@ -686,9 +687,8 @@ public class LifecycleTaskService {
       addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXEMPT, varSequences);
     }
     String occurrenceQueryString = this.genOccurrenceEventQueryStatement(varSequences, eventIdQueue, addQuery);
-    // Queue<SparqlBinding> occurrenceResultQueue =
-    // this.getService.getInstances(occurrenceQueryString);
 
+    // Execute primary entity and event queries in parallel
     List<DataManifest<Queue<SparqlBinding>>> parallelResults = ParallelTaskExecutor.execDualParallelQueries(
         // Query for entity
         () -> this.getService.getInstances(entityType, true, idQueue, entityQuery, new ArrayList<>(entityVarSequences)),
@@ -698,7 +698,7 @@ public class LifecycleTaskService {
           return new DataManifest<>(queue, new ArrayList<>(varSequences));
         });
 
-    // Unpack your assignments right below
+    // Unpack query results
     DataManifest<Queue<SparqlBinding>> resultsManifest = parallelResults.get(0);
     Queue<SparqlBinding> occurrenceResultQueue = parallelResults.get(1).data();
 
