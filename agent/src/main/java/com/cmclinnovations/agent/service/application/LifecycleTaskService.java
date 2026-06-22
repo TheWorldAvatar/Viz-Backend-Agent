@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -654,22 +653,27 @@ public class LifecycleTaskService {
       return new DataManifest<>(new ArrayList<>(), new ArrayList<>());
     }
 
-    List<List<String>> originalIds = new ArrayList<>(ids); // make it a persistent copy
+    List<List<String>> idEventIdPairs = new ArrayList<>(ids); // make it a persistent copy
 
-    // Initialise separate queues for primary entity and events
-    Set<List<String>> uniqueIdSet = new LinkedHashSet<>();
-    Set<List<String>> uniqueEventIdSet = new LinkedHashSet<>();
-
-    for (List<String> pair : originalIds) {
-      if (pair != null && pair.size() >= 2) {
-        uniqueIdSet.add(Collections.singletonList(pair.get(0)));
-        uniqueEventIdSet.add(Collections.singletonList(pair.get(1)));
+    // Set up for checking
+    Set<String> uniqueIdChecker = new HashSet<>();
+    Queue<List<String>> uniqueIds = new ArrayDeque<>();
+    Queue<List<String>> eventIds = new ArrayDeque<>();
+    while (!ids.isEmpty()) {
+      List<String> idPair = ids.poll();
+      if (idPair == null || idPair.size() < 2) {
+        LOGGER.warn("Skipping incomplete id pairs for: {}...", idPair == null ? "null" : idPair.get(0));
+        continue;
       }
+      // Only add IDs if they are unique by using the set checking
+      String id = idPair.get(0);
+      if (uniqueIdChecker.add(id)) {
+        uniqueIds.offer(Collections.singletonList(id));
+      }
+      // All event Ids are unique
+      String eventId = idPair.get(1);
+      eventIds.offer(Collections.singletonList(eventId));
     }
-
-    // Convert back to queue
-    Queue<List<String>> idQueue = new LinkedList<>(uniqueIdSet);
-    Queue<List<String>> eventIdQueue = new LinkedList<>(uniqueEventIdSet);
 
     // Query preparation for primary entity
     Set<ColumnMetaPayload> entityVarSequences = new LinkedHashSet<>(this.taskEntityColumnMeta);
@@ -686,12 +690,13 @@ public class LifecycleTaskService {
       addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
       addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXEMPT, varSequences);
     }
-    String occurrenceQueryString = this.genOccurrenceEventQueryStatement(varSequences, eventIdQueue, addQuery);
+    String occurrenceQueryString = this.genOccurrenceEventQueryStatement(varSequences, eventIds, addQuery);
 
     // Execute primary entity and event queries in parallel
     List<DataManifest<Queue<SparqlBinding>>> parallelResults = ParallelTaskExecutor.execParallelQueries(
         // Query for entity
-        () -> this.getService.getInstances(entityType, true, idQueue, entityQuery, new ArrayList<>(entityVarSequences)),
+        () -> this.getService.getInstances(entityType, true, uniqueIds, entityQuery,
+            new ArrayList<>(entityVarSequences)),
         // Query for event
         () -> {
           Queue<SparqlBinding> queue = this.getService.getInstances(occurrenceQueryString);
@@ -711,7 +716,7 @@ public class LifecycleTaskService {
 
     // Merge data of primary entity and event
     List<Map<String, Object>> mergedData = new ArrayList<>();
-    for (List<String> pair : originalIds) {
+    for (List<String> pair : idEventIdPairs) {
       if (pair.size() < 2) {
         continue;
       }
