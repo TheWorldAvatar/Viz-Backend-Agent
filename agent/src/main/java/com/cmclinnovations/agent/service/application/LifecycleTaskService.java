@@ -2,7 +2,6 @@ package com.cmclinnovations.agent.service.application;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -59,6 +58,8 @@ public class LifecycleTaskService {
   private final LifecycleQueryFactory lifecycleQueryFactory;
   private final List<ColumnMetaPayload> taskColumnMeta = new ArrayList<>();
   private final List<ColumnMetaPayload> taskEntityColumnMeta = new ArrayList<>();
+  private final Set<String> excludableLifecycleStatementKeys = Set.of(LifecycleResource.EVENT_KEY,
+      LifecycleResource.LAST_MODIFIED_KEY);
 
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
@@ -361,8 +362,7 @@ public class LifecycleTaskService {
 
       // Statements for event properties
       String eventStatements = statementMappings.entrySet().stream()
-          .filter(entry -> Set.of(LifecycleResource.EVENT_KEY, LifecycleResource.LAST_MODIFIED_KEY)
-              .contains(entry.getKey()))
+          .filter(entry -> excludableLifecycleStatementKeys.contains(entry.getKey()))
           .map(Map.Entry::getValue)
           .collect(Collectors.joining("\n"));
 
