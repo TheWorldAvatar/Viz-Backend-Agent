@@ -336,7 +336,8 @@ public class LifecycleTaskService {
       String entityStatements = statementMappings.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY);
 
       // Statements for event properties
-      String eventStatements = statementMappings.get(LifecycleResource.EVENT_KEY)
+      String eventStatements = statementMappings.get(LifecycleResource.LIFECYCLE_RESOURCE)
+          + "\n" + statementMappings.get(LifecycleResource.EVENT_KEY)
           + "\n" + statementMappings.get(LifecycleResource.LAST_MODIFIED_KEY);
       return new String[] { lifecycleStatements, entityStatements, eventStatements };
     } else {
@@ -698,13 +699,13 @@ public class LifecycleTaskService {
   private String genOccurrenceEventQuery(Set<ColumnMetaPayload> varSequences, Queue<String> eventIds,
       LifecycleEventType eventType, String lifecycleStatement) {
     // Generate query statements
-    String addQuery = lifecycleStatement;
-    addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
+    String eventQuery = lifecycleStatement;
+    eventQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
     if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
-      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXECUTION, varSequences);
-      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_CANCELLATION, varSequences);
-      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
-      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXEMPT, varSequences);
+      eventQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXECUTION, varSequences);
+      eventQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_CANCELLATION, varSequences);
+      eventQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
+      eventQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXEMPT, varSequences);
     }
 
     varSequences.add(new ColumnMetaPayload(QueryResource.EVENT_ID_VAR.getVarName(), QueryResource.LITERAL_TYPE,
@@ -726,16 +727,7 @@ public class LifecycleTaskService {
     queryString = queryString.substring(0,
         queryString.indexOf("WHERE {") + "WHERE {".length());
 
-    // Append the core event anchor triple statements
-    queryString += "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
-        +
-        "<https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;" +
-        "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?event_date." +
-        " BIND(xsd:date(?event_date) AS ?date)" +
-        "?event_id a <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence>; "
-        +
-        " <https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event.\n";
-    queryString += addQuery + "\n";
+    queryString += eventQuery + "\n";
     queryString += QueryResource.values(eventIds, QueryResource.EVENT_ID_VAR.getVarName());
     queryString += "}";
     return queryString;
