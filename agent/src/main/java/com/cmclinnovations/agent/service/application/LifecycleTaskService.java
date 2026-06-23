@@ -58,8 +58,6 @@ public class LifecycleTaskService {
   private final LifecycleQueryFactory lifecycleQueryFactory;
   private final List<ColumnMetaPayload> taskColumnMeta = new ArrayList<>();
   private final List<ColumnMetaPayload> taskEntityColumnMeta = new ArrayList<>();
-  private final Set<String> excludableLifecycleStatementKeys = Set.of(LifecycleResource.EVENT_KEY,
-      LifecycleResource.LAST_MODIFIED_KEY);
 
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
@@ -335,17 +333,11 @@ public class LifecycleTaskService {
         filters, field);
     if (reqOriStatements) {
       // Statements for entity properties
-      String entityStatements = statementMappings.entrySet().stream()
-          .filter(entry -> LifecycleResource.SCHEDULE_RECURRENCE_KEY.equals(entry.getKey()))
-          .map(Map.Entry::getValue)
-          .collect(Collectors.joining("\n"));
+      String entityStatements = statementMappings.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY);
 
       // Statements for event properties
-      String eventStatements = statementMappings.entrySet().stream()
-          .filter(entry -> excludableLifecycleStatementKeys.contains(entry.getKey()))
-          .map(Map.Entry::getValue)
-          .collect(Collectors.joining("\n"));
-
+      String eventStatements = statementMappings.get(LifecycleResource.EVENT_KEY)
+          + "\n" + statementMappings.get(LifecycleResource.LAST_MODIFIED_KEY);
       return new String[] { lifecycleStatements, entityStatements, eventStatements };
     } else {
       return new String[] { lifecycleStatements };
