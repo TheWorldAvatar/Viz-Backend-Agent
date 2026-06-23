@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -57,8 +58,6 @@ public class LifecycleTaskService {
   private final LifecycleQueryFactory lifecycleQueryFactory;
   private final List<ColumnMetaPayload> taskColumnMeta = new ArrayList<>();
   private final List<ColumnMetaPayload> taskEntityColumnMeta = new ArrayList<>();
-  private final Set<String> excludableLifecycleStatementKeys = Set.of(LifecycleResource.EVENT_KEY,
-      LifecycleResource.LAST_MODIFIED_KEY);
 
   private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
@@ -144,26 +143,6 @@ public class LifecycleTaskService {
       return options.stream().map(LocalisationTranslator::getEvent).toList();
     }
     return options;
-  }
-
-  /**
-   * Retrieve all service related occurrences in the lifecycle for the specified
-   * date.
-   * 
-   * @param contract   The contract identifier.
-   * @param entityType Target resource ID.
-   * @param pagination Pagination state to filter results.
-   */
-  public ResponseEntity<StandardApiResponse<?>> getOccurrences(String contract, String entityType,
-      PaginationState pagination) {
-    // Map<String, String> lifecycleStatements =
-    // this.lifecycleQueryFactory.getServiceTasksQuery(contract, null, null,
-    // null);
-    // List<Map<String, Object>> occurrences =
-    // this.executeOccurrenceQuery(entityType, lifecycleStatements, null,
-    // pagination);
-    LOGGER.info("Successfuly retrieved all associated services!");
-    return this.responseEntityBuilder.success(null, "Under construction");
   }
 
   /**
@@ -354,17 +333,12 @@ public class LifecycleTaskService {
         filters, field);
     if (reqOriStatements) {
       // Statements for entity properties
-      String entityStatements = statementMappings.entrySet().stream()
-          .filter(entry -> LifecycleResource.SCHEDULE_RECURRENCE_KEY.equals(entry.getKey()))
-          .map(Map.Entry::getValue)
-          .collect(Collectors.joining("\n"));
+      String entityStatements = statementMappings.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY);
 
       // Statements for event properties
-      String eventStatements = statementMappings.entrySet().stream()
-          .filter(entry -> excludableLifecycleStatementKeys.contains(entry.getKey()))
-          .map(Map.Entry::getValue)
-          .collect(Collectors.joining("\n"));
-
+      String eventStatements = statementMappings.get(LifecycleResource.LIFECYCLE_RESOURCE)
+          + "\n" + statementMappings.get(LifecycleResource.EVENT_KEY)
+          + "\n" + statementMappings.get(LifecycleResource.LAST_MODIFIED_KEY);
       return new String[] { lifecycleStatements, entityStatements, eventStatements };
     } else {
       return new String[] { lifecycleStatements };
@@ -644,8 +618,7 @@ public class LifecycleTaskService {
    * @param pagination    Pagination state to filter results.
    */
   private DataManifest<List<Map<String, Object>>> executeOccurrenceQuery(String entityType,
-      String[] lifecycleStatements,
-      LifecycleEventType eventType, PaginationState pagination) {
+      String[] lifecycleStatements, LifecycleEventType eventType, PaginationState pagination) {
     // ID retrieval and handling
     Queue<List<String>> ids = this.getService.getAllIds(entityType, lifecycleStatements[0], pagination);
     // Return early if nothing if found
@@ -658,7 +631,7 @@ public class LifecycleTaskService {
     // Set up for checking
     Set<String> uniqueIdChecker = new HashSet<>();
     Queue<List<String>> uniqueIds = new ArrayDeque<>();
-    Queue<List<String>> eventIds = new ArrayDeque<>();
+    Queue<String> eventIds = new ArrayDeque<>();
     while (!ids.isEmpty()) {
       List<String> idPair = ids.poll();
       if (idPair == null || idPair.size() < 2) {
@@ -670,22 +643,11 @@ public class LifecycleTaskService {
       if (uniqueIdChecker.add(id)) {
         uniqueIds.offer(Collections.singletonList(id));
       }
-      // All event Ids are unique
+      // All event Ids are unique and must be returned as IRIs
       String eventId = idPair.get(1);
-      eventIds.offer(Collections.singletonList(eventId));
+      eventIds.offer("<" + eventId + ">");
     }
-
-    // Query preparation for event
     Set<ColumnMetaPayload> varSequences = new LinkedHashSet<>(this.taskColumnMeta);
-    String addQuery = lifecycleStatements[2];
-    addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
-    if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
-      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXECUTION, varSequences);
-      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_CANCELLATION, varSequences);
-      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
-      addQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXEMPT, varSequences);
-    }
-    String occurrenceQueryString = this.genOccurrenceEventQueryStatement(varSequences, eventIds, addQuery);
 
     // Execute primary entity and event queries in parallel
     List<DataManifest<Queue<SparqlBinding>>> parallelResults = ParallelTaskExecutor.execParallelQueries(
@@ -694,27 +656,25 @@ public class LifecycleTaskService {
             new ArrayList<>(this.taskEntityColumnMeta)),
         // Query for event
         () -> {
-          Queue<SparqlBinding> queue = this.getService.getInstances(occurrenceQueryString);
-          return new DataManifest<>(queue, new ArrayList<>(varSequences));
+          String occurrenceQueryString = this.genOccurrenceEventQuery(varSequences, eventIds, eventType,
+              lifecycleStatements[2]);
+          Queue<SparqlBinding> instances = this.getService.getInstances(occurrenceQueryString);
+          return new DataManifest<>(instances, new ArrayList<>());
         });
 
     // Unpack query results
-    DataManifest<Queue<SparqlBinding>> resultsManifest = parallelResults.get(0);
-    Queue<SparqlBinding> occurrenceResultQueue = parallelResults.get(1).data();
+    DataManifest<Queue<SparqlBinding>> coreEntityResultManifest = parallelResults.get(0);
+    Queue<SparqlBinding> taskInstances = parallelResults.get(1).data();
 
     // Combine results from entity query and event query
-
-    // Convert results to map with IDs as the keys
-    Map<String, Map<String, Object>> primaryById = mapBindingsById(resultsManifest.data(), QueryResource.ID_KEY);
-    Map<String, Map<String, Object>> eventById = mapBindingsById(occurrenceResultQueue,
+    Map<String, Map<String, Object>> primaryById = mapBindingsById(coreEntityResultManifest.data(),
+        QueryResource.ID_KEY);
+    Map<String, Map<String, Object>> eventById = mapBindingsById(taskInstances,
         QueryResource.EVENT_ID_VAR.getVarName());
 
     // Merge data of primary entity and event
     List<Map<String, Object>> mergedData = new ArrayList<>();
     for (List<String> pair : idEventIdPairs) {
-      if (pair.size() < 2) {
-        continue;
-      }
       Map<String, Object> mergedRow = new LinkedHashMap<>();
       Map<String, Object> primaryRow = primaryById.get(pair.get(0));
       Map<String, Object> eventRow = eventById.get(pair.get(1));
@@ -730,10 +690,47 @@ public class LifecycleTaskService {
     }
 
     // Merge column metadata
-    List<ColumnMetaPayload> mergedColumns = new ArrayList<>(resultsManifest.columns());
+    List<ColumnMetaPayload> mergedColumns = new ArrayList<>(coreEntityResultManifest.columns());
     mergedColumns.addAll(varSequences);
 
     return new DataManifest<>(mergedData, mergedColumns);
+  }
+
+  private String genOccurrenceEventQuery(Set<ColumnMetaPayload> varSequences, Queue<String> eventIds,
+      LifecycleEventType eventType, String lifecycleStatement) {
+    // Generate query statements
+    String eventQuery = lifecycleStatement;
+    eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
+    if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
+      eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXECUTION, varSequences);
+      eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_CANCELLATION, varSequences);
+      eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
+      eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXEMPT, varSequences);
+    }
+
+    varSequences.add(new ColumnMetaPayload(QueryResource.EVENT_ID_VAR.getVarName(), QueryResource.LITERAL_TYPE,
+        ShaclResource.XSD_STRING));
+
+    // Initial SELECT DISTINCT template
+    SelectQuery query = QueryResource.getSelectQuery(true, null);
+    for (ColumnMetaPayload column : varSequences) {
+      // Status requires the following variables isntead
+      if (column.value().equals(LifecycleResource.STATUS_KEY)) {
+        query.select(QueryResource.genVariable(LifecycleResource.EVENT_KEY));
+        query.select(QueryResource.EVENT_STATUS_VAR);
+      } else {
+        query.select(QueryResource.genVariable(column.value()));
+      }
+    }
+
+    String queryString = query.getQueryString();
+    queryString = queryString.substring(0,
+        queryString.indexOf("WHERE {") + "WHERE {".length());
+
+    queryString += eventQuery + "\n";
+    queryString += QueryResource.values(eventIds, QueryResource.EVENT_ID_VAR.getVarName());
+    queryString += "}";
+    return queryString;
   }
 
   private Map<String, Map<String, Object>> mapBindingsById(Collection<SparqlBinding> bindings, String idKey) {
@@ -745,54 +742,6 @@ public class LifecycleTaskService {
             Map.Entry::getValue,
             (existing, replacement) -> existing,
             LinkedHashMap::new));
-  }
-
-  private String genOccurrenceEventQueryStatement(Set<ColumnMetaPayload> varSequences,
-      Queue<List<String>> eventIdQueue, String addQuery) {
-    // Initialise blank template
-    String occurrenceQueryString = QueryResource.getSelectQuery().getQueryString();
-    occurrenceQueryString = occurrenceQueryString.substring(0,
-        occurrenceQueryString.indexOf("WHERE {") + "WHERE {".length());
-
-    // Append the core event anchor triple statements
-    String eventAnchorString = "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
-        +
-        "<https://www.theworldavatar.com/kg/ontoservice/OrderReceivedEvent>;" +
-        "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?event_date." +
-        " BIND(xsd:date(?event_date) AS ?date)" +
-        "?event_id a <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence>; "
-        +
-        " <https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event.";
-    occurrenceQueryString += eventAnchorString;
-
-    varSequences.add(new ColumnMetaPayload(QueryResource.EVENT_ID_VAR.getVarName(), QueryResource.LITERAL_TYPE,
-        ShaclResource.XSD_STRING)); // Add event ID column meta
-
-    // Generate select variable clause
-    List<String> selectVariables = new ArrayList<>();
-    for (ColumnMetaPayload column : varSequences) {
-      selectVariables.add(QueryResource.genVariable(column.value()).getQueryString());
-    }
-
-    occurrenceQueryString = occurrenceQueryString.replace("SELECT *",
-        "SELECT DISTINCT " + String.join(" ", selectVariables));
-    occurrenceQueryString = occurrenceQueryString.replace("?status", "?event ?event_status"); // Specific to event
-                                                                                              // status
-
-    // Generate value statement to include event IDs
-    List<String> eventIds = new ArrayList<>();
-    while (!eventIdQueue.isEmpty()) {
-      List<String> item = eventIdQueue.poll();
-      if (item != null && !item.isEmpty()) {
-        eventIds.add("<" + item.get(0) + ">");
-      }
-    }
-
-    occurrenceQueryString = occurrenceQueryString + "\n" + addQuery + "\n";
-    occurrenceQueryString += QueryResource.values(eventIds, QueryResource.EVENT_ID_VAR.getVarName());
-    occurrenceQueryString += "}";
-
-    return occurrenceQueryString;
   }
 
   /**
