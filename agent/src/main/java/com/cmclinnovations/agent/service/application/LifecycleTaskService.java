@@ -700,12 +700,12 @@ public class LifecycleTaskService {
       LifecycleEventType eventType, String lifecycleStatement) {
     // Generate query statements
     String eventQuery = lifecycleStatement;
-    eventQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
+    eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_ORDER_DISPATCHED, varSequences);
     if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE) || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
-      eventQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXECUTION, varSequences);
-      eventQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_CANCELLATION, varSequences);
-      eventQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
-      eventQuery += this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXEMPT, varSequences);
+      eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXECUTION, varSequences);
+      eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_CANCELLATION, varSequences);
+      eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
+      eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXEMPT, varSequences);
     }
 
     varSequences.add(new ColumnMetaPayload(QueryResource.EVENT_ID_VAR.getVarName(), QueryResource.LITERAL_TYPE,
