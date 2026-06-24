@@ -159,6 +159,10 @@
           "prefix": "https://www.theworldavatar.io/kg/agreement/schedule/"
         },
         "@type": "https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/AdHocSchedule",
+        "http://purl.org/dc/terms/identifier": {
+          "@replace": "id",
+          "@type": "literal"
+        },
         "https://www.omg.org/spec/Commons/DatesAndTimes/hasStartDate": {
           "@id": {
             "@replace": "id",
