@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.58.2
+
+- Fixed schedule update
+
 ## 1.58.1
 
 - Code optimisations
