@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.58.3
+
+- Fixed optional billing parameters that breaks further updates or price adjustments
+
 ## 1.58.2
 
 - Fixed schedule update

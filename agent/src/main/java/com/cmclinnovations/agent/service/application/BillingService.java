@@ -243,6 +243,15 @@ public class BillingService {
     Queue<SparqlBinding> serviceChargesInstances = this.lifecycleQueryService.getInstances(
         FileService.ACCOUNT_BILL_QUERY_RESOURCE, id);
     Map<String, Object> serviceCharges = new HashMap<>();
+    if (serviceChargesInstances.isEmpty()) {
+      serviceCharges.put(BillingResource.AMOUNT_KEY, "0");
+      Map<String, String> emptyCharge = new HashMap<>();
+      emptyCharge.put(BillingResource.AMOUNT_KEY, "0");
+      emptyCharge.put(ShaclResource.DESCRIPTION_PROPERTY,
+          LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_NO_BILL_KEY));
+      serviceCharges.put(BillingResource.CHARGE_KEY, List.of(emptyCharge));
+      return serviceCharges;
+    }
     while (!serviceChargesInstances.isEmpty()) {
       SparqlBinding currentCharge = serviceChargesInstances.poll();
       serviceCharges.putIfAbsent(BillingResource.AMOUNT_KEY, currentCharge.getFieldValue(BillingResource.AMOUNT_KEY));

@@ -261,12 +261,12 @@ base:ServiceAccrualOccurrenceShape
     PREFIX ontoservice:      <https://www.theworldavatar.com/kg/ontoservice/>
     PREFIX xsd:              <http://www.w3.org/2001/XMLSchema#>
 
-    CONSTRUCT {
+     CONSTRUCT {
       ?invoice p2p-o-inv:hasInvoiceLine ?invoice_line_base_instance;
         p2p-o-inv:hasInvoiceLine ?invoice_line_variable_instance.
       ?invoice_line_base_instance a p2p-o-doc-line:InvoiceLine;
         p2p-o-doc-line:lineIdentifier "0"^^xsd:string;
-        p2p-o-doc-line:lineNote "Base fee charge"^^xsd:string;
+        p2p-o-doc-line:lineNote ?base_fee_description;
         p2p-o-doc-line:hasGrosspriceOfItem ?invoice_line_base_amount_instance.
       ?invoice_line_base_amount_instance cmns-qtu:hasNumericValue ?base_fee.
       ?invoice_line_variable_instance a p2p-o-doc-line:InvoiceLine;
@@ -276,29 +276,56 @@ base:ServiceAccrualOccurrenceShape
       ?invoice_line_variable_amount_instance cmns-qtu:hasNumericValue ?var_price.
     } WHERE { 
       ?this cmns-dt:succeeds ?event_id;
+        cmns-dt:succeeds* ?order_event;
         dc-terms:identifier ?id.
       ?invoice cmns-doc:isAbout ?this.
       ?iri a fibo-fnd-pas-pas:ServiceAgreement;
         fibo-fnd-arr-lif:hasLifecycle/fibo-fnd-arr-lif:hasStage/cmns-col:comprises ?event_id;
         fibo-fnd-rel-rel:confers/fibo-fnd-rel-rel:mandates ?price_model.
-      ?event_id ^cmns-doc:refersTo/cmns-doc:records/cmns-qtu:hasQuantityValue ?weight;
-        fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent;
-        cmns-dsg:describes ontoservice:CompletedStatus .
-      ?price_model cmns-qtu:hasArgument/fibo-fnd-acc-cur:hasAmount ?base_fee;
-        cmns-qtu:hasArgument ?var_fee_instance.
-      ?base_fee ^fibo-fnd-acc-cur:hasAmount/a ontoservice:BaseFee.
+
+      ?order_event  fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent;
+        fibo-fnd-dt-oc:hasEventDate ?order_date .
+      BIND (xsd:date(?order_date) AS ?valid_date)
+
+      ?price_model cmns-qtu:hasArgument ?base_fee_instance;
+        cmns-qtu:hasArgument ?var_fee_instance;
+        cmns-pts:holdsDuring / cmns-dt:hasStartDate / cmns-dt:hasDateValue ?start_date.
+      OPTIONAL {
+          ?price_model  cmns-pts:holdsDuring / cmns-dt:hasEndDate / cmns-dt:hasDateValue ?expiry_date .
+      }
+      FILTER( ?start_date <= ?valid_date && (!BOUND(?expiry_date) || ?expiry_date > ?valid_date) )
+
+      ?base_fee_instance a ontoservice:BaseFee;
+        fibo-fnd-acc-cur:hasAmount ?base_fee_charge .
+
       ?var_fee_instance a ontoservice:VariableFee;
         fibo-fnd-acc-cur:hasAmount ?var_fee;
         cmns-qtu:hasLowerBound/cmns-qtu:hasNumericValue ?lower_bound.
-      BIND(IF(BOUND(?status),
-        ?var_fee * IF(?weight > ?lower_bound, ?weight - ?lower_bound, 0.0),
-        ?null) AS ?var_price)
+
+      OPTIONAL{
+        ?event_id ^cmns-doc:refersTo/cmns-doc:records/cmns-qtu:hasQuantityValue	?weight_value;
+        fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent;
+        cmns-dsg:describes ontoservice:CompletedStatus ;
+        cmns-dsg:describes ?status .
+      }
+      BIND(IF(BOUND(?weight_value), ?weight_value / 1000.0, "0.0"^^xsd:decimal) AS ?weight) # convert from kg to tonne
+
+      BIND(
+        IF(BOUND(?weight_value), 
+           ?base_fee_charge, 
+           "0.0"^^xsd:decimal
+        ) AS ?base_fee
+      )
+
+      BIND(?var_fee * IF(?weight > ?lower_bound, ?weight - ?lower_bound, 0.0) AS ?var_price)
+
       BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/base/",?id)) AS ?invoice_line_base_instance)
       BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/base/amount/",?id)) AS ?invoice_line_base_amount_instance)
-      BIND(IF(BOUND(?var_price),IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/var/",?id)), ?null) AS ?invoice_line_variable_instance)
-      BIND(IF(BOUND(?var_price),IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/var/amount/",?id)), ?null) AS ?invoice_line_variable_amount_instance)
-      BIND(IF(BOUND(?var_price),CONCAT("<b>Variable fee charge - Rate: $",STR(?var_fee),"/ton; From: ",  STR(?lower_bound), "tons; Total weight: ", STR(?weight), "tons</b>"), ?null) AS ?service_price_description)
-    }
+      BIND(IF(BOUND(?status),"<b>Base fee charge</b>"^^xsd:string, "Internal adjustment due to service disruption"^^xsd:string) AS ?base_fee_description)
+      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/var/",?id)) AS ?invoice_line_variable_instance)
+      BIND(IRI(CONCAT("https://theworldavatar.io/kg/account/transaction/invoice/line/var/amount/",?id)) AS ?invoice_line_variable_amount_instance)
+      BIND(IF(?var_fee > 0 && BOUND(?status),CONCAT("<b>Variable fee charge - Rate: $",STR(?var_fee),"/ton; From: ",  STR(?lower_bound), "tons; Total weight: ", STR(?weight), "tons</b>"), "No variable fee charge") AS ?service_price_description)
+     }
     """
   ] ;
   sh:rule [
