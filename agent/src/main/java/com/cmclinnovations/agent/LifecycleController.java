@@ -674,12 +674,13 @@ public class LifecycleController {
       @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve outstanding tasks...");
     String type = allRequestParams.remove(StringResource.TYPE_REQUEST_PARAM);
+    String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
     Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
     Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE,
-        () -> this.lifecycleTaskService.getOccurrences(null, null, type, LifecycleEventType.SERVICE_ORDER_RECEIVED,
+        () -> this.lifecycleTaskService.getOccurrences(null, endTimestamp, type, LifecycleEventType.SERVICE_ORDER_RECEIVED,
             new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false,
                 allRequestParams),
             allRequestParams));
@@ -692,10 +693,11 @@ public class LifecycleController {
   public ResponseEntity<StandardApiResponse<?>> getAllOutstandingTaskFilters(
       @RequestParam Map<String, String> allRequestParams) {
     LOGGER.info("Received request to retrieve filter options for outstanding tasks...");
+    String endTimestamp = allRequestParams.remove(StringResource.END_TIMESTAMP_REQUEST_PARAM);
     String[] filterOptionParams = this.getFilterOptionParams(allRequestParams);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.CONTRACT_KEY, () -> {
       List<String> options = this.lifecycleTaskService.getFilterOptions(filterOptionParams[0], filterOptionParams[1],
-          filterOptionParams[2], null, null, LifecycleEventType.SERVICE_ORDER_RECEIVED, allRequestParams);
+          filterOptionParams[2], null, endTimestamp, LifecycleEventType.SERVICE_ORDER_RECEIVED, allRequestParams);
       return this.responseEntityBuilder.success(options);
     });
   }

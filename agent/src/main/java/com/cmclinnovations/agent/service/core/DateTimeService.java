@@ -218,12 +218,9 @@ public class DateTimeService {
    */
   public String[] getStartEndDate(String startTimestamp, String endTimestamp, boolean isClosed) {
     String startDate = "";
-    String endDate = "";
-    if (startTimestamp == null && endTimestamp == null) {
-      endDate = this.getCurrentDate();
-    } else {
+    String endDate = this.getDateFromTimestamp(endTimestamp);
+    if (startTimestamp != null) {
       startDate = this.getDateFromTimestamp(startTimestamp);
-      endDate = this.getDateFromTimestamp(endTimestamp);
       // Verify that the end date occurs after the start date
       if (this.isFutureDate(startDate, endDate)) {
         throw new IllegalArgumentException(

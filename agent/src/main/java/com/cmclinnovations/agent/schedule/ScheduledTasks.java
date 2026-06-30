@@ -22,7 +22,7 @@ public class ScheduledTasks {
     this.lifecycleTaskService = lifecycleTaskService;
   }
 
-  @Scheduled(cron = "0 0 6 * * *")
+  @Scheduled(cron = "0 0 0 * * *")
   public void dischargeExpiredContracts() {
     LOGGER.info("Discharging the active contracts that have expired today...");
     this.lifecycleContractService.dischargeExpiredContracts();
