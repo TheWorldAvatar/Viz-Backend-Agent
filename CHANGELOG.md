@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.60.0
+
+- Improved performance of event query
+
 ## 1.59.1
 
 - Fixed job termination error due to missing timestamp for oustanding task query
