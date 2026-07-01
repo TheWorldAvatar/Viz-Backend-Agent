@@ -227,7 +227,8 @@ public class DateTimeService {
             LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CHRONOLOGY_KEY));
       }
       // Users can only view upcoming scheduled tasks after today
-      if (!isClosed && !this.isFutureDate(startDate)) {
+      // This has been relaxed to today or future date to allow for user in a later time zone
+      if (!isClosed && !this.isTodayOrFutureDate(startDate)) {
         throw new IllegalArgumentException(
             LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_SCHEDULED_PRESENT_KEY));
       }
