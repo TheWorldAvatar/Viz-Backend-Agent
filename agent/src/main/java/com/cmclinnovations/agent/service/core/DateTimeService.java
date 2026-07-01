@@ -218,19 +218,17 @@ public class DateTimeService {
    */
   public String[] getStartEndDate(String startTimestamp, String endTimestamp, boolean isClosed) {
     String startDate = "";
-    String endDate = "";
-    if (startTimestamp == null && endTimestamp == null) {
-      endDate = this.getCurrentDate();
-    } else {
+    String endDate = this.getDateFromTimestamp(endTimestamp);
+    if (startTimestamp != null) {
       startDate = this.getDateFromTimestamp(startTimestamp);
-      endDate = this.getDateFromTimestamp(endTimestamp);
       // Verify that the end date occurs after the start date
       if (this.isFutureDate(startDate, endDate)) {
         throw new IllegalArgumentException(
             LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CHRONOLOGY_KEY));
       }
       // Users can only view upcoming scheduled tasks after today
-      if (!isClosed && !this.isFutureDate(startDate)) {
+      // This has been relaxed to today or future date to allow for user in a later time zone
+      if (!isClosed && !this.isTodayOrFutureDate(startDate)) {
         throw new IllegalArgumentException(
             LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_SCHEDULED_PRESENT_KEY));
       }
