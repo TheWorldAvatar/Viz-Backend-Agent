@@ -336,7 +336,7 @@ public class LifecycleTaskService {
       String entityStatements = statementMappings.get(LifecycleResource.SCHEDULE_RECURRENCE_KEY);
 
       // Statements for event properties
-      String eventStatements = statementMappings.get(LifecycleResource.LIFECYCLE_RESOURCE)
+      String eventStatements = statementMappings.get(LifecycleResource.EVENT_LIFECYCLE_RESOURCE)
           + "\n" + statementMappings.get(LifecycleResource.EVENT_KEY)
           + "\n" + statementMappings.get(LifecycleResource.LAST_MODIFIED_KEY);
       return new String[] { lifecycleStatements, entityStatements, eventStatements };
