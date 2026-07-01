@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.59.1
+
+- Fixed job termination error due to missing timestamp for oustanding task query
+
 ## 1.59.0
 
 - Modified outstanding task API to accept timestamp from calling code

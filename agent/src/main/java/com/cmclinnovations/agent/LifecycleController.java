@@ -512,8 +512,9 @@ public class LifecycleController {
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
       String entityType = params.remove(StringResource.TYPE_REQUEST_PARAM).toString();
       // get outstanding tasks. these should be reported
+      String todayTimeStamp = this.dateTimeService.getTimestampFromDate(this.dateTimeService.getCurrentDate());
       ResponseEntity<StandardApiResponse<?>> reportResponse = this.updateTaskOfTerminatedContract(params,
-          contractId, entityType, "report", null, null);
+          contractId, entityType, "report", null, todayTimeStamp);
       if (!reportResponse.getStatusCode().equals(HttpStatus.OK)) {
         return reportResponse;
       }
