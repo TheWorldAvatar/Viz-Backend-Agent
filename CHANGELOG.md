@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.59.0
+
+- Modified outstanding task API to accept timestamp from calling code
+
 ## 1.58.3
 
 - Fixed optional billing parameters that breaks further updates or price adjustments
