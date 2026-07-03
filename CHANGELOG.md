@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.60.1
+
+- Fixed invoice form query
+
 ## 1.60.0
 
 - Improved performance of event query
