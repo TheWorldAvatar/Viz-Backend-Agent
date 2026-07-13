@@ -11,6 +11,7 @@ public enum LifecycleEventType {
   SERVICE_ORDER_DISPATCHED("dispatch", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_DISPATCH),
   SERVICE_EXECUTION("complete", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_DELIVERY),
   SERVICE_CANCELLATION("cancel", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_CANCELLATION),
+  SERVICE_VOID("void", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_SERVICE_VOID),
   SERVICE_INCIDENT_REPORT("report", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_INCIDENT_REPORT),
   SERVICE_ACCRUAL("accrual", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_ACCRUAL),
   SERVICE_EXEMPT("exempt", LifecycleResource.SERVICE_EXECUTION_STAGE, LifecycleResource.EVENT_EXEMPT),
