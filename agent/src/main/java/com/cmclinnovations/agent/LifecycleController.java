@@ -463,6 +463,7 @@ public class LifecycleController {
    * 1) report: Reports any unfulfilled service delivery
    * 2) cancel: Cancel any upcoming service
    * 3) exempt: Exempts any service from billing accrual
+   * 4) void: Voids any cancelled, reported, or exempted service
    */
   @PostMapping("/service/{type}")
   public ResponseEntity<StandardApiResponse<?>> performServiceAction(@PathVariable String type,

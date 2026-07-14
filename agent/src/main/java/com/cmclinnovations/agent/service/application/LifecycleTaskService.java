@@ -63,7 +63,7 @@ public class LifecycleTaskService {
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
   private static final String ORDER_COMPLETE_MESSAGE = "Order has been completed successfully.";
   private static final String ORDER_ACCRUAL_MESSAGE = "Billables have been accrued successfully.";
-  private static final String SERVICE_VOID_MESSAGE = "Cancelled service has been voided.";
+  private static final String SERVICE_VOID_MESSAGE = "Service has been voided.";
   private static final int NUM_DAY_ORDER_GEN = 30;
   static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
@@ -247,6 +247,7 @@ public class LifecycleTaskService {
    * 1) report: Reports any unfulfilled service delivery
    * 2) cancel: Cancel any upcoming service
    * 3) exempt: Exempts any service from billing accrual
+   * 4) void: Voids any cancelled, reported, or exempted service
    */
   public ResponseEntity<StandardApiResponse<?>> performSingleServiceAction(String type, Map<String, Object> params) {
     LifecycleEventType eventType = LifecycleEventType.fromId(type.toLowerCase());
@@ -285,8 +286,9 @@ public class LifecycleTaskService {
             TrackActionType.ISSUE_REPORT, "Task has been successfully reported!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
       case LifecycleEventType.SERVICE_VOID:
-        LOGGER.info("Received request to void a cancelled service...");
-        prevEventIri = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_CANCELLATION);
+        LOGGER.info("Received request to void a service...");
+        prevEventIri = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_EXEMPT,
+            LifecycleEventType.SERVICE_CANCELLATION, LifecycleEventType.SERVICE_INCIDENT_REPORT);
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
         params.put(LifecycleResource.REMARKS_KEY, SERVICE_VOID_MESSAGE);
 
