@@ -1009,6 +1009,21 @@ public class LifecycleTaskService {
   }
 
   /**
+   * Removes the terminal void event for the specified task.
+   *
+   * @param taskId Target task identifier.
+   */
+  public ResponseEntity<StandardApiResponse<?>> unvoidTask(String taskId) {
+    SparqlBinding voidEvent = this.lifecycleQueryService.getInstance(FileService.VOID_QUERY_RESOURCE, true, taskId);
+    if (voidEvent == null) {
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
+    }
+    String query = this.lifecycleQueryService.getQuery(FileService.VOID_DELETE_QUERY_RESOURCE, taskId);
+    return this.updateService.update(query);
+  }
+
+  /**
    * Generate an occurrence for the order dispatch, delivery, or accrual event of
    * a specified contract.
    * 
