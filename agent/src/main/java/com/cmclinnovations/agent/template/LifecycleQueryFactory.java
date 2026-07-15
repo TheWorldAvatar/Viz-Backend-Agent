@@ -27,15 +27,18 @@ public class LifecycleQueryFactory {
             + ";cmns-dt:succeeds/fibo-fnd-rel-rel:exemplifies ?prev_event. "
             + QueryResource.minus(INVOICED_QUERY_STATEMENT);
     private static final String EXEMPT_QUERY_STATEMENTS = "?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceAccrualExemptionEvent";
-    private static final String CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT = "\n ?event_id cmns-dt:succeeds/ <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.";
+    private static final String VOID_QUERY_STATEMENTS = "?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceVoidEvent";
+    private static final String CLOSED_DATE_PREVIOUS_EVENT_QUERY_STATEMENT = "\n ?event_id cmns-dt:succeeds/ <https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.";
     private static final String CLOSED_QUERY_STATEMENTS = "{\n?event_id fibo-fnd-rel-rel:exemplifies ontoservice:TerminatedServiceEvent\n;<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.}UNION"
             + "{\n?event_id fibo-fnd-rel-rel:exemplifies ontoservice:IncidentReportEvent\n;<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.}UNION"
             + "{\n?event_id fibo-fnd-rel-rel:exemplifies ontoservice:ServiceDeliveryEvent;\ncmns-dsg:describes ontoservice:CompletedStatus\n;<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> ?closed_date_placeholder.}UNION"
-            + "{\n" + CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT + BILLABLE_QUERY_STATEMENTS + "}UNION"
+            + "{\n" + CLOSED_DATE_PREVIOUS_EVENT_QUERY_STATEMENT + BILLABLE_QUERY_STATEMENTS + "}UNION"
             // Exempted status
-            + "{\n" + CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT + EXEMPT_QUERY_STATEMENTS + "}UNION"
+            + "{\n" + CLOSED_DATE_PREVIOUS_EVENT_QUERY_STATEMENT + EXEMPT_QUERY_STATEMENTS + "}UNION"
+            // Voided status
+            + "{\n" + CLOSED_DATE_PREVIOUS_EVENT_QUERY_STATEMENT + VOID_QUERY_STATEMENTS + "}UNION"
             // Invoiced status
-            + "{\n" + CLOSED_DATE_ACCRUAL_EVENT_QUERY_STATEMENT + ACCRUAL_EVENT_QUERY_STATEMENT + "."
+            + "{\n" + CLOSED_DATE_PREVIOUS_EVENT_QUERY_STATEMENT + ACCRUAL_EVENT_QUERY_STATEMENT + "."
             + INVOICED_QUERY_STATEMENT + ".BIND(\""
             + BillingResource.INVOICE_RESOURCE + "\" AS ?prev_event)}";
     private static final String UNCLOSED_QUERY_STATEMENTS = "{?event_id fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent .}UNION"
