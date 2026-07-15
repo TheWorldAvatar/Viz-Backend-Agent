@@ -28,6 +28,7 @@ public class LocalisationResource {
   public static final String SUCCESS_CONTRACT_TASK_BULK_ASSIGN_KEY = SUCCESS_CONTRACT_PREFIX + "task.bulk.assign";
   public static final String SUCCESS_CONTRACT_TASK_COMPLETE_KEY = SUCCESS_CONTRACT_PREFIX + "task.complete";
   public static final String SUCCESS_CONTRACT_TASK_CANCEL_KEY = SUCCESS_CONTRACT_PREFIX + "task.cancel";
+  public static final String SUCCESS_CONTRACT_TASK_VOID_KEY = SUCCESS_CONTRACT_PREFIX + "task.void";
   public static final String SUCCESS_CONTRACT_TASK_REPORT_KEY = SUCCESS_CONTRACT_PREFIX + "task.report";
   public static final String SUCCESS_CONTRACT_TASK_ACCRUAL_KEY = SUCCESS_CONTRACT_PREFIX + "task.accrual";
   public static final String SUCCESS_CONTRACT_TASK_EXEMPT_KEY = SUCCESS_CONTRACT_PREFIX + "task.exempt";
@@ -67,6 +68,7 @@ public class LocalisationResource {
   public static final String EVENT_STATUS_COMPLETED_KEY = "completed";
   public static final String EVENT_STATUS_ISSUE_KEY = "issue";
   public static final String EVENT_STATUS_NEW_KEY = "new";
+  public static final String EVENT_STATUS_VOIDED_KEY = "voided";
   public static final String EVENT_STATUS_BILLABLE_CANCELLED_KEY = "billableCancelled";
   public static final String EVENT_STATUS_BILLABLE_COMPLETED_KEY = "billableCompleted";
   public static final String EVENT_STATUS_BILLABLE_ISSUE_KEY = "billableIssue";

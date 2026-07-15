@@ -1,0 +1,29 @@
+PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>
+PREFIX cmns-dt: <https://www.omg.org/spec/Commons/DatesAndTimes/>
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX fibo-fbc-pas-fpas: <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/>
+PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>
+
+SELECT DISTINCT ?void_event ?stage ?previous_event
+WHERE {
+  ?stage cmns-col:comprises ?void_event .
+
+  ?void_event
+    a fibo-fbc-pas-fpas:ContractLifecycleEventOccurrence ;
+    dc-terms:identifier "[target]" ;
+    fibo-fnd-rel-rel:exemplifies ontoservice:ServiceVoidEvent ;
+    cmns-dt:succeeds ?previous_event .
+
+  ?previous_event fibo-fnd-rel-rel:exemplifies ?previous_event_type .
+
+  VALUES ?previous_event_type {
+    ontoservice:TerminatedServiceEvent
+    ontoservice:IncidentReportEvent
+    ontoservice:ServiceAccrualExemptionEvent
+  }
+
+  FILTER NOT EXISTS {
+    ?successor cmns-dt:succeeds ?void_event .
+  }
+}

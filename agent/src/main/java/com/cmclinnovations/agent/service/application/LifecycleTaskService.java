@@ -63,6 +63,7 @@ public class LifecycleTaskService {
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
   private static final String ORDER_COMPLETE_MESSAGE = "Order has been completed successfully.";
   private static final String ORDER_ACCRUAL_MESSAGE = "Billables have been accrued successfully.";
+  private static final String SERVICE_VOID_MESSAGE = "Service has been voided.";
   private static final int NUM_DAY_ORDER_GEN = 30;
   static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
@@ -246,6 +247,7 @@ public class LifecycleTaskService {
    * 1) report: Reports any unfulfilled service delivery
    * 2) cancel: Cancel any upcoming service
    * 3) exempt: Exempts any service from billing accrual
+   * 4) void: Voids any cancelled, reported, or exempted service
    */
   public ResponseEntity<StandardApiResponse<?>> performSingleServiceAction(String type, Map<String, Object> params) {
     LifecycleEventType eventType = LifecycleEventType.fromId(type.toLowerCase());
@@ -283,6 +285,16 @@ public class LifecycleTaskService {
         return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params, LifecycleEventType.SERVICE_INCIDENT_REPORT,
             TrackActionType.ISSUE_REPORT, "Task has been successfully reported!",
             LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
+      case LifecycleEventType.SERVICE_VOID:
+        LOGGER.info("Received request to void a service...");
+        prevEventIri = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_EXEMPT,
+            LifecycleEventType.SERVICE_CANCELLATION, LifecycleEventType.SERVICE_INCIDENT_REPORT);
+        params.put(LifecycleResource.ORDER_KEY, prevEventIri);
+        params.put(LifecycleResource.REMARKS_KEY, SERVICE_VOID_MESSAGE);
+
+        return this.genOccurrence(LifecycleResource.VOID_RESOURCE, params, LifecycleEventType.SERVICE_VOID,
+            TrackActionType.IGNORED, "Task has been successfully voided!",
+            LocalisationResource.SUCCESS_CONTRACT_TASK_VOID_KEY);
       case LifecycleEventType.SERVICE_EXEMPT:
         LOGGER.info("Received request to exempt the billable details for a service...");
         prevEventIri = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_EXECUTION,
@@ -994,6 +1006,21 @@ public class LifecycleTaskService {
       this.addService.logActivity(orderEvent, TrackActionType.RESCHEDULED);
     }
     return response;
+  }
+
+  /**
+   * Removes the terminal void event for the specified task.
+   *
+   * @param taskId Target task identifier.
+   */
+  public ResponseEntity<StandardApiResponse<?>> unvoidTask(String taskId) {
+    SparqlBinding voidEvent = this.lifecycleQueryService.getInstance(FileService.VOID_QUERY_RESOURCE, true, taskId);
+    if (voidEvent == null) {
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
+    }
+    String query = this.lifecycleQueryService.getQuery(FileService.VOID_DELETE_QUERY_RESOURCE, taskId);
+    return this.updateService.update(query);
   }
 
   /**

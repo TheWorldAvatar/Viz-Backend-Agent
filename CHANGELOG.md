@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.61.0
+
+- Introduced new void status
+
 ## 1.60.1
 
 - Fixed invoice form query

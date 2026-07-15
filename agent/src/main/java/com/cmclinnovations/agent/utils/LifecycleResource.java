@@ -25,6 +25,7 @@ public class LifecycleResource {
   public static final String CANCEL_RESOURCE = "cancel";
   public static final String REPORT_RESOURCE = "report";
   public static final String EXEMPT_RESOURCE = "exempt";
+  public static final String VOID_RESOURCE = "void";
   public static final String TASK_ID_SORT_BY_PARAMS = ",+event_id";
   public static final String RECURRENCE_DAILY_TASK = "P1D";
   public static final String RECURRENCE_ALT_DAY_TASK = "P2D";
@@ -74,6 +75,7 @@ public class LifecycleResource {
   public static final String EVENT_DISPATCH = "https://www.theworldavatar.com/kg/ontoservice/ServiceDispatchEvent";
   public static final String EVENT_DELIVERY = "https://www.theworldavatar.com/kg/ontoservice/ServiceDeliveryEvent";
   public static final String EVENT_CANCELLATION = "https://www.theworldavatar.com/kg/ontoservice/TerminatedServiceEvent";
+  public static final String EVENT_SERVICE_VOID = "https://www.theworldavatar.com/kg/ontoservice/ServiceVoidEvent";
   public static final String EVENT_INCIDENT_REPORT = "https://www.theworldavatar.com/kg/ontoservice/IncidentReportEvent";
   public static final String EVENT_ACCRUAL = "https://www.theworldavatar.com/kg/ontoservice/ServiceAccrualEvent";
   public static final String EVENT_EXEMPT = "https://www.theworldavatar.com/kg/ontoservice/ServiceAccrualExemptionEvent";
@@ -149,6 +151,7 @@ public class LifecycleResource {
       case LifecycleResource.CANCEL_RESOURCE:
       case LifecycleResource.REPORT_RESOURCE:
       case LifecycleResource.EXEMPT_RESOURCE:
+      case LifecycleResource.VOID_RESOURCE:
         return FileService.OCCURRENCE_LINK_JSON_LD_RESOURCE;
       case LifecycleResource.SCHEDULE_RESOURCE:
         return FileService.SCHEDULE_JSON_LD_RESOURCE;

@@ -42,7 +42,9 @@ public class FileService {
   private static final String CLASS_PATH_DIR = "classpath:";
   private static final String QUERY_DIR = CLASS_PATH_DIR + "query/";
   private static final String QUERY_CONSTR_DIR = QUERY_DIR + "construct/";
+  private static final String QUERY_DELETE_DIR = QUERY_DIR + "delete/";
   private static final String QUERY_GET_DIR = QUERY_DIR + "get/";
+  private static final String QUERY_DELETE_LIFECYCLE_DIR = QUERY_DELETE_DIR + "lifecycle/";
   private static final String QUERY_GET_BILLING_DIR = QUERY_GET_DIR + "billing/";
   private static final String QUERY_GET_LIFECYCLE_DIR = QUERY_GET_DIR + "lifecycle/";
   public static final String FORM_QUERY_RESOURCE = QUERY_CONSTR_DIR + "form.sparql";
@@ -101,6 +103,8 @@ public class FileService {
   public static final String TASK_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "task.sparql";
   public static final String TASK_ACCRUAL_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "task_accrual.sparql";
   public static final String RESCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "reschedule.sparql";
+  public static final String VOID_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "void.sparql";
+  public static final String VOID_DELETE_QUERY_RESOURCE = QUERY_DELETE_LIFECYCLE_DIR + "void.sparql";
 
   public static final String REPLACEMENT_TARGET = "\\[target\\]";
   public static final String REPLACEMENT_SHAPE = "[shape]";

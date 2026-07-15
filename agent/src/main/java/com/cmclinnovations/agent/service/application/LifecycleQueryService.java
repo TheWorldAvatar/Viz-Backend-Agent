@@ -85,6 +85,16 @@ public class LifecycleQueryService {
   }
 
   /**
+   * Retrieve a query resource with the specified replacements.
+   *
+   * @param resourceId   The identifier of the query resource.
+   * @param replacements Replacements for each [target] value.
+   */
+  public String getQuery(String resourceId, String... replacements) {
+    return this.fileService.getContentsWithReplacement(resourceId, replacements);
+  }
+
+  /**
    * Retrieves the SPARQL query to retrieve the event instance associated with the
    * target event type for a specific contract and date.
    * 

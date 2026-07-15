@@ -50,6 +50,8 @@ public class LocalisationTranslator {
         yield LocalisationResource.EVENT_STATUS_ISSUE_KEY;
       case LifecycleResource.EVENT_CANCELLATION:
         yield LocalisationResource.EVENT_STATUS_CANCELLED_KEY;
+      case LifecycleResource.EVENT_SERVICE_VOID:
+        yield LocalisationResource.EVENT_STATUS_VOIDED_KEY;
       case LifecycleResource.EVENT_DELIVERY + ";" + LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS:
         yield LocalisationResource.EVENT_STATUS_COMPLETED_KEY;
       case LifecycleResource.EVENT_DISPATCH:
@@ -84,6 +86,8 @@ public class LocalisationTranslator {
         yield Rdf.literalOf(LifecycleResource.EVENT_INCIDENT_REPORT).getQueryString();
       case LocalisationResource.EVENT_STATUS_CANCELLED_KEY:
         yield Rdf.literalOf(LifecycleResource.EVENT_CANCELLATION).getQueryString();
+      case LocalisationResource.EVENT_STATUS_VOIDED_KEY:
+        yield Rdf.literalOf(LifecycleResource.EVENT_SERVICE_VOID).getQueryString();
       case LocalisationResource.EVENT_STATUS_COMPLETED_KEY:
         yield Rdf.literalOf(
             LifecycleResource.EVENT_DELIVERY + ";" + LifecycleResource.COMPLETION_EVENT_COMPLETED_STATUS)
