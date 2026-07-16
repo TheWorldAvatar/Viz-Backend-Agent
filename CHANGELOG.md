@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.61.1
+
+- Fixed WKT regex
+
 ## 1.61.0
 
 - Introduced new void status
