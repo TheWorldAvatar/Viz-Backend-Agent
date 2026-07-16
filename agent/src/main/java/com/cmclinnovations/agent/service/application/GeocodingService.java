@@ -50,7 +50,7 @@ public class GeocodingService {
   private static final Variable COUNTRY_VAR = SparqlBuilder.var(COUNTRY_VARNAME);
   private static final String STREET_VARNAME = "street";
   private static final Variable STREET_VAR = SparqlBuilder.var(STREET_VARNAME);
-  private static final Pattern GEOPOINT_PATTERN = Pattern.compile("POINT\\((\\d+\\.\\d+),? ?(\\d+\\.\\d+)\\)");
+  private static final Pattern GEOPOINT_PATTERN = Pattern.compile("POINT\\((-?\\d+(?:\\.\\d+)?),? ?(-?\\d+(?:\\.\\d+)?)\\)");
   private static final Logger LOGGER = LogManager.getLogger(GeocodingService.class);
 
   /**
