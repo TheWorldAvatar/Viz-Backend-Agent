@@ -224,38 +224,34 @@ public class LifecycleQueryFactory {
         } else {
             eventTargetStatements = UNCLOSED_QUERY_STATEMENTS;
         }
+        // Statements to link contract to order events
         String lifecyclePrefix = filterContractStatement
                 + "?iri <https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage> ?stage."
                 + "?stage <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <"
                 + LifecycleEventType.SERVICE_EXECUTION.getStage() + ">;"
                 + "<https://www.omg.org/spec/Commons/Collections/comprises> ?order_event.";
-        String eventCommonString = "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
+        // Statements to link order events to the target event and its date
+        String eventChainStatements = "?order_event <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
                 + Rdf.iri(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString()
                 + ";<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
                 + eventDatePlaceholderVar
                 + ". BIND(xsd:date(" + eventDatePlaceholderVar + ") AS " + eventDateVar
-                + ")"
-                + eventIdVar
+                + ")" + eventIdVar
                 + " a <https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/ContractLifecycleEventOccurrence>;"
                 + " <https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event.";
-        String lifecycleSuffix = eventCommonString
-                + eventTargetStatements
-                + filterDateStatement
-                // Event must be the last in the chain ie no other events will succeed
-                // it
-                + "MINUS{" + eventIdVar
-                + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}";
-        results.put(LifecycleResource.LIFECYCLE_RESOURCE, lifecyclePrefix + lifecycleSuffix);
-        // alternative in attempt to improve performance
-        String optimizedEventTargetStatements = eventCommonString
-                + "OPTIONAL {" + eventIdVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> <https://www.theworldavatar.com/kg/ontoservice/ServiceAccrualEvent> .\n"
-                + "{?invoice <https://purl.org/p2p-o/invoice#hasInvoiceReference>/<https://www.omg.org/spec/Commons/Documents/isAbout> "
-                + eventIdVar + " . BIND(\"invoice\" AS ?prev_event)} UNION\n"
-                + "{" + eventIdVar
+        // Statements to retrieve essential contract and event instances
+        results.put(LifecycleResource.LIFECYCLE_RESOURCE, lifecyclePrefix
+                + eventChainStatements + eventTargetStatements+ filterDateStatement
+                // Event must be the last in the chain i.e. no successor event
+                + "MINUS{" + eventIdVar + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}");
+        // Statements to link order event and latest event
+        // This is minimised for performance, relying on injection of event ID
+        results.put(LifecycleResource.EVENT_LIFECYCLE_RESOURCE, eventChainStatements
+                + "OPTIONAL {" + ACCRUAL_EVENT_QUERY_STATEMENT + " .\n"
+                + "{" + INVOICED_QUERY_STATEMENT + " . BIND(\"" + BillingResource.INVOICE_RESOURCE
+                + "\" AS ?prev_event)} UNION\n" + "{" + eventIdVar
                 + " <https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>/<https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> ?prev_event .\n"
-                + "FILTER NOT EXISTS {?invoice <https://purl.org/p2p-o/invoice#hasInvoiceReference>/<https://www.omg.org/spec/Commons/Documents/isAbout> "
-                + eventIdVar + " .}}}\n";
-        results.put(LifecycleResource.EVENT_LIFECYCLE_RESOURCE, optimizedEventTargetStatements);
+                + "FILTER NOT EXISTS {" + INVOICED_QUERY_STATEMENT + " .}}}\n");
         results.put(LifecycleResource.EVENT_KEY,
                 eventIdVar
                         + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> ?temp_event."
@@ -263,7 +259,6 @@ public class LifecycleQueryFactory {
                         + eventStatusVar
                         + "} BIND(CONCAT(STR(?temp_event),IF(BOUND(?event_status),CONCAT(\";\",STR(?event_status)),"
                         + "IF(BOUND(?prev_event),CONCAT(\";\",STR(?prev_event)),\"\"))) AS " + eventVar + ")");
-        
         results.put(LifecycleResource.LAST_MODIFIED_KEY, eventIdVar
                 + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
                 + lastModifiedVar + ShaclResource.FULL_STOP);
