@@ -95,7 +95,7 @@ public class ReportingController {
     LOGGER.info("Received request to get the customer accounts...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
       List<SelectOption> options = this.getService.getAllFilterOptions(type, search,
-          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, BillingResource.FLAG_KEY);
+          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, BillingResource.FLAG_KEY, 0, 21);
       return this.responseEntityBuilder.success(options);
     });
   }
