@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.62.0
+
+- Improved performance of event query
+
 ## 1.61.1
 
 - Fixed WKT regex
