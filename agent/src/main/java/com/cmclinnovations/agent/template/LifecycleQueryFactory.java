@@ -246,12 +246,16 @@ public class LifecycleQueryFactory {
                 + "MINUS{" + eventIdVar + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}");
         // Statements to link order event and latest event
         // This is minimised for performance, relying on injection of event ID
-        results.put(LifecycleResource.EVENT_LIFECYCLE_RESOURCE, eventChainStatements
-                + "OPTIONAL {" + ACCRUAL_EVENT_QUERY_STATEMENT + " .\n"
-                + "{" + INVOICED_QUERY_STATEMENT + " . BIND(\"" + BillingResource.INVOICE_RESOURCE
-                + "\" AS ?prev_event)} UNION\n" + "{" + eventIdVar
-                + " <https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>/<https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> ?prev_event .\n"
-                + "FILTER NOT EXISTS {" + INVOICED_QUERY_STATEMENT + " .}}}\n");
+        String previousEventStatements = "";
+        if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE)
+                || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
+            previousEventStatements = "OPTIONAL {" + ACCRUAL_EVENT_QUERY_STATEMENT + " .\n"
+                    + "{" + INVOICED_QUERY_STATEMENT + " . BIND(\"" + BillingResource.INVOICE_RESOURCE
+                    + "\" AS ?prev_event)} UNION\n" + "{" + eventIdVar
+                    + " <https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>/<https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> ?prev_event .\n"
+                    + "FILTER NOT EXISTS {" + INVOICED_QUERY_STATEMENT + " .}}}\n";
+        }
+        results.put(LifecycleResource.EVENT_LIFECYCLE_RESOURCE, eventChainStatements + previousEventStatements);
         results.put(LifecycleResource.EVENT_KEY,
                 eventIdVar
                         + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> ?temp_event."
