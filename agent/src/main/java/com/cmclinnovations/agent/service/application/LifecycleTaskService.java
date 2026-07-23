@@ -428,7 +428,7 @@ public class LifecycleTaskService {
         eventVarsInvolved.add(uniqueEventVar);
 
         String innerPathContent = prepareEventPropertyPath(entry.getValue(), currentEventType, uniqueEventVar);
-        combinedGraphPath = QueryResource.union("{ " + innerPathContent + " }");
+        combinedGraphPath = innerPathContent;
       } else {
         String sharedEventVar = QueryResource.genVariable(propertyKey + "_event").getQueryString();
         eventVarsInvolved.add(sharedEventVar);
@@ -440,23 +440,30 @@ public class LifecycleTaskService {
         continue;
       }
 
+      // For single-event value-only filters, OPTIONAL keeps Blazegraph from
+      // reordering this path ahead of the bound order event. The following FILTER
+      // rejects unbound values, so the path remains mandatory in effect.
+      String valueOnlyGraphPath = matchedEvents.size() == 1
+          ? QueryResource.optional(combinedGraphPath)
+          : combinedGraphPath;
+
       StringBuilder filterClauseBuilder = new StringBuilder();
 
       // Handle value injection for date type
       if (filterValues.contains(LifecycleResource.DATE_KEY)) {
-        filterClauseBuilder.append("{ ").append(combinedGraphPath).append(" }\n");
+        filterClauseBuilder.append(valueOnlyGraphPath).append("\n");
 
         String dateFiltersStr = QueryResource.genDateFilterExpression(propertyKey, filterValues);
         filterClauseBuilder.append(dateFiltersStr).append("\n");
       } else if (filterValues.contains(QueryResource.TIME_TYPE)) {
         // Handle value injection for time type
-        filterClauseBuilder.append("{ ").append(combinedGraphPath).append(" }\n");
+        filterClauseBuilder.append(valueOnlyGraphPath).append("\n");
 
         String timeFilterExpression = QueryResource.genTimeFilterExpression(propertyKey, filterValues);
         filterClauseBuilder.append(timeFilterExpression).append("\n");
       } else if (filterValues.contains(QueryResource.NUMERIC_TYPE)) {
         // Handle value injection for numerical type
-        filterClauseBuilder.append("{ ").append(combinedGraphPath).append(" }\n");
+        filterClauseBuilder.append(valueOnlyGraphPath).append("\n");
 
         String numericalFilterExpression = QueryResource.genNumericalFilterExpression(propertyKey, filterValues);
         filterClauseBuilder.append(numericalFilterExpression).append("\n");
@@ -493,7 +500,7 @@ public class LifecycleTaskService {
         }
         // Strict selection with explicit values only
         else {
-          filterClauseBuilder.append("{ ").append(combinedGraphPath).append(" }\n");
+          filterClauseBuilder.append(valueOnlyGraphPath).append("\n");
           String strictExpr = propertyValueVar + " IN (" + valuesListString + ")";
           filterClauseBuilder.append(QueryResource.filter(strictExpr)).append("\n");
         }
@@ -531,7 +538,7 @@ public class LifecycleTaskService {
           String lookupEventVar = QueryResource.genVariable(lookupVarStr).getQueryString();
 
           String innerPathContent = this.prepareEventPropertyPath(entry.getValue(), currentEventType, lookupEventVar);
-          combinedGraphPath = QueryResource.union("{ " + innerPathContent + " }");
+          combinedGraphPath = innerPathContent;
         } else {
           String sharedEventVar = QueryResource.genVariable(field + "_event_lookup").getQueryString();
           combinedGraphPath = prepareSharedEventPropertyPath(matchedEvents, sharedEventVar);
