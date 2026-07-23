@@ -418,30 +418,22 @@ public class LifecycleTaskService {
       }
 
       String propertyValueVar = QueryResource.genVariable(propertyKey).getQueryString();
-      List<String> unifiedEventBlocks = new ArrayList<>();
       List<String> eventVarsInvolved = new ArrayList<>();
-
-      for (Map.Entry<LifecycleEventType, String> entry : matchedEvents.entrySet()) {
+      String combinedGraphPath;
+      if (matchedEvents.size() == 1) {
+        Map.Entry<LifecycleEventType, String> entry = matchedEvents.entrySet().iterator().next();
         LifecycleEventType currentEventType = entry.getKey();
-
-        // Dynamically build a completely unique variable name for this specific
-        // property block
         String uniqueVarStr = currentEventType.getId() + "_event_" + propertyKey;
         String uniqueEventVar = QueryResource.genVariable(uniqueVarStr).getQueryString();
         eventVarsInvolved.add(uniqueEventVar);
 
         String innerPathContent = prepareEventPropertyPath(entry.getValue(), currentEventType, uniqueEventVar);
-        String fullEventPropertyPath = "{ " + innerPathContent + " }";
-        unifiedEventBlocks.add(fullEventPropertyPath);
-
+        combinedGraphPath = QueryResource.union("{ " + innerPathContent + " }");
+      } else {
+        String sharedEventVar = QueryResource.genVariable(propertyKey + "_event").getQueryString();
+        eventVarsInvolved.add(sharedEventVar);
+        combinedGraphPath = prepareSharedEventPropertyPath(matchedEvents, sharedEventVar);
       }
-
-      if (unifiedEventBlocks.isEmpty()) {
-        continue;
-      }
-
-      String combinedGraphPath = QueryResource.union(unifiedEventBlocks.get(0),
-          unifiedEventBlocks.stream().skip(1).toArray(String[]::new));
 
       Set<String> filterValues = serviceEventFilters.get(propertyKey);
       if (filterValues == null || filterValues.isEmpty()) {
@@ -531,23 +523,21 @@ public class LifecycleTaskService {
     if (isLookupMode) {
       Map<LifecycleEventType, String> matchedEvents = propertyToEventMappings.get(field);
       if (matchedEvents != null && !matchedEvents.isEmpty()) {
-        List<String> unifiedEventBlocks = new ArrayList<>();
-
-        for (Map.Entry<LifecycleEventType, String> entry : matchedEvents.entrySet()) {
+        String combinedGraphPath;
+        if (matchedEvents.size() == 1) {
+          Map.Entry<LifecycleEventType, String> entry = matchedEvents.entrySet().iterator().next();
           LifecycleEventType currentEventType = entry.getKey();
           String lookupVarStr = currentEventType.getId() + "_event_lookup";
           String lookupEventVar = QueryResource.genVariable(lookupVarStr).getQueryString();
 
           String innerPathContent = this.prepareEventPropertyPath(entry.getValue(), currentEventType, lookupEventVar);
-          unifiedEventBlocks.add("{ " + innerPathContent + " }");
+          combinedGraphPath = QueryResource.union("{ " + innerPathContent + " }");
+        } else {
+          String sharedEventVar = QueryResource.genVariable(field + "_event_lookup").getQueryString();
+          combinedGraphPath = prepareSharedEventPropertyPath(matchedEvents, sharedEventVar);
         }
 
-        if (!unifiedEventBlocks.isEmpty()) {
-          String combinedGraphPath = QueryResource.union(unifiedEventBlocks.get(0),
-              unifiedEventBlocks.stream().skip(1).toArray(String[]::new));
-
-          finalQueryAccumulator.append(QueryResource.optional(combinedGraphPath)).append("\n");
-        }
+        finalQueryAccumulator.append(QueryResource.optional(combinedGraphPath)).append("\n");
       }
     }
 
@@ -574,6 +564,34 @@ public class LifecycleTaskService {
     String finalizedPath = replacedPath.endsWith(".") ? replacedPath : replacedPath + " .";
 
     return anchor + " " + finalizedPath;
+  }
+
+  /**
+   * Prepares a shared occurrence path followed by event-specific property
+   * branches.
+   */
+  private String prepareSharedEventPropertyPath(Map<LifecycleEventType, String> matchedEvents,
+      String sharedEventVar) {
+    List<String> eventPropertyBranches = matchedEvents.entrySet().stream()
+        .map(entry -> this.prepareEventPropertyBranch(entry.getValue(), entry.getKey(), sharedEventVar))
+        .toList();
+    String combinedEventBranches = QueryResource.union(eventPropertyBranches.get(0),
+        eventPropertyBranches.stream().skip(1).toArray(String[]::new));
+    String sharedOccurrencePath = sharedEventVar
+        + " <https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event.";
+    return sharedOccurrencePath + " " + combinedEventBranches;
+  }
+
+  /**
+   * Prepares an event type and its property path against a shared event variable.
+   */
+  private String prepareEventPropertyBranch(String pathStatement, LifecycleEventType eventType,
+      String sharedEventVar) {
+    String eventTypeStatement = sharedEventVar + " <" + LifecycleResource.EXEMPLIFIES_RELATIONS + "> <"
+        + eventType.getEvent() + ">.";
+    String replacedPath = pathStatement.replace(QueryResource.IRI_VAR.getQueryString(), sharedEventVar).trim();
+    String finalizedPath = replacedPath.endsWith(".") ? replacedPath : replacedPath + " .";
+    return eventTypeStatement + " " + finalizedPath;
   }
 
   /**
