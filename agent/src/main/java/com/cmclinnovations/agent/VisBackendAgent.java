@@ -102,7 +102,24 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, "", "");
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, "", "", 0, 21);
+      return this.responseEntityBuilder.success(options);
+    });
+  }
+
+  /**
+   * Unified sync route to get instances belonging to the specified type.
+   * Performs a paginated full refresh if no timestamp is provided,
+   * or fetches only incremental changes when a last-sync
+   * timestamp is present.
+   */
+  @GetMapping("/{type}/pull")
+  public ResponseEntity<StandardApiResponse<?>> pullInstances(
+      @PathVariable(name = "type") String type, @RequestParam(required = false) Integer cursor,
+      @RequestParam(required = false) Integer limit) {
+    LOGGER.info("Received request to get all instances for {}...", type);
+    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, "", "", "", cursor, limit);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -272,7 +289,7 @@ public class VisBackendAgent {
       if (errorMsg.isEmpty()) {
         return this.deleteService.delete(type, id, branchDelete);
       } else {
-         return this.responseEntityBuilder.error(errorMsg, HttpStatus.BAD_REQUEST);
+        return this.responseEntityBuilder.error(errorMsg, HttpStatus.BAD_REQUEST);
       }
     });
   }

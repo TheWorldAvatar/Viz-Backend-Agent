@@ -954,7 +954,7 @@ This endpoint serves to allow users to create new customer accounts by sending a
 > [!IMPORTANT]  
 > Users must include a `type` in the request parameter that corresponds to the customer's custom target file name in the `./resources/application-service.json`
 
-Users can also get all customer account IDs and names by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account/filter?type={type}&search={search}` endpoint, where `{type}`is the requested identifier that must correspond to the customer's target class in`./resources/application-form.json` and `{search}` is the `search` parameter.
+Users can also get all customer account IDs and names by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account/filter?type={type}&search={search}` endpoint, where `{type}`is the requested identifier that must correspond to the customer's target class in`./resources/application-form.json` and `{search}` is the `search` parameter. Users may also include the `cursor` and `limit` parameter to get the pagination of the current page based on the limit.
 
 Users can also get all customer accounts by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint, where `{type}`is the requested identifier that must correspond to the customer account's target class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. For the query filter parameters, please read [this section](#28-filter-query-parameters).
 

@@ -282,7 +282,7 @@ public class GetService {
    */
   public List<String> getAllFilterOptionsAsStrings(String resourceID, String field, String addStatements,
       String search, Map<String, Set<String>> filters) {
-    return this.queryFilterOptions(resourceID, field, addStatements, "", search,
+    return this.queryFilterOptions(resourceID, field, addStatements, "", search, 0, 21,
         filters, field.equals(QueryResource.ID_KEY), false)
         .stream()
         .map(binding -> binding.getFieldValue(field))
@@ -298,7 +298,7 @@ public class GetService {
    * @param filters    Filters to further narrow filter scope.
    */
   public List<SelectOption> getAllFilterOptions(String resourceID, String search, Map<String, Set<String>> filters) {
-    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", "", search, filters, false, true)
+    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", "", search, 0, 21, filters, false, true)
         .stream()
         .map(binding -> new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
             binding.getFieldValue(QueryResource.IRI_KEY)))
@@ -313,11 +313,14 @@ public class GetService {
    * @param search        String subset to narrow filter scope.
    * @param addStatements Additional query statements to be added if any.
    * @param addVar        One additional query variable to be added if any.
+   * @param pageIndex     Current page index acting as a pagination cursor.
+   * @param limit         The limit of options to retrieve.
    */
-  public List<SelectOption> getAllFilterOptions(String resourceID, String search, String addStatements, String addVar) {
+  public List<SelectOption> getAllFilterOptions(String resourceID, String search, String addStatements, String addVar,
+      int pageIndex, Integer limit) {
     return this
-        .queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, addStatements, addVar, search, new HashMap<>(),
-            false, true)
+        .queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, addStatements, addVar, search, pageIndex, limit,
+            new HashMap<>(), false, true)
         .stream()
         .map(binding -> {
           if (binding.containsField(BillingResource.FLAG_KEY)) {
@@ -340,12 +343,15 @@ public class GetService {
    * @param addStatements Additional query statements to be added if any.
    * @param addVar        One additional query variable to be added if any.
    * @param search        String subset to narrow filter scope.
+   * @param pageIndex     Current page index acting as a pagination cursor.
+   * @param limit         The limit of options to retrieve.
    * @param filters       Optional additional filters.
    * @param requireId     If the results should include ID.
    * @param requireIri    If the results should include IRI variable.
    */
   private Queue<SparqlBinding> queryFilterOptions(String resourceID, String field, String addStatements, String addVar,
-      String search, Map<String, Set<String>> filters, boolean requireId, boolean requireIri) {
+      String search, int pageIndex, Integer limit, Map<String, Set<String>> filters, boolean requireId,
+      boolean requireIri) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
     addStatements += this.getQueryStatementsForTargetFields(resourceID, iri, new HashSet<>(Set.of(field)),
@@ -363,7 +369,7 @@ public class GetService {
           + "\"))";
     }
     SelectQuery allInstancesQueryObj = this.queryTemplateService.getAllInstancesQueryTemplate(iri,
-        new PaginationState(0, 21, "+" + field, new HashMap<>()), requireId, requireIri);
+        new PaginationState(pageIndex, limit, "+" + field, new HashMap<>()), requireId, requireIri);
     if (!addVar.isEmpty()) {
       allInstancesQueryObj.select(QueryResource.genVariable(addVar));
     }
