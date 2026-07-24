@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.62.1
+
+- Improved performance of filtering event properties
+
 ## 1.62.0
 
 - Improved performance of event query
