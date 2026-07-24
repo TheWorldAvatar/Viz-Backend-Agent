@@ -102,7 +102,7 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, "", "", 0, 21);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, "", "", "", 0, 21);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -115,11 +115,11 @@ public class VisBackendAgent {
    */
   @GetMapping("/{type}/pull")
   public ResponseEntity<StandardApiResponse<?>> pullInstances(
-      @PathVariable(name = "type") String type, @RequestParam(required = false) Integer cursor,
-      @RequestParam(required = false) Integer limit) {
+      @PathVariable(name = "type") String type, @RequestParam(required = false) String parent,
+      @RequestParam(required = false) Integer cursor, @RequestParam(required = false) Integer limit) {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, "", "", "", cursor, limit);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, "", parent, "", "", cursor, limit);
       return this.responseEntityBuilder.success(options);
     });
   }

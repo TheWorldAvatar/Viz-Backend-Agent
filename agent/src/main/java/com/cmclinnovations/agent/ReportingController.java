@@ -95,10 +95,10 @@ public class ReportingController {
       @RequestParam(required = false) Integer limit) {
     LOGGER.info("Received request to get the customer accounts...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, search,
-          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, BillingResource.FLAG_KEY, 
-          cursor != null ? cursor : 0, 
-          limit  != null ? limit : 21);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, null,
+          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, BillingResource.FLAG_KEY,
+          cursor != null ? cursor : 0,
+          limit != null ? limit : 21);
       return this.responseEntityBuilder.success(options);
     });
   }

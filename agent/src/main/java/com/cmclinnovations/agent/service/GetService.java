@@ -282,7 +282,7 @@ public class GetService {
    */
   public List<String> getAllFilterOptionsAsStrings(String resourceID, String field, String addStatements,
       String search, Map<String, Set<String>> filters) {
-    return this.queryFilterOptions(resourceID, field, addStatements, "", search, 0, 21,
+    return this.queryFilterOptions(resourceID, field, null, addStatements, "", search, 0, 21,
         filters, field.equals(QueryResource.ID_KEY), false)
         .stream()
         .map(binding -> binding.getFieldValue(field))
@@ -298,10 +298,11 @@ public class GetService {
    * @param filters    Filters to further narrow filter scope.
    */
   public List<SelectOption> getAllFilterOptions(String resourceID, String search, Map<String, Set<String>> filters) {
-    return this.queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, "", "", search, 0, 21, filters, false, true)
+    return this
+        .queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, null, "", "", search, 0, 21, filters, false, true)
         .stream()
         .map(binding -> new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
-            binding.getFieldValue(QueryResource.IRI_KEY)))
+            binding.getFieldValue(QueryResource.IRI_KEY), ""))
         .toList();
   }
 
@@ -311,25 +312,29 @@ public class GetService {
    * 
    * @param resourceID    Target resource identifier for the instance class.
    * @param search        String subset to narrow filter scope.
+   * @param parent        Optional parent field if this is a dependent field.
    * @param addStatements Additional query statements to be added if any.
    * @param addVar        One additional query variable to be added if any.
    * @param pageIndex     Current page index acting as a pagination cursor.
    * @param limit         The limit of options to retrieve.
    */
-  public List<SelectOption> getAllFilterOptions(String resourceID, String search, String addStatements, String addVar,
-      int pageIndex, Integer limit) {
+  public List<SelectOption> getAllFilterOptions(String resourceID, String search, String parent,
+      String addStatements, String addVar, int pageIndex, Integer limit) {
     return this
-        .queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, addStatements, addVar, search, pageIndex, limit,
-            new HashMap<>(), false, true)
+        .queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, parent, addStatements, addVar, search, pageIndex,
+            limit, new HashMap<>(), false, true)
         .stream()
         .map(binding -> {
+          String parentVal = parent != null && binding.containsField(parent) ? binding.getFieldValue(parent) : "";
           if (binding.containsField(BillingResource.FLAG_KEY)) {
             return new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
                 binding.getFieldValue(QueryResource.IRI_KEY),
+                parentVal,
                 binding.getFieldValue(BillingResource.FLAG_KEY).equalsIgnoreCase("true"));
           }
           return new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
-              binding.getFieldValue(QueryResource.IRI_KEY));
+              binding.getFieldValue(QueryResource.IRI_KEY),
+              parentVal);
         })
         .toList();
   }
@@ -340,6 +345,7 @@ public class GetService {
    * 
    * @param resourceID    Target resource identifier for the instance class.
    * @param field         The field of interest.
+   * @param parent        Optional parent field if this is a dependent field.
    * @param addStatements Additional query statements to be added if any.
    * @param addVar        One additional query variable to be added if any.
    * @param search        String subset to narrow filter scope.
@@ -349,13 +355,17 @@ public class GetService {
    * @param requireId     If the results should include ID.
    * @param requireIri    If the results should include IRI variable.
    */
-  private Queue<SparqlBinding> queryFilterOptions(String resourceID, String field, String addStatements, String addVar,
-      String search, int pageIndex, Integer limit, Map<String, Set<String>> filters, boolean requireId,
+  private Queue<SparqlBinding> queryFilterOptions(String resourceID, String field, String parent, String addStatements,
+      String addVar, String search, int pageIndex, Integer limit, Map<String, Set<String>> filters, boolean requireId,
       boolean requireIri) {
     LOGGER.info("Retrieving all filter options...");
     String iri = this.queryTemplateService.getIri(resourceID);
-    addStatements += this.getQueryStatementsForTargetFields(resourceID, iri, new HashSet<>(Set.of(field)),
-        filters);
+    Set<String> targetFields = new HashSet<>();
+    targetFields.add(field);
+    if (parent != null) {
+      targetFields.add(parent);
+    }
+    addStatements += this.getQueryStatementsForTargetFields(resourceID, iri, targetFields, filters);
 
     if (search != null && !search.isBlank()) {
       String fieldVarString = QueryResource.genVariable(field).getQueryString();
@@ -368,8 +378,9 @@ public class GetService {
           + search.toLowerCase()
           + "\"))";
     }
+    String parentFieldSort = parent != null ? ",+" + parent : "";
     SelectQuery allInstancesQueryObj = this.queryTemplateService.getAllInstancesQueryTemplate(iri,
-        new PaginationState(pageIndex, limit, "+" + field, new HashMap<>()), requireId, requireIri);
+        new PaginationState(pageIndex, limit, "+" + field + parentFieldSort, new HashMap<>()), requireId, requireIri);
     if (!addVar.isEmpty()) {
       allInstancesQueryObj.select(QueryResource.genVariable(addVar));
     }
