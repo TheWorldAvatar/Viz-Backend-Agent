@@ -91,11 +91,14 @@ public class ReportingController {
    */
   @GetMapping("/account/filter")
   public ResponseEntity<StandardApiResponse<?>> getAccountFilters(@RequestParam String type,
-      @RequestParam String search) {
+      @RequestParam String search, @RequestParam(required = false) Integer cursor,
+      @RequestParam(required = false) Integer limit) {
     LOGGER.info("Received request to get the customer accounts...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
       List<SelectOption> options = this.getService.getAllFilterOptions(type, search,
-          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, BillingResource.FLAG_KEY, 0, 21);
+          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, BillingResource.FLAG_KEY, 
+          cursor != null ? cursor : 0, 
+          limit  != null ? limit : 21);
       return this.responseEntityBuilder.success(options);
     });
   }
