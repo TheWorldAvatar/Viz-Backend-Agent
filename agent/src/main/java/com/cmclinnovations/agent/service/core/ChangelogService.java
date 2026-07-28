@@ -15,6 +15,9 @@ import com.cmclinnovations.agent.utils.ShaclResource;
 public class ChangelogService {
   private final AuthenticationService authenticationService;
   private final DateTimeService dateTimeService;
+  private static final String UPDATED_SINCE_QUERY_TEMPLATE = "?changelog <https://theworldavatar.io/kg/ontochangelog/affected> ?iri;\r\n"
+      + "<https://theworldavatar.io/kg/ontochangelog/timestamp> ?timestamp.\r\n" +
+      "FILTER(?timestamp > \"" + FileService.REPLACEMENT_TARGET + "\"^^xsd:dateTime)";
 
   /**
    * Constructs a new service with the following dependencies.
@@ -55,5 +58,18 @@ public class ChangelogService {
       return replacements;
     }
     return new HashMap<>();
+  }
+
+  /**
+   * Builds a filter query for changes since a specific point in time.
+   * 
+   * @param timestamp The timestamp input in UNIX seconds.
+   */
+  public String buildDeltaFilterQuery(String timestamp) {
+    if (timestamp == null || timestamp.isBlank()) {
+      return "";
+    }
+    String currentDateTime = this.dateTimeService.getDateTimeFromTimestamp(timestamp);
+    return UPDATED_SINCE_QUERY_TEMPLATE.replace(FileService.REPLACEMENT_TARGET, currentDateTime);
   }
 }

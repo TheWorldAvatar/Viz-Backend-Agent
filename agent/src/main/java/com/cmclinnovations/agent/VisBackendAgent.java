@@ -28,6 +28,7 @@ import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.application.GeocodingService;
+import com.cmclinnovations.agent.service.core.ChangelogService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.StringResource;
@@ -36,6 +37,7 @@ import com.cmclinnovations.agent.utils.StringResource;
 public class VisBackendAgent {
   private final ConcurrencyService concurrencyService;
   private final AddService addService;
+  private final ChangelogService changelogService;
   private final DeleteService deleteService;
   private final GetService getService;
   private final GeocodingService geocodingService;
@@ -44,11 +46,12 @@ public class VisBackendAgent {
 
   private static final Logger LOGGER = LogManager.getLogger(VisBackendAgent.class);
 
-  public VisBackendAgent(ConcurrencyService concurrencyService, AddService addService, DeleteService deleteService,
-      GetService getService,
+  public VisBackendAgent(ConcurrencyService concurrencyService, AddService addService,
+      ChangelogService changelogService, DeleteService deleteService, GetService getService,
       GeocodingService geocodingService, UpdateService updateService, ResponseEntityBuilder responseEntityBuilder) {
     this.concurrencyService = concurrencyService;
     this.addService = addService;
+    this.changelogService = changelogService;
     this.deleteService = deleteService;
     this.getService = getService;
     this.geocodingService = geocodingService;
@@ -116,11 +119,13 @@ public class VisBackendAgent {
   @GetMapping("/{type}/pull")
   public ResponseEntity<StandardApiResponse<?>> pullInstances(
       @PathVariable(name = "type") String type, @RequestParam(required = false) String parent,
-      @RequestParam(required = false) Integer cursor, @RequestParam(required = false) Integer limit) {
+      @RequestParam(required = false) Integer cursor, @RequestParam(required = false) Integer limit,
+      @RequestParam(required = false) String timestamp) {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
+      String deltaFilterClause = this.changelogService.buildDeltaFilterQuery(timestamp);
       List<SelectOption> options = this.getService.getAllFilterOptions(type, "", parent.equals("null") ? null : parent,
-          "", "", cursor, limit);
+          deltaFilterClause, "", cursor, limit);
       return this.responseEntityBuilder.success(options);
     });
   }
