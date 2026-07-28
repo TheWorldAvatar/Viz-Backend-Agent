@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -1037,56 +1038,58 @@ public class LifecycleTaskService {
   }
 
   /**
-   * Removes the terminal void event for the specified task.
+   * Removes a terminal cancellation, report, or void event using its configured
+   * JSON-LD.
    *
+   * @param type   Lifecycle event resource identifier.
    * @param taskId Target task identifier.
    */
-  public ResponseEntity<StandardApiResponse<?>> unvoidTask(String taskId) {
-    SparqlBinding voidEvent = this.lifecycleQueryService.getInstance(FileService.VOID_QUERY_RESOURCE, true, taskId);
-    if (voidEvent == null) {
-      return this.responseEntityBuilder.error(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
-    }
-    String query = this.lifecycleQueryService.getQuery(FileService.VOID_DELETE_QUERY_RESOURCE, taskId);
-    return this.updateService.update(query);
-  }
-
-  /**
-   * Removes a cancellation or report event using its configured JSON-LD.
-   *
-   * @param type   Cancellation or report resource identifier.
-   * @param taskId Target task identifier.
-   */
-  public ResponseEntity<StandardApiResponse<?>> undoCancelledOrReportedTask(String type, String taskId) {
+  public ResponseEntity<StandardApiResponse<?>> undoServiceAction(String type, String taskId) {
     LifecycleEventType eventType = LifecycleEventType.fromId(type.toLowerCase());
     if (eventType != LifecycleEventType.SERVICE_CANCELLATION
-        && eventType != LifecycleEventType.SERVICE_INCIDENT_REPORT) {
+        && eventType != LifecycleEventType.SERVICE_INCIDENT_REPORT
+        && eventType != LifecycleEventType.SERVICE_VOID) {
       throw new IllegalArgumentException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     }
 
-    String actionEvent = this.getTerminalOccurrence(taskId, eventType);
+    LifecycleEventType[] previousEventTypes = switch (eventType) {
+      case LifecycleEventType.SERVICE_CANCELLATION, LifecycleEventType.SERVICE_INCIDENT_REPORT ->
+        new LifecycleEventType[] {
+            LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+            LifecycleEventType.SERVICE_ORDER_RECEIVED
+        };
+      case LifecycleEventType.SERVICE_VOID ->
+        new LifecycleEventType[] {
+            LifecycleEventType.SERVICE_EXEMPT,
+            LifecycleEventType.SERVICE_CANCELLATION,
+            LifecycleEventType.SERVICE_INCIDENT_REPORT
+        };
+      default -> throw new IllegalArgumentException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
+    };
+    String actionEvent = this.getTerminalOccurrence(taskId, eventType, previousEventTypes);
     if (actionEvent == null) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
     }
-    String previousEvent = this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY,
-        LifecycleEventType.SERVICE_ORDER_DISPATCHED);
-    String orderEvent = this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY,
-        LifecycleEventType.SERVICE_ORDER_RECEIVED);
-    if (previousEvent == null) {
-      previousEvent = orderEvent;
-    }
-    if (previousEvent == null) {
+
+    TrackActionType trackAction = switch (eventType) {
+      case LifecycleEventType.SERVICE_CANCELLATION -> TrackActionType.CANCELLATION_REVERTED;
+      case LifecycleEventType.SERVICE_INCIDENT_REPORT -> TrackActionType.ISSUE_REPORT_REVERTED;
+      default -> TrackActionType.IGNORED;
+    };
+    String orderEvent = trackAction == TrackActionType.IGNORED
+        ? null
+        : this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    if (trackAction != TrackActionType.IGNORED && orderEvent == null) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
     }
+
     ResponseEntity<StandardApiResponse<?>> response = this.deleteService.deleteLifecycleOccurrence(
         eventType.getId(), taskId, eventType);
-    if (response.getStatusCode() == HttpStatus.OK) {
-      TrackActionType trackAction = eventType == LifecycleEventType.SERVICE_CANCELLATION
-          ? TrackActionType.CANCELLATION_REVERTED
-          : TrackActionType.ISSUE_REPORT_REVERTED;
+    if (response.getStatusCode() == HttpStatus.OK && trackAction != TrackActionType.IGNORED) {
       this.addService.logActivity(orderEvent, trackAction);
     }
     return response;
@@ -1188,14 +1191,20 @@ public class LifecycleTaskService {
   }
 
   /**
-   * Retrieves a terminal occurrence based on its event type and identifier.
+   * Retrieves a terminal occurrence based on its event type, identifier, and
+   * allowed direct predecessor types.
    *
-   * @param eventId   The identifier shared by the lifecycle event chain.
-   * @param eventType Target event type to query for.
+   * @param eventId           The identifier shared by the lifecycle event chain.
+   * @param eventType         Target event type to query for.
+   * @param previousEventTypes Allowed direct predecessor event types.
    */
-  public String getTerminalOccurrence(String eventId, LifecycleEventType eventType) {
+  public String getTerminalOccurrence(String eventId, LifecycleEventType eventType,
+      LifecycleEventType... previousEventTypes) {
+    String previousEvents = java.util.Arrays.stream(previousEventTypes)
+        .map(previousEventType -> Rdf.iri(previousEventType.getEvent()).getQueryString())
+        .collect(Collectors.joining(" "));
     SparqlBinding instance = this.lifecycleQueryService
-        .getInstance(FileService.TERMINAL_EVENT_QUERY_RESOURCE, true, eventId, eventType.getEvent());
+        .getInstance(FileService.TERMINAL_EVENT_QUERY_RESOURCE, true, eventId, eventType.getEvent(), previousEvents);
     return instance == null ? null : instance.getFieldValue(QueryResource.IRI_KEY);
   }
 }

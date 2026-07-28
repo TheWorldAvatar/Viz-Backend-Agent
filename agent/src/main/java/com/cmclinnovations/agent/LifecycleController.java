@@ -477,22 +477,14 @@ public class LifecycleController {
   }
 
   /**
-   * Removes a cancellation or report event using its configured JSON-LD.
+   * Removes a terminal cancellation, report, or void event using its configured
+   * JSON-LD.
    */
-  @DeleteMapping("/service/{type:cancel|report}/{id}")
-  public ResponseEntity<StandardApiResponse<?>> undoCancelledOrReportedTask(@PathVariable String type,
+  @DeleteMapping("/service/{type:cancel|report|void}/{id}")
+  public ResponseEntity<StandardApiResponse<?>> undoServiceAction(@PathVariable String type,
       @PathVariable String id) {
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
-        () -> this.lifecycleTaskService.undoCancelledOrReportedTask(type, id));
-  }
-
-  /**
-   * Removes the terminal void event for the specified task.
-   */
-  @DeleteMapping("/service/void/{id}")
-  public ResponseEntity<StandardApiResponse<?>> unvoidTask(@PathVariable String id) {
-    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
-        () -> this.lifecycleTaskService.unvoidTask(id));
+        () -> this.lifecycleTaskService.undoServiceAction(type, id));
   }
 
   /**

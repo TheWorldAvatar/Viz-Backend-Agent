@@ -6,7 +6,14 @@ SELECT DISTINCT ?iri
 WHERE {
   ?iri
     dc-terms:identifier "[target]" ;
-    fibo-fnd-rel-rel:exemplifies <[target]> .
+    fibo-fnd-rel-rel:exemplifies <[target]> ;
+    cmns-dt:succeeds ?previous_event .
+
+  ?previous_event fibo-fnd-rel-rel:exemplifies ?previous_event_type .
+
+  VALUES ?previous_event_type {
+    [target]
+  }
 
   FILTER NOT EXISTS {
     ?successor cmns-dt:succeeds ?iri .
