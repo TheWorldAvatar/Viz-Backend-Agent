@@ -118,8 +118,8 @@ public class VisBackendAgent {
    */
   @GetMapping("/{type}/pull")
   public ResponseEntity<StandardApiResponse<?>> pullInstances(
-      @PathVariable(name = "type") String type, @RequestParam(required = false) String parent,
-      @RequestParam(required = false) Integer cursor, @RequestParam(required = false) Integer limit,
+      @PathVariable(name = "type") String type,
+      @RequestParam Integer cursor, @RequestParam Integer limit, @RequestParam(required = false) String parent,
       @RequestParam(required = false) String timestamp) {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {

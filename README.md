@@ -34,6 +34,7 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
         - [Get the distinct field options of all instances](#get-the-distinct-field-options-of-all-instances)
         - [Get all instances associated with a specific parent instance](#get-all-instances-associated-with-a-specific-parent-instance)
         - [Get all instances matching the search criteria](#get-all-instances-matching-the-search-criteria)
+        - [Sync all instances to the latest version](#sync-all-instances-to-the-latest-version)
       - [2.5.5 Get changelog route](#255-get-changelog-route)
     - [2.6 Service Lifecycle Route](#26-service-lifecycle-route)
       - [2.6.1 Status route](#261-status-route)
@@ -457,6 +458,7 @@ There are several routes for retrieving instances associated with a specific `ty
 4. Get the distinct field options of all instances
 5. Get all instances associated with a specific parent instance
 6. Get all instances matching the search criteria
+7. Sync all instances to the latest version
 
 ##### Get all instances
 
@@ -529,6 +531,16 @@ where `{type}`is the requested identifier that must correspond to a target class
   "parameter-two": "criteria-two"
 }
 ```
+
+##### Sync all instances to the latest version
+
+Users can send a `GET` request to sync all their instances with pagination at `<baseURL>/vis-backend-agent/{type}/pull`, where `{type}`is the requested identifier that must correspond to the target class in`./resources/application-form.json`. The following parameters are available:
+
+1) `cursor`: current page index to support pagination
+2) `limit`: the maximum number of options to provide
+3) `parent`: optional parameter of the type of the parent and indicate that there is a parent; the type must correspond to the target class in`./resources/application-form.json`
+4) `timestamp`: optional parameter that will change the behavior of the endpoint to only return values changed since the timestamp
+
 
 #### 2.5.5 Get changelog route
 
@@ -954,7 +966,7 @@ This endpoint serves to allow users to create new customer accounts by sending a
 > [!IMPORTANT]  
 > Users must include a `type` in the request parameter that corresponds to the customer's custom target file name in the `./resources/application-service.json`
 
-Users can also get all customer account IDs and names by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account/filter?type={type}&search={search}` endpoint, where `{type}`is the requested identifier that must correspond to the customer's target class in`./resources/application-form.json` and `{search}` is the `search` parameter. Users may also include the `cursor` and `limit` parameter to get the pagination of the current page based on the limit.
+Users can also get all customer account IDs and names by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account/filter?type={type}&search={search}` endpoint, where `{type}`is the requested identifier that must correspond to the customer's target class in`./resources/application-form.json` and `{search}` is the `search` parameter. Users may also include the `cursor` and `limit` parameter to get the pagination of the current page based on the limit. If users wishes to perform a delta sync, they have to provide a `timestamp` parameter that will only return values changed since the timestamp. 
 
 Users can also get all customer accounts by sending a `GET` request to the `<baseURL>/vis-backend-agent/report/account?type={type}&page={page}&limit={limit}&sort_by={sortby}` endpoint, where `{type}`is the requested identifier that must correspond to the customer account's target class in`./resources/application-form.json`, `{page}` is the current page number (with 1-index), and `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting. For the query filter parameters, please read [this section](#28-filter-query-parameters).
 
