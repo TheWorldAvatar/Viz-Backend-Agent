@@ -1041,52 +1041,29 @@ public class LifecycleTaskService {
    * Removes a terminal cancellation, report, or void event using its configured
    * JSON-LD.
    *
-   * @param type   Lifecycle event resource identifier.
-   * @param taskId Target task identifier.
+   * @param taskId            Target task identifier.
+   * @param eventType         Lifecycle event type to remove.
+   * @param trackAction       History action to record.
+   * @param previousEventTypes Allowed direct predecessor event types.
    */
-  public ResponseEntity<StandardApiResponse<?>> undoServiceAction(String type, String taskId) {
-    LifecycleEventType eventType = LifecycleEventType.fromId(type.toLowerCase());
-    if (eventType != LifecycleEventType.SERVICE_CANCELLATION
-        && eventType != LifecycleEventType.SERVICE_INCIDENT_REPORT
-        && eventType != LifecycleEventType.SERVICE_VOID) {
-      throw new IllegalArgumentException(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
-    }
-
-    LifecycleEventType[] previousEventTypes = switch (eventType) {
-      case LifecycleEventType.SERVICE_CANCELLATION, LifecycleEventType.SERVICE_INCIDENT_REPORT ->
-        new LifecycleEventType[] {
-            LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-            LifecycleEventType.SERVICE_ORDER_RECEIVED
-        };
-      case LifecycleEventType.SERVICE_VOID ->
-        new LifecycleEventType[] {
-            LifecycleEventType.SERVICE_EXEMPT,
-            LifecycleEventType.SERVICE_CANCELLATION,
-            LifecycleEventType.SERVICE_INCIDENT_REPORT
-        };
-      default -> throw new IllegalArgumentException(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
-    };
+  public ResponseEntity<StandardApiResponse<?>> undoServiceAction(String taskId, LifecycleEventType eventType,
+      TrackActionType trackAction, LifecycleEventType... previousEventTypes) {
+    // Retrieve the terminal event with an allowed direct predecessor
     String actionEvent = this.getTerminalOccurrence(taskId, eventType, previousEventTypes);
     if (actionEvent == null) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
     }
 
-    TrackActionType trackAction = switch (eventType) {
-      case LifecycleEventType.SERVICE_CANCELLATION -> TrackActionType.CANCELLATION_REVERTED;
-      case LifecycleEventType.SERVICE_INCIDENT_REPORT -> TrackActionType.ISSUE_REPORT_REVERTED;
-      default -> TrackActionType.IGNORED;
-    };
+    // Retrieve the original order for history logging when required
     String orderEvent = trackAction == TrackActionType.IGNORED
-        ? null
-        : this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+        ? null : this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY, LifecycleEventType.SERVICE_ORDER_RECEIVED);
     if (trackAction != TrackActionType.IGNORED && orderEvent == null) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
     }
 
+    // Delete the terminal occurrence and log its reversal on success
     ResponseEntity<StandardApiResponse<?>> response = this.deleteService.deleteLifecycleOccurrence(
         eventType.getId(), taskId, eventType);
     if (response.getStatusCode() == HttpStatus.OK && trackAction != TrackActionType.IGNORED) {
