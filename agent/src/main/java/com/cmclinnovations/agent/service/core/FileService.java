@@ -97,6 +97,7 @@ public class FileService {
   public static final String CONTRACT_EVENT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "contract_event.sparql";
   public static final String CONTRACT_PREV_EVENT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR
       + "contract_prev_event.sparql";
+  public static final String TERMINAL_EVENT_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "terminal_event.sparql";
   public static final String CONTRACT_SCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "schedule.sparql";
   public static final String FIXED_DATE_CONTRACT_SCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR
       + "fixed_date_schedule.sparql";

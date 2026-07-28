@@ -1065,7 +1065,7 @@ public class LifecycleTaskService {
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     }
 
-    String actionEvent = this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY, eventType);
+    String actionEvent = this.getTerminalOccurrence(taskId, eventType);
     if (actionEvent == null) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
@@ -1185,5 +1185,17 @@ public class LifecycleTaskService {
     SparqlBinding instance = this.lifecycleQueryService
         .getInstance(FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, true, latestEventId, eventType.getEvent());
     return instance == null ? null : instance.getFieldValue(fieldKey);
+  }
+
+  /**
+   * Retrieves a terminal occurrence based on its event type and identifier.
+   *
+   * @param eventId   The identifier shared by the lifecycle event chain.
+   * @param eventType Target event type to query for.
+   */
+  public String getTerminalOccurrence(String eventId, LifecycleEventType eventType) {
+    SparqlBinding instance = this.lifecycleQueryService
+        .getInstance(FileService.TERMINAL_EVENT_QUERY_RESOURCE, true, eventId, eventType.getEvent());
+    return instance == null ? null : instance.getFieldValue(QueryResource.IRI_KEY);
   }
 }
