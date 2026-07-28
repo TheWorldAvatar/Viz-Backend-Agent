@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.63.0
+
+- Introduced revert status route for cancelled, reported and voided tasks
+
 ## 1.62.1
 
 - Improved performance of filtering event properties
