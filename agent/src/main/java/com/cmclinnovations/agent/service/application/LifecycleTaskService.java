@@ -1072,15 +1072,24 @@ public class LifecycleTaskService {
     }
     String previousEvent = this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY,
         LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+    String orderEvent = this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY,
+        LifecycleEventType.SERVICE_ORDER_RECEIVED);
     if (previousEvent == null) {
-      previousEvent = this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY,
-          LifecycleEventType.SERVICE_ORDER_RECEIVED);
+      previousEvent = orderEvent;
     }
     if (previousEvent == null) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
     }
-    return this.deleteService.delete(eventType.getId(), taskId, null);
+    ResponseEntity<StandardApiResponse<?>> response = this.deleteService.deleteLifecycleOccurrence(
+        eventType.getId(), taskId, eventType);
+    if (response.getStatusCode() == HttpStatus.OK) {
+      TrackActionType trackAction = eventType == LifecycleEventType.SERVICE_CANCELLATION
+          ? TrackActionType.CANCELLATION_REVERTED
+          : TrackActionType.ISSUE_REPORT_REVERTED;
+      this.addService.logActivity(orderEvent, trackAction);
+    }
+    return response;
   }
 
   /**
