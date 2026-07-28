@@ -102,7 +102,7 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, "", "", "", 0, 21);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, null, "", "", 0, 21);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -119,7 +119,8 @@ public class VisBackendAgent {
       @RequestParam(required = false) Integer cursor, @RequestParam(required = false) Integer limit) {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, "", parent, "", "", cursor, limit);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, "", parent.equals("null") ? null : parent,
+          "", "", cursor, limit);
       return this.responseEntityBuilder.success(options);
     });
   }
