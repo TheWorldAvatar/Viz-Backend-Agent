@@ -915,6 +915,23 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/se
 }
 ```
 
+> Void service tasks
+
+Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/service/void` endpoint to void a cancelled, reported, or exempted service task. Note that this route does require the following `JSON` request parameters:
+
+```json
+{
+  /* parameters */
+  "id": "The ID of the previous task",
+  "contract": "The target contract IRI",
+  "date": "Date of the task in the YYYY-MM-DD format"
+}
+```
+
+> Undo service actions
+
+Users can send a `DELETE` request to the `<baseURL>/vis-backend-agent/contracts/service/{type}/{id}` endpoint to undo a cancellation, report, or void action for a service task, where `{type}` must be `cancel`, `report`, or `void`, and `{id}` is the task's identifier. The target action must be the latest event for the task and must directly follow a supported service event.
+
 #### 2.6.6 Archive contract route
 
 The endpoint serves to archive in progress contracts as well as retrieve all contracts that have expired and are in archive.
