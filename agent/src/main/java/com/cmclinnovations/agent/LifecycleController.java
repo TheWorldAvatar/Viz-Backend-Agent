@@ -477,12 +477,53 @@ public class LifecycleController {
   }
 
   /**
-   * Removes the terminal void event for the specified task.
+   * Reverts a service action for a specific service. Valid types include:
+   * 1) cancel: Reverts a service cancellation
+   * 2) report: Reverts a service incident report
+   * 3) void: Reverts a voided service
    */
-  @DeleteMapping("/service/void/{id}")
-  public ResponseEntity<StandardApiResponse<?>> unvoidTask(@PathVariable String id) {
-    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
-        () -> this.lifecycleTaskService.unvoidTask(id));
+  @DeleteMapping("/service/{type}/{id}")
+  public ResponseEntity<StandardApiResponse<?>> undoServiceAction(@PathVariable String type,
+      @PathVariable String id) {
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE, () -> {
+      LifecycleEventType eventType;
+      TrackActionType trackAction;
+      LifecycleEventType[] previousEventTypes;
+      switch (type.toLowerCase()) {
+        case "cancel":
+          LOGGER.info("Received request to undo a service cancellation...");
+          eventType = LifecycleEventType.SERVICE_CANCELLATION;
+          trackAction = TrackActionType.CANCELLATION_REVERTED;
+          previousEventTypes = new LifecycleEventType[] {
+              LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+              LifecycleEventType.SERVICE_ORDER_RECEIVED
+          };
+          break;
+        case "report":
+          LOGGER.info("Received request to undo a service incident report...");
+          eventType = LifecycleEventType.SERVICE_INCIDENT_REPORT;
+          trackAction = TrackActionType.ISSUE_REPORT_REVERTED;
+          previousEventTypes = new LifecycleEventType[] {
+              LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+              LifecycleEventType.SERVICE_ORDER_RECEIVED
+          };
+          break;
+        case "void":
+          LOGGER.info("Received request to undo a voided service...");
+          eventType = LifecycleEventType.SERVICE_VOID;
+          trackAction = TrackActionType.IGNORED;
+          previousEventTypes = new LifecycleEventType[] {
+              LifecycleEventType.SERVICE_EXEMPT,
+              LifecycleEventType.SERVICE_CANCELLATION,
+              LifecycleEventType.SERVICE_INCIDENT_REPORT
+          };
+          break;
+        default:
+          throw new IllegalArgumentException(
+              LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
+      }
+      return this.lifecycleTaskService.undoServiceAction(id, eventType, trackAction, previousEventTypes);
+    });
   }
 
   /**

@@ -26,6 +26,7 @@ import com.cmclinnovations.agent.template.query.GetQueryTemplateFactory;
 import com.cmclinnovations.agent.template.query.SearchQueryTemplateFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
@@ -83,6 +84,30 @@ public class QueryTemplateService {
     LOGGER.debug("Generating the DELETE query with branchName = {}", branchName);
     // Retrieve the instantiation JSON schema
     ObjectNode addJsonSchema = this.getJsonLDResource(resourceID).deepCopy();
+    return this.deleteQueryTemplateFactory
+        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId, branchName, optVarNames))
+        .data();
+  }
+
+  /**
+   * Generates a DELETE SPARQL query for a lifecycle occurrence constrained by its
+   * event type.
+   *
+   * @param resourceID  The target resource identifier for the instance.
+   * @param targetId    The target instance identifier.
+   * @param branchName  The branch name to filter (can be null).
+   * @param optVarNames Set of names of optional variables.
+   * @param eventType   The lifecycle event type IRI.
+   */
+  public String genDeleteLifecycleOccurrenceQuery(String resourceID, String targetId, String branchName,
+      Set<String> optVarNames, String eventType) {
+    LOGGER.debug("Generating the lifecycle occurrence DELETE query with branchName = {}", branchName);
+    ObjectNode addJsonSchema = this.getJsonLDResource(resourceID).deepCopy();
+    JsonNode eventNode = addJsonSchema.path(LifecycleResource.EXEMPLIFIES_RELATIONS);
+    if (!eventNode.isObject()) {
+      throw new IllegalArgumentException("Lifecycle occurrence JSON-LD must define an exemplifies relation!");
+    }
+    ((ObjectNode) eventNode).put(ShaclResource.ID_KEY, eventType);
     return this.deleteQueryTemplateFactory
         .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId, branchName, optVarNames))
         .data();

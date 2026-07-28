@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.model.util.LifecycleTask;
 import com.cmclinnovations.agent.service.AddService;
+import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
@@ -50,6 +52,7 @@ import com.cmclinnovations.agent.utils.TypeCastUtils;
 public class LifecycleTaskService {
   private final AddService addService;
   final DateTimeService dateTimeService;
+  private final DeleteService deleteService;
   private final GetService getService;
   private final UpdateService updateService;
   public final LifecycleQueryService lifecycleQueryService;
@@ -73,11 +76,12 @@ public class LifecycleTaskService {
    * Constructs a new service with the following dependencies.
    * 
    */
-  public LifecycleTaskService(AddService addService, DateTimeService dateTimeService, GetService getService,
-      UpdateService updateService, LifecycleQueryService lifecycleQueryService,
+  public LifecycleTaskService(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
+      GetService getService, UpdateService updateService, LifecycleQueryService lifecycleQueryService,
       ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
+    this.deleteService = deleteService;
     this.getService = getService;
     this.updateService = updateService;
     this.lifecycleQueryService = lifecycleQueryService;
@@ -1034,18 +1038,38 @@ public class LifecycleTaskService {
   }
 
   /**
-   * Removes the terminal void event for the specified task.
+   * Removes a terminal cancellation, report, or void event using its configured
+   * JSON-LD.
    *
-   * @param taskId Target task identifier.
+   * @param taskId            Target task identifier.
+   * @param eventType         Lifecycle event type to remove.
+   * @param trackAction       History action to record.
+   * @param previousEventTypes Allowed direct predecessor event types.
    */
-  public ResponseEntity<StandardApiResponse<?>> unvoidTask(String taskId) {
-    SparqlBinding voidEvent = this.lifecycleQueryService.getInstance(FileService.VOID_QUERY_RESOURCE, true, taskId);
-    if (voidEvent == null) {
+  public ResponseEntity<StandardApiResponse<?>> undoServiceAction(String taskId, LifecycleEventType eventType,
+      TrackActionType trackAction, LifecycleEventType... previousEventTypes) {
+    // Retrieve the terminal event with an allowed direct predecessor
+    String actionEvent = this.getTerminalOccurrence(taskId, eventType, previousEventTypes);
+    if (actionEvent == null) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
     }
-    String query = this.lifecycleQueryService.getQuery(FileService.VOID_DELETE_QUERY_RESOURCE, taskId);
-    return this.updateService.update(query);
+
+    // Retrieve the original order for history logging when required
+    String orderEvent = trackAction == TrackActionType.IGNORED
+        ? null : this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    if (trackAction != TrackActionType.IGNORED && orderEvent == null) {
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
+    }
+
+    // Delete the terminal occurrence and log its reversal on success
+    ResponseEntity<StandardApiResponse<?>> response = this.deleteService.deleteLifecycleOccurrence(
+        eventType.getId(), taskId, eventType);
+    if (response.getStatusCode() == HttpStatus.OK && trackAction != TrackActionType.IGNORED) {
+      this.addService.logActivity(orderEvent, trackAction);
+    }
+    return response;
   }
 
   /**
@@ -1141,5 +1165,23 @@ public class LifecycleTaskService {
     SparqlBinding instance = this.lifecycleQueryService
         .getInstance(FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, true, latestEventId, eventType.getEvent());
     return instance == null ? null : instance.getFieldValue(fieldKey);
+  }
+
+  /**
+   * Retrieves a terminal occurrence based on its event type, identifier, and
+   * allowed direct predecessor types.
+   *
+   * @param eventId           The identifier shared by the lifecycle event chain.
+   * @param eventType         Target event type to query for.
+   * @param previousEventTypes Allowed direct predecessor event types.
+   */
+  public String getTerminalOccurrence(String eventId, LifecycleEventType eventType,
+      LifecycleEventType... previousEventTypes) {
+    String previousEvents = java.util.Arrays.stream(previousEventTypes)
+        .map(previousEventType -> Rdf.iri(previousEventType.getEvent()).getQueryString())
+        .collect(Collectors.joining(" "));
+    SparqlBinding instance = this.lifecycleQueryService
+        .getInstance(FileService.TERMINAL_EVENT_QUERY_RESOURCE, true, eventId, eventType.getEvent(), previousEvents);
+    return instance == null ? null : instance.getFieldValue(QueryResource.IRI_KEY);
   }
 }

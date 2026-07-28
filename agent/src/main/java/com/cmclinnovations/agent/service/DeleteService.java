@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
+import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.QueryResource;
@@ -53,6 +54,23 @@ public class DeleteService {
     Set<String> optVarNames = this.kgService.getSparqlOptionalParameters(resourceID);
     // Generate query with branch validation
     String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId, branchName, optVarNames);
+    return this.kgService.delete(query, targetId);
+  }
+
+  /**
+   * Delete a lifecycle occurrence associated with the target identifier and event
+   * type.
+   *
+   * @param resourceID The target resource identifier for the instance.
+   * @param targetId   The target instance identifier.
+   * @param eventType  The lifecycle event type to delete.
+   */
+  public ResponseEntity<StandardApiResponse<?>> deleteLifecycleOccurrence(String resourceID, String targetId,
+      LifecycleEventType eventType) {
+    LOGGER.debug("Deleting {} lifecycle occurrence of {}", resourceID, targetId);
+    Set<String> optVarNames = this.kgService.getSparqlOptionalParameters(resourceID);
+    String query = this.queryTemplateService.genDeleteLifecycleOccurrenceQuery(
+        resourceID, targetId, null, optVarNames, eventType.getEvent());
     return this.kgService.delete(query, targetId);
   }
 
