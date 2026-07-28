@@ -34,6 +34,7 @@ import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.model.util.LifecycleTask;
 import com.cmclinnovations.agent.service.AddService;
+import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
@@ -50,6 +51,7 @@ import com.cmclinnovations.agent.utils.TypeCastUtils;
 public class LifecycleTaskService {
   private final AddService addService;
   final DateTimeService dateTimeService;
+  private final DeleteService deleteService;
   private final GetService getService;
   private final UpdateService updateService;
   public final LifecycleQueryService lifecycleQueryService;
@@ -73,11 +75,12 @@ public class LifecycleTaskService {
    * Constructs a new service with the following dependencies.
    * 
    */
-  public LifecycleTaskService(AddService addService, DateTimeService dateTimeService, GetService getService,
-      UpdateService updateService, LifecycleQueryService lifecycleQueryService,
+  public LifecycleTaskService(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
+      GetService getService, UpdateService updateService, LifecycleQueryService lifecycleQueryService,
       ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
+    this.deleteService = deleteService;
     this.getService = getService;
     this.updateService = updateService;
     this.lifecycleQueryService = lifecycleQueryService;
@@ -1046,6 +1049,38 @@ public class LifecycleTaskService {
     }
     String query = this.lifecycleQueryService.getQuery(FileService.VOID_DELETE_QUERY_RESOURCE, taskId);
     return this.updateService.update(query);
+  }
+
+  /**
+   * Removes a cancellation or report event using its configured JSON-LD.
+   *
+   * @param type   Cancellation or report resource identifier.
+   * @param taskId Target task identifier.
+   */
+  public ResponseEntity<StandardApiResponse<?>> undoCancelledOrReportedTask(String type, String taskId) {
+    LifecycleEventType eventType = LifecycleEventType.fromId(type.toLowerCase());
+    if (eventType != LifecycleEventType.SERVICE_CANCELLATION
+        && eventType != LifecycleEventType.SERVICE_INCIDENT_REPORT) {
+      throw new IllegalArgumentException(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
+    }
+
+    String actionEvent = this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY, eventType);
+    if (actionEvent == null) {
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
+    }
+    String previousEvent = this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY,
+        LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+    if (previousEvent == null) {
+      previousEvent = this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY,
+          LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    }
+    if (previousEvent == null) {
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
+    }
+    return this.deleteService.delete(eventType.getId(), taskId, null);
   }
 
   /**
