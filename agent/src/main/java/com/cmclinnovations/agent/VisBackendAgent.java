@@ -31,6 +31,7 @@ import com.cmclinnovations.agent.service.application.GeocodingService;
 import com.cmclinnovations.agent.service.core.ChangelogService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 @RestController
@@ -105,7 +106,7 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, null, "", "", 0, 21);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, null, "", "", 0, QueryResource.PAGINATION_DEFAULT_LIMIT);
       return this.responseEntityBuilder.success(options);
     });
   }

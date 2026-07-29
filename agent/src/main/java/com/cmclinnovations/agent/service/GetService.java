@@ -282,8 +282,10 @@ public class GetService {
    */
   public List<String> getAllFilterOptionsAsStrings(String resourceID, String field, String addStatements,
       String search, Map<String, Set<String>> filters) {
-    return this.queryFilterOptions(resourceID, field, null, addStatements, "", search, 0, 21,
-        filters, field.equals(QueryResource.ID_KEY), false)
+    return this
+        .queryFilterOptions(resourceID, field, null, addStatements, "", search, 0,
+            QueryResource.PAGINATION_DEFAULT_LIMIT,
+            filters, field.equals(QueryResource.ID_KEY), false)
         .stream()
         .map(binding -> binding.getFieldValue(field))
         .toList();
@@ -299,7 +301,8 @@ public class GetService {
    */
   public List<SelectOption> getAllFilterOptions(String resourceID, String search, Map<String, Set<String>> filters) {
     return this
-        .queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, null, "", "", search, 0, 21, filters, false, true)
+        .queryFilterOptions(resourceID, ShaclResource.NAME_PROPERTY, null, "", "", search, 0,
+            QueryResource.PAGINATION_DEFAULT_LIMIT, filters, false, true)
         .stream()
         .map(binding -> new SelectOption(binding.getFieldValue(ShaclResource.NAME_PROPERTY),
             binding.getFieldValue(QueryResource.IRI_KEY), ""))

@@ -104,7 +104,7 @@ public class ReportingController {
       List<SelectOption> options = this.getService.getAllFilterOptions(type, search, null,
           BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT + deltaFilterClause, BillingResource.FLAG_KEY,
           cursor != null ? cursor : 0,
-          limit != null ? limit : 21);
+          limit != null ? limit : QueryResource.PAGINATION_DEFAULT_LIMIT);
       return this.responseEntityBuilder.success(options);
     });
   }
