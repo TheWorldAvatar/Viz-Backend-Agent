@@ -990,7 +990,7 @@ Users can also get all customer accounts by sending a `GET` request to the `<bas
 > [!TIP]  
 > `sort_by` accepts a comma-separated string of field names, each prefixed by a direction indicator (+ or -). `+` indicates ascending order, while `-` indicates descending order. Example: `+name,-id`
 
-Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/report/account/flag` endpoint to flag or resolve a flag for the account. The request body must contain the customer account id that is specified within the `id` key.
+Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/report/account/flag` endpoint to flag or resolve a flag for the account. The request body must contain the customer account id that is specified within the `id` key and the type of account as `type` key.
 
 Users can send a `POST` request to the `<baseURL>/vis-backend-agent/report/account/price` endpoint to create a new pricing model and assign it to the specified account. This endpoint is an extension to the [add instance endpoint](#251-add-route), which requires users to send request parameters for creating a custom pricing model based on their `JSON-LD` file. The endpoint will generate a pricing model and assign it to the corresponding customer account id via the `account` parameter. Please read the [pricing model section](./resources/README.md#115-lifecycle-specific-feature) for sample usage
 

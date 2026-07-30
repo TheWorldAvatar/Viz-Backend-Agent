@@ -16,12 +16,14 @@ import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.SparqlResponseField;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.InvoiceLine;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
+import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.utils.BillingResource;
@@ -35,6 +37,7 @@ import com.cmclinnovations.agent.utils.TypeCastUtils;
 @Service
 public class BillingService {
   private final AddService addService;
+  private final GetService getService;
   private final UpdateService updateService;
   private final LifecycleQueryService lifecycleQueryService;
   private final LifecycleTaskService lifecycleTaskService;
@@ -44,9 +47,10 @@ public class BillingService {
   /**
    * Constructs a new service with the following dependencies.
    */
-  public BillingService(AddService addService, UpdateService updateService, LifecycleQueryService lifecycleQueryService,
-      LifecycleTaskService lifecycleTaskService) {
+  public BillingService(AddService addService, GetService getService, UpdateService updateService,
+      LifecycleQueryService lifecycleQueryService, LifecycleTaskService lifecycleTaskService) {
     this.addService = addService;
+    this.getService = getService;
     this.updateService = updateService;
     this.lifecycleQueryService = lifecycleQueryService;
     this.lifecycleTaskService = lifecycleTaskService;
@@ -74,15 +78,26 @@ public class BillingService {
   /**
    * Updates the account flag.
    * 
-   * @param id The identifier for the target customer account instance.
+   * @param id          The identifier for the target customer account instance.
+   * @param accountType The type of the account.
    */
-  public ResponseEntity<StandardApiResponse<?>> updateAccountFlag(String id) {
-    String flag = this.lifecycleQueryService.getInstance(FileService.ACCOUNT_FLAG_QUERY_RESOURCE, id)
-        .getFieldValue(BillingResource.FLAG_KEY);
+  public ResponseEntity<StandardApiResponse<?>> updateAccountFlag(String id, String accountType) {
+    SparqlBinding account = this.lifecycleQueryService.getInstance(FileService.ACCOUNT_FLAG_QUERY_RESOURCE, id);
+    String flag = account.getFieldValue(BillingResource.FLAG_KEY);
     boolean isFlag = Boolean.parseBoolean(flag);
     LOGGER.info("Flag for customer account is currently: {}", isFlag);
     String query = BillingResource.getBalanceUpdateQuery(id, isFlag);
-    return this.updateService.update(query);
+    ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(query);
+    if (response.getStatusCode() == HttpStatus.OK) {
+      ResponseEntity<StandardApiResponse<?>> instanceResponse = this.getService.getInstance(id, accountType, false);
+      if (instanceResponse.getStatusCode() == HttpStatus.OK) {
+        Map<String, Object> accountInstance = (Map<String, Object>) instanceResponse.getBody().data().items().get(0);
+        String iri = ((SparqlResponseField) accountInstance.get(QueryResource.IRI_KEY)).value();
+        this.addService.logActivity(iri,
+            isFlag ? TrackActionType.ACCOUNT_UNFLAG : TrackActionType.ACCOUNT_FLAG);
+      }
+    }
+    return response;
   }
 
   /**

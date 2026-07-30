@@ -227,7 +227,8 @@ public class ReportingController {
     LOGGER.info("Received request to update the account flag...");
     return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
       String accountId = params.get(QueryResource.ID_KEY);
-      return this.billingService.updateAccountFlag(accountId);
+      String accountType = params.get(StringResource.TYPE_REQUEST_PARAM);
+      return this.billingService.updateAccountFlag(accountId, accountType);
     });
   }
 

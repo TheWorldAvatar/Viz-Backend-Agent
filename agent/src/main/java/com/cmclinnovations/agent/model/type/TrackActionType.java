@@ -26,6 +26,8 @@ public enum TrackActionType {
   ADJUSTMENT_PRICING("https://theworldavatar.io/kg/ontochangelog/PricingAdjustmentActivity",
       "label.activity.adjust.price"),
   EXEMPT("https://theworldavatar.io/kg/ontochangelog/ExemptionActivity", "label.activity.exempt"),
+  ACCOUNT_FLAG("https://theworldavatar.io/kg/ontochangelog/AccountFlagActivity", "label.activity.flag"),
+  ACCOUNT_UNFLAG("https://theworldavatar.io/kg/ontochangelog/AccountUnflagActivity", "label.activity.unflag"),
   IGNORED("", "");
 
   private final String clazz;
