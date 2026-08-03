@@ -28,15 +28,9 @@ public class ScheduledTasks {
   }
 
   @Scheduled(cron = "0 0 0 * * *")
-  public void dischargeExpiredContracts() {
-    LOGGER.info("Discharging the active contracts that have expired today...");
-    this.lifecycleContractService.dischargeExpiredContracts();
-    LOGGER.info("Scheduled task for service discharge has been completed successfully!");
-  }
-
-  @Scheduled(cron = "0 0 0 * * *")
   public void runDaily() {
     this.genOrderActiveContracts();
+    this.dischargeExpiredContracts();
   }
 
   private void genOrderActiveContracts() {
@@ -46,5 +40,11 @@ public class ScheduledTasks {
     } finally {
       SecurityContextHolder.clearContext();
     }
+  }
+
+  private void dischargeExpiredContracts() {
+    LOGGER.info("Discharging the active contracts that have expired today...");
+    this.lifecycleContractService.dischargeExpiredContracts();
+    LOGGER.info("Scheduled task for service discharge has been completed successfully!");
   }
 }
