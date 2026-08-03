@@ -3,6 +3,8 @@ package com.cmclinnovations.agent.schedule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -29,8 +31,17 @@ public class ScheduledTasks {
 
   @Scheduled(cron = "0 0 0 * * *")
   public void runDaily() {
-    this.genOrderActiveContracts();
-    this.dischargeExpiredContracts();
+    try {
+      this.genOrderActiveContracts();
+    } catch (Exception e) {
+      LOGGER.error("Failed to generate new active tasks in daily cron job", e);
+    }
+
+    try {
+      this.dischargeExpiredContracts();
+    } catch (Exception e) {
+      LOGGER.error("Failed to discharge expired contracts in daily cron job", e);
+    }
   }
 
   private void genOrderActiveContracts() {
