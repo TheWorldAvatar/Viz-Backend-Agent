@@ -26,6 +26,7 @@ import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.application.BillingService;
+import com.cmclinnovations.agent.service.core.ChangelogService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
@@ -35,6 +36,7 @@ import com.cmclinnovations.agent.utils.StringResource;
 @RestController
 @RequestMapping("/report")
 public class ReportingController {
+  private final ChangelogService changelogService;
   private final ConcurrencyService concurrencyService;
   private final ResponseEntityBuilder responseEntityBuilder;
   private final GetService getService;
@@ -42,8 +44,9 @@ public class ReportingController {
 
   private static final Logger LOGGER = LogManager.getLogger(ReportingController.class);
 
-  public ReportingController(ConcurrencyService concurrencyService, ResponseEntityBuilder responseEntityBuilder,
-      GetService getService, BillingService billingService) {
+  public ReportingController(ChangelogService changelogService, ConcurrencyService concurrencyService,
+      ResponseEntityBuilder responseEntityBuilder, GetService getService, BillingService billingService) {
+    this.changelogService = changelogService;
     this.concurrencyService = concurrencyService;
     this.responseEntityBuilder = responseEntityBuilder;
     this.billingService = billingService;
@@ -91,11 +94,17 @@ public class ReportingController {
    */
   @GetMapping("/account/filter")
   public ResponseEntity<StandardApiResponse<?>> getAccountFilters(@RequestParam String type,
-      @RequestParam String search) {
+      @RequestParam String search, @RequestParam(required = false) Integer cursor,
+      @RequestParam(required = false) Integer limit,
+      @RequestParam(required = false) String timestamp) {
     LOGGER.info("Received request to get the customer accounts...");
     return this.concurrencyService.executeInOptimisticReadLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, search,
-          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT, BillingResource.FLAG_KEY);
+      String deltaFilterClause = this.changelogService.buildDeltaFilterQuery(timestamp);
+
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, null,
+          BillingResource.ACCOUNT_FLAG_QUERY_STATEMENT + deltaFilterClause, BillingResource.FLAG_KEY,
+          cursor != null ? cursor : 0,
+          limit != null ? limit : QueryResource.PAGINATION_DEFAULT_LIMIT);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -218,7 +227,8 @@ public class ReportingController {
     LOGGER.info("Received request to update the account flag...");
     return this.concurrencyService.executeInWriteLock(BillingResource.CUSTOMER_ACCOUNT_RESOURCE, () -> {
       String accountId = params.get(QueryResource.ID_KEY);
-      return this.billingService.updateAccountFlag(accountId);
+      String accountType = params.get(StringResource.TYPE_REQUEST_PARAM);
+      return this.billingService.updateAccountFlag(accountId, accountType);
     });
   }
 

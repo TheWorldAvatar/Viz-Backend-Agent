@@ -28,14 +28,17 @@ import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.application.GeocodingService;
+import com.cmclinnovations.agent.service.core.ChangelogService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 @RestController
 public class VisBackendAgent {
   private final ConcurrencyService concurrencyService;
   private final AddService addService;
+  private final ChangelogService changelogService;
   private final DeleteService deleteService;
   private final GetService getService;
   private final GeocodingService geocodingService;
@@ -44,11 +47,12 @@ public class VisBackendAgent {
 
   private static final Logger LOGGER = LogManager.getLogger(VisBackendAgent.class);
 
-  public VisBackendAgent(ConcurrencyService concurrencyService, AddService addService, DeleteService deleteService,
-      GetService getService,
+  public VisBackendAgent(ConcurrencyService concurrencyService, AddService addService,
+      ChangelogService changelogService, DeleteService deleteService, GetService getService,
       GeocodingService geocodingService, UpdateService updateService, ResponseEntityBuilder responseEntityBuilder) {
     this.concurrencyService = concurrencyService;
     this.addService = addService;
+    this.changelogService = changelogService;
     this.deleteService = deleteService;
     this.getService = getService;
     this.geocodingService = geocodingService;
@@ -102,7 +106,27 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, "", "");
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, null, "", "", 0, QueryResource.PAGINATION_DEFAULT_LIMIT);
+      return this.responseEntityBuilder.success(options);
+    });
+  }
+
+  /**
+   * Unified sync route to get instances belonging to the specified type.
+   * Performs a paginated full refresh if no timestamp is provided,
+   * or fetches only incremental changes when a last-sync
+   * timestamp is present.
+   */
+  @GetMapping("/{type}/pull")
+  public ResponseEntity<StandardApiResponse<?>> pullInstances(
+      @PathVariable(name = "type") String type,
+      @RequestParam Integer cursor, @RequestParam Integer limit, @RequestParam(required = false) String parent,
+      @RequestParam(required = false) String timestamp) {
+    LOGGER.info("Received request to get all instances for {}...", type);
+    return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
+      String deltaFilterClause = this.changelogService.buildDeltaFilterQuery(timestamp);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, "", parent.equals("null") ? null : parent,
+          deltaFilterClause, "", cursor, limit);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -272,7 +296,7 @@ public class VisBackendAgent {
       if (errorMsg.isEmpty()) {
         return this.deleteService.delete(type, id, branchDelete);
       } else {
-         return this.responseEntityBuilder.error(errorMsg, HttpStatus.BAD_REQUEST);
+        return this.responseEntityBuilder.error(errorMsg, HttpStatus.BAD_REQUEST);
       }
     });
   }

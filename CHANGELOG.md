@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.64.0
+
+- Added a new route to support sync of instances into the client side
+- Extended account filters to work as a sync endpoint for customer account instances in the client side
+
 ## 1.63.0
 
 - Introduced revert status route for cancelled, reported and voided tasks

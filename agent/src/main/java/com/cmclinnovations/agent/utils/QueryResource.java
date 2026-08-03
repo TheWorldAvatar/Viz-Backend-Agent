@@ -123,6 +123,7 @@ public class QueryResource {
     public static final String FIXED_DATE_SCHEDULE_DATE_KEY = "schedule entry date";
     public static final String DISABLE_TRACKING_KEY = "disableTracking";
     public static final String DEPENDENT_KEY = "dependent";
+    public static final int PAGINATION_DEFAULT_LIMIT = 21;
 
     public static final String LITERAL_TYPE = "literal";
     public static final String URI_TYPE = "uri";

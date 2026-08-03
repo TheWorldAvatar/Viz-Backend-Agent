@@ -154,6 +154,18 @@ public class DateTimeService {
   }
 
   /**
+   * Retrieve the date time as a string in the YYYY-MM-DD format from the
+   * timestamp input.
+   * 
+   * @param timestamp The timestamp input in UNIX seconds.
+   */
+  public String getDateTimeFromTimestamp(String timestamp) {
+    long parsedTimestamp = Long.parseLong(timestamp);
+    return Instant.ofEpochSecond(parsedTimestamp)
+        .toString();
+  }
+
+  /**
    * Retrieve the timestamp as a date time string at start of day.
    * 
    * @param date The input in YYYY-MM-DD format.
@@ -230,7 +242,8 @@ public class DateTimeService {
             LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CHRONOLOGY_KEY));
       }
       // Users can only view upcoming scheduled tasks after today
-      // This has been relaxed to today or future date to allow for user in a later time zone
+      // This has been relaxed to today or future date to allow for user in a later
+      // time zone
       if (!isClosed && !this.isTodayOrFutureDate(startDate)) {
         throw new IllegalArgumentException(
             LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_SCHEDULED_PRESENT_KEY));

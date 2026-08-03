@@ -16,3 +16,5 @@ ocl:RescheduleActivity rdfs:subClassOf ocl:Activity.
 ocl:AccrualActivity rdfs:subClassOf ocl:Activity.
 ocl:PricingAdjustmentActivity rdfs:subClassOf ocl:Activity.
 ocl:ExemptionActivity rdfs:subClassOf ocl:Activity.
+ocl:AccountFlagActivity rdfs:subClassOf ocl:Activity.
+ocl:AccountUnflagActivity rdfs:subClassOf ocl:Activity.
