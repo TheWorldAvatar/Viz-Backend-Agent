@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.64.1
+
+- Fixed scheduled tasks not working when authentication is enabled due to missing credentials
+- Consolidate scheduled tasks
+
 ## 1.64.0
 
 - Added a new route to support sync of instances into the client side

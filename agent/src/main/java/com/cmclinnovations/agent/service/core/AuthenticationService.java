@@ -1,9 +1,13 @@
 package com.cmclinnovations.agent.service.core;
 
+import java.time.Instant;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.core.env.Environment;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -15,6 +19,8 @@ import com.cmclinnovations.agent.utils.StringResource;
 @Service
 public class AuthenticationService {
   private final Environment environment;
+  private static final String SYSTEM_ID = "system-cron-job";
+  private static final String SYSTEM_NAME = "System";
 
   /**
    * Constructs a new service.
@@ -29,6 +35,26 @@ public class AuthenticationService {
   public boolean isAuthenticationEnabled() {
     String value = environment.getProperty("keycloak.issuer.uri");
     return value != null && !value.trim().isEmpty();
+  }
+
+  /**
+   * Creates an internal authentication token to bypass keycloak for internal
+   * tasks.
+   */
+  public void setInternalAuthentication() {
+    if (this.isAuthenticationEnabled()) {
+      Jwt systemJwt = new Jwt(
+          "mock-system-token-value",
+          Instant.now(),
+          Instant.now().plusSeconds(3600),
+          Map.of("alg", "none"),
+          Map.of("sub", SYSTEM_ID, "name", SYSTEM_NAME));
+
+      UsernamePasswordAuthenticationToken systemAuth = new UsernamePasswordAuthenticationToken(systemJwt, null,
+          Collections.emptyList());
+
+      SecurityContextHolder.getContext().setAuthentication(systemAuth);
+    }
   }
 
   /**
