@@ -76,6 +76,7 @@ public class PaginationState {
      */
     private Queue<SortDirective> parseSortDirectives(String sortBy, Boolean isContract) {
         // REGEX will match two groups per sort directive in the url
+        Set<String> parsedFields = new HashSet<>();
         return SORT_PARAM_PATTERN.matcher(sortBy)
                 .results()
                 .map(match -> {
@@ -98,6 +99,8 @@ public class PaginationState {
                     }
                     return new SortDirective(fieldVar, orderCondition);
                 })
+                // Keep the first direction when callers append an existing tie-breaker.
+                .filter(directive -> parsedFields.add(directive.field().getVarName()))
                 .collect(Collectors.toCollection(ArrayDeque::new));
     }
 }
