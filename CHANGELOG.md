@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.64.2
+
+- Fixed duplicate keys in sorting
+
 ## 1.64.1
 
 - Fixed scheduled tasks not working when authentication is enabled due to missing credentials
