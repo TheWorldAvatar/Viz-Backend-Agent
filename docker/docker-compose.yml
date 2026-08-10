@@ -3,7 +3,7 @@ version: "3.9"
 services:
   agent:
     container_name: vis-backend-agent
-    image: ghcr.io/theworldavatar/vis-backend-agent:1.64.2
+    image: ghcr.io/theworldavatar/vis-backend-agent:1.64.3-query-event-array-property-SNAPSHOT
     build:
       context: ..
       target: agent
