@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.64.3
+
+- Fixed query of array properties of events
+
 ## 1.64.2
 
 - Fixed duplicate keys in sorting
