@@ -40,6 +40,7 @@ import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.service.core.FileService;
+import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.template.LifecycleQueryFactory;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
@@ -54,6 +55,7 @@ public class LifecycleTaskService {
   final DateTimeService dateTimeService;
   private final DeleteService deleteService;
   private final GetService getService;
+  private final KGService kgService;
   private final UpdateService updateService;
   public final LifecycleQueryService lifecycleQueryService;
   private final ResponseEntityBuilder responseEntityBuilder;
@@ -77,12 +79,13 @@ public class LifecycleTaskService {
    * 
    */
   public LifecycleTaskService(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
-      GetService getService, UpdateService updateService, LifecycleQueryService lifecycleQueryService,
-      ResponseEntityBuilder responseEntityBuilder) {
+      GetService getService, KGService kgService, UpdateService updateService,
+      LifecycleQueryService lifecycleQueryService, ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.dateTimeService = dateTimeService;
     this.deleteService = deleteService;
     this.getService = getService;
+    this.kgService = kgService;
     this.updateService = updateService;
     this.lifecycleQueryService = lifecycleQueryService;
     this.responseEntityBuilder = responseEntityBuilder;
@@ -689,6 +692,23 @@ public class LifecycleTaskService {
       eventIds.offer("<" + eventId + ">");
     }
     Set<ColumnMetaPayload> varSequences = new LinkedHashSet<>(this.taskColumnMeta);
+    String occurrenceQueryString = this.genOccurrenceEventQuery(varSequences, eventIds, eventType,
+        lifecycleStatements[2]);
+
+    // Keep each array parent linked to the child fields selected by the occurrence query.
+    Map<String, Set<String>> occurrenceArrayVariables = new HashMap<>();
+    // Inspect every column returned by the occurrence shapes.
+    varSequences.stream()
+        // Process only columns that represent arrays.
+        .filter(column -> column.type().equals(ShaclResource.ARRAY_KEY))
+        .forEach(column -> {
+          // Use the parent itself for simple arrays, or extract each nested child field.
+          Set<String> arrayFields = column.arrayFields() == null
+              ? Set.of(column.value())
+              : column.arrayFields().stream().map(ColumnMetaPayload::value).collect(Collectors.toSet());
+          // Merge child fields when multiple shapes contribute to the same array parent.
+          occurrenceArrayVariables.computeIfAbsent(column.value(), key -> new HashSet<>()).addAll(arrayFields);
+        });
 
     // Execute primary entity and event queries in parallel
     List<DataManifest<Queue<SparqlBinding>>> parallelResults = ParallelTaskExecutor.execParallelQueries(
@@ -697,9 +717,8 @@ public class LifecycleTaskService {
             new ArrayList<>(this.taskEntityColumnMeta)),
         // Query for event
         () -> {
-          String occurrenceQueryString = this.genOccurrenceEventQuery(varSequences, eventIds, eventType,
-              lifecycleStatements[2]);
           Queue<SparqlBinding> instances = this.getService.getInstances(occurrenceQueryString);
+          instances = this.kgService.combineBindingQueue(instances, occurrenceArrayVariables);
           return new DataManifest<>(instances, new ArrayList<>());
         });
 
@@ -759,6 +778,13 @@ public class LifecycleTaskService {
       if (column.value().equals(LifecycleResource.STATUS_KEY)) {
         query.select(QueryResource.genVariable(LifecycleResource.EVENT_KEY));
         query.select(QueryResource.EVENT_STATUS_VAR);
+      } else if (column.type().equals(ShaclResource.ARRAY_KEY)) {
+        LOGGER.info("Detected array field in occurrence event query: {}", column.value());
+        if (column.arrayFields() == null) {
+          query.select(QueryResource.genVariable(column.value()));
+        } else {
+          column.arrayFields().forEach(arrayField -> query.select(QueryResource.genVariable(arrayField.value())));
+        }
       } else {
         query.select(QueryResource.genVariable(column.value()));
       }
