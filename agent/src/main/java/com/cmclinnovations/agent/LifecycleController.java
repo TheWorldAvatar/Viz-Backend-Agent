@@ -4,6 +4,7 @@ import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
+import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.function.ContractOperation;
 import com.cmclinnovations.agent.model.pagination.PaginationState;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
@@ -37,6 +39,7 @@ import com.cmclinnovations.agent.service.application.LifecycleContractService;
 import com.cmclinnovations.agent.service.application.LifecycleTaskService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
+import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
@@ -53,6 +56,7 @@ public class LifecycleController {
   private final DeleteService deleteService;
   private final UpdateService updateService;
   private final DateTimeService dateTimeService;
+  private final FileService fileService;
   private final BillingService billingService;
   private final LifecycleContractService lifecycleContractService;
   private final LifecycleTaskService lifecycleTaskService;
@@ -62,7 +66,7 @@ public class LifecycleController {
 
   public LifecycleController(ConcurrencyService concurrencyService, AddService addService, GetService getService,
       DeleteService deleteService, UpdateService updateService, DateTimeService dateTimeService,
-      BillingService billingService, LifecycleContractService lifecycleContractService,
+      FileService fileService, BillingService billingService, LifecycleContractService lifecycleContractService,
       LifecycleTaskService lifecycleTaskService, ResponseEntityBuilder responseEntityBuilder) {
     this.concurrencyService = concurrencyService;
     this.addService = addService;
@@ -70,6 +74,7 @@ public class LifecycleController {
     this.deleteService = deleteService;
     this.updateService = updateService;
     this.dateTimeService = dateTimeService;
+    this.fileService = fileService;
     this.billingService = billingService;
     this.lifecycleContractService = lifecycleContractService;
     this.lifecycleTaskService = lifecycleTaskService;
@@ -262,7 +267,7 @@ public class LifecycleController {
         // the details
         contractDetails.putAll(schedule);
 
-        this.inferAndSetBranch(contractDetails);
+        this.inferAndSetBranch(contractId, contractDetails);
 
         for (int i = 0; i < reqCopies; i++) {
           // need new copy because there are side effects
@@ -292,40 +297,26 @@ public class LifecycleController {
   }
 
   /**
-   * Infer the branch name used for this job based on the presence of
-   * branch-specific fields and add it to the contract details.
+   * Infer the contract branch using an optional deployment-specific query and add
+   * it to the contract details. The query must return at most one row containing
+   * a {@code ?branch_name} variable.
    * 
-   * TODO: Future improvement - This method uses hardcoded field checks to
-   * determine
-   * branch names. Consider implementing a more flexible solution that:
-   * 1. Reads branch definitions from SHACL configuration
-   * 2. Uses branch-specific field patterns from application-form.json
-   * 3. Dynamically maps service types to branch names
-   * 
+   * @param contractId      Identifier of the source contract.
    * @param contractDetails The contract data retrieved from the knowledge graph.
-   *                        This map will be modified to include "branch_add" key
-   *                        if a branch is detected.
+   *                        This map will be modified to include "branch_add".
    */
-  private void inferAndSetBranch(Map<String, Object> contractDetails) {
-    String branchName = null;
-
-    Object wasteCategory = contractDetails.get("waste_category");
-    Object binType = contractDetails.get("bin_type");
-    Object bin = contractDetails.get("bin");
-    Object truck = contractDetails.get("truck");
-
-    if (wasteCategory != null && !wasteCategory.toString().isEmpty()) {
-      if (binType != null && !binType.toString().isEmpty()) {
-        branchName = "Waste Collection Service";
-      } else {
-        branchName = "Direct Disposal Service";
+  private void inferAndSetBranch(String contractId, Map<String, Object> contractDetails) {
+    String branchName = "";
+    if (this.fileService.resourceExists(FileService.INFER_CONTRACT_BRANCH_QUERY_RESOURCE)) {
+      String query = this.fileService.getContentsWithReplacement(
+          FileService.INFER_CONTRACT_BRANCH_QUERY_RESOURCE, contractId);
+      Queue<SparqlBinding> results = this.getService.getInstances(query);
+      if (results.size() != 1) {
+        throw new IllegalStateException("Contract branch query must return a single result!");
       }
-    } else if (bin != null && !bin.toString().isEmpty()) {
-      branchName = "Bin Handling Service";
-    } else if (truck != null && !truck.toString().isEmpty()) {
-      branchName = "Vehicle Maintenance and Operations Service";
-    } else {
-      branchName = "Delivery Service";
+      if (!results.isEmpty()) {
+        branchName = results.poll().getFieldValue(QueryResource.BRANCH_NAME_KEY, "");
+      }
     }
 
     contractDetails.put(QueryResource.ADD_BRANCH_KEY, branchName);
