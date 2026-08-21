@@ -117,7 +117,7 @@ To clone contracts that utilise branching, users must provide an `./resources/br
 1. It must include a `[target]` placeholder for the source contract ID.
 2. It must return a single result containing the `?branch_name` variable.
 
-This file is optional for deployments that do not clone contracts with branching. If the file does not exist, the inferred branch name will default to an empty string.
+This file is optional for deployments that do not clone contracts with branching. If the file does not exist, the inferred branch name will be `null`.
 
 **GEOCODING ENDPOINT**
 
