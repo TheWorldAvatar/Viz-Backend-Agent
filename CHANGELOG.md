@@ -1,5 +1,9 @@
 # Change Log
 
+# 1.64.4
+
+- Substituted hard-coded branch inference logic with custom SPARQL query
+
 ## 1.64.3
 
 - Fixed query of array properties of events

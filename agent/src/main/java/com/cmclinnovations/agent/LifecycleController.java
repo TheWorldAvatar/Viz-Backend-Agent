@@ -262,7 +262,11 @@ public class LifecycleController {
         // the details
         contractDetails.putAll(schedule);
 
-        this.inferAndSetBranch(contractDetails);
+        String branchName = this.lifecycleContractService.inferContractBranch(contractId);
+        if (branchName != null) {
+          contractDetails.put(QueryResource.ADD_BRANCH_KEY, branchName);
+          LOGGER.info("Set branch to: {}", branchName);
+        }
 
         for (int i = 0; i < reqCopies; i++) {
           // need new copy because there are side effects
@@ -289,47 +293,6 @@ public class LifecycleController {
     draftDetails.put(QueryResource.ID_KEY, contractDetails.get(QueryResource.ID_KEY));
     draftDetails.put(LifecycleResource.CONTRACT_KEY, response.data().id());
     this.execGenContractLifecycle(draftDetails);
-  }
-
-  /**
-   * Infer the branch name used for this job based on the presence of
-   * branch-specific fields and add it to the contract details.
-   * 
-   * TODO: Future improvement - This method uses hardcoded field checks to
-   * determine
-   * branch names. Consider implementing a more flexible solution that:
-   * 1. Reads branch definitions from SHACL configuration
-   * 2. Uses branch-specific field patterns from application-form.json
-   * 3. Dynamically maps service types to branch names
-   * 
-   * @param contractDetails The contract data retrieved from the knowledge graph.
-   *                        This map will be modified to include "branch_add" key
-   *                        if a branch is detected.
-   */
-  private void inferAndSetBranch(Map<String, Object> contractDetails) {
-    String branchName = null;
-
-    Object wasteCategory = contractDetails.get("waste_category");
-    Object binType = contractDetails.get("bin_type");
-    Object bin = contractDetails.get("bin");
-    Object truck = contractDetails.get("truck");
-
-    if (wasteCategory != null && !wasteCategory.toString().isEmpty()) {
-      if (binType != null && !binType.toString().isEmpty()) {
-        branchName = "Waste Collection Service";
-      } else {
-        branchName = "Direct Disposal Service";
-      }
-    } else if (bin != null && !bin.toString().isEmpty()) {
-      branchName = "Bin Handling Service";
-    } else if (truck != null && !truck.toString().isEmpty()) {
-      branchName = "Vehicle Maintenance and Operations Service";
-    } else {
-      branchName = "Delivery Service";
-    }
-
-    contractDetails.put(QueryResource.ADD_BRANCH_KEY, branchName);
-    LOGGER.info("Set branch to: {}", branchName);
   }
 
   /**
@@ -733,7 +696,8 @@ public class LifecycleController {
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE,
-        () -> this.lifecycleTaskService.getOccurrences(null, endTimestamp, type, LifecycleEventType.SERVICE_ORDER_RECEIVED,
+        () -> this.lifecycleTaskService.getOccurrences(null, endTimestamp, type,
+            LifecycleEventType.SERVICE_ORDER_RECEIVED,
             new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false,
                 allRequestParams),
             allRequestParams));

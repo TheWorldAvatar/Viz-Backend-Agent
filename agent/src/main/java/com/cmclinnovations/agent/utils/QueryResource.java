@@ -117,6 +117,7 @@ public class QueryResource {
     public static final Variable LATEST_DATE_VAR = QueryResource.genVariable("latest_date");
 
     public static final String ADD_BRANCH_KEY = "branch_add";
+    public static final String BRANCH_NAME_KEY = "branch_name";
     public static final String DELETE_BRANCH_KEY = "branch_delete";
     public static final String FIXED_DATE_DATE_KEY = "entry_date";
     public static final String FIXED_DATE_SCHEDULE_KEY = "schedule entry";
