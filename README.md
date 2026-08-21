@@ -110,6 +110,15 @@ The agent will require at least two files in order to function as a `REST` endpo
 1. `./resources/application-service.json`: A file mapping the resource identifier to the target file name in (2)
 2. At least one `JSON-LD` file at `./resources/jsonld/example.jsonld`: This file provides a structure for the instance that must be instantiated and will follow the schemas defined in [this section](./resources/README.md#21-instantiation). Each file should correspond to one type of instance, and the resource ID defined in (1) must correspond to the respective file in order to function. For any lifecycle related functionalities, please also included the following `JSON-LD` files as stated in [this section](./resources/README.md#213-service-lifecycle).
 
+**CONTRACT BRANCH INFERENCE**
+
+To clone contracts that utilise branching, users must provide an `./resources/branch/infer-contract-branch.sparql` file containing their deployment-specific branch inference logic. The query must follow the constraints below:
+
+1. It must include a `[target]` placeholder for the source contract ID.
+2. It must return a single result containing the `?branch_name` variable.
+
+This file is optional for deployments that do not clone contracts with branching. If the file does not exist, the inferred branch name will default to an empty string.
+
 **GEOCODING ENDPOINT**
 
 Users must add a geocoding endpoint to the `geocode` resource identifier at `./resources/application-service.json`. This geocoding endpoint is expected to be a `SPARQL` compliant endpoint with geocoding data instantiated. For more details about the ontologies and restrictions involved, please read [section 4.2](./resources/README.md#22-geocoding).
@@ -656,6 +665,8 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/dr
   "recurrence": "Number of copies required. If an array is given in the id, all selected contracts will be copied according to the number",
 }
 ```
+
+For contracts that utilise branching, the agent will execute the deployment-specific `./resources/branch/infer-contract-branch.sparql` query once for each source contract before creating the requested copies. The `[target]` placeholder will be replaced with the source contract ID, and the value returned for `?branch_name` will be used as the `branch_add` value for each copy. If no query is provided, contracts using a branching `JSON-LD` template cannot be cloned.
 
 #### 2.6.3 Schedule route
 
