@@ -263,8 +263,10 @@ public class LifecycleController {
         contractDetails.putAll(schedule);
 
         String branchName = this.lifecycleContractService.inferContractBranch(contractId);
-        contractDetails.put(QueryResource.ADD_BRANCH_KEY, branchName);
-        LOGGER.info("Set branch to: {}", branchName);
+        if (branchName != null) {
+          contractDetails.put(QueryResource.ADD_BRANCH_KEY, branchName);
+          LOGGER.info("Set branch to: {}", branchName);
+        }
 
         for (int i = 0; i < reqCopies; i++) {
           // need new copy because there are side effects
@@ -694,7 +696,8 @@ public class LifecycleController {
     String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
     allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE,
-        () -> this.lifecycleTaskService.getOccurrences(null, endTimestamp, type, LifecycleEventType.SERVICE_ORDER_RECEIVED,
+        () -> this.lifecycleTaskService.getOccurrences(null, endTimestamp, type,
+            LifecycleEventType.SERVICE_ORDER_RECEIVED,
             new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false,
                 allRequestParams),
             allRequestParams));
