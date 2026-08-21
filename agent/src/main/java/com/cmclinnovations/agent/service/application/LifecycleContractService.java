@@ -170,6 +170,16 @@ public class LifecycleContractService {
   }
 
   /**
+   * Infer the contract branch using an optional deployment-specific query.
+   *
+   * @param contractId Identifier of the source contract.
+   * @return The inferred branch name, or an empty string if no query exists.
+   */
+  public String inferContractBranch(String contractId) {
+    return this.lifecycleQueryService.inferContractBranch(contractId);
+  }
+
+  /**
    * Retrieve existing schedule details of a contract and create a copy with a new date.
    * 
    * @param contractId The target contract id.

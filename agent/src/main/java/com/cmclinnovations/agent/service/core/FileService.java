@@ -38,7 +38,7 @@ public class FileService {
   public static final String APPLICATION_SERVICE_RESOURCE = RESOURCE_DIR + "application-service.json";
   public static final String JSON_LD_DIR = RESOURCE_DIR + "jsonld/";
   public static final String SAFEGUARD_QUERY_DIR = RESOURCE_DIR + "safeguard/";
-  public static final String CUSTOM_QUERY_DIR = RESOURCE_DIR + "query/";
+  public static final String BRANCH_QUERY_DIR = RESOURCE_DIR + "branch/";
 
   private static final String CLASS_PATH_DIR = "classpath:";
   private static final String QUERY_DIR = CLASS_PATH_DIR + "query/";
@@ -103,7 +103,7 @@ public class FileService {
   public static final String TASK_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "task.sparql";
   public static final String TASK_ACCRUAL_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "task_accrual.sparql";
   public static final String RESCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "reschedule.sparql";
-  public static final String INFER_CONTRACT_BRANCH_QUERY_RESOURCE = SPRING_FILE_PATH_PREFIX + CUSTOM_QUERY_DIR
+  public static final String INFER_CONTRACT_BRANCH_QUERY_RESOURCE = SPRING_FILE_PATH_PREFIX + BRANCH_QUERY_DIR
       + "infer-contract-branch.sparql";
 
   public static final String REPLACEMENT_TARGET = "\\[target\\]";

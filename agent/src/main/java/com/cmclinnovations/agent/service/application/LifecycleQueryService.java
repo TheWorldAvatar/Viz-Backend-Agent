@@ -85,6 +85,25 @@ public class LifecycleQueryService {
   }
 
   /**
+   * Infer the contract branch using an optional deployment-specific query. The
+   * query must return a single row containing a {@code ?branch_name} variable.
+   *
+   * @param contractId Identifier of the source contract.
+   */
+  public String inferContractBranch(String contractId) {
+    String branchName = "";
+    if (this.fileService.resourceExists(FileService.INFER_CONTRACT_BRANCH_QUERY_RESOURCE)) {
+      Queue<SparqlBinding> results = this.getInstances(
+          FileService.INFER_CONTRACT_BRANCH_QUERY_RESOURCE, contractId);
+      if (results.size() != 1) {
+        throw new IllegalStateException("Contract branch query must return a single result!");
+      }
+      branchName = results.poll().getFieldValue(QueryResource.BRANCH_NAME_KEY, "");
+    }
+    return branchName;
+  }
+
+  /**
    * Retrieve a query resource with the specified replacements.
    *
    * @param resourceId   The identifier of the query resource.
