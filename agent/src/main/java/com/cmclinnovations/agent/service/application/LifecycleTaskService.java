@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.service.application;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -272,7 +273,7 @@ public class LifecycleTaskService {
 
         String prevEventIri = this.requirePreviousOccurrence(taskId,
             this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
-                List.of(LifecycleEventType.SERVICE_ORDER_DISPATCHED, LifecycleEventType.SERVICE_ORDER_RECEIVED)));
+                LifecycleEventType.SERVICE_ORDER_DISPATCHED, LifecycleEventType.SERVICE_ORDER_RECEIVED));
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
 
         return this.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params, LifecycleEventType.SERVICE_CANCELLATION,
@@ -288,7 +289,7 @@ public class LifecycleTaskService {
 
         prevEventIri = this.requirePreviousOccurrence(taskId,
             this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
-                List.of(LifecycleEventType.SERVICE_ORDER_DISPATCHED, LifecycleEventType.SERVICE_ORDER_RECEIVED)));
+                LifecycleEventType.SERVICE_ORDER_DISPATCHED, LifecycleEventType.SERVICE_ORDER_RECEIVED));
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
 
         return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params, LifecycleEventType.SERVICE_INCIDENT_REPORT,
@@ -298,8 +299,8 @@ public class LifecycleTaskService {
         LOGGER.info("Received request to void a service...");
         prevEventIri = this.requirePreviousOccurrence(taskId,
             this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
-                List.of(LifecycleEventType.SERVICE_EXEMPT, LifecycleEventType.SERVICE_CANCELLATION,
-                    LifecycleEventType.SERVICE_INCIDENT_REPORT)));
+                LifecycleEventType.SERVICE_EXEMPT, LifecycleEventType.SERVICE_CANCELLATION,
+                LifecycleEventType.SERVICE_INCIDENT_REPORT));
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
         params.put(LifecycleResource.REMARKS_KEY, SERVICE_VOID_MESSAGE);
 
@@ -310,8 +311,8 @@ public class LifecycleTaskService {
         LOGGER.info("Received request to exempt the billable details for a service...");
         prevEventIri = this.requirePreviousOccurrence(taskId,
             this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
-                List.of(LifecycleEventType.SERVICE_EXECUTION, LifecycleEventType.SERVICE_CANCELLATION,
-                    LifecycleEventType.SERVICE_INCIDENT_REPORT)));
+                LifecycleEventType.SERVICE_EXECUTION, LifecycleEventType.SERVICE_CANCELLATION,
+                LifecycleEventType.SERVICE_INCIDENT_REPORT));
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
 
         return this.genOccurrence(LifecycleResource.EXEMPT_RESOURCE, params, LifecycleEventType.SERVICE_EXEMPT,
@@ -885,7 +886,7 @@ public class LifecycleTaskService {
     if (response.getStatusCode() == HttpStatus.OK && action != TrackActionType.IGNORED) {
       String taskId = params.get(QueryResource.ID_KEY).toString();
       String orderTask = this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
-          List.of(LifecycleEventType.SERVICE_ORDER_RECEIVED)).get(taskId);
+          LifecycleEventType.SERVICE_ORDER_RECEIVED).get(taskId);
       this.addService.logActivity(orderTask, action);
     }
     return response;
@@ -1092,7 +1093,7 @@ public class LifecycleTaskService {
     String orderEvent = trackAction == TrackActionType.IGNORED
         ? null
         : this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
-            List.of(LifecycleEventType.SERVICE_ORDER_RECEIVED)).get(taskId);
+            LifecycleEventType.SERVICE_ORDER_RECEIVED).get(taskId);
     if (trackAction != TrackActionType.IGNORED && orderEvent == null) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
@@ -1154,10 +1155,11 @@ public class LifecycleTaskService {
     String orderId = params.get(QueryResource.ID_KEY).toString();
     // Get the order received IRI
     String orderEventIri = this.getPreviousOccurrences(List.of(orderId), QueryResource.IRI_KEY,
-        List.of(LifecycleEventType.SERVICE_ORDER_RECEIVED)).get(orderId);
+        LifecycleEventType.SERVICE_ORDER_RECEIVED).get(orderId);
     // Set previous occurrence
     String previousOccurrenceIri = this.requirePreviousOccurrence(orderId,
-        this.getPreviousOccurrences(List.of(orderId), QueryResource.IRI_KEY, fallbackEvents));
+        this.getPreviousOccurrences(List.of(orderId), QueryResource.IRI_KEY,
+            fallbackEvents.toArray(LifecycleEventType[]::new)));
     params.put(LifecycleResource.ORDER_KEY, previousOccurrenceIri);
     ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(orderId, eventType.getId(),
         successMsgId, params, TrackActionType.IGNORED);
@@ -1177,12 +1179,13 @@ public class LifecycleTaskService {
    * @param eventTypes     Target event types in fallback order.
    */
   public Map<String, String> getPreviousOccurrences(Collection<String> latestEventIds, String fieldKey,
-      Collection<LifecycleEventType> eventTypes) {
+      LifecycleEventType... eventTypes) {
     if (latestEventIds == null || latestEventIds.isEmpty()
         || latestEventIds.stream().anyMatch(eventId -> eventId == null || eventId.isBlank())) {
       throw new IllegalArgumentException("At least one event identifier is required!");
     }
-    if (eventTypes == null || eventTypes.isEmpty() || eventTypes.stream().anyMatch(java.util.Objects::isNull)) {
+    if (eventTypes == null || eventTypes.length == 0
+        || Arrays.stream(eventTypes).anyMatch(java.util.Objects::isNull)) {
       throw new IllegalArgumentException("At least one previous event type is required!");
     }
 
@@ -1191,7 +1194,7 @@ public class LifecycleTaskService {
         .distinct()
         .map(eventId -> Rdf.literalOf(eventId).getQueryString())
         .collect(Collectors.joining(" "));
-    String previousEventTypes = eventTypes.stream()
+    String previousEventTypes = Arrays.stream(eventTypes)
         .distinct()
         .map(eventType -> Rdf.iri(eventType.getEvent()).getQueryString())
         .collect(Collectors.joining(" "));
@@ -1210,7 +1213,7 @@ public class LifecycleTaskService {
     latestEventIds.stream().distinct().forEach(eventId -> {
       Map<String, String> valuesByType = valuesByEventAndType.getOrDefault(eventId, Collections.emptyMap());
       // Preserve the caller's event-type order as the fallback priority.
-      eventTypes.stream()
+      Arrays.stream(eventTypes)
           .map(eventType -> valuesByType.get(eventType.getEvent()))
           .filter(java.util.Objects::nonNull)
           .findFirst()

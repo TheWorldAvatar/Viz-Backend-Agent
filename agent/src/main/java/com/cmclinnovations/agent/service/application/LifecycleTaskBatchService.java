@@ -1,6 +1,7 @@
 package com.cmclinnovations.agent.service.application;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -64,7 +65,8 @@ public class LifecycleTaskBatchService {
     this.requirePreviousOccurrences(taskIds, previousOccurrences);
 
     // Reuse predecessor results when activity history targets the same event type.
-    Map<String, String> activityTargets = config.activityTargetEventTypes().equals(config.previousEventTypes())
+    Map<String, String> activityTargets = Arrays.equals(
+        config.activityTargetEventTypes(), config.previousEventTypes())
         ? previousOccurrences
         : this.lifecycleTaskService.getPreviousOccurrences(
             taskIds, QueryResource.IRI_KEY, config.activityTargetEventTypes());
@@ -115,8 +117,8 @@ public class LifecycleTaskBatchService {
     return switch (type.toLowerCase(Locale.ROOT)) {
       case "dispatch" -> new BatchEventConfig(
           LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-          List.of(LifecycleEventType.SERVICE_ORDER_RECEIVED),
-          List.of(LifecycleEventType.SERVICE_ORDER_RECEIVED),
+          new LifecycleEventType[] { LifecycleEventType.SERVICE_ORDER_RECEIVED },
+          new LifecycleEventType[] { LifecycleEventType.SERVICE_ORDER_RECEIVED },
           TrackActionType.ASSIGNMENT,
           ORDER_DISPATCH_MESSAGE,
           null,
@@ -193,8 +195,8 @@ public class LifecycleTaskBatchService {
 
   private record BatchEventConfig(
       LifecycleEventType eventType,
-      List<LifecycleEventType> previousEventTypes,
-      List<LifecycleEventType> activityTargetEventTypes,
+      LifecycleEventType[] previousEventTypes,
+      LifecycleEventType[] activityTargetEventTypes,
       TrackActionType trackAction,
       String remarks,
       String eventStatus,
