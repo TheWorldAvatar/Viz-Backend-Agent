@@ -271,9 +271,8 @@ public class LifecycleTaskService {
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
         }
 
-        String prevEventIri = this.requirePreviousOccurrence(taskId,
-            this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
-                LifecycleEventType.SERVICE_ORDER_DISPATCHED, LifecycleEventType.SERVICE_ORDER_RECEIVED));
+        String prevEventIri = this.getPreviousOccurrence(taskId,
+            LifecycleEventType.SERVICE_ORDER_DISPATCHED, LifecycleEventType.SERVICE_ORDER_RECEIVED);
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
 
         return this.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params, LifecycleEventType.SERVICE_CANCELLATION,
@@ -287,9 +286,8 @@ public class LifecycleTaskService {
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
         }
 
-        prevEventIri = this.requirePreviousOccurrence(taskId,
-            this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
-                LifecycleEventType.SERVICE_ORDER_DISPATCHED, LifecycleEventType.SERVICE_ORDER_RECEIVED));
+        prevEventIri = this.getPreviousOccurrence(taskId,
+            LifecycleEventType.SERVICE_ORDER_DISPATCHED, LifecycleEventType.SERVICE_ORDER_RECEIVED);
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
 
         return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params, LifecycleEventType.SERVICE_INCIDENT_REPORT,
@@ -297,10 +295,9 @@ public class LifecycleTaskService {
             LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
       case LifecycleEventType.SERVICE_VOID:
         LOGGER.info("Received request to void a service...");
-        prevEventIri = this.requirePreviousOccurrence(taskId,
-            this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
-                LifecycleEventType.SERVICE_EXEMPT, LifecycleEventType.SERVICE_CANCELLATION,
-                LifecycleEventType.SERVICE_INCIDENT_REPORT));
+        prevEventIri = this.getPreviousOccurrence(taskId,
+            LifecycleEventType.SERVICE_EXEMPT, LifecycleEventType.SERVICE_CANCELLATION,
+            LifecycleEventType.SERVICE_INCIDENT_REPORT);
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
         params.put(LifecycleResource.REMARKS_KEY, SERVICE_VOID_MESSAGE);
 
@@ -309,10 +306,9 @@ public class LifecycleTaskService {
             LocalisationResource.SUCCESS_CONTRACT_TASK_VOID_KEY);
       case LifecycleEventType.SERVICE_EXEMPT:
         LOGGER.info("Received request to exempt the billable details for a service...");
-        prevEventIri = this.requirePreviousOccurrence(taskId,
-            this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
-                LifecycleEventType.SERVICE_EXECUTION, LifecycleEventType.SERVICE_CANCELLATION,
-                LifecycleEventType.SERVICE_INCIDENT_REPORT));
+        prevEventIri = this.getPreviousOccurrence(taskId,
+            LifecycleEventType.SERVICE_EXECUTION, LifecycleEventType.SERVICE_CANCELLATION,
+            LifecycleEventType.SERVICE_INCIDENT_REPORT);
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
 
         return this.genOccurrence(LifecycleResource.EXEMPT_RESOURCE, params, LifecycleEventType.SERVICE_EXEMPT,
@@ -1157,9 +1153,8 @@ public class LifecycleTaskService {
     String orderEventIri = this.getPreviousOccurrences(List.of(orderId), QueryResource.IRI_KEY,
         LifecycleEventType.SERVICE_ORDER_RECEIVED).get(orderId);
     // Set previous occurrence
-    String previousOccurrenceIri = this.requirePreviousOccurrence(orderId,
-        this.getPreviousOccurrences(List.of(orderId), QueryResource.IRI_KEY,
-            fallbackEvents.toArray(LifecycleEventType[]::new)));
+    String previousOccurrenceIri = this.getPreviousOccurrence(orderId,
+        fallbackEvents.toArray(LifecycleEventType[]::new));
     params.put(LifecycleResource.ORDER_KEY, previousOccurrenceIri);
     ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(orderId, eventType.getId(),
         successMsgId, params, TrackActionType.IGNORED);
@@ -1167,6 +1162,18 @@ public class LifecycleTaskService {
       this.addService.logActivity(orderEventIri, action);
     }
     return response;
+  }
+
+  /**
+   * Gets the previous occurrence IRI based on the possible event types.
+   *
+   * @param eventId    The identifier of the latest event in the succeeds chain.
+   * @param eventTypes The plausible event types in fallback order.
+   * @return Previous occurrence IRI.
+   */
+  public String getPreviousOccurrence(String eventId, LifecycleEventType... eventTypes) {
+    return this.requirePreviousOccurrence(eventId,
+        this.getPreviousOccurrences(Collections.singletonList(eventId), QueryResource.IRI_KEY, eventTypes));
   }
 
   /**
