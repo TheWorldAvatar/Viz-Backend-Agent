@@ -100,6 +100,7 @@ public class QueryResource {
     public static final String ACCOUNT_ID_KEY = "account";
     public static final Variable DATE_VAR = QueryResource.genVariable(LifecycleResource.DATE_KEY);
     public static final Variable EVENT_ID_VAR = QueryResource.genVariable(LifecycleResource.EVENT_ID_KEY);
+    public static final Variable PREVIOUS_EVENT_TYPE_VAR = QueryResource.genVariable("previous_event_type");
     public static final ColumnMetaPayload EVENT_ID_COL = new ColumnMetaPayload(QueryResource.EVENT_ID_VAR.getVarName(),
             QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING);
     public static final Variable EVENT_STATUS_VAR = QueryResource.genVariable(LifecycleResource.EVENT_STATUS_KEY);

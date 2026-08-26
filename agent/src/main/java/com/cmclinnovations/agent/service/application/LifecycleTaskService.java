@@ -1204,9 +1204,10 @@ public class LifecycleTaskService {
     // Index results by source ID and predecessor type before applying fallback order.
     Map<String, Map<String, String>> valuesByEventAndType = new HashMap<>();
     for (SparqlBinding instance : instances) {
-      // TODO: parameterise variable name
-      valuesByEventAndType.computeIfAbsent(instance.getFieldValue("source_id"), _ -> new HashMap<>())
-          .putIfAbsent(instance.getFieldValue("previous_event_type"), instance.getFieldValue(fieldKey));
+      valuesByEventAndType.computeIfAbsent(instance.getFieldValue(QueryResource.EVENT_ID_VAR.getVarName()),
+          _ -> new HashMap<>())
+          .putIfAbsent(instance.getFieldValue(QueryResource.PREVIOUS_EVENT_TYPE_VAR.getVarName()),
+              instance.getFieldValue(fieldKey));
     }
 
     Map<String, String> previousOccurrences = new LinkedHashMap<>();
