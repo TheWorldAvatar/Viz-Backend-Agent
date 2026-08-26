@@ -838,8 +838,8 @@ public class LifecycleController {
         occurrenceId = id;
         // Search for previous occurrence to retrieve
       } else {
-        occurrenceId = this.lifecycleTaskService.getPreviousOccurrence(id, QueryResource.ID_KEY,
-            orderTypeParams.eventType);
+        occurrenceId = this.lifecycleTaskService.getPreviousOccurrences(List.of(id), QueryResource.ID_KEY,
+            List.of(orderTypeParams.eventType)).get(id);
         // Give blank form template given the missing previous
         if (occurrenceId == null) {
           occurrenceId = "form";

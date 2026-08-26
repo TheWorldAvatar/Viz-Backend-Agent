@@ -270,8 +270,9 @@ public class LifecycleTaskService {
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_CANCEL_KEY));
         }
 
-        String prevEventIri = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-            LifecycleEventType.SERVICE_ORDER_RECEIVED);
+        String prevEventIri = this.requirePreviousOccurrence(taskId,
+            this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
+                List.of(LifecycleEventType.SERVICE_ORDER_DISPATCHED, LifecycleEventType.SERVICE_ORDER_RECEIVED)));
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
 
         return this.genOccurrence(LifecycleResource.CANCEL_RESOURCE, params, LifecycleEventType.SERVICE_CANCELLATION,
@@ -285,8 +286,9 @@ public class LifecycleTaskService {
               LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_DATE_REPORT_KEY));
         }
 
-        prevEventIri = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-            LifecycleEventType.SERVICE_ORDER_RECEIVED);
+        prevEventIri = this.requirePreviousOccurrence(taskId,
+            this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
+                List.of(LifecycleEventType.SERVICE_ORDER_DISPATCHED, LifecycleEventType.SERVICE_ORDER_RECEIVED)));
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
 
         return this.genOccurrence(LifecycleResource.REPORT_RESOURCE, params, LifecycleEventType.SERVICE_INCIDENT_REPORT,
@@ -294,8 +296,10 @@ public class LifecycleTaskService {
             LocalisationResource.SUCCESS_CONTRACT_TASK_REPORT_KEY);
       case LifecycleEventType.SERVICE_VOID:
         LOGGER.info("Received request to void a service...");
-        prevEventIri = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_EXEMPT,
-            LifecycleEventType.SERVICE_CANCELLATION, LifecycleEventType.SERVICE_INCIDENT_REPORT);
+        prevEventIri = this.requirePreviousOccurrence(taskId,
+            this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
+                List.of(LifecycleEventType.SERVICE_EXEMPT, LifecycleEventType.SERVICE_CANCELLATION,
+                    LifecycleEventType.SERVICE_INCIDENT_REPORT)));
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
         params.put(LifecycleResource.REMARKS_KEY, SERVICE_VOID_MESSAGE);
 
@@ -304,8 +308,10 @@ public class LifecycleTaskService {
             LocalisationResource.SUCCESS_CONTRACT_TASK_VOID_KEY);
       case LifecycleEventType.SERVICE_EXEMPT:
         LOGGER.info("Received request to exempt the billable details for a service...");
-        prevEventIri = this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_EXECUTION,
-            LifecycleEventType.SERVICE_CANCELLATION, LifecycleEventType.SERVICE_INCIDENT_REPORT);
+        prevEventIri = this.requirePreviousOccurrence(taskId,
+            this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
+                List.of(LifecycleEventType.SERVICE_EXECUTION, LifecycleEventType.SERVICE_CANCELLATION,
+                    LifecycleEventType.SERVICE_INCIDENT_REPORT)));
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
 
         return this.genOccurrence(LifecycleResource.EXEMPT_RESOURCE, params, LifecycleEventType.SERVICE_EXEMPT,
@@ -877,8 +883,9 @@ public class LifecycleTaskService {
     ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiate(resourceId, params, successLogMessage,
         messageResource, TrackActionType.IGNORED);
     if (response.getStatusCode() == HttpStatus.OK && action != TrackActionType.IGNORED) {
-      String orderTask = this.getPreviousOccurrence(params.get(QueryResource.ID_KEY).toString(), QueryResource.IRI_KEY,
-          LifecycleEventType.SERVICE_ORDER_RECEIVED);
+      String taskId = params.get(QueryResource.ID_KEY).toString();
+      String orderTask = this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
+          List.of(LifecycleEventType.SERVICE_ORDER_RECEIVED)).get(taskId);
       this.addService.logActivity(orderTask, action);
     }
     return response;
@@ -1083,7 +1090,9 @@ public class LifecycleTaskService {
 
     // Retrieve the original order for history logging when required
     String orderEvent = trackAction == TrackActionType.IGNORED
-        ? null : this.getPreviousOccurrence(taskId, QueryResource.IRI_KEY, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+        ? null
+        : this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
+            List.of(LifecycleEventType.SERVICE_ORDER_RECEIVED)).get(taskId);
     if (trackAction != TrackActionType.IGNORED && orderEvent == null) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
@@ -1144,11 +1153,11 @@ public class LifecycleTaskService {
 
     String orderId = params.get(QueryResource.ID_KEY).toString();
     // Get the order received IRI
-    String orderEventIri = this.getPreviousOccurrence(orderId, QueryResource.IRI_KEY,
-        LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    String orderEventIri = this.getPreviousOccurrences(List.of(orderId), QueryResource.IRI_KEY,
+        List.of(LifecycleEventType.SERVICE_ORDER_RECEIVED)).get(orderId);
     // Set previous occurrence
-    String previousOccurrenceIri = this.getPreviousOccurrence(orderId,
-        fallbackEvents.toArray(new LifecycleEventType[0]));
+    String previousOccurrenceIri = this.requirePreviousOccurrence(orderId,
+        this.getPreviousOccurrences(List.of(orderId), QueryResource.IRI_KEY, fallbackEvents));
     params.put(LifecycleResource.ORDER_KEY, previousOccurrenceIri);
     ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(orderId, eventType.getId(),
         successMsgId, params, TrackActionType.IGNORED);
@@ -1159,38 +1168,60 @@ public class LifecycleTaskService {
   }
 
   /**
-   * Gets the previous occurence iri based on the possible events.
+   * Retrieves the previous occurrence instances based on their event types and
+   * latest event identifiers.
    * 
-   * @param eventId The identifier of the latest event in the succeeds chain.
-   * @param events  The plausible events that may be previous occurrence.
+   * @param latestEventIds The identifiers of the latest events in the succeeds
+   *                       chains.
+   * @param fieldKey       The field key to extract. Either id or iri.
+   * @param eventTypes     Target event types in fallback order.
    */
-  public String getPreviousOccurrence(String eventId, LifecycleEventType... events) {
-    String previousOccurrenceIri = null;
-    for (LifecycleEventType fallbackEvent : events) {
-      previousOccurrenceIri = this.getPreviousOccurrence(eventId, QueryResource.IRI_KEY, fallbackEvent);
-      if (previousOccurrenceIri != null) {
-        return previousOccurrenceIri;
-      }
+  public Map<String, String> getPreviousOccurrences(Collection<String> latestEventIds, String fieldKey,
+      Collection<LifecycleEventType> eventTypes) {
+    if (latestEventIds == null || latestEventIds.isEmpty()
+        || latestEventIds.stream().anyMatch(eventId -> eventId == null || eventId.isBlank())) {
+      throw new IllegalArgumentException("At least one event identifier is required!");
     }
-    if (previousOccurrenceIri == null) {
-      throw new NullPointerException("No valid previous occurrence found from fallback events!");
+    if (eventTypes == null || eventTypes.isEmpty() || eventTypes.stream().anyMatch(java.util.Objects::isNull)) {
+      throw new IllegalArgumentException("At least one previous event type is required!");
     }
-    return previousOccurrenceIri;
+
+    String eventIds = latestEventIds.stream()
+        .distinct()
+        .map(eventId -> Rdf.literalOf(eventId).getQueryString())
+        .collect(Collectors.joining(" "));
+    String previousEventTypes = eventTypes.stream()
+        .distinct()
+        .map(eventType -> Rdf.iri(eventType.getEvent()).getQueryString())
+        .collect(Collectors.joining(" "));
+    Queue<SparqlBinding> instances = this.lifecycleQueryService.getInstances(
+        FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, eventIds, previousEventTypes);
+
+    Map<String, Map<String, String>> valuesByEventAndType = new HashMap<>();
+    for (SparqlBinding instance : instances) {
+      // TODO: parameterise variable name
+      valuesByEventAndType.computeIfAbsent(instance.getFieldValue("source_id"), _ -> new HashMap<>())
+          .putIfAbsent(instance.getFieldValue("previous_event_type"), instance.getFieldValue(fieldKey));
+    }
+
+    Map<String, String> previousOccurrences = new LinkedHashMap<>();
+    latestEventIds.stream().distinct().forEach(eventId -> {
+      Map<String, String> valuesByType = valuesByEventAndType.getOrDefault(eventId, Collections.emptyMap());
+      eventTypes.stream()
+          .map(eventType -> valuesByType.get(eventType.getEvent()))
+          .filter(java.util.Objects::nonNull)
+          .findFirst()
+          .ifPresent(value -> previousOccurrences.put(eventId, value));
+    });
+    return previousOccurrences;
   }
 
-  /**
-   * Retrieves the previous occurrence instance based on its event type and latest
-   * event id.
-   * 
-   * @param latestEventId The identifier of the latest event in the succeeds
-   *                      chain.
-   * @param fieldKey      The field key to extract. Either id or iri.
-   * @param eventType     Target event type to query for.
-   */
-  public String getPreviousOccurrence(String latestEventId, String fieldKey, LifecycleEventType eventType) {
-    SparqlBinding instance = this.lifecycleQueryService
-        .getInstance(FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, true, latestEventId, eventType.getEvent());
-    return instance == null ? null : instance.getFieldValue(fieldKey);
+  private String requirePreviousOccurrence(String eventId, Map<String, String> previousOccurrences) {
+    String previousOccurrence = previousOccurrences.get(eventId);
+    if (previousOccurrence == null) {
+      throw new NullPointerException("No valid previous occurrence found from fallback events!");
+    }
+    return previousOccurrence;
   }
 
   /**
