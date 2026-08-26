@@ -34,6 +34,7 @@ import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.UpdateService;
 import com.cmclinnovations.agent.service.application.BillingService;
 import com.cmclinnovations.agent.service.application.LifecycleContractService;
+import com.cmclinnovations.agent.service.application.LifecycleTaskBatchService;
 import com.cmclinnovations.agent.service.application.LifecycleTaskService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
@@ -55,6 +56,7 @@ public class LifecycleController {
   private final DateTimeService dateTimeService;
   private final BillingService billingService;
   private final LifecycleContractService lifecycleContractService;
+  private final LifecycleTaskBatchService lifecycleTaskBatchService;
   private final LifecycleTaskService lifecycleTaskService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
@@ -63,7 +65,8 @@ public class LifecycleController {
   public LifecycleController(ConcurrencyService concurrencyService, AddService addService, GetService getService,
       DeleteService deleteService, UpdateService updateService, DateTimeService dateTimeService,
       BillingService billingService, LifecycleContractService lifecycleContractService,
-      LifecycleTaskService lifecycleTaskService, ResponseEntityBuilder responseEntityBuilder) {
+      LifecycleTaskBatchService lifecycleTaskBatchService, LifecycleTaskService lifecycleTaskService,
+      ResponseEntityBuilder responseEntityBuilder) {
     this.concurrencyService = concurrencyService;
     this.addService = addService;
     this.getService = getService;
@@ -72,6 +75,7 @@ public class LifecycleController {
     this.dateTimeService = dateTimeService;
     this.billingService = billingService;
     this.lifecycleContractService = lifecycleContractService;
+    this.lifecycleTaskBatchService = lifecycleTaskBatchService;
     this.lifecycleTaskService = lifecycleTaskService;
     this.responseEntityBuilder = responseEntityBuilder;
   }
@@ -394,20 +398,11 @@ public class LifecycleController {
     });
   }
 
-  @PutMapping("/service/dispatch/bulk")
-  public ResponseEntity<StandardApiResponse<?>> bulkUpdateTaskEventDetails(
+  @PutMapping("/service/{type}/bulk")
+  public ResponseEntity<StandardApiResponse<?>> bulkUpdateTaskEventDetails(@PathVariable String type,
       @RequestBody Map<String, List<Map<String, Object>>> params) {
-    try {
-      params.get("items")
-          .forEach(item -> this.updateTaskEventDetails(LifecycleEventType.SERVICE_ORDER_DISPATCHED.getId(), item));
-    } catch (IllegalArgumentException _) {
-      LOGGER.error("Error encountered while bulk assigning dispatch details! Read error logs for more details");
-      return this.responseEntityBuilder.error(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_DISPATCH_PARTIAL_KEY),
-          HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-    return this.responseEntityBuilder
-        .success("task", LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_TASK_BULK_ASSIGN_KEY));
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.lifecycleTaskBatchService.updateTaskEventDetails(type, params.get("items")));
   }
 
   /**
