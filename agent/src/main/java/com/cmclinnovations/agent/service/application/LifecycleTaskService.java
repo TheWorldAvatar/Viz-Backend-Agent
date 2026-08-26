@@ -1172,8 +1172,12 @@ public class LifecycleTaskService {
    * @return Previous occurrence IRI.
    */
   public String getPreviousOccurrence(String eventId, LifecycleEventType... eventTypes) {
-    return this.requirePreviousOccurrence(eventId,
-        this.getPreviousOccurrences(Collections.singletonList(eventId), QueryResource.IRI_KEY, eventTypes));
+    String previousOccurrence = this.getPreviousOccurrences(
+        Collections.singletonList(eventId), QueryResource.IRI_KEY, eventTypes).get(eventId);
+    if (previousOccurrence == null) {
+      throw new NullPointerException("No valid previous occurrence found from fallback events!");
+    }
+    return previousOccurrence;
   }
 
   /**
@@ -1228,14 +1232,6 @@ public class LifecycleTaskService {
           .ifPresent(value -> previousOccurrences.put(eventId, value));
     });
     return previousOccurrences;
-  }
-
-  private String requirePreviousOccurrence(String eventId, Map<String, String> previousOccurrences) {
-    String previousOccurrence = previousOccurrences.get(eventId);
-    if (previousOccurrence == null) {
-      throw new NullPointerException("No valid previous occurrence found from fallback events!");
-    }
-    return previousOccurrence;
   }
 
   /**
