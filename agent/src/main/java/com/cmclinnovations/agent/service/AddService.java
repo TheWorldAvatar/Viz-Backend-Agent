@@ -118,6 +118,7 @@ public class AddService {
 
   /**
    * Instantiates multiple instances in one JSON-LD addition.
+   * Activity logging is not included here and must be handled by the caller.
    *
    * @param paramsByResourceId Request parameters grouped by resource identifier.
    */
@@ -130,6 +131,7 @@ public class AddService {
       throw new IllegalArgumentException("At least one valid instantiation entry is required!");
     }
 
+    // Render every entry before submitting one combined JSON-LD payload.
     ArrayNode batchJsonLd = this.jsonLdService.genArrayNode();
     List<String> resourceIds = new ArrayList<>();
     List<ObjectNode> jsonLdSchemas = new ArrayList<>();
@@ -150,6 +152,7 @@ public class AddService {
       throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ADD_KEY));
     }
 
+    // Preserve per-instance SHACL processing after the combined write succeeds.
     for (int index = 0; index < jsonLdSchemas.size(); index++) {
       this.execShaclRules(resourceIds.get(index), instanceIris.get(index), jsonLdSchemas.get(index).toString());
     }

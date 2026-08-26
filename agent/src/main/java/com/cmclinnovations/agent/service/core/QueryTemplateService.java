@@ -111,6 +111,7 @@ public class QueryTemplateService {
     }
     LOGGER.debug("Generating the lifecycle occurrence DELETE query with branchName = {}", branchName);
     ObjectNode addJsonSchema = this.getJsonLDResource(resourceID).deepCopy();
+    // Constrain the shared delete template to the requested lifecycle event type.
     JsonNode eventNode = addJsonSchema.path(LifecycleResource.EXEMPLIFIES_RELATIONS);
     if (!eventNode.isObject()) {
       throw new IllegalArgumentException("Lifecycle occurrence JSON-LD must define an exemplifies relation!");

@@ -63,6 +63,7 @@ public class LifecycleTaskBatchService {
         taskIds, QueryResource.IRI_KEY, config.previousEventTypes());
     this.requirePreviousOccurrences(taskIds, previousOccurrences);
 
+    // Reuse predecessor results when activity history targets the same event type.
     Map<String, String> activityTargets = config.activityTargetEventTypes().equals(config.previousEventTypes())
         ? previousOccurrences
         : this.lifecycleTaskService.getPreviousOccurrences(
@@ -82,6 +83,7 @@ public class LifecycleTaskBatchService {
       return response;
     }
 
+    // Log only after every dispatch and its SHACL processing has succeeded.
     String agentIri = this.instantiateAgent();
     List<String> activityTargetIris = taskIds.stream().map(activityTargets::get).toList();
     List<Map<String, Object>> activityParams = this.changelogService.prepareActivities(
@@ -97,6 +99,7 @@ public class LifecycleTaskBatchService {
 
   private String instantiateAgent() {
     Map<String, Object> agentParams = this.changelogService.setAgent();
+    // Authentication-disabled requests do not create or reference an agent.
     if (agentParams.isEmpty()) {
       return null;
     }
@@ -140,6 +143,7 @@ public class LifecycleTaskBatchService {
       }
       String taskId = this.getRequiredValue(item, QueryResource.ID_KEY);
       this.getRequiredValue(item, LifecycleResource.CONTRACT_KEY);
+      // Reject duplicate tasks before any lifecycle mutation occurs.
       if (!uniqueTaskIds.add(taskId)) {
         throw new IllegalArgumentException("Duplicate task identifier: " + taskId);
       }
@@ -169,6 +173,7 @@ public class LifecycleTaskBatchService {
 
   private void prepareItems(List<Map<String, Object>> items, Map<String, String> previousOccurrences,
       BatchEventConfig config) {
+    // Reuse the stage IRI for tasks belonging to the same contract.
     Map<String, String> stagesByContract = new HashMap<>();
     for (Map<String, Object> item : items) {
       String contractId = item.get(LifecycleResource.CONTRACT_KEY).toString();

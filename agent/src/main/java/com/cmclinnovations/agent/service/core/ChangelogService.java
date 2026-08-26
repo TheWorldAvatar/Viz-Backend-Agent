@@ -55,10 +55,12 @@ public class ChangelogService {
     if (iris == null || iris.isEmpty() || iris.stream().anyMatch(iri -> iri == null || iri.isBlank())) {
       throw new IllegalArgumentException("At least one affected entity IRI is required!");
     }
+    // Use one timestamp for every activity in the same batch action.
     String timestamp = this.dateTimeService.getCurrentDateTime();
     List<Map<String, Object>> activities = new ArrayList<>();
     for (String iri : iris) {
       Map<String, Object> activity = this.prepareActivity(iri, action, timestamp);
+      // Assign IDs before the activity maps are rendered as one payload.
       activity.put(QueryResource.ID_KEY, UUID.randomUUID().toString());
       if (agentIri != null && !agentIri.isBlank()) {
         activity.put(QueryResource.HISTORY_AGENT_RESOURCE, agentIri);

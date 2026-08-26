@@ -1186,6 +1186,7 @@ public class LifecycleTaskService {
       throw new IllegalArgumentException("At least one previous event type is required!");
     }
 
+    // Format collection inputs for the query's VALUES blocks.
     String eventIds = latestEventIds.stream()
         .distinct()
         .map(eventId -> Rdf.literalOf(eventId).getQueryString())
@@ -1197,6 +1198,7 @@ public class LifecycleTaskService {
     Queue<SparqlBinding> instances = this.lifecycleQueryService.getInstances(
         FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, eventIds, previousEventTypes);
 
+    // Index results by source ID and predecessor type before applying fallback order.
     Map<String, Map<String, String>> valuesByEventAndType = new HashMap<>();
     for (SparqlBinding instance : instances) {
       // TODO: parameterise variable name
@@ -1207,6 +1209,7 @@ public class LifecycleTaskService {
     Map<String, String> previousOccurrences = new LinkedHashMap<>();
     latestEventIds.stream().distinct().forEach(eventId -> {
       Map<String, String> valuesByType = valuesByEventAndType.getOrDefault(eventId, Collections.emptyMap());
+      // Preserve the caller's event-type order as the fallback priority.
       eventTypes.stream()
           .map(eventType -> valuesByType.get(eventType.getEvent()))
           .filter(java.util.Objects::nonNull)

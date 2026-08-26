@@ -401,6 +401,7 @@ public class LifecycleController {
   @PutMapping("/service/{type}/bulk")
   public ResponseEntity<StandardApiResponse<?>> bulkUpdateTaskEventDetails(@PathVariable String type,
       @RequestBody Map<String, List<Map<String, Object>>> params) {
+    // Hold one task lock across dispatch replacement and subsequent activity logging.
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
         () -> this.lifecycleTaskBatchService.updateTaskEventDetails(type, params.get("items")));
   }

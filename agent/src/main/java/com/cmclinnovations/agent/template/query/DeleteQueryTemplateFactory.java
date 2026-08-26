@@ -64,6 +64,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
     this.recursiveParseNode(deleteTemplate, null, params.rootNode(), params.branchName(), params.optVarNames());
     String query = this.appendArrayStatements(deleteTemplate.getQueryString(), params.optVarNames());
     if (targetIds.size() > 1) {
+      // Bind the shared identifier variable to every requested target.
       String targetIdValues = QueryResource.values(
           targetIds.stream().map(targetId -> Rdf.literalOf(targetId).getQueryString()).toList(), TARGET_ID_KEY);
       query = StringResource.replaceLast(query, "}", targetIdValues + "}");
