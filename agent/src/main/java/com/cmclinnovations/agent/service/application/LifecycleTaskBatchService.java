@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -17,6 +16,7 @@ import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.component.ResponseEntityBuilder;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
+import com.cmclinnovations.agent.model.type.LifecycleTaskOperationType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
@@ -36,8 +36,6 @@ public class LifecycleTaskBatchService {
   private final LifecycleQueryService lifecycleQueryService;
   private final LifecycleTaskService lifecycleTaskService;
   private final ResponseEntityBuilder responseEntityBuilder;
-
-  private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
 
   public LifecycleTaskBatchService(AddService addService, ChangelogService changelogService,
       DateTimeService dateTimeService, DeleteService deleteService, LifecycleQueryService lifecycleQueryService,
@@ -61,30 +59,31 @@ public class LifecycleTaskBatchService {
    */
   public ResponseEntity<StandardApiResponse<?>> updateTaskEventDetails(String type,
       List<Map<String, Object>> items) {
-    BatchEventConfig config = this.getConfig(type);
+    LifecycleTaskOperationType config = this.getConfig(type);
     List<String> taskIds = this.validateAndGetTaskIds(items);
+    LifecycleEventType[] previousEventTypes = config.getPreviousEventTypes();
 
     Map<String, String> previousOccurrences = this.lifecycleTaskService.getPreviousOccurrences(
-        taskIds, QueryResource.IRI_KEY, config.previousEventTypes());
+        taskIds, QueryResource.IRI_KEY, previousEventTypes);
     this.requirePreviousOccurrences(taskIds, previousOccurrences);
 
     // Reuse predecessor results when activity history targets the same event type.
-    Map<String, String> activityTargets = Arrays.equals(
-        config.activityTargetEventTypes(), config.previousEventTypes())
+    LifecycleEventType[] activityTargetEventTypes = config.getActivityTargetEventTypes();
+    Map<String, String> activityTargets = Arrays.equals(activityTargetEventTypes, previousEventTypes)
         ? previousOccurrences
         : this.lifecycleTaskService.getPreviousOccurrences(
-            taskIds, QueryResource.IRI_KEY, config.activityTargetEventTypes());
+            taskIds, QueryResource.IRI_KEY, activityTargetEventTypes);
     this.requirePreviousOccurrences(taskIds, activityTargets);
 
     this.prepareItems(items, previousOccurrences, config);
 
     ResponseEntity<StandardApiResponse<?>> response = this.deleteService.deleteLifecycleOccurrences(
-        config.eventType().getId(), taskIds, config.eventType());
+        config.getEventType().getId(), taskIds, config.getEventType());
     if (response.getStatusCode() != HttpStatus.OK) {
       return response;
     }
 
-    response = this.addService.instantiateBatch(Map.of(config.eventType().getId(), items));
+    response = this.addService.instantiateBatch(Map.of(config.getEventType().getId(), items));
     if (response.getStatusCode() != HttpStatus.OK) {
       return response;
     }
@@ -93,14 +92,14 @@ public class LifecycleTaskBatchService {
     String agentIri = this.instantiateAgent();
     List<String> activityTargetIris = taskIds.stream().map(activityTargets::get).toList();
     List<Map<String, Object>> activityParams = this.changelogService.prepareActivities(
-        activityTargetIris, config.trackAction(), agentIri);
+        activityTargetIris, config.getTrackAction(), agentIri);
     response = this.addService.instantiateBatch(Map.of(QueryResource.HISTORY_ACTIVITY_RESOURCE, activityParams));
     if (response.getStatusCode() != HttpStatus.OK) {
       return response;
     }
 
     return this.responseEntityBuilder.success("task",
-        LocalisationTranslator.getMessage(config.successMessageKey()));
+        LocalisationTranslator.getMessage(config.getBulkSuccessMessageKey()));
   }
 
   /**
@@ -124,23 +123,13 @@ public class LifecycleTaskBatchService {
    * @param type Lifecycle operation type.
    * @return Configuration for processing the requested operation.
    */
-  private BatchEventConfig getConfig(String type) {
-    if (type == null) {
+  private LifecycleTaskOperationType getConfig(String type) {
+    LifecycleTaskOperationType config = LifecycleTaskOperationType.fromId(type);
+    if (config == null || !config.supportsBulk()) {
       throw new IllegalArgumentException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
     }
-    return switch (type.toLowerCase(Locale.ROOT)) {
-      case "dispatch" -> new BatchEventConfig(
-          LifecycleEventType.SERVICE_ORDER_DISPATCHED,
-          new LifecycleEventType[] { LifecycleEventType.SERVICE_ORDER_RECEIVED },
-          new LifecycleEventType[] { LifecycleEventType.SERVICE_ORDER_RECEIVED },
-          TrackActionType.ASSIGNMENT,
-          ORDER_DISPATCH_MESSAGE,
-          null,
-          LocalisationResource.SUCCESS_CONTRACT_TASK_BULK_ASSIGN_KEY);
-      default -> throw new IllegalArgumentException(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_EVENT_TYPE_KEY));
-    };
+    return config;
   }
 
   /**
@@ -215,43 +204,22 @@ public class LifecycleTaskBatchService {
    * @param config              Lifecycle operation configuration.
    */
   private void prepareItems(List<Map<String, Object>> items, Map<String, String> previousOccurrences,
-      BatchEventConfig config) {
+      LifecycleTaskOperationType config) {
     // Reuse the stage IRI for tasks belonging to the same contract.
     Map<String, String> stagesByContract = new HashMap<>();
     for (Map<String, Object> item : items) {
       String contractId = item.get(LifecycleResource.CONTRACT_KEY).toString();
       String stage = stagesByContract.computeIfAbsent(contractId,
           id -> this.lifecycleQueryService.getInstance(FileService.CONTRACT_STAGE_QUERY_RESOURCE, id,
-              config.eventType().getStage()).getFieldValue(QueryResource.IRI_KEY));
+              config.getEventType().getStage()).getFieldValue(QueryResource.IRI_KEY));
 
       item.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
       item.put(LifecycleResource.STAGE_KEY, stage);
-      item.put(LifecycleResource.REMARKS_KEY, config.remarks());
+      item.put(LifecycleResource.REMARKS_KEY, config.getRemarks());
       item.put(LifecycleResource.ORDER_KEY, previousOccurrences.get(item.get(QueryResource.ID_KEY).toString()));
-      if (config.eventStatus() != null) {
-        item.put(LifecycleResource.EVENT_STATUS_KEY, config.eventStatus());
+      if (config.getEventStatus() != null) {
+        item.put(LifecycleResource.EVENT_STATUS_KEY, config.getEventStatus());
       }
     }
-  }
-
-  /**
-   * Configuration required to process one supported batch lifecycle event.
-   *
-   * @param eventType                Lifecycle event to create.
-   * @param previousEventTypes       Allowed predecessor events in fallback order.
-   * @param activityTargetEventTypes Events targeted by the resulting activities.
-   * @param trackAction              Activity action to record.
-   * @param remarks                  Remarks assigned to each lifecycle event.
-   * @param eventStatus              Optional status assigned to each event.
-   * @param successMessageKey        Localised success message key.
-   */
-  private record BatchEventConfig(
-      LifecycleEventType eventType,
-      LifecycleEventType[] previousEventTypes,
-      LifecycleEventType[] activityTargetEventTypes,
-      TrackActionType trackAction,
-      String remarks,
-      String eventStatus,
-      String successMessageKey) {
   }
 }
