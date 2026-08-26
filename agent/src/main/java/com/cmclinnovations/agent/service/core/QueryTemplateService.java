@@ -3,6 +3,7 @@ package com.cmclinnovations.agent.service.core;
 import java.nio.file.FileSystemNotFoundException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -90,17 +91,24 @@ public class QueryTemplateService {
   }
 
   /**
-   * Generates a DELETE SPARQL query for a lifecycle occurrence constrained by its
-   * event type.
+   * Generates a DELETE SPARQL query for lifecycle occurrences constrained by
+   * their identifiers and event type.
    *
-   * @param resourceID  The target resource identifier for the instance.
-   * @param targetId    The target instance identifier.
-   * @param branchName  The branch name to filter (can be null).
+   * @param resourceID  The target resource identifier for the instances.
+   * @param targetIds   The target instance identifiers.
+   * @param branchName  The branch name to filter (must be null or blank).
    * @param optVarNames Set of names of optional variables.
    * @param eventType   The lifecycle event type IRI.
    */
-  public String genDeleteLifecycleOccurrenceQuery(String resourceID, String targetId, String branchName,
+  public String genDeleteLifecycleOccurrencesQuery(String resourceID, Collection<String> targetIds, String branchName,
       Set<String> optVarNames, String eventType) {
+    if (targetIds == null || targetIds.isEmpty()
+        || targetIds.stream().anyMatch(targetId -> targetId == null || targetId.isBlank())) {
+      throw new IllegalArgumentException("At least one lifecycle occurrence identifier is required!");
+    }
+    if (branchName != null && !branchName.isBlank()) {
+      throw new UnsupportedOperationException("Branch-specific lifecycle occurrence deletion is not implemented!");
+    }
     LOGGER.debug("Generating the lifecycle occurrence DELETE query with branchName = {}", branchName);
     ObjectNode addJsonSchema = this.getJsonLDResource(resourceID).deepCopy();
     JsonNode eventNode = addJsonSchema.path(LifecycleResource.EXEMPLIFIES_RELATIONS);
@@ -109,7 +117,8 @@ public class QueryTemplateService {
     }
     ((ObjectNode) eventNode).put(ShaclResource.ID_KEY, eventType);
     return this.deleteQueryTemplateFactory
-        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetId, branchName, optVarNames))
+        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetIds.stream().distinct().toList(), branchName,
+            optVarNames))
         .data();
   }
 

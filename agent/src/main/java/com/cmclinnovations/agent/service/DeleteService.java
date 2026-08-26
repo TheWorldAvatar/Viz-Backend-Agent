@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.service;
 
+import java.util.Collection;
 import java.util.Queue;
 import java.util.Set;
 
@@ -58,20 +59,20 @@ public class DeleteService {
   }
 
   /**
-   * Delete a lifecycle occurrence associated with the target identifier and event
-   * type.
+   * Delete lifecycle occurrences associated with the target identifiers and
+   * event type in one operation.
    *
-   * @param resourceID The target resource identifier for the instance.
-   * @param targetId   The target instance identifier.
+   * @param resourceID The target resource identifier for the instances.
+   * @param targetIds  The target instance identifiers.
    * @param eventType  The lifecycle event type to delete.
    */
-  public ResponseEntity<StandardApiResponse<?>> deleteLifecycleOccurrence(String resourceID, String targetId,
-      LifecycleEventType eventType) {
-    LOGGER.debug("Deleting {} lifecycle occurrence of {}", resourceID, targetId);
+  public ResponseEntity<StandardApiResponse<?>> deleteLifecycleOccurrences(String resourceID,
+      Collection<String> targetIds, LifecycleEventType eventType) {
+    LOGGER.debug("Deleting {} lifecycle occurrences", resourceID);
     Set<String> optVarNames = this.kgService.getSparqlOptionalParameters(resourceID);
-    String query = this.queryTemplateService.genDeleteLifecycleOccurrenceQuery(
-        resourceID, targetId, null, optVarNames, eventType.getEvent());
-    return this.kgService.delete(query, targetId);
+    String query = this.queryTemplateService.genDeleteLifecycleOccurrencesQuery(
+        resourceID, targetIds, null, optVarNames, eventType.getEvent());
+    return this.kgService.delete(query, targetIds.iterator().next());
   }
 
   /**

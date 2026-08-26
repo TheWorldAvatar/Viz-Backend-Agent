@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.model;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -40,5 +41,10 @@ public record QueryTemplateFactoryParameters(
   public QueryTemplateFactoryParameters(ObjectNode rootNode, String targetId, String branchName,
       Set<String> optVarNames) {
     this(null, rootNode, new ArrayDeque<>(List.of(Arrays.asList(targetId))), null, null, null, branchName, optVarNames);
+  }
+
+  public QueryTemplateFactoryParameters(ObjectNode rootNode, Collection<String> targetIds, String branchName,
+      Set<String> optVarNames) {
+    this(null, rootNode, new ArrayDeque<>(List.of(List.copyOf(targetIds))), null, null, null, branchName, optVarNames);
   }
 }
