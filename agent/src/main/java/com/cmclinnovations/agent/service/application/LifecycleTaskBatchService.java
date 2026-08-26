@@ -19,6 +19,7 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
+import com.cmclinnovations.agent.service.core.ChangelogService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
@@ -28,6 +29,7 @@ import com.cmclinnovations.agent.utils.QueryResource;
 @Service
 public class LifecycleTaskBatchService {
   private final AddService addService;
+  private final ChangelogService changelogService;
   private final DateTimeService dateTimeService;
   private final DeleteService deleteService;
   private final LifecycleQueryService lifecycleQueryService;
@@ -36,10 +38,11 @@ public class LifecycleTaskBatchService {
 
   private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
 
-  public LifecycleTaskBatchService(AddService addService, DateTimeService dateTimeService, DeleteService deleteService,
-      LifecycleQueryService lifecycleQueryService, LifecycleTaskService lifecycleTaskService,
-      ResponseEntityBuilder responseEntityBuilder) {
+  public LifecycleTaskBatchService(AddService addService, ChangelogService changelogService,
+      DateTimeService dateTimeService, DeleteService deleteService, LifecycleQueryService lifecycleQueryService,
+      LifecycleTaskService lifecycleTaskService, ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
+    this.changelogService = changelogService;
     this.dateTimeService = dateTimeService;
     this.deleteService = deleteService;
     this.lifecycleQueryService = lifecycleQueryService;
@@ -48,7 +51,8 @@ public class LifecycleTaskBatchService {
   }
 
   /**
-   * Updates lifecycle event details for multiple tasks in one delete and add.
+   * Updates lifecycle event details for multiple tasks, then logs their
+   * activities in a separate batch.
    */
   public ResponseEntity<StandardApiResponse<?>> updateTaskEventDetails(String type,
       List<Map<String, Object>> items) {
@@ -78,9 +82,26 @@ public class LifecycleTaskBatchService {
       return response;
     }
 
-    taskIds.forEach(taskId -> this.addService.logActivity(activityTargets.get(taskId), config.trackAction()));
+    String agentIri = this.instantiateAgent();
+    List<String> activityTargetIris = taskIds.stream().map(activityTargets::get).toList();
+    List<Map<String, Object>> activityParams = this.changelogService.prepareActivities(
+        activityTargetIris, config.trackAction(), agentIri);
+    response = this.addService.instantiateBatch(Map.of(QueryResource.HISTORY_ACTIVITY_RESOURCE, activityParams));
+    if (response.getStatusCode() != HttpStatus.OK) {
+      return response;
+    }
+
     return this.responseEntityBuilder.success("task",
         LocalisationTranslator.getMessage(config.successMessageKey()));
+  }
+
+  private String instantiateAgent() {
+    Map<String, Object> agentParams = this.changelogService.setAgent();
+    if (agentParams.isEmpty()) {
+      return null;
+    }
+    return this.addService.instantiate(
+        QueryResource.HISTORY_AGENT_RESOURCE, agentParams, TrackActionType.IGNORED).getBody().data().id();
   }
 
   private BatchEventConfig getConfig(String type) {
