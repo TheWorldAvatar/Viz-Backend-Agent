@@ -54,6 +54,10 @@ public class LifecycleTaskBatchService {
   /**
    * Updates lifecycle event details for multiple tasks, then logs their
    * activities in a separate batch.
+   *
+   * @param type  Lifecycle operation type.
+   * @param items Task details to update.
+   * @return Response describing the batch operation outcome.
    */
   public ResponseEntity<StandardApiResponse<?>> updateTaskEventDetails(String type,
       List<Map<String, Object>> items) {
@@ -99,6 +103,11 @@ public class LifecycleTaskBatchService {
         LocalisationTranslator.getMessage(config.successMessageKey()));
   }
 
+  /**
+   * Creates the authenticated agent when authentication is enabled.
+   *
+   * @return Instantiated agent IRI, or null when authentication is disabled.
+   */
   private String instantiateAgent() {
     Map<String, Object> agentParams = this.changelogService.setAgent();
     // Authentication-disabled requests do not create or reference an agent.
@@ -109,6 +118,12 @@ public class LifecycleTaskBatchService {
         QueryResource.HISTORY_AGENT_RESOURCE, agentParams, TrackActionType.IGNORED).getBody().data().id();
   }
 
+  /**
+   * Retrieves the processing configuration for a supported lifecycle operation.
+   *
+   * @param type Lifecycle operation type.
+   * @return Configuration for processing the requested operation.
+   */
   private BatchEventConfig getConfig(String type) {
     if (type == null) {
       throw new IllegalArgumentException(
@@ -128,6 +143,12 @@ public class LifecycleTaskBatchService {
     };
   }
 
+  /**
+   * Validates task inputs and returns their unique identifiers in request order.
+   *
+   * @param items Task details to validate.
+   * @return Validated task identifiers.
+   */
   private List<String> validateAndGetTaskIds(List<Map<String, Object>> items) {
     if (items == null) {
       throw new IllegalArgumentException(
@@ -154,6 +175,13 @@ public class LifecycleTaskBatchService {
     return taskIds;
   }
 
+  /**
+   * Retrieves a required non-blank value from a task input.
+   *
+   * @param item  Task details containing the value.
+   * @param field Required field name.
+   * @return Required value as a string.
+   */
   private String getRequiredValue(Map<String, Object> item, String field) {
     Object value = item.get(field);
     if (value == null || value.toString().isBlank()) {
@@ -163,6 +191,12 @@ public class LifecycleTaskBatchService {
     return value.toString();
   }
 
+  /**
+   * Verifies that every requested task has a matching previous occurrence.
+   *
+   * @param taskIds            Requested task identifiers.
+   * @param previousOccurrences Previous occurrences indexed by task identifier.
+   */
   private void requirePreviousOccurrences(List<String> taskIds, Map<String, String> previousOccurrences) {
     List<String> missingTaskIds = taskIds.stream()
         .filter(taskId -> !previousOccurrences.containsKey(taskId))
@@ -173,6 +207,13 @@ public class LifecycleTaskBatchService {
     }
   }
 
+  /**
+   * Adds generated lifecycle values to every task before batch instantiation.
+   *
+   * @param items               Task details to prepare.
+   * @param previousOccurrences Previous occurrences indexed by task identifier.
+   * @param config              Lifecycle operation configuration.
+   */
   private void prepareItems(List<Map<String, Object>> items, Map<String, String> previousOccurrences,
       BatchEventConfig config) {
     // Reuse the stage IRI for tasks belonging to the same contract.
@@ -193,6 +234,17 @@ public class LifecycleTaskBatchService {
     }
   }
 
+  /**
+   * Configuration required to process one supported batch lifecycle event.
+   *
+   * @param eventType                Lifecycle event to create.
+   * @param previousEventTypes       Allowed predecessor events in fallback order.
+   * @param activityTargetEventTypes Events targeted by the resulting activities.
+   * @param trackAction              Activity action to record.
+   * @param remarks                  Remarks assigned to each lifecycle event.
+   * @param eventStatus              Optional status assigned to each event.
+   * @param successMessageKey        Localised success message key.
+   */
   private record BatchEventConfig(
       LifecycleEventType eventType,
       LifecycleEventType[] previousEventTypes,
