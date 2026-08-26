@@ -55,7 +55,7 @@ public class DeleteService {
     Set<String> optVarNames = this.kgService.getSparqlOptionalParameters(resourceID);
     // Generate query with branch validation
     String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId, branchName, optVarNames);
-    return this.kgService.delete(query, targetId);
+    return this.kgService.delete(query);
   }
 
   /**
@@ -72,7 +72,7 @@ public class DeleteService {
     Set<String> optVarNames = this.kgService.getSparqlOptionalParameters(resourceID);
     String query = this.queryTemplateService.genDeleteLifecycleOccurrencesQuery(
         resourceID, targetIds, null, optVarNames, eventType.getEvent());
-    return this.kgService.delete(query, targetIds.iterator().next());
+    return this.kgService.delete(query);
   }
 
   /**
