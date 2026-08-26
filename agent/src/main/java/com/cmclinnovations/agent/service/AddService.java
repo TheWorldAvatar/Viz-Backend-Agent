@@ -112,6 +112,51 @@ public class AddService {
   public ResponseEntity<StandardApiResponse<?>> instantiate(String resourceID, String targetId,
       Map<String, Object> param, String successLogMessage, String messageResource, TrackActionType trackAction) {
     LOGGER.info("Instantiating an instance of {} ...", resourceID);
+    ObjectNode addJsonSchema = this.renderJsonLd(resourceID, targetId, param);
+    return this.instantiateJsonLd(addJsonSchema, resourceID, successLogMessage, messageResource, trackAction);
+  }
+
+  /**
+   * Instantiates multiple instances in one JSON-LD addition.
+   *
+   * @param paramsByResourceId Request parameters grouped by resource identifier.
+   */
+  public ResponseEntity<StandardApiResponse<?>> instantiateBatch(
+      Map<String, List<Map<String, Object>>> paramsByResourceId) {
+    if (paramsByResourceId == null || paramsByResourceId.isEmpty()
+        || paramsByResourceId.entrySet().stream().anyMatch(entry -> entry.getKey() == null
+            || entry.getKey().isBlank() || entry.getValue() == null || entry.getValue().isEmpty()
+            || entry.getValue().stream().anyMatch(java.util.Objects::isNull))) {
+      throw new IllegalArgumentException("At least one valid instantiation entry is required!");
+    }
+
+    ArrayNode batchJsonLd = this.jsonLdService.genArrayNode();
+    List<String> resourceIds = new ArrayList<>();
+    List<ObjectNode> jsonLdSchemas = new ArrayList<>();
+    List<String> instanceIris = new ArrayList<>();
+    paramsByResourceId.forEach((resourceID, params) -> params.forEach(param -> {
+      String targetId = param.getOrDefault(QueryResource.ID_KEY, UUID.randomUUID()).toString();
+      ObjectNode jsonLdSchema = this.renderJsonLd(resourceID, targetId, param);
+      batchJsonLd.add(jsonLdSchema);
+      resourceIds.add(resourceID);
+      jsonLdSchemas.add(jsonLdSchema);
+      instanceIris.add(jsonLdSchema.path(ShaclResource.ID_KEY).asString());
+    }));
+
+    LOGGER.info("Adding {} instances to endpoint...", instanceIris.size());
+    ResponseEntity<String> response = this.kgService.add(batchJsonLd.toString());
+    if (response.getStatusCode() != HttpStatus.OK) {
+      LOGGER.warn(response.getBody());
+      throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ADD_KEY));
+    }
+
+    for (int index = 0; index < jsonLdSchemas.size(); index++) {
+      this.execShaclRules(resourceIds.get(index), instanceIris.get(index), jsonLdSchemas.get(index).toString());
+    }
+    return this.responseEntityBuilder.success(instanceIris);
+  }
+
+  private ObjectNode renderJsonLd(String resourceID, String targetId, Map<String, Object> param) {
     // Update ID value to target ID
     param.put(QueryResource.ID_KEY, targetId);
     // Retrieve the instantiation JSON schema
@@ -121,7 +166,7 @@ public class AddService {
     this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
     // Add the static ID reference
     this.jsonLdService.appendId(addJsonSchema, targetId);
-    return this.instantiateJsonLd(addJsonSchema, resourceID, successLogMessage, messageResource, trackAction);
+    return addJsonSchema;
   }
 
   /**
@@ -177,6 +222,18 @@ public class AddService {
       LOGGER.warn(response.getBody());
       throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ADD_KEY));
     }
+    this.execShaclRules(resourceID, instanceIri, jsonString);
+
+    LOGGER.info(successLogMessage == null ? "Instantiation is successful!" : successLogMessage);
+    if (trackAction != TrackActionType.IGNORED) {
+      this.logActivity(instanceIri, trackAction);
+    }
+    return this.responseEntityBuilder.success(instanceIri,
+        LocalisationTranslator
+            .getMessage(messageResource == null ? LocalisationResource.SUCCESS_ADD_KEY : messageResource));
+  }
+
+  private void execShaclRules(String resourceID, String instanceIri, String jsonString) {
     this.execSparqlConstructRules(resourceID, instanceIri);
 
     Model otherRules = this.kgService.getShaclRules(resourceID, ShaclRuleType.TRIPLE_RULE);
@@ -191,19 +248,11 @@ public class AddService {
             .format(RDFFormat.JSONLD)
             .output(out);
         String stringifiedInferredData = out.toString(StandardCharsets.UTF_8);
-        response = this.kgService.add(stringifiedInferredData);
+        this.kgService.add(stringifiedInferredData);
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
     }
-
-    LOGGER.info(successLogMessage == null ? "Instantiation is successful!" : successLogMessage);
-    if (trackAction != TrackActionType.IGNORED) {
-      this.logActivity(instanceIri, trackAction);
-    }
-    return this.responseEntityBuilder.success(instanceIri,
-        LocalisationTranslator
-            .getMessage(messageResource == null ? LocalisationResource.SUCCESS_ADD_KEY : messageResource));
   }
 
   /**
