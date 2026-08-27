@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.model.type;
 
+import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 
 /**
@@ -10,7 +11,7 @@ public enum LifecycleTaskOperationType {
       "dispatch",
       LifecycleEventType.SERVICE_ORDER_DISPATCHED,
       TrackActionType.ASSIGNMENT,
-      "Order has been assigned and is awaiting execution.",
+      LifecycleResource.ORDER_DISPATCH_MESSAGE,
       null,
       LocalisationResource.SUCCESS_CONTRACT_TASK_ASSIGN_KEY,
       LocalisationResource.SUCCESS_CONTRACT_TASK_BULK_ASSIGN_KEY,

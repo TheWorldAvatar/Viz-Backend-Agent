@@ -65,11 +65,6 @@ public class LifecycleTaskService {
   private final List<ColumnMetaPayload> taskColumnMeta = new ArrayList<>();
   private final List<ColumnMetaPayload> taskEntityColumnMeta = new ArrayList<>();
 
-  private static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
-  private static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
-  private static final String ORDER_COMPLETE_MESSAGE = "Order has been completed successfully.";
-  private static final String ORDER_ACCRUAL_MESSAGE = "Billables have been accrued successfully.";
-  private static final String SERVICE_VOID_MESSAGE = "Service has been voided.";
   private static final int NUM_DAY_ORDER_GEN = 30;
   static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
@@ -299,7 +294,7 @@ public class LifecycleTaskService {
             LifecycleEventType.SERVICE_EXEMPT, LifecycleEventType.SERVICE_CANCELLATION,
             LifecycleEventType.SERVICE_INCIDENT_REPORT);
         params.put(LifecycleResource.ORDER_KEY, prevEventIri);
-        params.put(LifecycleResource.REMARKS_KEY, SERVICE_VOID_MESSAGE);
+        params.put(LifecycleResource.REMARKS_KEY, LifecycleResource.SERVICE_VOID_MESSAGE);
 
         return this.genOccurrence(LifecycleResource.VOID_RESOURCE, params, LifecycleEventType.SERVICE_VOID,
             TrackActionType.IGNORED, "Task has been successfully voided!",
@@ -959,7 +954,7 @@ public class LifecycleTaskService {
     // Add parameter template
     Map<String, Object> params = new HashMap<>();
     params.put(LifecycleResource.CONTRACT_KEY, contract);
-    params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
+    params.put(LifecycleResource.REMARKS_KEY, LifecycleResource.ORDER_INITIALISE_MESSAGE);
     this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
     String orderPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
     // Instantiate each occurrence
@@ -997,7 +992,7 @@ public class LifecycleTaskService {
     Map<String, Object> params = new HashMap<>();
     // Contract ID is mandatory to help generate the other related parameters
     params.put(LifecycleResource.CONTRACT_KEY, contractId);
-    params.put(LifecycleResource.REMARKS_KEY, ORDER_INITIALISE_MESSAGE);
+    params.put(LifecycleResource.REMARKS_KEY, LifecycleResource.ORDER_INITIALISE_MESSAGE);
     params.put(LifecycleResource.DATE_TIME_KEY, currentDateTime);
     this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
     // Generate a new unique ID for the occurrence by retrieving the prefix from the
@@ -1023,7 +1018,7 @@ public class LifecycleTaskService {
                         SparqlResponseField.class).value()
                     : ""));
         params.putAll(currentEntity);
-        params.put(LifecycleResource.REMARKS_KEY, ORDER_DISPATCH_MESSAGE);
+        params.put(LifecycleResource.REMARKS_KEY, LifecycleResource.ORDER_DISPATCH_MESSAGE);
         // Ensure new task ID is kept
         params.put(QueryResource.ID_KEY, newTaskId);
         LifecycleResource.genIdAndInstanceParameters(defaultPrefix, LifecycleEventType.SERVICE_ORDER_DISPATCHED,
@@ -1121,17 +1116,17 @@ public class LifecycleTaskService {
     params.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
     switch (eventType) {
       case LifecycleEventType.SERVICE_EXECUTION:
-        remarksMsg = ORDER_COMPLETE_MESSAGE;
+        remarksMsg = LifecycleResource.ORDER_COMPLETE_MESSAGE;
         successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_COMPLETE_KEY;
         fallbackEvents.add(LifecycleEventType.SERVICE_ORDER_DISPATCHED);
         break;
       case LifecycleEventType.SERVICE_ORDER_DISPATCHED:
-        remarksMsg = ORDER_DISPATCH_MESSAGE;
+        remarksMsg = LifecycleResource.ORDER_DISPATCH_MESSAGE;
         successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_ASSIGN_KEY;
         fallbackEvents.add(LifecycleEventType.SERVICE_ORDER_RECEIVED);
         break;
       case LifecycleEventType.SERVICE_ACCRUAL:
-        remarksMsg = ORDER_ACCRUAL_MESSAGE;
+        remarksMsg = LifecycleResource.ORDER_ACCRUAL_MESSAGE;
         successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_ACCRUAL_KEY;
         fallbackEvents.add(LifecycleEventType.SERVICE_EXECUTION);
         fallbackEvents.add(LifecycleEventType.SERVICE_CANCELLATION);
