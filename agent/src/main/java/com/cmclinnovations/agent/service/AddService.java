@@ -157,6 +157,14 @@ public class AddService {
     return this.responseEntityBuilder.success(instanceIris);
   }
 
+  /**
+   * Renders a JSON-LD instance from the resource template and input parameters.
+   *
+   * @param resourceID The target resource identifier for the instance.
+   * @param targetId   The target instance identifier.
+   * @param param      Request parameters used to populate the template.
+   * @return Rendered JSON-LD instance.
+   */
   private ObjectNode renderJsonLd(String resourceID, String targetId, Map<String, Object> param) {
     // Update ID value to target ID
     param.put(QueryResource.ID_KEY, targetId);
