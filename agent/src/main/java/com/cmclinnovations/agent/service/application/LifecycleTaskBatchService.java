@@ -132,7 +132,7 @@ public class LifecycleTaskBatchService {
   }
 
   /**
-   * Validates task inputs and returns their unique identifiers in request order.
+   * Validates task inputs and returns their unique identifiers.
    *
    * @param items Task details to validate.
    * @return Validated task identifiers.

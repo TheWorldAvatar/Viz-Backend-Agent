@@ -120,8 +120,8 @@ public class AddService {
    * Instantiates multiple instances in one JSON-LD addition.
    * Activity logging is not included here and must be handled by the caller.
    *
-   * @param resourceID  The target resource identifier for the instance.
-   * @param param       Request parameters.
+   * @param resourceID The target resource identifier for the instance.
+   * @param params     Request parameters.
    */
   public ResponseEntity<StandardApiResponse<?>> instantiateBatch(
       String resourceID, List<Map<String, Object>> params) {
@@ -242,6 +242,13 @@ public class AddService {
             .getMessage(messageResource == null ? LocalisationResource.SUCCESS_ADD_KEY : messageResource));
   }
 
+  /**
+   * Executes SHACL rules for a newly instantiated JSON-LD instance.
+   *
+   * @param resourceID The target resource identifier for the instance.
+   * @param instanceIri The instantiated resource IRI.
+   * @param jsonString  The instantiated JSON-LD content.
+   */
   private void execShaclRules(String resourceID, String instanceIri, String jsonString) {
     this.execSparqlConstructRules(resourceID, instanceIri);
 

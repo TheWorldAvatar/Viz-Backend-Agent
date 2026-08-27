@@ -100,6 +100,12 @@ public enum LifecycleTaskOperationType {
     return null;
   }
 
+  /**
+   * Groups lifecycle event types for operation configuration.
+   *
+   * @param eventTypes Lifecycle event types to group.
+   * @return Configured lifecycle event types.
+   */
   private static LifecycleEventType[] eventTypes(LifecycleEventType... eventTypes) {
     return eventTypes;
   }
