@@ -25,6 +25,7 @@ import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.service.core.JsonLdService;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
+import com.cmclinnovations.agent.utils.StringResource;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
@@ -35,6 +36,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
   private Map<String, String> anonymousVariableMappings;
   private Map<String, Queue<GraphPattern>> arrayPatternsMap;
   private final JsonLdService jsonLdService;
+  private static final String TARGET_ID_KEY = "target_id";
   private static final Logger LOGGER = LogManager.getLogger(DeleteQueryTemplateFactory.class);
 
   /**
@@ -56,10 +58,17 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
   public DataManifest<String> write(QueryTemplateFactoryParameters params) {
     this.reset();
 
-    ModifyQuery deleteTemplate = this.genDeleteTemplate(params.targetIds().poll().get(0),
+    List<String> targetIds = params.targetIds().poll();
+    ModifyQuery deleteTemplate = this.genDeleteTemplate(targetIds,
         this.parseVariable((ObjectNode) params.rootNode().path(ShaclResource.ID_KEY)));
     this.recursiveParseNode(deleteTemplate, null, params.rootNode(), params.branchName(), params.optVarNames());
     String query = this.appendArrayStatements(deleteTemplate.getQueryString(), params.optVarNames());
+    if (targetIds.size() > 1) {
+      // Bind the shared identifier variable to every requested target.
+      String targetIdValues = QueryResource.values(
+          targetIds.stream().map(targetId -> Rdf.literalOf(targetId).getQueryString()).toList(), TARGET_ID_KEY);
+      query = StringResource.replaceLast(query, "}", targetIdValues + "}");
+    }
     return new DataManifest<>(query, new ArrayList<>());
   }
 
@@ -71,12 +80,14 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
   /**
    * Initialise a delete template.
    * 
-   * @param targetId The identifier of the instance to delete.
+   * @param targetIds The identifiers of the instances to delete.
    * @param idVar    The instance id as a variable.
    */
-  private ModifyQuery genDeleteTemplate(String targetId, Variable idVar) {
-    TriplePattern identifierTriple = idVar.has(QueryResource.DC_TERM_ID,
-        Rdf.literalOf(targetId));
+  private ModifyQuery genDeleteTemplate(List<String> targetIds, Variable idVar) {
+    RdfObject targetId = targetIds.size() == 1
+        ? Rdf.literalOf(targetIds.get(0))
+        : QueryResource.genVariable(TARGET_ID_KEY);
+    TriplePattern identifierTriple = idVar.has(QueryResource.DC_TERM_ID, targetId);
     return QueryResource.getDeleteQuery().delete(identifierTriple).where(identifierTriple);
   }
 

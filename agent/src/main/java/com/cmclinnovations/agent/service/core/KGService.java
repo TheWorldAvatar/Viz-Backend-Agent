@@ -98,10 +98,9 @@ public class KGService {
   /**
    * Deletes the target instance and its associated properties from the KG.
    * 
-   * @param query    The DELETE query for execution.
-   * @param targetId The target instance IRI.
+   * @param query The DELETE query for execution.
    */
-  public ResponseEntity<StandardApiResponse<?>> delete(String query, String targetId) {
+  public ResponseEntity<StandardApiResponse<?>> delete(String query) {
     LOGGER.debug("Deleting instances...");
     int statusCode = this.executeUpdate(query);
     if (statusCode == 200) {

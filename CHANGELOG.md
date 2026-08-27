@@ -1,5 +1,10 @@
 # Change Log
 
+# 1.65.0
+
+- Improved bulk task assignment by batching previous event lookup, deletion and instantiation
+- Batched activity logging after all task updates succeed
+
 # 1.64.4
 
 - Substituted hard-coded branch inference logic with custom SPARQL query
