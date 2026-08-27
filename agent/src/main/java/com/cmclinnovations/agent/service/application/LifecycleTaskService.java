@@ -693,7 +693,8 @@ public class LifecycleTaskService {
     String occurrenceQueryString = this.genOccurrenceEventQuery(varSequences, eventIds, eventType,
         lifecycleStatements[2]);
 
-    // Keep each array parent linked to the child fields selected by the occurrence query.
+    // Keep each array parent linked to the child fields selected by the occurrence
+    // query.
     Map<String, Set<String>> occurrenceArrayVariables = new HashMap<>();
     // Inspect every column returned by the occurrence shapes.
     varSequences.stream()
@@ -971,9 +972,9 @@ public class LifecycleTaskService {
    * Removes a terminal cancellation, report, or void event using its configured
    * JSON-LD.
    *
-   * @param taskId            Target task identifier.
-   * @param eventType         Lifecycle event type to remove.
-   * @param trackAction       History action to record.
+   * @param taskId             Target task identifier.
+   * @param eventType          Lifecycle event type to remove.
+   * @param trackAction        History action to record.
    * @param previousEventTypes Allowed direct predecessor event types.
    */
   public ResponseEntity<StandardApiResponse<?>> undoServiceAction(String taskId, LifecycleEventType eventType,
@@ -988,8 +989,7 @@ public class LifecycleTaskService {
     // Retrieve the original order for history logging when required
     String orderEvent = trackAction == TrackActionType.IGNORED
         ? null
-        : this.getPreviousOccurrences(List.of(taskId), QueryResource.IRI_KEY,
-            LifecycleEventType.SERVICE_ORDER_RECEIVED).get(taskId);
+        : this.getPreviousOccurrence(taskId, LifecycleEventType.SERVICE_ORDER_RECEIVED);
     if (trackAction != TrackActionType.IGNORED && orderEvent == null) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_INVALID_INSTANCE_KEY), HttpStatus.NOT_FOUND);
@@ -1024,6 +1024,11 @@ public class LifecycleTaskService {
         remarksMsg = LifecycleResource.ORDER_COMPLETE_MESSAGE;
         successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_COMPLETE_KEY;
         fallbackEvents.add(LifecycleEventType.SERVICE_ORDER_DISPATCHED);
+        if (this.execConflictChecks(LifecycleEventType.SERVICE_EXECUTION, params)) {
+          // Do not notify users of conflicts as they are intended to be overwritten by
+          // someone with the right roles
+          return this.responseEntityBuilder.success("", LocalisationTranslator.getMessage(successMsgId));
+        }
         break;
       case LifecycleEventType.SERVICE_ORDER_DISPATCHED:
         remarksMsg = LifecycleResource.ORDER_DISPATCH_MESSAGE;
@@ -1065,11 +1070,36 @@ public class LifecycleTaskService {
   }
 
   /**
-   * Gets the previous occurrence IRI based on the possible event types.
-   *
-   * @param eventId    The identifier of the latest event in the succeeds chain.
-   * @param eventTypes The plausible event types in fallback order.
-   * @return Previous occurrence IRI.
+   * Executes checks for conflict if any with the specific event type. If
+   * conflicts are detected, store the conflict into the knowledge graph.
+   * 
+   * @param eventType The event type to check if there is a conflict.
+   * @param params    The request parameters that should be stored.
+   */
+  public boolean execConflictChecks(LifecycleEventType eventType, Map<String, Object> params) {
+    if (params.containsKey(LifecycleResource.CONFLICT_KEY) && ((boolean) params.get(LifecycleResource.CONFLICT_KEY))) {
+      // Remove the conflict parameter
+      params.remove(LifecycleResource.CONFLICT_KEY);
+      String orderId = params.get(QueryResource.ID_KEY).toString();
+      String previousOccurrenceIri = this.getPreviousOccurrence(orderId, eventType);
+      // Conflict detected with previous event type
+      if (previousOccurrenceIri != null) {
+        String orderEventIri = this.getPreviousOccurrence(orderId, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+        Map<String, Object> conflictActivityParams = new HashMap<>();
+        conflictActivityParams.put(QueryResource.IRI_KEY, orderEventIri);
+        conflictActivityParams.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
+        this.addService.logConflict(conflictActivityParams, params);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Gets the previous occurence iri based on the possible events.
+   * 
+   * @param eventId The identifier of the latest event in the succeeds chain.
+   * @param events  The plausible events that may be previous occurrence.
    */
   public String getPreviousOccurrence(String eventId, LifecycleEventType... eventTypes) {
     String previousOccurrence = this.getPreviousOccurrences(
@@ -1112,7 +1142,8 @@ public class LifecycleTaskService {
     Queue<SparqlBinding> instances = this.lifecycleQueryService.getInstances(
         FileService.CONTRACT_PREV_EVENT_QUERY_RESOURCE, eventIds, previousEventTypes);
 
-    // Index results by source ID and predecessor type before applying fallback order.
+    // Index results by source ID and predecessor type before applying fallback
+    // order.
     Map<String, Map<String, String>> valuesByEventAndType = new HashMap<>();
     for (SparqlBinding instance : instances) {
       valuesByEventAndType.computeIfAbsent(instance.getFieldValue(QueryResource.EVENT_ID_VAR.getVarName()),
@@ -1138,8 +1169,8 @@ public class LifecycleTaskService {
    * Retrieves a terminal occurrence based on its event type, identifier, and
    * allowed direct predecessor types.
    *
-   * @param eventId           The identifier shared by the lifecycle event chain.
-   * @param eventType         Target event type to query for.
+   * @param eventId            The identifier shared by the lifecycle event chain.
+   * @param eventType          Target event type to query for.
    * @param previousEventTypes Allowed direct predecessor event types.
    */
   public String getTerminalOccurrence(String eventId, LifecycleEventType eventType,

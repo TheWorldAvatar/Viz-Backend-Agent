@@ -1,0 +1,29 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": {
+    "@replace": "id",
+    "@type": "iri",
+    "prefix": "https://theworldavatar.io/kg/conflict/"
+  },
+  "@type": "https://theworldavatar.io/kg/conflict/SubmissionConflictReport",
+  "http://purl.org/dc/terms/subject": {
+    "@replace": "iri",
+    "@type": "iri"
+  },
+  "http://purl.org/dc/terms/dateSubmitted": {
+    "@replace": "dateTime",
+    "@type": "literal",
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
+  },
+  "http://purl.org/dc/terms/description": {
+    "@replace": "description",
+    "@type": "literal"
+  },
+  "http://purl.org/dc/terms/creator": {
+    "@replace": "agent",
+    "@type": "iri",
+    "@optional": true
+  }
+}

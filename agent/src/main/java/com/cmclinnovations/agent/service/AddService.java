@@ -210,6 +210,24 @@ public class AddService {
   }
 
   /**
+   * Logs the conflict details with the agent.
+   * 
+   * @param conflictDetails The details of the conflict.
+   * @param reqParams       The parameters sent via the request that should have
+   *                        been submitted.
+   */
+  public void logConflict(Map<String, Object> conflictDetails, Map<String, Object> reqParams) {
+    Map<String, Object> agentDetails = this.changelogService.setAgent();
+    if (!agentDetails.isEmpty()) {
+      String agentId = this.instantiate(QueryResource.HISTORY_AGENT_RESOURCE, agentDetails, TrackActionType.IGNORED)
+          .getBody().data().id();
+      conflictDetails.put(QueryResource.HISTORY_AGENT_RESOURCE, agentId);
+    }
+    conflictDetails.put(ShaclResource.DESCRIPTION_PROPERTY, this.jsonLdService.readJsonString(reqParams));
+    this.instantiate(QueryResource.HISTORY_CONFLICT_RESOURCE, conflictDetails, TrackActionType.IGNORED);
+  }
+
+  /**
    * Instantiate an instance based on a jsonLD object.
    * 
    * @param jsonLdSchema      The target json LD object to instantiate.

@@ -1,5 +1,9 @@
 # Change Log
 
+# 1.66.0
+
+- Added conflict handling for complete only if a conflict parameter is sent and set to true
+
 # 1.65.0
 
 - Improved bulk task assignment by batching previous event lookup, deletion and instantiation
