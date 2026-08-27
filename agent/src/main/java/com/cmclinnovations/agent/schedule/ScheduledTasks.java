@@ -8,7 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.cmclinnovations.agent.service.application.LifecycleContractService;
-import com.cmclinnovations.agent.service.application.LifecycleTaskService;
+import com.cmclinnovations.agent.service.application.LifecycleTaskBatchService;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 
 @Component
@@ -16,15 +16,15 @@ import com.cmclinnovations.agent.service.core.AuthenticationService;
 public class ScheduledTasks {
   private final AuthenticationService authService;
   private final LifecycleContractService lifecycleContractService;
-  private final LifecycleTaskService lifecycleTaskService;
+  private final LifecycleTaskBatchService lifecycleTaskBatchService;
 
   private static final Logger LOGGER = LogManager.getLogger(ScheduledTasks.class);
 
   public ScheduledTasks(AuthenticationService authService, LifecycleContractService lifecycleService,
-      LifecycleTaskService lifecycleTaskService) {
+      LifecycleTaskBatchService lifecycleTaskBatchService) {
     this.authService = authService;
     this.lifecycleContractService = lifecycleService;
-    this.lifecycleTaskService = lifecycleTaskService;
+    this.lifecycleTaskBatchService = lifecycleTaskBatchService;
   }
 
   @Scheduled(cron = "0 0 0 * * *")
@@ -47,7 +47,7 @@ public class ScheduledTasks {
   private void genOrderActiveContracts() {
     try {
       this.authService.setInternalAuthentication();
-      this.lifecycleTaskService.genOrderActiveContracts();
+      this.lifecycleTaskBatchService.genOrderActiveContracts();
     } finally {
       SecurityContextHolder.clearContext();
     }
