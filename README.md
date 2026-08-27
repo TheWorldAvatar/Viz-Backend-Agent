@@ -858,7 +858,7 @@ Users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/ser
 
 Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/saved` endpoint to update and save the completion details for a target order without completing the order. This route serves to save the values if the order is to be executed over several days. The details are configurable as per the above.
 
-Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/complete` endpoint to update the completion details for a target order and complete this task. The details are configurable as per the above.
+Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/complete` endpoint to update the completion details for a target order and complete this task. The details are configurable as per the above. Users can send a `conflict` boolean parameter to indicate if conflicts would be logged rather than overwriting the current instance.
 
 Users can also send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/service/continue` endpoint **AFTER completing the task** to continue the task on the next working day (typically Saturday and Sunday will be excluded). This route will require the following parameters:
 
