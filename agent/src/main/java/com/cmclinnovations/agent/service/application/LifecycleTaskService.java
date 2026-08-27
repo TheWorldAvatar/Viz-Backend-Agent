@@ -1119,7 +1119,7 @@ public class LifecycleTaskService {
         remarksMsg = LifecycleResource.ORDER_COMPLETE_MESSAGE;
         successMsgId = LocalisationResource.SUCCESS_CONTRACT_TASK_COMPLETE_KEY;
         fallbackEvents.add(LifecycleEventType.SERVICE_ORDER_DISPATCHED);
-        if (this.execConflictChecks(params)) {
+        if (this.execConflictChecks(LifecycleEventType.SERVICE_EXECUTION, params)) {
           // Do not notify users of conflicts as they are intended to be overwritten by
           // someone with the right roles
           return this.responseEntityBuilder.success("", LocalisationTranslator.getMessage(successMsgId));
@@ -1165,18 +1165,19 @@ public class LifecycleTaskService {
   }
 
   /**
-   * Executes checks for conflict if any. If conflicts are detected, store the
-   * conflict into the knowledge graph.
+   * Executes checks for conflict if any with the specific event type. If
+   * conflicts are detected, store the conflict into the knowledge graph.
    * 
-   * @param params The request parameters that should be stored.
+   * @param eventType The event type to check if there is a conflict.
+   * @param params    The request parameters that should be stored.
    */
-  public boolean execConflictChecks(Map<String, Object> params) {
+  public boolean execConflictChecks(LifecycleEventType eventType, Map<String, Object> params) {
     if (params.containsKey(LifecycleResource.CONFLICT_KEY) && ((boolean) params.get(LifecycleResource.CONFLICT_KEY))) {
       // Remove the conflict parameter
       params.remove(LifecycleResource.CONFLICT_KEY);
       String orderId = params.get(QueryResource.ID_KEY).toString();
-      String previousOccurrenceIri = this.getPreviousOccurrence(orderId, LifecycleEventType.SERVICE_EXECUTION);
-      // Conflict detected with previous completion
+      String previousOccurrenceIri = this.getPreviousOccurrence(orderId, eventType);
+      // Conflict detected with previous event type
       if (previousOccurrenceIri != null) {
         String orderEventIri = this.getPreviousOccurrence(orderId, LifecycleEventType.SERVICE_ORDER_RECEIVED);
         Map<String, Object> conflictActivityParams = new HashMap<>();
