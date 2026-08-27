@@ -135,6 +135,7 @@ public class QueryResource {
     public static final String NUMERIC_FILTER_TEMPLATE = "xsd:decimal(?{0}){1}\"{2}\"^^xsd:decimal";
     public static final String TIME_FILTER_TEMPLATE = "STR(?{0}){1}\"{2}\"";
 
+    public static final String HISTORY_CONFLICT_RESOURCE = "conflict";
     public static final String HISTORY_ACTIVITY_RESOURCE = "activity";
     public static final String HISTORY_AGENT_RESOURCE = "agent";
     public static final String MESSAGE_RESOURCE = "message";

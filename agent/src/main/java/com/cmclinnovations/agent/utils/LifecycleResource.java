@@ -37,6 +37,7 @@ public class LifecycleResource {
 
   public static final String INSTANCE_KEY = "id_instance";
   public static final String CONTRACT_KEY = "contract";
+  public static final String CONFLICT_KEY = "conflict";
   public static final String ORDER_KEY = "order";
   public static final String CURRENT_DATE_KEY = "current date";
   public static final String EVENT_DATE_KEY = "event_date";
@@ -161,6 +162,8 @@ public class LifecycleResource {
         return FileService.HISTORY_ACTIVITY_JSON_LD_RESOURCE;
       case QueryResource.HISTORY_AGENT_RESOURCE:
         return FileService.HISTORY_AGENT_JSON_LD_RESOURCE;
+      case QueryResource.HISTORY_CONFLICT_RESOURCE:
+        return FileService.HISTORY_CONFLICT_JSON_LD_RESOURCE;
       default:
         return null;
     }
