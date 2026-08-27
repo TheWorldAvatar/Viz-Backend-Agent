@@ -1,6 +1,5 @@
 package com.cmclinnovations.agent.service.application;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,7 +59,7 @@ public class LifecycleTaskBatchService {
   public ResponseEntity<StandardApiResponse<?>> updateTaskEventDetails(String type,
       List<Map<String, Object>> items) {
     LifecycleTaskOperationType config = this.getConfig(type);
-    List<String> taskIds = this.validateAndGetTaskIds(items);
+    Set<String> taskIds = this.validateAndGetTaskIds(items);
     LifecycleEventType[] previousEventTypes = config.getPreviousEventTypes();
 
     Map<String, String> previousOccurrences = this.lifecycleTaskService.getPreviousOccurrences(
@@ -138,7 +137,7 @@ public class LifecycleTaskBatchService {
    * @param items Task details to validate.
    * @return Validated task identifiers.
    */
-  private List<String> validateAndGetTaskIds(List<Map<String, Object>> items) {
+  private Set<String> validateAndGetTaskIds(List<Map<String, Object>> items) {
     if (items == null) {
       throw new IllegalArgumentException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY, "items"));
@@ -147,8 +146,7 @@ public class LifecycleTaskBatchService {
       throw new IllegalArgumentException("At least one task is required!");
     }
 
-    List<String> taskIds = new ArrayList<>();
-    Set<String> uniqueTaskIds = new HashSet<>();
+    Set<String> taskIds = new HashSet<>();
     for (Map<String, Object> item : items) {
       if (item == null) {
         throw new IllegalArgumentException("Task details cannot be null!");
@@ -156,10 +154,9 @@ public class LifecycleTaskBatchService {
       String taskId = this.getRequiredValue(item, QueryResource.ID_KEY);
       this.getRequiredValue(item, LifecycleResource.CONTRACT_KEY);
       // Reject duplicate tasks before any lifecycle mutation occurs.
-      if (!uniqueTaskIds.add(taskId)) {
+      if (!taskIds.add(taskId)) {
         throw new IllegalArgumentException("Duplicate task identifier: " + taskId);
       }
-      taskIds.add(taskId);
     }
     return taskIds;
   }
@@ -186,7 +183,7 @@ public class LifecycleTaskBatchService {
    * @param taskIds            Requested task identifiers.
    * @param previousOccurrences Previous occurrences indexed by task identifier.
    */
-  private void requirePreviousOccurrences(List<String> taskIds, Map<String, String> previousOccurrences) {
+  private void requirePreviousOccurrences(Set<String> taskIds, Map<String, String> previousOccurrences) {
     List<String> missingTaskIds = taskIds.stream()
         .filter(taskId -> !previousOccurrences.containsKey(taskId))
         .toList();

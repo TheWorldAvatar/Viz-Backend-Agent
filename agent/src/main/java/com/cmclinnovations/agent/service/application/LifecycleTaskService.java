@@ -1092,7 +1092,7 @@ public class LifecycleTaskService {
 
     // Delete the terminal occurrence and log its reversal on success
     ResponseEntity<StandardApiResponse<?>> response = this.deleteService.deleteLifecycleOccurrences(
-        eventType.getId(), List.of(taskId), eventType);
+        eventType.getId(), Set.of(taskId), eventType);
     if (response.getStatusCode() == HttpStatus.OK && trackAction != TrackActionType.IGNORED) {
       this.addService.logActivity(orderEvent, trackAction);
     }

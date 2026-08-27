@@ -3,7 +3,6 @@ package com.cmclinnovations.agent.service.core;
 import java.nio.file.FileSystemNotFoundException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -100,7 +99,7 @@ public class QueryTemplateService {
    * @param optVarNames Set of names of optional variables.
    * @param eventType   The lifecycle event type IRI.
    */
-  public String genDeleteLifecycleOccurrencesQuery(String resourceID, Collection<String> targetIds, String branchName,
+  public String genDeleteLifecycleOccurrencesBatchQuery(String resourceID, Set<String> targetIds, String branchName,
       Set<String> optVarNames, String eventType) {
     if (targetIds == null || targetIds.isEmpty()
         || targetIds.stream().anyMatch(targetId -> targetId == null || targetId.isBlank())) {
@@ -118,8 +117,7 @@ public class QueryTemplateService {
     }
     ((ObjectNode) eventNode).put(ShaclResource.ID_KEY, eventType);
     return this.deleteQueryTemplateFactory
-        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetIds.stream().distinct().toList(), branchName,
-            optVarNames))
+        .write(new QueryTemplateFactoryParameters(addJsonSchema, targetIds, branchName, optVarNames))
         .data();
   }
 

@@ -1,6 +1,5 @@
 package com.cmclinnovations.agent.service;
 
-import java.util.Collection;
 import java.util.Queue;
 import java.util.Set;
 
@@ -67,10 +66,10 @@ public class DeleteService {
    * @param eventType  The lifecycle event type to delete.
    */
   public ResponseEntity<StandardApiResponse<?>> deleteLifecycleOccurrences(String resourceID,
-      Collection<String> targetIds, LifecycleEventType eventType) {
+      Set<String> targetIds, LifecycleEventType eventType) {
     LOGGER.debug("Deleting {} lifecycle occurrences", resourceID);
     Set<String> optVarNames = this.kgService.getSparqlOptionalParameters(resourceID);
-    String query = this.queryTemplateService.genDeleteLifecycleOccurrencesQuery(
+    String query = this.queryTemplateService.genDeleteLifecycleOccurrencesBatchQuery(
         resourceID, targetIds, null, optVarNames, eventType.getEvent());
     return this.kgService.delete(query);
   }

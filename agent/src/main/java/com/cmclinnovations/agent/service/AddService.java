@@ -120,7 +120,8 @@ public class AddService {
    * Instantiates multiple instances in one JSON-LD addition.
    * Activity logging is not included here and must be handled by the caller.
    *
-   * @param paramsByResourceId Request parameters grouped by resource identifier.
+   * @param resourceID  The target resource identifier for the instance.
+   * @param param       Request parameters.
    */
   public ResponseEntity<StandardApiResponse<?>> instantiateBatch(
       String resourceID, List<Map<String, Object>> params) {
