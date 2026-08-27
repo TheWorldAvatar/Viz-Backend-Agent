@@ -91,7 +91,7 @@ public class LifecycleTaskBatchService {
     // Log only after every dispatch and its SHACL processing has succeeded.
     String agentIri = this.instantiateAgent();
     List<String> activityTargetIris = taskIds.stream().map(activityTargets::get).toList();
-    List<Map<String, Object>> activityParams = this.changelogService.prepareActivities(
+    List<Map<String, Object>> activityParams = this.changelogService.logActions(
         activityTargetIris, config.getTrackAction(), agentIri);
     response = this.addService.instantiateBatch(QueryResource.HISTORY_ACTIVITY_RESOURCE, activityParams);
     if (response.getStatusCode() != HttpStatus.OK) {
