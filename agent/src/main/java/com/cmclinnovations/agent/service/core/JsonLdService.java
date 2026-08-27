@@ -222,4 +222,18 @@ public class JsonLdService {
       throw new IllegalStateException("Unable to read input as a JSON object.");
     }
   }
+
+  /**
+   * Reads the input into a JSON string.
+   * 
+   * @param input The JSON object.
+   */
+  public String readJsonString(Map<String, Object> input) {
+    try {
+      return this.objectMapper.writeValueAsString(input);
+    } catch (JacksonException e) {
+      LOGGER.error(e);
+      throw new IllegalStateException("Unable to read input as a JSON object.");
+    }
+  }
 }
