@@ -1180,7 +1180,6 @@ public class LifecycleTaskService {
       if (previousOccurrenceIri != null) {
         String orderEventIri = this.getPreviousOccurrence(orderId, LifecycleEventType.SERVICE_ORDER_RECEIVED);
         Map<String, Object> conflictActivityParams = new HashMap<>();
-        conflictActivityParams.put(QueryResource.ID_KEY, orderId);
         conflictActivityParams.put(QueryResource.IRI_KEY, orderEventIri);
         conflictActivityParams.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
         this.addService.logConflict(conflictActivityParams, params);
