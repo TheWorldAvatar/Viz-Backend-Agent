@@ -34,6 +34,11 @@ public class LifecycleResource {
   public static final String RECURRENCE_DAILY_TASK_STRING = "\"" + RECURRENCE_DAILY_TASK + "\"";
   public static final String RECURRENCE_ALT_DAY_TASK_STRING = "\"" + RECURRENCE_ALT_DAY_TASK + "\"";
   public static final String RECURRENCE_FIXED_DATE_TASK_STRING = "\"" + RECURRENCE_FIXED_DATE_TASK + "\"";
+  public static final String ORDER_INITIALISE_MESSAGE = "Order received and is being processed.";
+  public static final String ORDER_DISPATCH_MESSAGE = "Order has been assigned and is awaiting execution.";
+  public static final String ORDER_COMPLETE_MESSAGE = "Order has been completed successfully.";
+  public static final String ORDER_ACCRUAL_MESSAGE = "Billables have been accrued successfully.";
+  public static final String SERVICE_VOID_MESSAGE = "Service has been voided.";
 
   public static final String INSTANCE_KEY = "id_instance";
   public static final String CONTRACT_KEY = "contract";

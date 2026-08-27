@@ -54,24 +54,24 @@ public class DeleteService {
     Set<String> optVarNames = this.kgService.getSparqlOptionalParameters(resourceID);
     // Generate query with branch validation
     String query = this.queryTemplateService.genDeleteQuery(resourceID, targetId, branchName, optVarNames);
-    return this.kgService.delete(query, targetId);
+    return this.kgService.delete(query);
   }
 
   /**
-   * Delete a lifecycle occurrence associated with the target identifier and event
-   * type.
+   * Delete lifecycle occurrences associated with the target identifiers and
+   * event type in one operation.
    *
-   * @param resourceID The target resource identifier for the instance.
-   * @param targetId   The target instance identifier.
+   * @param resourceID The target resource identifier for the instances.
+   * @param targetIds  The target instance identifiers.
    * @param eventType  The lifecycle event type to delete.
    */
-  public ResponseEntity<StandardApiResponse<?>> deleteLifecycleOccurrence(String resourceID, String targetId,
-      LifecycleEventType eventType) {
-    LOGGER.debug("Deleting {} lifecycle occurrence of {}", resourceID, targetId);
+  public ResponseEntity<StandardApiResponse<?>> deleteLifecycleOccurrences(String resourceID,
+      Set<String> targetIds, LifecycleEventType eventType) {
+    LOGGER.debug("Deleting {} lifecycle occurrences", resourceID);
     Set<String> optVarNames = this.kgService.getSparqlOptionalParameters(resourceID);
-    String query = this.queryTemplateService.genDeleteLifecycleOccurrenceQuery(
-        resourceID, targetId, null, optVarNames, eventType.getEvent());
-    return this.kgService.delete(query, targetId);
+    String query = this.queryTemplateService.genDeleteLifecycleOccurrencesBatchQuery(
+        resourceID, targetIds, null, optVarNames, eventType.getEvent());
+    return this.kgService.delete(query);
   }
 
   /**

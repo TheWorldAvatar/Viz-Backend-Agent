@@ -1,7 +1,11 @@
 package com.cmclinnovations.agent.service.core;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -35,14 +39,52 @@ public class ChangelogService {
    * @param action The action to be logged.
    */
   public Map<String, Object> logAction(String iri, TrackActionType action) {
+    return this.genActivityLog(iri, action, this.dateTimeService.getCurrentDateTime());
+  }
+
+  /**
+   * Generates activity replacements for multiple affected entities without
+   * persisting them.
+   *
+   * @param iris     Entity IRIs affected by the action.
+   * @param action   Action to log for every entity.
+   * @param agentIri Optional agent IRI shared by the activities.
+   */
+  public List<Map<String, Object>> logActions(Collection<String> iris, TrackActionType action,
+      String agentIri) {
+    if (iris == null || iris.isEmpty() || iris.stream().anyMatch(iri -> iri == null || iri.isBlank())) {
+      throw new IllegalArgumentException("At least one affected entity IRI is required!");
+    }
+    // Use one timestamp for every activity in the same batch action.
+    String timestamp = this.dateTimeService.getCurrentDateTime();
+    List<Map<String, Object>> activities = new ArrayList<>();
+    for (String iri : iris) {
+      Map<String, Object> activity = this.genActivityLog(iri, action, timestamp);
+      // Assign IDs before the activity maps are rendered as one payload.
+      activity.put(QueryResource.ID_KEY, UUID.randomUUID().toString());
+      if (agentIri != null && !agentIri.isBlank()) {
+        activity.put(QueryResource.HISTORY_AGENT_RESOURCE, agentIri);
+      }
+      activities.add(activity);
+    }
+    return activities;
+  }
+
+  /**
+   * Generates activity log replacements with a specified timestamp.
+   *
+   * @param iri       Entity IRI affected by the action.
+   * @param action    Action recorded by the activity.
+   * @param timestamp Timestamp shared by activities from the same operation.
+   */
+  private Map<String, Object> genActivityLog(String iri, TrackActionType action, String timestamp) {
     if (action == TrackActionType.IGNORED) {
       throw new IllegalArgumentException("TrackActionType.IGNORED is not a valid action for logging.");
     }
-    String currentDateTime = this.dateTimeService.getCurrentDateTime();
     Map<String, Object> replacements = new HashMap<>();
     replacements.put(QueryResource.IRI_KEY, iri);
     replacements.put(QueryResource.HISTORY_ACTIVITY_RESOURCE, action.getClazz());
-    replacements.put(LifecycleResource.TIMESTAMP_KEY, currentDateTime);
+    replacements.put(LifecycleResource.TIMESTAMP_KEY, timestamp);
     return replacements;
   }
 
