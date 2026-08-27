@@ -123,11 +123,8 @@ public class AddService {
    * @param paramsByResourceId Request parameters grouped by resource identifier.
    */
   public ResponseEntity<StandardApiResponse<?>> instantiateBatch(
-      Map<String, List<Map<String, Object>>> paramsByResourceId) {
-    if (paramsByResourceId == null || paramsByResourceId.isEmpty()
-        || paramsByResourceId.entrySet().stream().anyMatch(entry -> entry.getKey() == null
-            || entry.getKey().isBlank() || entry.getValue() == null || entry.getValue().isEmpty()
-            || entry.getValue().stream().anyMatch(java.util.Objects::isNull))) {
+      String resourceID, List<Map<String, Object>> params) {
+    if (params == null || params.isEmpty()) {
       throw new IllegalArgumentException("At least one valid instantiation entry is required!");
     }
 
@@ -136,14 +133,14 @@ public class AddService {
     List<String> resourceIds = new ArrayList<>();
     List<ObjectNode> jsonLdSchemas = new ArrayList<>();
     List<String> instanceIris = new ArrayList<>();
-    paramsByResourceId.forEach((resourceID, params) -> params.forEach(param -> {
+    params.forEach(param -> {
       String targetId = param.getOrDefault(QueryResource.ID_KEY, UUID.randomUUID()).toString();
       ObjectNode jsonLdSchema = this.renderJsonLd(resourceID, targetId, param);
       batchJsonLd.add(jsonLdSchema);
       resourceIds.add(resourceID);
       jsonLdSchemas.add(jsonLdSchema);
       instanceIris.add(jsonLdSchema.path(ShaclResource.ID_KEY).asString());
-    }));
+    });
 
     LOGGER.info("Adding {} instances to endpoint...", instanceIris.size());
     ResponseEntity<String> response = this.kgService.add(batchJsonLd.toString());

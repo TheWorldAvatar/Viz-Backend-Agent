@@ -83,7 +83,7 @@ public class LifecycleTaskBatchService {
       return response;
     }
 
-    response = this.addService.instantiateBatch(Map.of(config.getEventType().getId(), items));
+    response = this.addService.instantiateBatch(config.getEventType().getId(), items);
     if (response.getStatusCode() != HttpStatus.OK) {
       return response;
     }
@@ -93,7 +93,7 @@ public class LifecycleTaskBatchService {
     List<String> activityTargetIris = taskIds.stream().map(activityTargets::get).toList();
     List<Map<String, Object>> activityParams = this.changelogService.prepareActivities(
         activityTargetIris, config.getTrackAction(), agentIri);
-    response = this.addService.instantiateBatch(Map.of(QueryResource.HISTORY_ACTIVITY_RESOURCE, activityParams));
+    response = this.addService.instantiateBatch(QueryResource.HISTORY_ACTIVITY_RESOURCE, activityParams);
     if (response.getStatusCode() != HttpStatus.OK) {
       return response;
     }
