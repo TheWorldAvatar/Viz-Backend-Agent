@@ -2,9 +2,11 @@ package com.cmclinnovations.agent.service.application;
 
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -75,23 +77,28 @@ public class LifecycleTaskBatchService {
    */
   public ResponseEntity<StandardApiResponse<?>> commenceContracts(List<String> contractIds,
       Map<String, Object> params) {
+    
+    Map<String, Queue<String>> occurrencesByContract = this.getOrderReceivedOccurrenceDatesByContract(
+        contractIds, null);
+
     if (contractIds.size() == 1) {
       String contractId = contractIds.get(0);
       params.put(LifecycleResource.CONTRACT_KEY, contractId);
-      return this.commenceContract(contractId, params);
+      return this.commenceContract(contractId, occurrencesByContract.get(contractId), params);
     }
 
     boolean hasError = false;
     for (String contractId : contractIds) {
       try {
         params.put(LifecycleResource.CONTRACT_KEY, contractId);
-        this.commenceContract(contractId, params);
+        this.commenceContract(contractId, occurrencesByContract.get(contractId), params);
       } catch (IllegalArgumentException _) {
         LOGGER.error("Error encountered while commencing contract for {}! Read error logs for more details",
             contractId);
         hasError = true;
       }
     }
+
     if (hasError) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_APPROVE_PARTIAL_KEY),
@@ -102,8 +109,8 @@ public class LifecycleTaskBatchService {
         .success("contract", LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY));
   }
 
-  private ResponseEntity<StandardApiResponse<?>> commenceContract(String contractId, Map<String, Object> params) {
-    Queue<String> occurrences = this.getOrderReceivedOccurrenceDates(contractId, null);
+  private ResponseEntity<StandardApiResponse<?>> commenceContract(String contractId, Queue<String> occurrences,
+      Map<String, Object> params) {
     boolean hasError = this.genOrderReceivedOccurrences(contractId, occurrences);
     if (hasError) {
       String partialErrorMsg = LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY);
@@ -310,15 +317,21 @@ public class LifecycleTaskBatchService {
     LOGGER.info("Retrieving all active contracts that need orders to be generated...");
     String query = this.lifecycleQueryFactory.getLatestOrderQuery(taskGenerationCutoffDate);
     Queue<SparqlBinding> results = this.getService.getInstances(query);
+    List<String> contractIds = new ArrayList<>();
+    String nextTaskStartDate = null;
     while (!results.isEmpty()) {
       SparqlBinding resultRow = results.poll();
       String currentContract = resultRow.getFieldValue(QueryResource.ID_KEY);
       // Latest task date for the contract
       String latestTaskDate = resultRow.getFieldValue(QueryResource.LATEST_DATE_VAR.getVarName());
-      String nextTaskStartDate = this.dateTimeService.getFutureDate(latestTaskDate, 1);
+      nextTaskStartDate = this.dateTimeService.getFutureDate(latestTaskDate, 1);
       LOGGER.info("Generating orders for contract {}, starting from {}", currentContract, nextTaskStartDate);
-      Queue<String> occurrences = this.getOrderReceivedOccurrenceDates(currentContract, nextTaskStartDate);
-      this.genOrderReceivedOccurrences(currentContract, occurrences);
+      contractIds.add(currentContract);
+    }
+    Map<String, Queue<String>> occurrencesByContract = this.getOrderReceivedOccurrenceDatesByContract(
+        contractIds, nextTaskStartDate);
+    for (Map.Entry<String, Queue<String>> entry : occurrencesByContract.entrySet()) {
+      this.genOrderReceivedOccurrences(entry.getKey(), entry.getValue());
     }
   }
 
@@ -357,6 +370,21 @@ public class LifecycleTaskBatchService {
       }
     }
     return hasError;
+  }
+
+  /**
+   * Retrieve occurrence dates for each specified contract.
+   *
+   * @param contracts          Target contracts.
+   * @param nextTaskStartDate Optional next task start date.
+   * @return Target occurrence dates indexed by contract.
+   */
+  private Map<String, Queue<String>> getOrderReceivedOccurrenceDatesByContract(
+      List<String> contracts, String nextTaskStartDate) {
+    Map<String, Queue<String>> occurrencesByContract = new LinkedHashMap<>();
+    contracts.forEach(contract -> occurrencesByContract.put(contract,
+        this.getOrderReceivedOccurrenceDates(contract, nextTaskStartDate)));
+    return occurrencesByContract;
   }
 
   /**
