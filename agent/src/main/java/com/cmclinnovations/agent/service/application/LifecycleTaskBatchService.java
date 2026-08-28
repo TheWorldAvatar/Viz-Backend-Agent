@@ -375,29 +375,36 @@ public class LifecycleTaskBatchService {
       String contract = entry.getKey();
       Queue<String> occurrences = entry.getValue();
       LOGGER.info("Generating all orders for the active contract {}...", contract);
-      // Add parameter template
-      Map<String, Object> occurrenceTemplate = new HashMap<>();
-      occurrenceTemplate.put(LifecycleResource.CONTRACT_KEY, contract);
-      occurrenceTemplate.put(LifecycleResource.REMARKS_KEY, LifecycleResource.ORDER_INITIALISE_MESSAGE);
-      this.lifecycleQueryService.addOccurrenceParams(occurrenceTemplate, LifecycleEventType.SERVICE_ORDER_RECEIVED);
-      String orderPrefix = StringResource.getPrefix(
-          occurrenceTemplate.get(LifecycleResource.STAGE_KEY).toString());
-      // Prepare each occurrence
-      while (!occurrences.isEmpty()) {
-        // Retrieve and update the date of occurrence
-        String occurrenceDate = occurrences.poll();
-        Map<String, Object> occurrence = new HashMap<>(occurrenceTemplate);
-        // set new id each time
-        occurrence.remove(QueryResource.ID_KEY);
-        LifecycleResource.genIdAndInstanceParameters(orderPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED,
-            occurrence);
-        occurrence.put(LifecycleResource.DATE_TIME_KEY, occurrenceDate);
-        occurrenceParams.add(occurrence);
-        occurrenceIris.add(occurrence.get(LifecycleResource.INSTANCE_KEY).toString());
+      try {
+        // Add parameter template
+        Map<String, Object> occurrenceTemplate = new HashMap<>();
+        occurrenceTemplate.put(LifecycleResource.CONTRACT_KEY, contract);
+        occurrenceTemplate.put(LifecycleResource.REMARKS_KEY, LifecycleResource.ORDER_INITIALISE_MESSAGE);
+        this.lifecycleQueryService.addOccurrenceParams(occurrenceTemplate,
+            LifecycleEventType.SERVICE_ORDER_RECEIVED);
+        String orderPrefix = StringResource.getPrefix(
+            occurrenceTemplate.get(LifecycleResource.STAGE_KEY).toString());
+        // Prepare each occurrence
+        while (!occurrences.isEmpty()) {
+          // Retrieve and update the date of occurrence
+          String occurrenceDate = occurrences.poll();
+          Map<String, Object> occurrence = new HashMap<>(occurrenceTemplate);
+          // set new id each time
+          occurrence.remove(QueryResource.ID_KEY);
+          LifecycleResource.genIdAndInstanceParameters(orderPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED,
+              occurrence);
+          occurrence.put(LifecycleResource.DATE_TIME_KEY, occurrenceDate);
+          occurrenceParams.add(occurrence);
+          occurrenceIris.add(occurrence.get(LifecycleResource.INSTANCE_KEY).toString());
+        }
+      } catch (RuntimeException e) {
+        LOGGER.error("Failed to prepare order occurrences for contract {}.", contract, e);
+        throw e;
       }
     }
 
     if (occurrenceParams.isEmpty()) {
+      LOGGER.warn("No order occurrences were prepared.");
       return false;
     }
 
@@ -405,13 +412,18 @@ public class LifecycleTaskBatchService {
       ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiateBatch(
           LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, occurrenceParams);
       if (response.getStatusCode() != HttpStatus.OK) {
+        LOGGER.warn("Order occurrence batch failed with status {}.", response.getStatusCode());
         return true;
       }
 
       response = this.logActionsBatch(occurrenceIris, TrackActionType.CREATION);
-      return response.getStatusCode() != HttpStatus.OK;
-    } catch (IllegalStateException _) {
-      LOGGER.error("Error encountered while creating orders! Read error logs for more details");
+      if (response.getStatusCode() != HttpStatus.OK) {
+        LOGGER.warn("Order creation activity batch failed with status {}.", response.getStatusCode());
+        return true;
+      }
+      return false;
+    } catch (IllegalStateException e) {
+      LOGGER.error("Failed to instantiate order occurrences or activities.", e);
       return true;
     }
   }
