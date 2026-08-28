@@ -86,46 +86,27 @@ public class LifecycleTaskBatchService {
 
   private ResponseEntity<StandardApiResponse<?>> commenceContractBatch(
       Map<String, Queue<String>> occurrencesByContract, Map<String, Object> params) {
-    boolean hasError = false;
-    for (Map.Entry<String, Queue<String>> entry : occurrencesByContract.entrySet()) {
-      String contractId = entry.getKey();
-      try {
-        params.put(LifecycleResource.CONTRACT_KEY, contractId);
-        boolean hasOccurrenceError = this.genOrderReceivedOccurrences(contractId, entry.getValue());
-        if (hasOccurrenceError) {
-          String partialErrorMsg = LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY);
-          LOGGER.warn(partialErrorMsg);
-          ResponseEntity<StandardApiResponse<?>> response = this.responseEntityBuilder.error(
-              LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY),
-              HttpStatus.INTERNAL_SERVER_ERROR);
-          if (occurrencesByContract.size() == 1) {
-            return response;
-          }
-          continue;
-        }
+    boolean hasOccurrenceError = this.genOrderReceivedOccurrences(occurrencesByContract);
+    if (hasOccurrenceError) {
+      String partialErrorMsg = LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY);
+      LOGGER.warn(partialErrorMsg);
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY),
+          HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
-        LOGGER.info("All orders has been successfully received!");
-        try {
-          ResponseEntity<StandardApiResponse<?>> response = this.lifecycleTaskService.genOccurrence(params,
-              LifecycleEventType.APPROVED,
-              MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
-              LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
-          if (response.getStatusCode() == HttpStatus.OK) {
-            this.lifecycleContractService.logContractActivity(contractId, TrackActionType.APPROVED);
-          }
-          if (occurrencesByContract.size() == 1) {
-            return response;
-          }
-        } catch (IllegalStateException e) {
-          LOGGER.warn("Something went wrong with instantiating the approve event for {}!", contractId);
-          throw e;
-        }
-      } catch (IllegalArgumentException e) {
-        if (occurrencesByContract.size() == 1) {
-          throw e;
-        }
+    LOGGER.info("All orders has been successfully received!");
+    Map<String, ResponseEntity<StandardApiResponse<?>>> responses = this.genApprovalOccurrence(
+        occurrencesByContract.keySet(), params);
+    if (responses.size() == 1) {
+      return responses.values().iterator().next();
+    }
+
+    boolean hasError = false;
+    for (Map.Entry<String, ResponseEntity<StandardApiResponse<?>>> entry : responses.entrySet()) {
+      if (entry.getValue() == null) {
         LOGGER.error("Error encountered while commencing contract for {}! Read error logs for more details",
-            contractId);
+            entry.getKey());
         hasError = true;
       }
     }
@@ -138,6 +119,35 @@ public class LifecycleTaskBatchService {
 
     return this.responseEntityBuilder
         .success("contract", LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY));
+  }
+
+  private Map<String, ResponseEntity<StandardApiResponse<?>>> genApprovalOccurrence(Set<String> contractIds,
+      Map<String, Object> params) {
+    Map<String, ResponseEntity<StandardApiResponse<?>>> responses = new LinkedHashMap<>();
+    for (String contractId : contractIds) {
+      try {
+        params.put(LifecycleResource.CONTRACT_KEY, contractId);
+        try {
+          ResponseEntity<StandardApiResponse<?>> response = this.lifecycleTaskService.genOccurrence(params,
+              LifecycleEventType.APPROVED,
+              MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
+              LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
+          if (response.getStatusCode() == HttpStatus.OK) {
+            this.lifecycleContractService.logContractActivity(contractId, TrackActionType.APPROVED);
+          }
+          responses.put(contractId, response);
+        } catch (IllegalStateException e) {
+          LOGGER.warn("Something went wrong with instantiating the approve event for {}!", contractId);
+          throw e;
+        }
+      } catch (IllegalArgumentException e) {
+        if (contractIds.size() == 1) {
+          throw e;
+        }
+        responses.put(contractId, null);
+      }
+    }
+    return responses;
   }
 
   /**
@@ -334,46 +344,64 @@ public class LifecycleTaskBatchService {
     }
     Map<String, Queue<String>> occurrencesByContract = this.getOrderReceivedOccurrenceDatesByContract(
         contractIds, nextTaskStartDate);
-    for (Map.Entry<String, Queue<String>> entry : occurrencesByContract.entrySet()) {
-      this.genOrderReceivedOccurrences(entry.getKey(), entry.getValue());
-    }
+    this.genOrderReceivedOccurrences(occurrencesByContract);
   }
 
   /**
-   * Generate occurrences for the order received event of a specified contract.
+   * Generate occurrences for the order received event of the specified contracts.
    * 
-   * @param contract     Target contract.
-   * @param occurrences Target occurrence dates.
+   * @param occurrencesByContract Target occurrence dates indexed by contract.
    * @return boolean indicating if the occurrences have been generated
    *         successfully.
    */
-  public boolean genOrderReceivedOccurrences(String contract, Queue<String> occurrences) {
-    LOGGER.info("Generating all orders for the active contract {}...", contract);
-    // Add parameter template
-    Map<String, Object> params = new HashMap<>();
-    params.put(LifecycleResource.CONTRACT_KEY, contract);
-    params.put(LifecycleResource.REMARKS_KEY, LifecycleResource.ORDER_INITIALISE_MESSAGE);
-    this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
-    String orderPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
-    // Instantiate each occurrence
-    boolean hasError = false;
-    while (!occurrences.isEmpty()) {
-      // Retrieve and update the date of occurrence
-      String occurrenceDate = occurrences.poll();
-      // set new id each time
-      params.remove(QueryResource.ID_KEY);
-      LifecycleResource.genIdAndInstanceParameters(orderPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
-      params.put(LifecycleResource.DATE_TIME_KEY, occurrenceDate);
-      try {
-        this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, TrackActionType.CREATION);
-        // Error logs for any specified occurrence
-      } catch (IllegalStateException _) {
-        LOGGER.error("Error encountered while creating order for {} on {}! Read error logs for more details",
-            contract, occurrenceDate);
-        hasError = true;
+  public boolean genOrderReceivedOccurrences(Map<String, Queue<String>> occurrencesByContract) {
+    List<Map<String, Object>> occurrenceParams = new ArrayList<>();
+    List<String> occurrenceIris = new ArrayList<>();
+    for (Map.Entry<String, Queue<String>> entry : occurrencesByContract.entrySet()) {
+      String contract = entry.getKey();
+      Queue<String> occurrences = entry.getValue();
+      LOGGER.info("Generating all orders for the active contract {}...", contract);
+      // Add parameter template
+      Map<String, Object> params = new HashMap<>();
+      params.put(LifecycleResource.CONTRACT_KEY, contract);
+      params.put(LifecycleResource.REMARKS_KEY, LifecycleResource.ORDER_INITIALISE_MESSAGE);
+      this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+      String orderPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
+      // Prepare each occurrence
+      while (!occurrences.isEmpty()) {
+        // Retrieve and update the date of occurrence
+        String occurrenceDate = occurrences.poll();
+        Map<String, Object> occurrence = new HashMap<>(params);
+        // set new id each time
+        occurrence.remove(QueryResource.ID_KEY);
+        LifecycleResource.genIdAndInstanceParameters(orderPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED,
+            occurrence);
+        occurrence.put(LifecycleResource.DATE_TIME_KEY, occurrenceDate);
+        occurrenceParams.add(occurrence);
+        occurrenceIris.add(occurrence.get(LifecycleResource.INSTANCE_KEY).toString());
       }
     }
-    return hasError;
+
+    if (occurrenceParams.isEmpty()) {
+      return false;
+    }
+
+    try {
+      ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiateBatch(
+          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, occurrenceParams);
+      if (response.getStatusCode() != HttpStatus.OK) {
+        return true;
+      }
+
+      String agentIri = this.instantiateAgent();
+      List<Map<String, Object>> activityParams = this.changelogService.logActions(
+          occurrenceIris, TrackActionType.CREATION, agentIri);
+      response = this.addService.instantiateBatch(QueryResource.HISTORY_ACTIVITY_RESOURCE, activityParams);
+      return response.getStatusCode() != HttpStatus.OK;
+    } catch (IllegalStateException _) {
+      LOGGER.error("Error encountered while creating orders! Read error logs for more details");
+      return true;
+    }
   }
 
   /**
