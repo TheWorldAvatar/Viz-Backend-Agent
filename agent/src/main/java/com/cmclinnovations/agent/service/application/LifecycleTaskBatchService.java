@@ -135,23 +135,14 @@ public class LifecycleTaskBatchService {
       approvalParams.add(approval);
     }
 
-    try {
-      ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiateBatch(
-          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, approvalParams);
-      if (response.getStatusCode() != HttpStatus.OK) {
-        return true;
-      }
-
-      List<String> contractIris = contractIds.stream()
-          .map(contractId -> this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId)
-              .getFieldValue(QueryResource.IRI_KEY))
-          .toList();
-      response = this.logActionsBatch(contractIris, TrackActionType.APPROVED);
-      return response.getStatusCode() != HttpStatus.OK;
-    } catch (IllegalStateException _) {
-      LOGGER.warn("Something went wrong with instantiating the approve events!");
-      return true;
-    }
+    List<String> contractIris = contractIds.stream()
+        .map(contractId -> this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId)
+            .getFieldValue(QueryResource.IRI_KEY))
+        .toList();
+    ResponseEntity<StandardApiResponse<?>> response = this.instantiateBatch(
+        LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, approvalParams, contractIris,
+        TrackActionType.APPROVED, "Approval");
+    return response.getStatusCode() != HttpStatus.OK;
   }
 
   /**
@@ -188,20 +179,46 @@ public class LifecycleTaskBatchService {
       return response;
     }
 
-    response = this.addService.instantiateBatch(config.getEventType().getId(), items);
-    if (response.getStatusCode() != HttpStatus.OK) {
-      return response;
-    }
-
-    // Log only after every dispatch and its SHACL processing has succeeded.
     List<String> activityTargetIris = taskIds.stream().map(activityTargets::get).toList();
-    response = this.logActionsBatch(activityTargetIris, config.getTrackAction());
+    response = this.instantiateBatch(config.getEventType().getId(), items, activityTargetIris,
+        config.getTrackAction(), config.getId());
     if (response.getStatusCode() != HttpStatus.OK) {
       return response;
     }
 
     return this.responseEntityBuilder.success("task",
         LocalisationTranslator.getMessage(config.getBulkSuccessMessageKey()));
+  }
+
+  /**
+   * Instantiates a batch and logs activities after every instance succeeds.
+   *
+   * @param resourceId         Target resource identifier.
+   * @param params             Instance parameters to add.
+   * @param activityTargetIris Activity target IRIs.
+   * @param trackAction        Action to record for each target.
+   * @param operation          Operation name used in error logs.
+   * @return Response describing the batch or activity outcome.
+   */
+  private ResponseEntity<StandardApiResponse<?>> instantiateBatch(String resourceId,
+      List<Map<String, Object>> params, List<String> activityTargetIris,
+      TrackActionType trackAction, String operation) {
+    try {
+      ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiateBatch(resourceId, params);
+      if (response.getStatusCode() != HttpStatus.OK) {
+        LOGGER.warn("{} batch failed with status {}.", operation, response.getStatusCode());
+        return response;
+      }
+      response = this.logActionsBatch(activityTargetIris, trackAction);
+      if (response.getStatusCode() != HttpStatus.OK) {
+        LOGGER.warn("{} activity batch failed with status {}.", operation, response.getStatusCode());
+      }
+      return response;
+    } catch (IllegalStateException e) {
+      LOGGER.error("{} batch failed.", operation, e);
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_ADD_KEY), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   /**
@@ -408,24 +425,10 @@ public class LifecycleTaskBatchService {
       return false;
     }
 
-    try {
-      ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiateBatch(
-          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, occurrenceParams);
-      if (response.getStatusCode() != HttpStatus.OK) {
-        LOGGER.warn("Order occurrence batch failed with status {}.", response.getStatusCode());
-        return true;
-      }
-
-      response = this.logActionsBatch(occurrenceIris, TrackActionType.CREATION);
-      if (response.getStatusCode() != HttpStatus.OK) {
-        LOGGER.warn("Order creation activity batch failed with status {}.", response.getStatusCode());
-        return true;
-      }
-      return false;
-    } catch (IllegalStateException e) {
-      LOGGER.error("Failed to instantiate order occurrences or activities.", e);
-      return true;
-    }
+    ResponseEntity<StandardApiResponse<?>> response = this.instantiateBatch(
+        LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, occurrenceParams, occurrenceIris,
+        TrackActionType.CREATION, "Order occurrence");
+    return response.getStatusCode() != HttpStatus.OK;
   }
 
   /**
