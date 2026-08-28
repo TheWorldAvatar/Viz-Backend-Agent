@@ -131,15 +131,13 @@ public class AddService {
 
     // Render every entry before submitting one combined JSON-LD payload.
     ArrayNode batchJsonLd = this.jsonLdService.genArrayNode();
-    List<ObjectNode> jsonLdSchemas = new ArrayList<>();
-    List<String> instanceIris = new ArrayList<>();
-    params.forEach(param -> {
-      String targetId = param.getOrDefault(QueryResource.ID_KEY, UUID.randomUUID()).toString();
-      ObjectNode jsonLdSchema = this.renderJsonLd(resourceID, targetId, param);
-      batchJsonLd.add(jsonLdSchema);
-      jsonLdSchemas.add(jsonLdSchema);
-      instanceIris.add(jsonLdSchema.path(ShaclResource.ID_KEY).asString());
-    });
+    List<ObjectNode> jsonLdSchemas = this.renderJsonLd(resourceID, params);
+    // Add each rendered schema to the combined JSON-LD array. ArrayNode.add returns
+    // the array itself, but forEach ignores that return value.
+    jsonLdSchemas.forEach(batchJsonLd::add);
+    List<String> instanceIris = jsonLdSchemas.stream()
+        .map(jsonLdSchema -> jsonLdSchema.path(ShaclResource.ID_KEY).asString())
+        .toList();
 
     LOGGER.info("Adding {} instances to endpoint...", instanceIris.size());
     ResponseEntity<String> response = this.kgService.add(batchJsonLd.toString());
@@ -165,14 +163,32 @@ public class AddService {
   private ObjectNode renderJsonLd(String resourceID, String targetId, Map<String, Object> param) {
     // Update ID value to target ID
     param.put(QueryResource.ID_KEY, targetId);
-    // Retrieve the instantiation JSON schema
-    ObjectNode addJsonSchema = this.queryTemplateService.getJsonLdTemplate(resourceID);
+    return this.renderJsonLd(resourceID, List.of(param)).get(0);
+  }
 
-    // Attempt to replace all placeholders in the JSON schema
-    this.recursiveReplacePlaceholders(addJsonSchema, null, null, param);
-    // Add the static ID reference
-    this.jsonLdService.appendId(addJsonSchema, targetId);
-    return addJsonSchema;
+  /**
+   * Renders multiple JSON-LD instances from one resource template.
+   *
+   * @param resourceID The target resource identifier for the instances.
+   * @param params     Request parameters used to populate each template.
+   * @return Rendered JSON-LD instances.
+   */
+  private List<ObjectNode> renderJsonLd(String resourceID, List<Map<String, Object>> params) {
+    // Retrieve the instantiation JSON schema
+    ObjectNode jsonLdTemplate = this.queryTemplateService.getJsonLdTemplate(resourceID);
+    List<ObjectNode> jsonLdSchemas = new ArrayList<>();
+    params.forEach(param -> {
+      String targetId = param.getOrDefault(QueryResource.ID_KEY, UUID.randomUUID()).toString();
+      param.put(QueryResource.ID_KEY, targetId);
+      ObjectNode jsonLdSchema = jsonLdTemplate.deepCopy();
+
+      // Attempt to replace all placeholders in the JSON schema
+      this.recursiveReplacePlaceholders(jsonLdSchema, null, null, param);
+      // Add the static ID reference
+      this.jsonLdService.appendId(jsonLdSchema, targetId);
+      jsonLdSchemas.add(jsonLdSchema);
+    });
+    return jsonLdSchemas;
   }
 
   /**

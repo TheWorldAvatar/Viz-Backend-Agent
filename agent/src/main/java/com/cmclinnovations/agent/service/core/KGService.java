@@ -268,11 +268,11 @@ public class KGService {
    * @param instanceIris The instance IRI strings.
    */
   public void execShaclRules(Model rules, List<String> instanceIris) {
-    for (String instanceIri : instanceIris) {
-      LOGGER.info("Executing SHACL SPARQL construct rules directly in the knowledge graph...");
-      Queue<String> constructQueries = this.shaclRuleProcesser.getConstructQueries(rules);
-      while (!constructQueries.isEmpty()) {
-        String currentQuery = constructQueries.poll();
+    LOGGER.info("Executing SHACL SPARQL construct rules directly in the knowledge graph...");
+    Queue<String> constructQueries = this.shaclRuleProcesser.getConstructQueries(rules);
+    while (!constructQueries.isEmpty()) {
+      String currentQuery = constructQueries.poll();
+      for (String instanceIri : instanceIris) {
         // Execute a SELECT query to retrieve all possible variables and their values in
         // the WHERE clause
         String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery, instanceIri);
