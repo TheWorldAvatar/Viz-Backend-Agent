@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.service.application;
 
+import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,7 +36,6 @@ import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.StringResource;
-import com.cmclinnovations.agent.utils.TypeCastUtils;
 
 @Service
 public class LifecycleTaskBatchService {
@@ -44,6 +44,7 @@ public class LifecycleTaskBatchService {
   private final DateTimeService dateTimeService;
   private final DeleteService deleteService;
   private final GetService getService;
+  private final LifecycleContractService lifecycleContractService;
   private final LifecycleQueryService lifecycleQueryService;
   private final LifecycleTaskService lifecycleTaskService;
   private final ResponseEntityBuilder responseEntityBuilder;
@@ -55,17 +56,76 @@ public class LifecycleTaskBatchService {
 
   public LifecycleTaskBatchService(AddService addService, ChangelogService changelogService,
       DateTimeService dateTimeService, DeleteService deleteService, GetService getService,
-      LifecycleQueryService lifecycleQueryService, LifecycleTaskService lifecycleTaskService,
-      ResponseEntityBuilder responseEntityBuilder) {
+      LifecycleContractService lifecycleContractService, LifecycleQueryService lifecycleQueryService,
+      LifecycleTaskService lifecycleTaskService, ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.changelogService = changelogService;
     this.dateTimeService = dateTimeService;
     this.deleteService = deleteService;
     this.getService = getService;
+    this.lifecycleContractService = lifecycleContractService;
     this.lifecycleQueryService = lifecycleQueryService;
     this.lifecycleTaskService = lifecycleTaskService;
     this.responseEntityBuilder = responseEntityBuilder;
     this.lifecycleQueryFactory = new LifecycleQueryFactory();
+  }
+
+  /**
+   * Signal the commencement of the services for the specified contracts.
+   */
+  public ResponseEntity<StandardApiResponse<?>> commenceContracts(List<String> contractIds,
+      Map<String, Object> params) {
+    if (contractIds.size() == 1) {
+      String contractId = contractIds.get(0);
+      params.put(LifecycleResource.CONTRACT_KEY, contractId);
+      return this.commenceContract(contractId, params);
+    }
+
+    boolean hasError = false;
+    for (String contractId : contractIds) {
+      try {
+        params.put(LifecycleResource.CONTRACT_KEY, contractId);
+        this.commenceContract(contractId, params);
+      } catch (IllegalArgumentException _) {
+        LOGGER.error("Error encountered while commencing contract for {}! Read error logs for more details",
+            contractId);
+        hasError = true;
+      }
+    }
+    if (hasError) {
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_APPROVE_PARTIAL_KEY),
+          HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    return this.responseEntityBuilder
+        .success("contract", LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY));
+  }
+
+  private ResponseEntity<StandardApiResponse<?>> commenceContract(String contractId, Map<String, Object> params) {
+    boolean hasError = this.genOrderReceivedOccurrences(contractId, null);
+    if (hasError) {
+      String partialErrorMsg = LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY);
+      LOGGER.warn(partialErrorMsg);
+      return this.responseEntityBuilder.error(
+          LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY),
+          HttpStatus.INTERNAL_SERVER_ERROR);
+    } else {
+      LOGGER.info("All orders has been successfully received!");
+      try {
+        ResponseEntity<StandardApiResponse<?>> response = this.lifecycleTaskService.genOccurrence(params,
+            LifecycleEventType.APPROVED,
+            MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
+            LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
+        if (response.getStatusCode() == HttpStatus.OK) {
+          this.lifecycleContractService.logContractActivity(contractId, TrackActionType.APPROVED);
+        }
+        return response;
+      } catch (IllegalStateException e) {
+        LOGGER.warn("Something went wrong with instantiating the approve event for {}!", contractId);
+        throw e;
+      }
+    }
   }
 
   /**

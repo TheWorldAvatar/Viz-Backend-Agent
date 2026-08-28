@@ -65,7 +65,6 @@ public class LifecycleTaskService {
   private final List<ColumnMetaPayload> taskColumnMeta = new ArrayList<>();
   private final List<ColumnMetaPayload> taskEntityColumnMeta = new ArrayList<>();
 
-  private static final int NUM_DAY_ORDER_GEN = 30;
   static final Logger LOGGER = LogManager.getLogger(LifecycleTaskService.class);
 
   private static final boolean IS_CONTRACT = false;
