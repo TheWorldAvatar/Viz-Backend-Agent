@@ -96,12 +96,12 @@ public class LifecycleTaskBatchService {
       String partialErrorMsg = LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY);
       LOGGER.warn(partialErrorMsg);
       return this.responseEntityBuilder.error(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY),
+          partialErrorMsg,
           HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     LOGGER.info("All orders has been successfully received!");
-    boolean hasApprovalError = this.genApprovalOccurrence(occurrencesByContract.keySet(), params);
+    boolean hasApprovalError = this.genApprovalOccurrences(occurrencesByContract.keySet(), params);
     if (hasApprovalError) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_APPROVE_PARTIAL_KEY),
@@ -119,7 +119,7 @@ public class LifecycleTaskBatchService {
    * @param params      Approval occurrence parameters.
    * @return Boolean indicating whether an error occurred.
    */
-  private boolean genApprovalOccurrence(Set<String> contractIds,
+  private boolean genApprovalOccurrences(Set<String> contractIds,
       Map<String, Object> params) {
     if (contractIds.isEmpty()) {
       return false;
@@ -357,8 +357,7 @@ public class LifecycleTaskBatchService {
    * Generate occurrences for the order received event of the specified contracts.
    * 
    * @param occurrencesByContract Target occurrence dates indexed by contract.
-   * @return boolean indicating if the occurrences have been generated
-   *         successfully.
+   * @return Boolean indicating whether an error occurred.
    */
   public boolean genOrderReceivedOccurrences(Map<String, Queue<String>> occurrencesByContract) {
     List<Map<String, Object>> occurrenceParams = new ArrayList<>();
@@ -368,16 +367,17 @@ public class LifecycleTaskBatchService {
       Queue<String> occurrences = entry.getValue();
       LOGGER.info("Generating all orders for the active contract {}...", contract);
       // Add parameter template
-      Map<String, Object> params = new HashMap<>();
-      params.put(LifecycleResource.CONTRACT_KEY, contract);
-      params.put(LifecycleResource.REMARKS_KEY, LifecycleResource.ORDER_INITIALISE_MESSAGE);
-      this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
-      String orderPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
+      Map<String, Object> occurrenceTemplate = new HashMap<>();
+      occurrenceTemplate.put(LifecycleResource.CONTRACT_KEY, contract);
+      occurrenceTemplate.put(LifecycleResource.REMARKS_KEY, LifecycleResource.ORDER_INITIALISE_MESSAGE);
+      this.lifecycleQueryService.addOccurrenceParams(occurrenceTemplate, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+      String orderPrefix = StringResource.getPrefix(
+          occurrenceTemplate.get(LifecycleResource.STAGE_KEY).toString());
       // Prepare each occurrence
       while (!occurrences.isEmpty()) {
         // Retrieve and update the date of occurrence
         String occurrenceDate = occurrences.poll();
-        Map<String, Object> occurrence = new HashMap<>(params);
+        Map<String, Object> occurrence = new HashMap<>(occurrenceTemplate);
         // set new id each time
         occurrence.remove(QueryResource.ID_KEY);
         LifecycleResource.genIdAndInstanceParameters(orderPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED,
