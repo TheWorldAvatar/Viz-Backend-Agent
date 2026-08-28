@@ -62,6 +62,9 @@ public class LifecycleController {
 
   private static final Logger LOGGER = LogManager.getLogger(LifecycleController.class);
 
+  /**
+   * Constructs a new controller with the required lifecycle services.
+   */
   public LifecycleController(ConcurrencyService concurrencyService, AddService addService, GetService getService,
       DeleteService deleteService, UpdateService updateService, DateTimeService dateTimeService,
       BillingService billingService, LifecycleContractService lifecycleContractService,
@@ -107,6 +110,12 @@ public class LifecycleController {
     });
   }
 
+  /**
+   * Generates the lifecycle and schedule for the specified contract.
+   *
+   * @param params Contract and lifecycle parameters.
+   * @return Response describing the lifecycle generation outcome.
+   */
   private ResponseEntity<StandardApiResponse<?>> execGenContractLifecycle(Map<String, Object> params) {
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     // Add current date into parameters
@@ -287,6 +296,13 @@ public class LifecycleController {
     });
   }
 
+  /**
+   * Creates a copy of a contract and drafts its lifecycle.
+   *
+   * @param entityType      Target contract resource type.
+   * @param contractDetails Contract parameters to copy.
+   * @param draftDetails    Lifecycle and schedule parameters for the copied contract.
+   */
   private void cloneDraftContract(String entityType, Map<String, Object> contractDetails,
       Map<String, Object> draftDetails) {
     // Generate new contract details from existing contract
@@ -369,6 +385,13 @@ public class LifecycleController {
     });
   }
 
+  /**
+   * Updates lifecycle event details for multiple tasks in one request.
+   *
+   * @param type   Lifecycle operation type.
+   * @param params Batch task details indexed by the items key.
+   * @return Response describing the batch update outcome.
+   */
   @PutMapping("/service/{type}/bulk")
   public ResponseEntity<StandardApiResponse<?>> bulkUpdateTaskEventDetails(@PathVariable String type,
       @RequestBody Map<String, List<Map<String, Object>>> params) {

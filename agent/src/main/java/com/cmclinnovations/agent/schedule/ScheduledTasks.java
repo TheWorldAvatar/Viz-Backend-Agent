@@ -20,6 +20,9 @@ public class ScheduledTasks {
 
   private static final Logger LOGGER = LogManager.getLogger(ScheduledTasks.class);
 
+  /**
+   * Constructs the scheduled task runner with the required services.
+   */
   public ScheduledTasks(AuthenticationService authService, LifecycleContractService lifecycleService,
       LifecycleTaskBatchService lifecycleTaskBatchService) {
     this.authService = authService;
@@ -27,6 +30,9 @@ public class ScheduledTasks {
     this.lifecycleTaskBatchService = lifecycleTaskBatchService;
   }
 
+  /**
+   * Runs the daily order generation and contract discharge tasks.
+   */
   @Scheduled(cron = "0 0 0 * * *")
   public void runDaily() {
     LOGGER.info("Performing daily cron job...");
@@ -44,6 +50,9 @@ public class ScheduledTasks {
     LOGGER.info("Daily cron job has completed...");
   }
 
+  /**
+   * Generates orders for active contracts using internal authentication.
+   */
   private void genOrderActiveContracts() {
     try {
       this.authService.setInternalAuthentication();
@@ -53,6 +62,9 @@ public class ScheduledTasks {
     }
   }
 
+  /**
+   * Discharges active contracts that have expired.
+   */
   private void dischargeExpiredContracts() {
     LOGGER.info("Discharging the active contracts that have expired today...");
     this.lifecycleContractService.dischargeExpiredContracts();

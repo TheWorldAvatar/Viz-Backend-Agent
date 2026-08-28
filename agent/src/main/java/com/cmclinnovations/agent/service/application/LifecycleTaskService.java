@@ -754,6 +754,15 @@ public class LifecycleTaskService {
     return new DataManifest<>(mergedData, mergedColumns);
   }
 
+  /**
+   * Generates a query for retrieving lifecycle event occurrence details.
+   *
+   * @param varSequences       Event columns to include in the query.
+   * @param eventIds           Target lifecycle event identifiers.
+   * @param eventType          Target lifecycle event type.
+   * @param lifecycleStatement Base lifecycle query statement.
+   * @return Generated occurrence event query.
+   */
   private String genOccurrenceEventQuery(Set<ColumnMetaPayload> varSequences, Queue<String> eventIds,
       LifecycleEventType eventType, String lifecycleStatement) {
     // Generate query statements
@@ -798,6 +807,13 @@ public class LifecycleTaskService {
     return queryString;
   }
 
+  /**
+   * Parses and indexes lifecycle bindings by a specified identifier field.
+   *
+   * @param bindings Lifecycle query bindings to index.
+   * @param idKey    Field containing the identifier.
+   * @return Parsed lifecycle data indexed by identifier.
+   */
   private Map<String, Map<String, Object>> mapBindingsById(Collection<SparqlBinding> bindings, String idKey) {
     return bindings.stream().map(binding -> Map.entry(
         binding.getFieldValue(idKey),

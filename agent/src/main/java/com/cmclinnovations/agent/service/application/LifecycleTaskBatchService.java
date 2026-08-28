@@ -54,6 +54,9 @@ public class LifecycleTaskBatchService {
   private static final int NUM_DAY_ORDER_GEN = 30;
   private static final Logger LOGGER = LogManager.getLogger(LifecycleTaskBatchService.class);
 
+  /**
+   * Constructs a new batch service with the required lifecycle services.
+   */
   public LifecycleTaskBatchService(AddService addService, ChangelogService changelogService,
       DateTimeService dateTimeService, DeleteService deleteService, GetService getService,
       LifecycleQueryService lifecycleQueryService, LifecycleTaskService lifecycleTaskService,
@@ -82,6 +85,13 @@ public class LifecycleTaskBatchService {
     return this.commenceContractBatch(occurrencesByContract, params);
   }
 
+  /**
+   * Generates orders and approval occurrences for the specified contracts.
+   *
+   * @param occurrencesByContract Target occurrence dates indexed by contract.
+   * @param params                Approval occurrence parameters.
+   * @return Response describing the contract commencement outcome.
+   */
   private ResponseEntity<StandardApiResponse<?>> commenceContractBatch(
       Map<String, Queue<String>> occurrencesByContract, Map<String, Object> params) {
     boolean hasOccurrenceError = this.genOrderReceivedOccurrences(occurrencesByContract);
@@ -105,6 +115,13 @@ public class LifecycleTaskBatchService {
         .success("contract", LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY));
   }
 
+  /**
+   * Generates approval occurrences and activity records for the specified contracts.
+   *
+   * @param contractIds Target contract identifiers.
+   * @param params      Approval occurrence parameters.
+   * @return Boolean indicating whether an error occurred.
+   */
   private boolean genApprovalOccurrence(Set<String> contractIds,
       Map<String, Object> params) {
     if (contractIds.isEmpty()) {
