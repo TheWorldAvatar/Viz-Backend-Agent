@@ -74,9 +74,10 @@ public class LifecycleTaskBatchService {
    */
   public ResponseEntity<StandardApiResponse<?>> commenceContracts(List<String> contractIds,
       Map<String, Object> params) {
-    
+    Map<String, String> nextTaskStartDates = new LinkedHashMap<>();
+    contractIds.forEach(contractId -> nextTaskStartDates.put(contractId, null));
     Map<String, Queue<String>> occurrencesByContract = this.getOrderReceivedOccurrenceDatesByContract(
-        contractIds, null);
+        nextTaskStartDates);
 
     return this.commenceContractBatch(occurrencesByContract, params);
   }
@@ -323,19 +324,18 @@ public class LifecycleTaskBatchService {
     LOGGER.info("Retrieving all active contracts that need orders to be generated...");
     String query = this.lifecycleQueryFactory.getLatestOrderQuery(taskGenerationCutoffDate);
     Queue<SparqlBinding> results = this.getService.getInstances(query);
-    List<String> contractIds = new ArrayList<>();
-    String nextTaskStartDate = null;
+    Map<String, String> nextTaskStartDates = new LinkedHashMap<>();
     while (!results.isEmpty()) {
       SparqlBinding resultRow = results.poll();
       String currentContract = resultRow.getFieldValue(QueryResource.ID_KEY);
       // Latest task date for the contract
       String latestTaskDate = resultRow.getFieldValue(QueryResource.LATEST_DATE_VAR.getVarName());
-      nextTaskStartDate = this.dateTimeService.getFutureDate(latestTaskDate, 1);
+      String nextTaskStartDate = this.dateTimeService.getFutureDate(latestTaskDate, 1);
       LOGGER.info("Generating orders for contract {}, starting from {}", currentContract, nextTaskStartDate);
-      contractIds.add(currentContract);
+      nextTaskStartDates.put(currentContract, nextTaskStartDate);
     }
     Map<String, Queue<String>> occurrencesByContract = this.getOrderReceivedOccurrenceDatesByContract(
-        contractIds, nextTaskStartDate);
+        nextTaskStartDates);
     this.genOrderReceivedOccurrences(occurrencesByContract);
   }
 
@@ -399,14 +399,13 @@ public class LifecycleTaskBatchService {
   /**
    * Retrieve occurrence dates for each specified contract.
    *
-   * @param contracts          Target contracts.
-   * @param nextTaskStartDate Optional next task start date.
+   * @param nextTaskStartDates Optional next task start dates indexed by contract.
    * @return Target occurrence dates indexed by contract.
    */
   private Map<String, Queue<String>> getOrderReceivedOccurrenceDatesByContract(
-      List<String> contracts, String nextTaskStartDate) {
+      Map<String, String> nextTaskStartDates) {
     Map<String, Queue<String>> occurrencesByContract = new LinkedHashMap<>();
-    contracts.forEach(contract -> occurrencesByContract.put(contract,
+    nextTaskStartDates.forEach((contract, nextTaskStartDate) -> occurrencesByContract.put(contract,
         this.getOrderReceivedOccurrenceDates(contract, nextTaskStartDate)));
     return occurrencesByContract;
   }
