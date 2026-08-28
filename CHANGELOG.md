@@ -1,5 +1,10 @@
 # Change Log
 
+# 1.67.0
+
+- Batched order event generation of approved contracts
+- Batched order event generation of ongoing contracts
+
 # 1.66.0
 
 - Added conflict handling for complete only if a conflict parameter is sent and set to true
