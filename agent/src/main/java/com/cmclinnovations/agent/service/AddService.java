@@ -131,14 +131,12 @@ public class AddService {
 
     // Render every entry before submitting one combined JSON-LD payload.
     ArrayNode batchJsonLd = this.jsonLdService.genArrayNode();
-    List<String> resourceIds = new ArrayList<>();
     List<ObjectNode> jsonLdSchemas = new ArrayList<>();
     List<String> instanceIris = new ArrayList<>();
     params.forEach(param -> {
       String targetId = param.getOrDefault(QueryResource.ID_KEY, UUID.randomUUID()).toString();
       ObjectNode jsonLdSchema = this.renderJsonLd(resourceID, targetId, param);
       batchJsonLd.add(jsonLdSchema);
-      resourceIds.add(resourceID);
       jsonLdSchemas.add(jsonLdSchema);
       instanceIris.add(jsonLdSchema.path(ShaclResource.ID_KEY).asString());
     });
@@ -151,9 +149,8 @@ public class AddService {
     }
 
     // Preserve per-instance SHACL processing after the combined write succeeds.
-    for (int index = 0; index < jsonLdSchemas.size(); index++) {
-      this.execShaclRules(resourceIds.get(index), instanceIris.get(index), jsonLdSchemas.get(index).toString());
-    }
+    List<String> jsonStrings = jsonLdSchemas.stream().map(ObjectNode::toString).toList();
+    this.execShaclRules(resourceID, instanceIris, jsonStrings);
     return this.responseEntityBuilder.success(instanceIris);
   }
 
@@ -185,10 +182,23 @@ public class AddService {
    * @param iri        The target instance IRI.
    */
   public void execSparqlConstructRules(String resourceID, String iri) {
+    this.execSparqlConstructRules(resourceID, List.of(iri));
+  }
+
+  /**
+   * Executes SPARQL construct rules for multiple instances.
+   *
+   * @param resourceID The target resource identifier for the instances.
+   * @param iris       The target instance IRIs.
+   */
+  public void execSparqlConstructRules(String resourceID, List<String> iris) {
     Model sparqlConstructRules = this.kgService.getShaclRules(resourceID, ShaclRuleType.SPARQL_RULE);
     if (!sparqlConstructRules.isEmpty()) {
       LOGGER.info("Detected SPARQL rules! Instantiating inferred instances to endpoint...");
-      this.kgService.execShaclRules(sparqlConstructRules, Rdf.iri(iri).getQueryString());
+      List<String> queryIris = iris.stream()
+          .map(iri -> Rdf.iri(iri).getQueryString())
+          .toList();
+      this.kgService.execShaclRules(sparqlConstructRules, queryIris);
     }
   }
 
@@ -286,6 +296,22 @@ public class AddService {
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
+    }
+  }
+
+  /**
+   * Executes SHACL rules for multiple newly instantiated JSON-LD instances.
+   *
+   * @param resourceID   The target resource identifier for the instances.
+   * @param instanceIris The instantiated resource IRIs.
+   * @param jsonStrings  The instantiated JSON-LD contents.
+   */
+  private void execShaclRules(String resourceID, List<String> instanceIris, List<String> jsonStrings) {
+    if (instanceIris.size() != jsonStrings.size()) {
+      throw new IllegalArgumentException("Instance IRIs and JSON-LD contents must have the same size!");
+    }
+    for (int index = 0; index < instanceIris.size(); index++) {
+      this.execShaclRules(resourceID, instanceIris.get(index), jsonStrings.get(index));
     }
   }
 
