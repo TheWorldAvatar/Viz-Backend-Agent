@@ -1,6 +1,6 @@
 package com.cmclinnovations.agent;
 
-import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,6 +107,12 @@ public class LifecycleController {
     });
   }
 
+  /**
+   * Generates the lifecycle and schedule for the specified contract.
+   *
+   * @param params Contract and lifecycle parameters.
+   * @return Response describing the lifecycle generation outcome.
+   */
   private ResponseEntity<StandardApiResponse<?>> execGenContractLifecycle(Map<String, Object> params) {
     String contractId = params.get(LifecycleResource.CONTRACT_KEY).toString();
     // Add current date into parameters
@@ -287,6 +293,13 @@ public class LifecycleController {
     });
   }
 
+  /**
+   * Creates a copy of a contract and drafts its lifecycle.
+   *
+   * @param entityType      Target contract resource type.
+   * @param contractDetails Contract parameters to copy.
+   * @param draftDetails    Lifecycle and schedule parameters for the copied contract.
+   */
   private void cloneDraftContract(String entityType, Map<String, Object> contractDetails,
       Map<String, Object> draftDetails) {
     // Generate new contract details from existing contract
@@ -308,50 +321,21 @@ public class LifecycleController {
     LOGGER.info("Received request to commence the services for a contract...");
     List<String> contractIds = TypeCastUtils.castToListObject(params.get(LifecycleResource.CONTRACT_KEY), String.class);
     return this.concurrencyService.executeInWriteLock(LifecycleResource.CONTRACT_KEY, () -> {
-      ContractOperation operation = contractId -> {
-        params.put(LifecycleResource.CONTRACT_KEY, contractId);
-        return this.commenceContract(contractId, params);
-      };
-      if (contractIds.size() == 1) {
-        return operation.apply(contractIds.get(0));
-      }
-      return this.executeIterativeContractOperation(contractIds, operation,
-          "Error encountered while commencing contract for {}! Read error logs for more details",
-          LocalisationResource.ERROR_APPROVE_PARTIAL_KEY,
-          LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
-    });
-  }
-
-  private ResponseEntity<StandardApiResponse<?>> commenceContract(String contractId, Map<String, Object> params) {
-    // Do not allow duplicate approval
-    if (this.lifecycleContractService.guardAgainstApproval(contractId)) {
-      LOGGER.warn("Contract for {} has already been approved! Skipping this iteration...", contractId);
-      return this.responseEntityBuilder.success(contractId,
-          LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_APPROVAL_KEY));
-    }
-    boolean hasError = this.lifecycleTaskService.genOrderReceivedOccurrences(contractId, null);
-    if (hasError) {
-      String partialErrorMsg = LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY);
-      LOGGER.warn(partialErrorMsg);
-      return this.responseEntityBuilder.error(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY),
-          HttpStatus.INTERNAL_SERVER_ERROR);
-    } else {
-      LOGGER.info("All orders has been successfully received!");
-      try {
-        ResponseEntity<StandardApiResponse<?>> response = this.lifecycleTaskService.genOccurrence(params,
-            LifecycleEventType.APPROVED,
-            MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
-            LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
-        if (response.getStatusCode() == HttpStatus.OK) {
-          this.lifecycleContractService.logContractActivity(contractId, TrackActionType.APPROVED);
+      List<String> unapprovedContractIds = new ArrayList<>();
+      for (String contractId : contractIds) {
+        // Do not allow duplicate approval
+        if (this.lifecycleContractService.guardAgainstApproval(contractId)) {
+          LOGGER.warn("Contract for {} has already been approved! Skipping this iteration...", contractId);
+        } else {
+          unapprovedContractIds.add(contractId);
         }
-        return response;
-      } catch (IllegalStateException e) {
-        LOGGER.warn("Something went wrong with instantiating the approve event for {}!", contractId);
-        throw e;
       }
-    }
+      if (unapprovedContractIds.isEmpty() && contractIds.size() == 1) {
+        return this.responseEntityBuilder.success(contractIds.get(0),
+            LocalisationTranslator.getMessage(LocalisationResource.MESSAGE_DUPLICATE_APPROVAL_KEY));
+      }
+      return this.lifecycleTaskBatchService.commenceContracts(unapprovedContractIds, params);
+    });
   }
 
   /**
@@ -398,6 +382,13 @@ public class LifecycleController {
     });
   }
 
+  /**
+   * Updates lifecycle event details for multiple tasks in one request.
+   *
+   * @param type   Lifecycle operation type.
+   * @param params Batch task details indexed by the items key.
+   * @return Response describing the batch update outcome.
+   */
   @PutMapping("/service/{type}/bulk")
   public ResponseEntity<StandardApiResponse<?>> bulkUpdateTaskEventDetails(@PathVariable String type,
       @RequestBody Map<String, List<Map<String, Object>>> params) {

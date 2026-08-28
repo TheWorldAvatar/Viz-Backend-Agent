@@ -8,7 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.cmclinnovations.agent.service.application.LifecycleContractService;
-import com.cmclinnovations.agent.service.application.LifecycleTaskService;
+import com.cmclinnovations.agent.service.application.LifecycleTaskBatchService;
 import com.cmclinnovations.agent.service.core.AuthenticationService;
 
 @Component
@@ -16,17 +16,20 @@ import com.cmclinnovations.agent.service.core.AuthenticationService;
 public class ScheduledTasks {
   private final AuthenticationService authService;
   private final LifecycleContractService lifecycleContractService;
-  private final LifecycleTaskService lifecycleTaskService;
+  private final LifecycleTaskBatchService lifecycleTaskBatchService;
 
   private static final Logger LOGGER = LogManager.getLogger(ScheduledTasks.class);
 
   public ScheduledTasks(AuthenticationService authService, LifecycleContractService lifecycleService,
-      LifecycleTaskService lifecycleTaskService) {
+      LifecycleTaskBatchService lifecycleTaskBatchService) {
     this.authService = authService;
     this.lifecycleContractService = lifecycleService;
-    this.lifecycleTaskService = lifecycleTaskService;
+    this.lifecycleTaskBatchService = lifecycleTaskBatchService;
   }
 
+  /**
+   * Runs the daily order generation and contract discharge tasks.
+   */
   @Scheduled(cron = "0 0 0 * * *")
   public void runDaily() {
     LOGGER.info("Performing daily cron job...");
@@ -44,15 +47,21 @@ public class ScheduledTasks {
     LOGGER.info("Daily cron job has completed...");
   }
 
+  /**
+   * Generates orders for active contracts using internal authentication.
+   */
   private void genOrderActiveContracts() {
     try {
       this.authService.setInternalAuthentication();
-      this.lifecycleTaskService.genOrderActiveContracts();
+      this.lifecycleTaskBatchService.genOrderActiveContracts();
     } finally {
       SecurityContextHolder.clearContext();
     }
   }
 
+  /**
+   * Discharges active contracts that have expired.
+   */
   private void dischargeExpiredContracts() {
     LOGGER.info("Discharging the active contracts that have expired today...");
     this.lifecycleContractService.dischargeExpiredContracts();
