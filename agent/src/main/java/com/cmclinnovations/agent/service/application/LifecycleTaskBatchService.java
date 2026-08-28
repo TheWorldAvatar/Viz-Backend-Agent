@@ -146,10 +146,7 @@ public class LifecycleTaskBatchService {
           .map(contractId -> this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId)
               .getFieldValue(QueryResource.IRI_KEY))
           .toList();
-      String agentIri = this.instantiateAgent();
-      List<Map<String, Object>> activityParams = this.changelogService.logActions(
-          contractIris, TrackActionType.APPROVED, agentIri);
-      response = this.addService.instantiateBatch(QueryResource.HISTORY_ACTIVITY_RESOURCE, activityParams);
+      response = this.logActionsBatch(contractIris, TrackActionType.APPROVED);
       return response.getStatusCode() != HttpStatus.OK;
     } catch (IllegalStateException _) {
       LOGGER.warn("Something went wrong with instantiating the approve events!");
@@ -197,17 +194,29 @@ public class LifecycleTaskBatchService {
     }
 
     // Log only after every dispatch and its SHACL processing has succeeded.
-    String agentIri = this.instantiateAgent();
     List<String> activityTargetIris = taskIds.stream().map(activityTargets::get).toList();
-    List<Map<String, Object>> activityParams = this.changelogService.logActions(
-        activityTargetIris, config.getTrackAction(), agentIri);
-    response = this.addService.instantiateBatch(QueryResource.HISTORY_ACTIVITY_RESOURCE, activityParams);
+    response = this.logActionsBatch(activityTargetIris, config.getTrackAction());
     if (response.getStatusCode() != HttpStatus.OK) {
       return response;
     }
 
     return this.responseEntityBuilder.success("task",
         LocalisationTranslator.getMessage(config.getBulkSuccessMessageKey()));
+  }
+
+  /**
+   * Generates and instantiates activity records for the specified targets.
+   *
+   * @param targetIris  Target instance IRIs.
+   * @param trackAction Action to record for each target.
+   * @return Response describing the activity batch outcome.
+   */
+  private ResponseEntity<StandardApiResponse<?>> logActionsBatch(List<String> targetIris,
+      TrackActionType trackAction) {
+    String agentIri = this.instantiateAgent();
+    List<Map<String, Object>> activityParams = this.changelogService.logActions(
+        targetIris, trackAction, agentIri);
+    return this.addService.instantiateBatch(QueryResource.HISTORY_ACTIVITY_RESOURCE, activityParams);
   }
 
   /**
@@ -399,10 +408,7 @@ public class LifecycleTaskBatchService {
         return true;
       }
 
-      String agentIri = this.instantiateAgent();
-      List<Map<String, Object>> activityParams = this.changelogService.logActions(
-          occurrenceIris, TrackActionType.CREATION, agentIri);
-      response = this.addService.instantiateBatch(QueryResource.HISTORY_ACTIVITY_RESOURCE, activityParams);
+      response = this.logActionsBatch(occurrenceIris, TrackActionType.CREATION);
       return response.getStatusCode() != HttpStatus.OK;
     } catch (IllegalStateException _) {
       LOGGER.error("Error encountered while creating orders! Read error logs for more details");
