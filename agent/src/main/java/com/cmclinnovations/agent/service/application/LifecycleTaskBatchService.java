@@ -81,18 +81,49 @@ public class LifecycleTaskBatchService {
     Map<String, Queue<String>> occurrencesByContract = this.getOrderReceivedOccurrenceDatesByContract(
         contractIds, null);
 
-    if (contractIds.size() == 1) {
-      String contractId = contractIds.get(0);
-      params.put(LifecycleResource.CONTRACT_KEY, contractId);
-      return this.commenceContract(contractId, occurrencesByContract.get(contractId), params);
-    }
+    return this.commenceContractBatch(occurrencesByContract, params);
+  }
 
+  private ResponseEntity<StandardApiResponse<?>> commenceContractBatch(
+      Map<String, Queue<String>> occurrencesByContract, Map<String, Object> params) {
     boolean hasError = false;
-    for (String contractId : contractIds) {
+    for (Map.Entry<String, Queue<String>> entry : occurrencesByContract.entrySet()) {
+      String contractId = entry.getKey();
       try {
         params.put(LifecycleResource.CONTRACT_KEY, contractId);
-        this.commenceContract(contractId, occurrencesByContract.get(contractId), params);
-      } catch (IllegalArgumentException _) {
+        boolean hasOccurrenceError = this.genOrderReceivedOccurrences(contractId, entry.getValue());
+        if (hasOccurrenceError) {
+          String partialErrorMsg = LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY);
+          LOGGER.warn(partialErrorMsg);
+          ResponseEntity<StandardApiResponse<?>> response = this.responseEntityBuilder.error(
+              LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY),
+              HttpStatus.INTERNAL_SERVER_ERROR);
+          if (occurrencesByContract.size() == 1) {
+            return response;
+          }
+          continue;
+        }
+
+        LOGGER.info("All orders has been successfully received!");
+        try {
+          ResponseEntity<StandardApiResponse<?>> response = this.lifecycleTaskService.genOccurrence(params,
+              LifecycleEventType.APPROVED,
+              MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
+              LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
+          if (response.getStatusCode() == HttpStatus.OK) {
+            this.lifecycleContractService.logContractActivity(contractId, TrackActionType.APPROVED);
+          }
+          if (occurrencesByContract.size() == 1) {
+            return response;
+          }
+        } catch (IllegalStateException e) {
+          LOGGER.warn("Something went wrong with instantiating the approve event for {}!", contractId);
+          throw e;
+        }
+      } catch (IllegalArgumentException e) {
+        if (occurrencesByContract.size() == 1) {
+          throw e;
+        }
         LOGGER.error("Error encountered while commencing contract for {}! Read error logs for more details",
             contractId);
         hasError = true;
@@ -107,33 +138,6 @@ public class LifecycleTaskBatchService {
 
     return this.responseEntityBuilder
         .success("contract", LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY));
-  }
-
-  private ResponseEntity<StandardApiResponse<?>> commenceContract(String contractId, Queue<String> occurrences,
-      Map<String, Object> params) {
-    boolean hasError = this.genOrderReceivedOccurrences(contractId, occurrences);
-    if (hasError) {
-      String partialErrorMsg = LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY);
-      LOGGER.warn(partialErrorMsg);
-      return this.responseEntityBuilder.error(
-          LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY),
-          HttpStatus.INTERNAL_SERVER_ERROR);
-    } else {
-      LOGGER.info("All orders has been successfully received!");
-      try {
-        ResponseEntity<StandardApiResponse<?>> response = this.lifecycleTaskService.genOccurrence(params,
-            LifecycleEventType.APPROVED,
-            MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
-            LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
-        if (response.getStatusCode() == HttpStatus.OK) {
-          this.lifecycleContractService.logContractActivity(contractId, TrackActionType.APPROVED);
-        }
-        return response;
-      } catch (IllegalStateException e) {
-        LOGGER.warn("Something went wrong with instantiating the approve event for {}!", contractId);
-        throw e;
-      }
-    }
   }
 
   /**
