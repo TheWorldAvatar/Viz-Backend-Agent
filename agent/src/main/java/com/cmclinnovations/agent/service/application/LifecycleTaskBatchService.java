@@ -103,7 +103,8 @@ public class LifecycleTaskBatchService {
   }
 
   private ResponseEntity<StandardApiResponse<?>> commenceContract(String contractId, Map<String, Object> params) {
-    boolean hasError = this.genOrderReceivedOccurrences(contractId, null);
+    Queue<String> occurrences = this.getOrderReceivedOccurrenceDates(contractId, null);
+    boolean hasError = this.genOrderReceivedOccurrences(contractId, occurrences);
     if (hasError) {
       String partialErrorMsg = LocalisationTranslator.getMessage(LocalisationResource.ERROR_ORDERS_PARTIAL_KEY);
       LOGGER.warn(partialErrorMsg);
@@ -316,22 +317,59 @@ public class LifecycleTaskBatchService {
       String latestTaskDate = resultRow.getFieldValue(QueryResource.LATEST_DATE_VAR.getVarName());
       String nextTaskStartDate = this.dateTimeService.getFutureDate(latestTaskDate, 1);
       LOGGER.info("Generating orders for contract {}, starting from {}", currentContract, nextTaskStartDate);
-      this.genOrderReceivedOccurrences(currentContract, nextTaskStartDate);
+      Queue<String> occurrences = this.getOrderReceivedOccurrenceDates(currentContract, nextTaskStartDate);
+      this.genOrderReceivedOccurrences(currentContract, occurrences);
     }
   }
 
   /**
    * Generate occurrences for the order received event of a specified contract.
    * 
+   * @param contract     Target contract.
+   * @param occurrences Target occurrence dates.
+   * @return boolean indicating if the occurrences have been generated
+   *         successfully.
+   */
+  public boolean genOrderReceivedOccurrences(String contract, Queue<String> occurrences) {
+    LOGGER.info("Generating all orders for the active contract {}...", contract);
+    // Add parameter template
+    Map<String, Object> params = new HashMap<>();
+    params.put(LifecycleResource.CONTRACT_KEY, contract);
+    params.put(LifecycleResource.REMARKS_KEY, LifecycleResource.ORDER_INITIALISE_MESSAGE);
+    this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
+    String orderPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
+    // Instantiate each occurrence
+    boolean hasError = false;
+    while (!occurrences.isEmpty()) {
+      // Retrieve and update the date of occurrence
+      String occurrenceDate = occurrences.poll();
+      // set new id each time
+      params.remove(QueryResource.ID_KEY);
+      LifecycleResource.genIdAndInstanceParameters(orderPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
+      params.put(LifecycleResource.DATE_TIME_KEY, occurrenceDate);
+      try {
+        this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, TrackActionType.CREATION);
+        // Error logs for any specified occurrence
+      } catch (IllegalStateException _) {
+        LOGGER.error("Error encountered while creating order for {} on {}! Read error logs for more details",
+            contract, occurrenceDate);
+        hasError = true;
+      }
+    }
+    return hasError;
+  }
+
+  /**
+   * Retrieve occurrence dates for the order received event of a specified
+   * contract.
+   *
    * @param contract          Target contract.
    * @param nextTaskStartDate Optional parameter that indicates the next task
    *                          start date. If provided, this will overwrite the
    *                          contract start date.
-   * @return boolean indicating if the occurrences have been generated
-   *         successfully.
+   * @return Target occurrence dates.
    */
-  public boolean genOrderReceivedOccurrences(String contract, String nextTaskStartDate) {
-    LOGGER.info("Generating all orders for the active contract {}...", contract);
+  private Queue<String> getOrderReceivedOccurrenceDates(String contract, String nextTaskStartDate) {
     // Retrieve schedule information for the specific contract
     SparqlBinding bindings = this.lifecycleQueryService.querySchedule(contract);
     // Extract specific schedule info
@@ -368,30 +406,6 @@ public class LifecycleTaskBatchService {
         occurrences = this.dateTimeService.getOccurrenceDates(startDate, endDate, bindings, weeklyInterval);
       }
     }
-    // Add parameter template
-    Map<String, Object> params = new HashMap<>();
-    params.put(LifecycleResource.CONTRACT_KEY, contract);
-    params.put(LifecycleResource.REMARKS_KEY, LifecycleResource.ORDER_INITIALISE_MESSAGE);
-    this.lifecycleQueryService.addOccurrenceParams(params, LifecycleEventType.SERVICE_ORDER_RECEIVED);
-    String orderPrefix = StringResource.getPrefix(params.get(LifecycleResource.STAGE_KEY).toString());
-    // Instantiate each occurrence
-    boolean hasError = false;
-    while (!occurrences.isEmpty()) {
-      // Retrieve and update the date of occurrence
-      String occurrenceDate = occurrences.poll();
-      // set new id each time
-      params.remove(QueryResource.ID_KEY);
-      LifecycleResource.genIdAndInstanceParameters(orderPrefix, LifecycleEventType.SERVICE_ORDER_RECEIVED, params);
-      params.put(LifecycleResource.DATE_TIME_KEY, occurrenceDate);
-      try {
-        this.addService.instantiate(LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, params, TrackActionType.CREATION);
-        // Error logs for any specified occurrence
-      } catch (IllegalStateException _) {
-        LOGGER.error("Error encountered while creating order for {} on {}! Read error logs for more details",
-            contract, occurrenceDate);
-        hasError = true;
-      }
-    }
-    return hasError;
+    return occurrences;
   }
 }
