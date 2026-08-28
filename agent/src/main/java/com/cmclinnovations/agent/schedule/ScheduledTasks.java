@@ -20,9 +20,6 @@ public class ScheduledTasks {
 
   private static final Logger LOGGER = LogManager.getLogger(ScheduledTasks.class);
 
-  /**
-   * Constructs the scheduled task runner with the required services.
-   */
   public ScheduledTasks(AuthenticationService authService, LifecycleContractService lifecycleService,
       LifecycleTaskBatchService lifecycleTaskBatchService) {
     this.authService = authService;

@@ -54,9 +54,6 @@ public class LifecycleTaskBatchService {
   private static final int NUM_DAY_ORDER_GEN = 30;
   private static final Logger LOGGER = LogManager.getLogger(LifecycleTaskBatchService.class);
 
-  /**
-   * Constructs a new batch service with the required lifecycle services.
-   */
   public LifecycleTaskBatchService(AddService addService, ChangelogService changelogService,
       DateTimeService dateTimeService, DeleteService deleteService, GetService getService,
       LifecycleQueryService lifecycleQueryService, LifecycleTaskService lifecycleTaskService,

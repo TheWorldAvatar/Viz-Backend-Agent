@@ -62,9 +62,6 @@ public class LifecycleController {
 
   private static final Logger LOGGER = LogManager.getLogger(LifecycleController.class);
 
-  /**
-   * Constructs a new controller with the required lifecycle services.
-   */
   public LifecycleController(ConcurrencyService concurrencyService, AddService addService, GetService getService,
       DeleteService deleteService, UpdateService updateService, DateTimeService dateTimeService,
       BillingService billingService, LifecycleContractService lifecycleContractService,
