@@ -1,6 +1,5 @@
 package com.cmclinnovations.agent.service.application;
 
-import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +45,6 @@ public class LifecycleTaskBatchService {
   private final DateTimeService dateTimeService;
   private final DeleteService deleteService;
   private final GetService getService;
-  private final LifecycleContractService lifecycleContractService;
   private final LifecycleQueryService lifecycleQueryService;
   private final LifecycleTaskService lifecycleTaskService;
   private final ResponseEntityBuilder responseEntityBuilder;
@@ -58,14 +56,13 @@ public class LifecycleTaskBatchService {
 
   public LifecycleTaskBatchService(AddService addService, ChangelogService changelogService,
       DateTimeService dateTimeService, DeleteService deleteService, GetService getService,
-      LifecycleContractService lifecycleContractService, LifecycleQueryService lifecycleQueryService,
-      LifecycleTaskService lifecycleTaskService, ResponseEntityBuilder responseEntityBuilder) {
+      LifecycleQueryService lifecycleQueryService, LifecycleTaskService lifecycleTaskService,
+      ResponseEntityBuilder responseEntityBuilder) {
     this.addService = addService;
     this.changelogService = changelogService;
     this.dateTimeService = dateTimeService;
     this.deleteService = deleteService;
     this.getService = getService;
-    this.lifecycleContractService = lifecycleContractService;
     this.lifecycleQueryService = lifecycleQueryService;
     this.lifecycleTaskService = lifecycleTaskService;
     this.responseEntityBuilder = responseEntityBuilder;
@@ -96,22 +93,8 @@ public class LifecycleTaskBatchService {
     }
 
     LOGGER.info("All orders has been successfully received!");
-    Map<String, ResponseEntity<StandardApiResponse<?>>> responses = this.genApprovalOccurrence(
-        occurrencesByContract.keySet(), params);
-    if (responses.size() == 1) {
-      return responses.values().iterator().next();
-    }
-
-    boolean hasError = false;
-    for (Map.Entry<String, ResponseEntity<StandardApiResponse<?>>> entry : responses.entrySet()) {
-      if (entry.getValue() == null) {
-        LOGGER.error("Error encountered while commencing contract for {}! Read error logs for more details",
-            entry.getKey());
-        hasError = true;
-      }
-    }
-
-    if (hasError) {
+    boolean hasApprovalError = this.genApprovalOccurrence(occurrencesByContract.keySet(), params);
+    if (hasApprovalError) {
       return this.responseEntityBuilder.error(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_APPROVE_PARTIAL_KEY),
           HttpStatus.INTERNAL_SERVER_ERROR);
@@ -121,33 +104,42 @@ public class LifecycleTaskBatchService {
         .success("contract", LocalisationTranslator.getMessage(LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY));
   }
 
-  private Map<String, ResponseEntity<StandardApiResponse<?>>> genApprovalOccurrence(Set<String> contractIds,
+  private boolean genApprovalOccurrence(Set<String> contractIds,
       Map<String, Object> params) {
-    Map<String, ResponseEntity<StandardApiResponse<?>>> responses = new LinkedHashMap<>();
-    for (String contractId : contractIds) {
-      try {
-        params.put(LifecycleResource.CONTRACT_KEY, contractId);
-        try {
-          ResponseEntity<StandardApiResponse<?>> response = this.lifecycleTaskService.genOccurrence(params,
-              LifecycleEventType.APPROVED,
-              MessageFormat.format("Contract {0} has been approved for service execution!", contractId),
-              LocalisationResource.SUCCESS_CONTRACT_APPROVED_KEY);
-          if (response.getStatusCode() == HttpStatus.OK) {
-            this.lifecycleContractService.logContractActivity(contractId, TrackActionType.APPROVED);
-          }
-          responses.put(contractId, response);
-        } catch (IllegalStateException e) {
-          LOGGER.warn("Something went wrong with instantiating the approve event for {}!", contractId);
-          throw e;
-        }
-      } catch (IllegalArgumentException e) {
-        if (contractIds.size() == 1) {
-          throw e;
-        }
-        responses.put(contractId, null);
-      }
+    if (contractIds.isEmpty()) {
+      return false;
     }
-    return responses;
+
+    List<Map<String, Object>> approvalParams = new ArrayList<>();
+    for (String contractId : contractIds) {
+      Map<String, Object> approval = new HashMap<>(params);
+      approval.put(LifecycleResource.CONTRACT_KEY, contractId);
+      approval.remove(QueryResource.ID_KEY);
+      approval.remove(LifecycleResource.INSTANCE_KEY);
+      this.lifecycleQueryService.addOccurrenceParams(approval, LifecycleEventType.APPROVED);
+      approvalParams.add(approval);
+    }
+
+    try {
+      ResponseEntity<StandardApiResponse<?>> response = this.addService.instantiateBatch(
+          LifecycleResource.OCCURRENCE_INSTANT_RESOURCE, approvalParams);
+      if (response.getStatusCode() != HttpStatus.OK) {
+        return true;
+      }
+
+      List<String> contractIris = contractIds.stream()
+          .map(contractId -> this.lifecycleQueryService.getInstance(FileService.CONTRACT_QUERY_RESOURCE, contractId)
+              .getFieldValue(QueryResource.IRI_KEY))
+          .toList();
+      String agentIri = this.instantiateAgent();
+      List<Map<String, Object>> activityParams = this.changelogService.logActions(
+          contractIris, TrackActionType.APPROVED, agentIri);
+      response = this.addService.instantiateBatch(QueryResource.HISTORY_ACTIVITY_RESOURCE, activityParams);
+      return response.getStatusCode() != HttpStatus.OK;
+    } catch (IllegalStateException _) {
+      LOGGER.warn("Something went wrong with instantiating the approve events!");
+      return true;
+    }
   }
 
   /**
