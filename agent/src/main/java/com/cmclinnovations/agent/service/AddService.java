@@ -294,25 +294,7 @@ public class AddService {
    * @param jsonString  The instantiated JSON-LD content.
    */
   private void execShaclRules(String resourceID, String instanceIri, String jsonString) {
-    this.execSparqlConstructRules(resourceID, instanceIri);
-
-    Model otherRules = this.kgService.getShaclRules(resourceID, ShaclRuleType.TRIPLE_RULE);
-    if (!otherRules.isEmpty()) {
-      LOGGER.info("Detected triple rules! Instantiating inferred instances to endpoint...");
-
-      Model dataModel = this.kgService.readStringModel(jsonString, Lang.JSONLD);
-      Model inferredData = RuleUtil.executeRules(dataModel, otherRules, null, null);
-      try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-        RDFWriter.create()
-            .source(inferredData)
-            .format(RDFFormat.JSONLD)
-            .output(out);
-        String stringifiedInferredData = out.toString(StandardCharsets.UTF_8);
-        this.kgService.add(stringifiedInferredData);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    }
+    this.execShaclRules(resourceID, List.of(instanceIri), List.of(jsonString));
   }
 
   /**
@@ -326,8 +308,30 @@ public class AddService {
     if (instanceIris.size() != jsonStrings.size()) {
       throw new IllegalArgumentException("Instance IRIs and JSON-LD contents must have the same size!");
     }
-    for (int index = 0; index < instanceIris.size(); index++) {
-      this.execShaclRules(resourceID, instanceIris.get(index), jsonStrings.get(index));
+
+    this.execSparqlConstructRules(resourceID, instanceIris);
+
+    // Execute triple rules if any exist
+    // Triple rules are executed per instance
+
+    Model otherRules = this.kgService.getShaclRules(resourceID, ShaclRuleType.TRIPLE_RULE);
+    if (!otherRules.isEmpty()) {
+      LOGGER.info("Detected triple rules! Instantiating inferred instances to endpoint...");
+
+      for (String jsonString : jsonStrings) {
+        Model dataModel = this.kgService.readStringModel(jsonString, Lang.JSONLD);
+        Model inferredData = RuleUtil.executeRules(dataModel, otherRules, null, null);
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+          RDFWriter.create()
+              .source(inferredData)
+              .format(RDFFormat.JSONLD)
+              .output(out);
+          String stringifiedInferredData = out.toString(StandardCharsets.UTF_8);
+          this.kgService.add(stringifiedInferredData);
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      }
     }
   }
 
