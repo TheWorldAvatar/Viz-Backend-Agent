@@ -275,7 +275,7 @@ public class KGService {
       String currentQuery = constructQueries.poll();
       String batchQuery = this.shaclRuleProcesser.genSelectQuery(currentQuery, instanceIris);
       LOGGER.info("Generated batch SELECT query for all instances:\n{}", batchQuery);
-      Queue<SparqlBinding> results = this.query(batchQuery, SparqlEndpointType.MIXED);
+      List<SparqlBinding> results = new ArrayList<>(this.query(batchQuery, SparqlEndpointType.MIXED));
       Map<String, List<SparqlBinding>> resultsByInstance = new HashMap<>();
       for (SparqlBinding result : results) {
         String instanceIri = result.getFieldValue(QueryResource.THIS_KEY);
@@ -286,13 +286,13 @@ public class KGService {
         for (List<SparqlBinding> instanceResults : resultsByInstance.values()) {
           // Generate the delete where query templates
           String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, instanceResults);
-          // Using the results of the SELECT query as replacements to the CONSTRUCT
-          // clause, generate the INSERT DATA query
-          String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(tripleList, instanceResults);
-          // Execute updates after the queries are generated to prevent incomplete query
+          // Execute all deletes before inserting the inferred triples
           this.executeUpdate(deleteWhereQuery);
-          this.executeUpdate(insertDataQuery);
         }
+        // Using all SELECT results as replacements to the CONSTRUCT clause, generate
+        // and execute one INSERT DATA query for the batch
+        String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(tripleList, results);
+        this.executeUpdate(insertDataQuery);
       }
     }
   }
