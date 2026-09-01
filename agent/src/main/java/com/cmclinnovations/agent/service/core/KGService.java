@@ -3,6 +3,7 @@ package com.cmclinnovations.agent.service.core;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -272,19 +273,22 @@ public class KGService {
     Queue<String> constructQueries = this.shaclRuleProcesser.getConstructQueries(rules);
     while (!constructQueries.isEmpty()) {
       String currentQuery = constructQueries.poll();
-      for (String instanceIri : instanceIris) {
-        // Execute a SELECT query to retrieve all possible variables and their values in
-        // the WHERE clause
-        String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery, instanceIri);
-        List<SparqlBinding> results = this.query(queryForExecution, SparqlEndpointType.MIXED).stream()
-            .collect(Collectors.toList());
-        if (!results.isEmpty()) {
-          List<Triple> tripleList = this.shaclRuleProcesser.genConstructTriples(currentQuery);
+      String batchQuery = this.shaclRuleProcesser.genSelectQuery(currentQuery, instanceIris);
+      LOGGER.info("Generated batch SELECT query for all instances:\n{}", batchQuery);
+      Queue<SparqlBinding> results = this.query(batchQuery, SparqlEndpointType.MIXED);
+      Map<String, List<SparqlBinding>> resultsByInstance = new HashMap<>();
+      for (SparqlBinding result : results) {
+        String instanceIri = result.getFieldValue(QueryResource.THIS_KEY);
+        resultsByInstance.computeIfAbsent(instanceIri, key -> new ArrayList<>()).add(result);
+      }
+      if (!resultsByInstance.isEmpty()) {
+        List<Triple> tripleList = this.shaclRuleProcesser.genConstructTriples(currentQuery);
+        for (List<SparqlBinding> instanceResults : resultsByInstance.values()) {
           // Generate the delete where query templates
-          String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, results);
+          String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, instanceResults);
           // Using the results of the SELECT query as replacements to the CONSTRUCT
           // clause, generate the INSERT DATA query
-          String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(tripleList, results);
+          String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(tripleList, instanceResults);
           // Execute updates after the queries are generated to prevent incomplete query
           this.executeUpdate(deleteWhereQuery);
           this.executeUpdate(insertDataQuery);
