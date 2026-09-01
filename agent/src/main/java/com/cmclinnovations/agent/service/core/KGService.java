@@ -3,6 +3,7 @@ package com.cmclinnovations.agent.service.core;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -258,24 +259,40 @@ public class KGService {
    * @param instanceIri The instance IRI string.
    */
   public void execShaclRules(Model rules, String instanceIri) {
+    this.execShaclRules(rules, List.of(instanceIri));
+  }
+
+  /**
+   * Executes the SHACL SPARQL construct rules for multiple instances.
+   *
+   * @param rules        The target SHACL rules.
+   * @param instanceIris The instance IRI strings.
+   */
+  public void execShaclRules(Model rules, List<String> instanceIris) {
     LOGGER.info("Executing SHACL SPARQL construct rules directly in the knowledge graph...");
     Queue<String> constructQueries = this.shaclRuleProcesser.getConstructQueries(rules);
     while (!constructQueries.isEmpty()) {
       String currentQuery = constructQueries.poll();
-      // Execute a SELECT query to retrieve all possible variables and their values in
-      // the WHERE clause
-      String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery, instanceIri);
-      List<SparqlBinding> results = this.query(queryForExecution, SparqlEndpointType.MIXED).stream()
-          .collect(Collectors.toList());
-      if (!results.isEmpty()) {
+      String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery, instanceIris);
+      List<SparqlBinding> results = new ArrayList<>(this.query(queryForExecution, SparqlEndpointType.MIXED));
+      Map<String, List<SparqlBinding>> resultsByInstance = new HashMap<>();
+      for (SparqlBinding result : results) {
+        String instanceIri = result.getFieldValue(QueryResource.THIS_KEY);
+        resultsByInstance.computeIfAbsent(instanceIri, key -> new ArrayList<>()).add(result);
+      }
+      if (!resultsByInstance.isEmpty()) {
         List<Triple> tripleList = this.shaclRuleProcesser.genConstructTriples(currentQuery);
-        // Generate the delete where query templates
-        String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, results);
-        // Using the results of the SELECT query as replacements to the CONSTRUCT
-        // clause, generate the INSERT DATA query
+        // Do not batch deletes until a solution that safely handles array and optional
+        // properties is available.
+        for (List<SparqlBinding> instanceResults : resultsByInstance.values()) {
+          // Generate the delete where query templates
+          String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, instanceResults);
+          // Execute all deletes before inserting the inferred triples
+          this.executeUpdate(deleteWhereQuery);
+        }
+        // Using all SELECT results as replacements to the CONSTRUCT clause, generate
+        // and execute one INSERT DATA query for the batch
         String insertDataQuery = this.shaclRuleProcesser.genInsertDataQuery(tripleList, results);
-        // Execute updates after the queries are generated to prevent incomplete query
-        this.executeUpdate(deleteWhereQuery);
         this.executeUpdate(insertDataQuery);
       }
     }
