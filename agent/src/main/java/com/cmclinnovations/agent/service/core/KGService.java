@@ -273,9 +273,8 @@ public class KGService {
     Queue<String> constructQueries = this.shaclRuleProcesser.getConstructQueries(rules);
     while (!constructQueries.isEmpty()) {
       String currentQuery = constructQueries.poll();
-      String batchQuery = this.shaclRuleProcesser.genSelectQuery(currentQuery, instanceIris);
-      LOGGER.info("Generated batch SELECT query for all instances:\n{}", batchQuery);
-      List<SparqlBinding> results = new ArrayList<>(this.query(batchQuery, SparqlEndpointType.MIXED));
+      String queryForExecution = this.shaclRuleProcesser.genSelectQuery(currentQuery, instanceIris);
+      List<SparqlBinding> results = new ArrayList<>(this.query(queryForExecution, SparqlEndpointType.MIXED));
       Map<String, List<SparqlBinding>> resultsByInstance = new HashMap<>();
       for (SparqlBinding result : results) {
         String instanceIri = result.getFieldValue(QueryResource.THIS_KEY);
@@ -283,6 +282,8 @@ public class KGService {
       }
       if (!resultsByInstance.isEmpty()) {
         List<Triple> tripleList = this.shaclRuleProcesser.genConstructTriples(currentQuery);
+        // Do not batch deletes until a solution that safely handles array and optional
+        // properties is available.
         for (List<SparqlBinding> instanceResults : resultsByInstance.values()) {
           // Generate the delete where query templates
           String deleteWhereQuery = this.shaclRuleProcesser.genDeleteWhereQuery(tripleList, instanceResults);

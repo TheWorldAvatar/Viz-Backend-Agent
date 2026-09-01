@@ -118,6 +118,7 @@ public class AddService {
 
   /**
    * Instantiates multiple instances in one JSON-LD addition.
+   * SHACL rules are executed after the addition is successful.
    * Activity logging is not included here and must be handled by the caller.
    *
    * @param resourceID The target resource identifier for the instance.
@@ -146,7 +147,7 @@ public class AddService {
       throw new IllegalStateException(LocalisationTranslator.getMessage(LocalisationResource.ERROR_ADD_KEY));
     }
 
-    // Preserve per-instance SHACL processing after the combined write succeeds.
+    // Delegate SHACL processing after the combined write succeeds.
     List<String> jsonStrings = jsonLdSchemas.stream().map(ObjectNode::toString).toList();
     this.execShaclRules(resourceID, instanceIris, jsonStrings);
     return this.responseEntityBuilder.success(instanceIris);
