@@ -1,5 +1,9 @@
 # Change Log
 
+# 1.68.0
+
+- Batched SHACL SPARQL construct rule evaluation and inferred triple insertion across instances
+
 # 1.67.0
 
 - Batched order event generation of approved contracts
