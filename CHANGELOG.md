@@ -1,5 +1,9 @@
 # Change Log
 
+# 1.68.1
+
+- Fixed conflict checks for task completion to continue when no conflicts are detected
+
 # 1.68.0
 
 - Batched SHACL SPARQL construct rule evaluation and inferred triple insertion across instances
