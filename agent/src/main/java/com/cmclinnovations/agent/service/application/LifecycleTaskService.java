@@ -1096,15 +1096,19 @@ public class LifecycleTaskService {
       // Remove the conflict parameter
       params.remove(LifecycleResource.CONFLICT_KEY);
       String orderId = params.get(QueryResource.ID_KEY).toString();
-      String previousOccurrenceIri = this.getPreviousOccurrence(orderId, eventType);
-      // Conflict detected with previous event type
-      if (previousOccurrenceIri != null) {
+      try {
+        String previousOccurrenceIri = this.getPreviousOccurrence(orderId, eventType);
+        // The following are executable ONLY if there are conflicts
+        // When there are no conflicts, a null exception is thrown instead
         String orderEventIri = this.getPreviousOccurrence(orderId, LifecycleEventType.SERVICE_ORDER_RECEIVED);
         Map<String, Object> conflictActivityParams = new HashMap<>();
         conflictActivityParams.put(QueryResource.IRI_KEY, orderEventIri);
         conflictActivityParams.put(LifecycleResource.DATE_TIME_KEY, this.dateTimeService.getCurrentDateTime());
         this.addService.logConflict(conflictActivityParams, params);
         return true;
+      } catch (NullPointerException _) {
+        // Expected no conflicts and should return false
+        return false;
       }
     }
     return false;
