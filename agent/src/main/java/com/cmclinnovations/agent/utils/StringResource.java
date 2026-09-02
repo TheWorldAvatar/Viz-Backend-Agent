@@ -27,6 +27,7 @@ public class StringResource {
   public static final String CLAZZ_VAR = "clazz";
   public static final String ORIGINAL_PREFIX = "ori_";
   public static final String SORT_KEY = "@sort";
+  public static final String EXCLUDE_FILTER_KEY = "-";
 
   public static final String INVALID_SHACL_ERROR_MSG = "Invalid knowledge model! SHACL restrictions have not been defined/instantiated in the knowledge graph.";
   public static final Pattern DATE_RANGE_FILTER_PATTERN = Pattern
@@ -158,9 +159,11 @@ public class StringResource {
         .stream()
         .map(entry -> {
           Set<String> valueSet = StringResource.parseFilterValue(entry.getValue());
-          return Map.entry(
-              LifecycleResource.revertLifecycleSpecialFields(entry.getKey(), isContract),
-              valueSet);
+          String key = entry.getKey();
+          boolean isExcluded = key.startsWith(EXCLUDE_FILTER_KEY);
+          String rawKey = isExcluded ? key.substring(EXCLUDE_FILTER_KEY.length()) : key;
+          String reverted = LifecycleResource.revertLifecycleSpecialFields(rawKey, isContract);
+          return Map.entry(isExcluded ? EXCLUDE_FILTER_KEY + reverted: reverted, valueSet);
         })
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
@@ -190,16 +193,16 @@ public class StringResource {
     // Parse filters for time
     Matcher timeMatcher = TIME_FILTER_PATTERN.matcher(value);
     if (timeMatcher.find()) {
-        // Replace with your actual constant for time types if named differently
-        valueSet.add(QueryResource.TIME_TYPE); 
-        do {
-            String operator = timeMatcher.group(1);
-            String timeStr = timeMatcher.group(2);
-            valueSet.add(operator);
-            valueSet.add(timeStr);
-        } while (timeMatcher.find());
+      // Replace with your actual constant for time types if named differently
+      valueSet.add(QueryResource.TIME_TYPE);
+      do {
+        String operator = timeMatcher.group(1);
+        String timeStr = timeMatcher.group(2);
+        valueSet.add(operator);
+        valueSet.add(timeStr);
+      } while (timeMatcher.find());
 
-        return valueSet;
+      return valueSet;
     }
 
     // Parse filters for numbers

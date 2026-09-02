@@ -517,8 +517,11 @@ public class GetService {
       if (key.equals(StringResource.SORT_KEY)) {
         queryBuilder.append(value);
       } else {
-        Set<String> filterValues = filters.get(key);
-        QueryResource.genFilterStatements(value, key, filterValues, queryBuilder);
+        String field = filters.containsKey(StringResource.EXCLUDE_FILTER_KEY + key)
+            ? StringResource.EXCLUDE_FILTER_KEY + key
+            : key;
+        Set<String> filterValues = filters.get(field);
+        QueryResource.genFilterStatements(value, field, filterValues, queryBuilder);
       }
     });
     if (filters.containsKey(QueryResource.ID_KEY)) {
@@ -565,7 +568,10 @@ public class GetService {
     // Next, parse and get the query statements for the fields of interest that
     // requires sorting or filtering
     Set<String> groups = new HashSet<>();
-    Set<String> filterFields = new HashSet<>(filters.keySet());
+    Set<String> filterFields = filters.keySet().stream()
+        .map(filterField -> filterField.contains(StringResource.EXCLUDE_FILTER_KEY) ? filterField.substring(1)
+            : filterField)
+        .collect(Collectors.toSet());
     Map<String, ArrayDeque<Queue<SparqlBinding>>> groupQueryPartMappings = new HashMap<>();
     Map<String, ArrayDeque<Queue<SparqlBinding>>> filterQueryPartMappings = new HashMap<>();
     Map<String, ArrayDeque<Queue<SparqlBinding>>> sortedQueryPartMappings = new HashMap<>();

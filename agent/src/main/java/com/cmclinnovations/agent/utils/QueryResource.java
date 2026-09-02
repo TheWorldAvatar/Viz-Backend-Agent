@@ -320,6 +320,25 @@ public class QueryResource {
     }
 
     /**
+     * Generate a FILTER NOT IN clause for the specific field and values.
+     * 
+     * @param field  The field of interest.
+     * @param values The values to be inserted into the clause.
+     */
+    public static String filterNotIn(String field, Collection<String> values) {
+        StringBuilder queryBuilder = new StringBuilder();
+        values.forEach(value -> {
+            if (!queryBuilder.isEmpty()) {
+                queryBuilder.append(",");
+            }
+            queryBuilder.append(value);
+        });
+        queryBuilder.append("))");
+        return "FILTER(" + ShaclResource.WHITE_SPACE + QueryResource.genVariable(field).getQueryString() + " NOT IN ("
+                + queryBuilder.toString();
+    }
+
+    /**
      * Generates query statements for filtering targets based on the filters if
      * available using VALUES clause.
      * 
@@ -421,14 +440,19 @@ public class QueryResource {
             }
             // For default string filters, only include VALUES if they are available
         } else if (!filters.isEmpty()) {
-            String valuesClause = QueryResource.values(filters, field);
-            builder.append(valuesClause);
+            if (field.startsWith(StringResource.EXCLUDE_FILTER_KEY)) {
+                String filterNotInClause = QueryResource.filterNotIn(field.substring(1), filters);
+                builder.append(filterNotInClause);
+            } else {
+                String valuesClause = QueryResource.values(filters, field);
+                builder.append(valuesClause);
+            }
         }
     }
 
     public static String genDateFilterExpression(String field, Set<String> filters) {
         StringBuilder builder = new StringBuilder();
-        
+
         List<String> dateFilters = new ArrayList<>(filters);
         dateFilters.remove(LifecycleResource.DATE_KEY);
         // If there is only one date, ensure field matches the selected date
