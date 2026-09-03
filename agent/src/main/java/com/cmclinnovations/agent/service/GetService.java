@@ -526,11 +526,18 @@ public class GetService {
     });
     if (filters.containsKey(QueryResource.ID_KEY)) {
       QueryResource.genFilterStatements("", QueryResource.ID_KEY, filters.get(QueryResource.ID_KEY), queryBuilder);
+    } else if (filters.containsKey(StringResource.EXCLUDE_FILTER_KEY + QueryResource.ID_KEY)) {
+      QueryResource.genFilterStatements("", StringResource.EXCLUDE_FILTER_KEY + QueryResource.ID_KEY,
+          filters.get(StringResource.EXCLUDE_FILTER_KEY + QueryResource.ID_KEY), queryBuilder);
     }
     String eventIdVar = QueryResource.EVENT_ID_VAR.getVarName();
     if (filters.containsKey(eventIdVar)) {
       QueryResource.genFilterStatements("?event_id dc-terms:identifier ?ori_event_id.",
           StringResource.ORIGINAL_PREFIX + eventIdVar, filters.get(eventIdVar), queryBuilder);
+    } else if (filters.containsKey(StringResource.EXCLUDE_FILTER_KEY + eventIdVar)) {
+      QueryResource.genFilterStatements("?event_id dc-terms:identifier ?ori_event_id.",
+          StringResource.EXCLUDE_FILTER_KEY + StringResource.ORIGINAL_PREFIX + eventIdVar,
+          filters.get(StringResource.EXCLUDE_FILTER_KEY + eventIdVar), queryBuilder);
     }
 
     // Stores the virtual query fields that are detected
@@ -645,6 +652,7 @@ public class GetService {
       // Generate the query statements for this filter
       String clause = this.queryTemplateService.genWhereClause(queryVarsAndPaths)
           .data()
+          // Deletable
           .replaceAll("(?s)\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
       outputMappings.put(key, clause);
     });
