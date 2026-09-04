@@ -652,7 +652,6 @@ public class GetService {
       // Generate the query statements for this filter
       String clause = this.queryTemplateService.genWhereClause(queryVarsAndPaths)
           .data()
-          // Deletable
           .replaceAll("(?s)\\s*OPTIONAL\\s*\\{(.*)\\}", "$1");
       outputMappings.put(key, clause);
     });
