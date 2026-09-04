@@ -32,6 +32,7 @@ public class LifecycleQueryService {
   private static final String[] SCHEDULE_VARIABLES = new String[] {
       QueryResource.SCHEDULE_START_DATE_VAR.getVarName(), QueryResource.SCHEDULE_END_DATE_VAR.getVarName(),
       QueryResource.SCHEDULE_START_TIME_VAR.getVarName(), QueryResource.SCHEDULE_END_TIME_VAR.getVarName(),
+      StringResource.EXCLUDE_FILTER_KEY + QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName(),
       QueryResource.SCHEDULE_RECURRENCE_VAR.getVarName()
   };
   private static final Map<String, Set<String>> FIXED_DATE_SCHEDULE_ARRAY_VARS = new HashMap<>();
