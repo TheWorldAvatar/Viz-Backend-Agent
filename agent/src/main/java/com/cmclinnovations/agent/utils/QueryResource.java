@@ -415,15 +415,21 @@ public class QueryResource {
                 builder.append(valuesClause);
             }
             // Special parsing for events at task level
-        } else if (field.equals(LifecycleResource.EVENT_KEY)) {
+        } else if (field.equals(LifecycleResource.EVENT_KEY)
+                || field.equals(StringResource.EXCLUDE_FILTER_KEY + LifecycleResource.EVENT_KEY)) {
             builder.append(query);
             Set<String> parsedFilters = filters.stream()
                     .map(eventStatus -> {
                         String eventStatusContent = eventStatus.substring(1, eventStatus.length() - 1);
                         return LocalisationTranslator.getEventFromLocalisedEventKey(eventStatusContent);
                     }).collect(Collectors.toSet());
-            String valuesClause = QueryResource.values(parsedFilters, field);
-            builder.append(valuesClause);
+            if (field.startsWith(StringResource.EXCLUDE_FILTER_KEY)) {
+                String excludeClause = QueryResource.filterNotIn(field.substring(1), parsedFilters, false);
+                builder.append(excludeClause);
+            } else {
+                String valuesClause = QueryResource.filterIn(field, parsedFilters);
+                builder.append(valuesClause);
+            }
         } else {
             QueryResource.genDefaultDatatypeFilters(query, field, filters, builder);
         }
