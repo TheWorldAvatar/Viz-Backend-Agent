@@ -517,17 +517,27 @@ public class GetService {
       if (key.equals(StringResource.SORT_KEY)) {
         queryBuilder.append(value);
       } else {
-        Set<String> filterValues = filters.get(key);
-        QueryResource.genFilterStatements(value, key, filterValues, queryBuilder);
+        String field = filters.containsKey(StringResource.EXCLUDE_FILTER_KEY + key)
+            ? StringResource.EXCLUDE_FILTER_KEY + key
+            : key;
+        Set<String> filterValues = filters.get(field);
+        QueryResource.genFilterStatements(value, field, filterValues, queryBuilder);
       }
     });
     if (filters.containsKey(QueryResource.ID_KEY)) {
       QueryResource.genFilterStatements("", QueryResource.ID_KEY, filters.get(QueryResource.ID_KEY), queryBuilder);
+    } else if (filters.containsKey(StringResource.EXCLUDE_FILTER_KEY + QueryResource.ID_KEY)) {
+      QueryResource.genFilterStatements("", StringResource.EXCLUDE_FILTER_KEY + QueryResource.ID_KEY,
+          filters.get(StringResource.EXCLUDE_FILTER_KEY + QueryResource.ID_KEY), queryBuilder);
     }
     String eventIdVar = QueryResource.EVENT_ID_VAR.getVarName();
     if (filters.containsKey(eventIdVar)) {
       QueryResource.genFilterStatements("?event_id dc-terms:identifier ?ori_event_id.",
           StringResource.ORIGINAL_PREFIX + eventIdVar, filters.get(eventIdVar), queryBuilder);
+    } else if (filters.containsKey(StringResource.EXCLUDE_FILTER_KEY + eventIdVar)) {
+      QueryResource.genFilterStatements("?event_id dc-terms:identifier ?ori_event_id.",
+          StringResource.EXCLUDE_FILTER_KEY + StringResource.ORIGINAL_PREFIX + eventIdVar,
+          filters.get(StringResource.EXCLUDE_FILTER_KEY + eventIdVar), queryBuilder);
     }
 
     // Stores the virtual query fields that are detected
@@ -565,7 +575,10 @@ public class GetService {
     // Next, parse and get the query statements for the fields of interest that
     // requires sorting or filtering
     Set<String> groups = new HashSet<>();
-    Set<String> filterFields = new HashSet<>(filters.keySet());
+    Set<String> filterFields = filters.keySet().stream()
+        .map(filterField -> filterField.contains(StringResource.EXCLUDE_FILTER_KEY) ? filterField.substring(1)
+            : filterField)
+        .collect(Collectors.toSet());
     Map<String, ArrayDeque<Queue<SparqlBinding>>> groupQueryPartMappings = new HashMap<>();
     Map<String, ArrayDeque<Queue<SparqlBinding>>> filterQueryPartMappings = new HashMap<>();
     Map<String, ArrayDeque<Queue<SparqlBinding>>> sortedQueryPartMappings = new HashMap<>();

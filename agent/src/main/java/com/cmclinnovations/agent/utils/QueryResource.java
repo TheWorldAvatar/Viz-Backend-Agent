@@ -4,9 +4,8 @@ import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -320,6 +319,52 @@ public class QueryResource {
     }
 
     /**
+     * Generate a FILTER IN clause for the specific field and values.
+     * 
+     * @param field  The field of interest.
+     * @param values The values to be inserted into the clause.
+     */
+    public static String filterIn(String field, Collection<String> values) {
+        if (values.isEmpty()) {
+            return "";
+        }
+        String fieldVar = QueryResource.genVariable(field).getQueryString();
+        StringBuilder queryBuilder = new StringBuilder();
+        values.forEach(value -> {
+            if (!queryBuilder.isEmpty()) {
+                queryBuilder.append(",");
+            }
+            queryBuilder.append(value);
+        });
+        return "FILTER(" + fieldVar + " IN (" + queryBuilder.toString() + "))";
+    }
+
+    /**
+     * Generate a FILTER NOT IN clause for the specific field and values.
+     * 
+     * @param field         The field of interest.
+     * @param values        The values to be inserted into the clause.
+     * @param includeBlanks If the clause must include blanks or not.
+     */
+    public static String filterNotIn(String field, Collection<String> values, boolean includeBlanks) {
+        String fieldVar = QueryResource.genVariable(field).getQueryString();
+        StringBuilder queryBuilder = new StringBuilder();
+        values.forEach(value -> {
+            if (!queryBuilder.isEmpty()) {
+                queryBuilder.append(",");
+            }
+            queryBuilder.append(value);
+        });
+        String unboundedStatement = includeBlanks ? "!BOUND(" + fieldVar + ")"
+                : "BOUND(" + fieldVar + ")";
+        String conditionJoins = includeBlanks ? " || " : " && ";
+        String notInExpression = values.size() > 0
+                ? conditionJoins + fieldVar + " NOT IN (" + queryBuilder.toString() + ")"
+                : "";
+        return "FILTER(" + unboundedStatement + notInExpression + ")";
+    }
+
+    /**
      * Generates query statements for filtering targets based on the filters if
      * available using VALUES clause.
      * 
@@ -330,7 +375,8 @@ public class QueryResource {
      */
     public static void genFilterStatements(String query, String field, Set<String> filters, StringBuilder builder) {
         // Special parsing for recurrence/schedule type
-        if (field.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
+        if (field.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)
+                || field.equals(StringResource.EXCLUDE_FILTER_KEY + LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
             builder.append(query); // Append general query
             boolean hasRegularService = filters.stream()
                     .anyMatch(scheduleType -> scheduleType.substring(1, scheduleType.length() - 1).equals(
@@ -355,33 +401,36 @@ public class QueryResource {
                     }).collect(Collectors.toSet());
             if (hasRegularService) {
                 // Remove the negation if the filter is present
-                Map<String, String> negationMappings = new HashMap<>(LifecycleResource.NEGATE_RECURRENCE_MAP);
-                parsedFilters.forEach(filter -> negationMappings.remove(filter));
-                if (!negationMappings.isEmpty()) {
-                    builder.append("FILTER(")
-                            .append(negationMappings.values().stream().collect(Collectors.joining("&&")))
-                            .append(")");
+                Set<String> negationSet = new HashSet<>(LifecycleResource.RECURRENCE_VALUES);
+                parsedFilters.forEach(negationSet::remove);
+                if (field.startsWith(StringResource.EXCLUDE_FILTER_KEY)) {
+                    builder.append(QueryResource.filterIn(field.substring(1), negationSet));
+                } else {
+                    builder.append(QueryResource.filterNotIn(field, negationSet, false));
                 }
+            } else if (field.startsWith(StringResource.EXCLUDE_FILTER_KEY)) {
+                builder.append(QueryResource.filterNotIn(field.substring(1), parsedFilters, false));
             } else {
                 String valuesClause = QueryResource.values(parsedFilters, field);
                 builder.append(valuesClause);
             }
             // Special parsing for events at task level
-        } else if (field.equals(LifecycleResource.EVENT_KEY)) {
+        } else if (field.equals(LifecycleResource.EVENT_KEY)
+                || field.equals(StringResource.EXCLUDE_FILTER_KEY + LifecycleResource.EVENT_KEY)) {
             builder.append(query);
             Set<String> parsedFilters = filters.stream()
                     .map(eventStatus -> {
                         String eventStatusContent = eventStatus.substring(1, eventStatus.length() - 1);
                         return LocalisationTranslator.getEventFromLocalisedEventKey(eventStatusContent);
                     }).collect(Collectors.toSet());
-            String valuesClause = QueryResource.values(parsedFilters, field);
-            builder.append(valuesClause);
-        } else {
-            // For default filters without any blanks, add clause to restrict them
-            // Blank/Null filters will be parsed with a MINUS clause
-            if (!filters.contains(QueryResource.NULL_KEY)) {
-                builder.append(query);
+            if (field.startsWith(StringResource.EXCLUDE_FILTER_KEY)) {
+                String excludeClause = QueryResource.filterNotIn(field.substring(1), parsedFilters, false);
+                builder.append(excludeClause);
+            } else {
+                String valuesClause = QueryResource.filterIn(field, parsedFilters);
+                builder.append(valuesClause);
             }
+        } else {
             QueryResource.genDefaultDatatypeFilters(query, field, filters, builder);
         }
     }
@@ -398,37 +447,47 @@ public class QueryResource {
             StringBuilder builder) {
         if (filters.contains(LifecycleResource.DATE_KEY)) {
             String dateFiltersStr = QueryResource.genDateFilterExpression(field, filters);
-            builder.append(dateFiltersStr);
+            builder.append(query).append(dateFiltersStr);
         } else if (filters.contains(QueryResource.TIME_TYPE)) {
             String timeFiltersStr = QueryResource.genTimeFilterExpression(field, filters);
-            builder.append(timeFiltersStr);
+            builder.append(query).append(timeFiltersStr);
         } else if (filters.contains(QueryResource.NUMERIC_TYPE)) {
             String numericalFiltersStr = QueryResource.genNumericalFilterExpression(field, filters);
-            builder.append(numericalFiltersStr);
+            builder.append(query).append(numericalFiltersStr);
+        } else if (!filters.isEmpty() && field.startsWith(StringResource.EXCLUDE_FILTER_KEY)) {
+            boolean hasNull = filters.remove(QueryResource.NULL_KEY);
+            if (hasNull && filters.isEmpty()) {
+                builder.append(query);
+            } else {
+                builder.append(QueryResource.optional(query))
+                        .append(QueryResource.filterNotIn(field.substring(1), filters, !hasNull));
+            }
+        } else if (!filters.isEmpty()) {
             // When there are null filter values, the user has requested for blank values,
             // and this should be excluded from the query via a MINUS clause
-        } else if (filters.contains(QueryResource.NULL_KEY)) {
-            String minusStatement = QueryResource.minus(query);
-            // If there is only one null filter, this should merely be a MINUS clause
-            if (filters.size() == 1) {
-                builder.append(minusStatement);
-            } else {
-                // When there are multiple filters, MINUS and default clause with values should
-                // be provided; Remove the null key before generating the VALUES clause
-                filters.remove(QueryResource.NULL_KEY);
+            if (filters.remove(QueryResource.NULL_KEY)) {
+                String minusStatement = QueryResource.minus(query);
+                // If there is only one null filter, this should merely be a MINUS clause
+                if (filters.isEmpty()) {
+                    builder.append(minusStatement);
+                } else {
+                    // When there are multiple filters, MINUS and default clause with values should
+                    // be provided
+                    String valuesClause = QueryResource.values(filters, field);
+                    builder.append(QueryResource.union(minusStatement, query + valuesClause));
+                }
+                // For default string filters, only include VALUES if they are available
+            } else if (!filters.isEmpty()) {
                 String valuesClause = QueryResource.values(filters, field);
-                builder.append(QueryResource.union(minusStatement, query + valuesClause));
+                builder.append(query)
+                        .append(valuesClause);
             }
-            // For default string filters, only include VALUES if they are available
-        } else if (!filters.isEmpty()) {
-            String valuesClause = QueryResource.values(filters, field);
-            builder.append(valuesClause);
         }
     }
 
     public static String genDateFilterExpression(String field, Set<String> filters) {
         StringBuilder builder = new StringBuilder();
-        
+
         List<String> dateFilters = new ArrayList<>(filters);
         dateFilters.remove(LifecycleResource.DATE_KEY);
         // If there is only one date, ensure field matches the selected date

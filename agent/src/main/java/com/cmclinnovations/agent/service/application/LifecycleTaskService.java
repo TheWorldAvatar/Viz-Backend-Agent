@@ -398,13 +398,17 @@ public class LifecycleTaskService {
 
     // Identify operation mode
     StringBuilder finalQueryAccumulator = new StringBuilder();
-    boolean isLookupMode = field != null && !field.isEmpty() && serviceEventFilters.containsKey(field)
-        && serviceEventFilters.get(field).isEmpty();
+    // Transform the field to ensure excluded filters are not include
+    String parsedField = serviceEventFilters.containsKey(StringResource.EXCLUDE_FILTER_KEY + field)
+        ? StringResource.EXCLUDE_FILTER_KEY + field
+        : field;
+    boolean isLookupMode = field != null && !field.isEmpty() && serviceEventFilters.containsKey(parsedField)
+        && serviceEventFilters.get(parsedField).isEmpty();
 
     // Separate background filters from the active lookup field
     Set<String> backgroundProperties = new LinkedHashSet<>(serviceEventFilters.keySet());
     if (isLookupMode) {
-      backgroundProperties.remove(field);
+      backgroundProperties.remove(parsedField);
     }
 
     // Explicitly clean out the sort key from background filtering structures
@@ -416,25 +420,27 @@ public class LifecycleTaskService {
         continue;
       }
 
-      Map<LifecycleEventType, String> matchedEvents = propertyToEventMappings.get(propertyKey);
+      String currentField = propertyKey.startsWith(StringResource.EXCLUDE_FILTER_KEY) ? propertyKey.substring(1)
+          : propertyKey;
+      Map<LifecycleEventType, String> matchedEvents = propertyToEventMappings.get(currentField);
       if (matchedEvents == null || matchedEvents.isEmpty()) {
         continue;
       }
 
-      String propertyValueVar = QueryResource.genVariable(propertyKey).getQueryString();
+      String propertyValueVar = QueryResource.genVariable(currentField).getQueryString();
       List<String> eventVarsInvolved = new ArrayList<>();
       String combinedGraphPath;
       if (matchedEvents.size() == 1) {
         Map.Entry<LifecycleEventType, String> entry = matchedEvents.entrySet().iterator().next();
         LifecycleEventType currentEventType = entry.getKey();
-        String uniqueVarStr = currentEventType.getId() + "_event_" + propertyKey;
+        String uniqueVarStr = currentEventType.getId() + "_event_" + currentField;
         String uniqueEventVar = QueryResource.genVariable(uniqueVarStr).getQueryString();
         eventVarsInvolved.add(uniqueEventVar);
 
         String innerPathContent = prepareEventPropertyPath(entry.getValue(), currentEventType, uniqueEventVar);
         combinedGraphPath = innerPathContent;
       } else {
-        String sharedEventVar = QueryResource.genVariable(propertyKey + "_event").getQueryString();
+        String sharedEventVar = QueryResource.genVariable(currentField + "_event").getQueryString();
         eventVarsInvolved.add(sharedEventVar);
         combinedGraphPath = prepareSharedEventPropertyPath(matchedEvents, sharedEventVar);
       }
@@ -471,6 +477,14 @@ public class LifecycleTaskService {
 
         String numericalFilterExpression = QueryResource.genNumericalFilterExpression(propertyKey, filterValues);
         filterClauseBuilder.append(numericalFilterExpression).append("\n");
+      } else if (propertyKey.startsWith(StringResource.EXCLUDE_FILTER_KEY)) {
+        boolean hasNull = filterValues.remove(QueryResource.NULL_KEY);
+        if (hasNull && filterValues.isEmpty()) {
+          filterClauseBuilder.append(combinedGraphPath);
+        } else {
+          filterClauseBuilder.append(QueryResource.optional(combinedGraphPath))
+              .append(QueryResource.filterNotIn(propertyKey.substring(1), filterValues, !hasNull));
+        }
       } else {
         // handle string-base filtering
         String valuesListString = "";
