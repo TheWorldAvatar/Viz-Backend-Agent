@@ -182,6 +182,10 @@ public class LifecycleQueryService {
         QueryResource.genFilterStatements(statements, StringResource.ORIGINAL_PREFIX + fieldKey,
             filtersWithSortedFields.get(fieldKey), addStatementBuilder);
         // Generate filter statements if the filters require them
+      } else if (filtersWithSortedFields.containsKey(StringResource.EXCLUDE_FILTER_KEY + fieldKey)) {
+        QueryResource.genFilterStatements(statements, StringResource.EXCLUDE_FILTER_KEY + fieldKey,
+            filtersWithSortedFields.get(StringResource.EXCLUDE_FILTER_KEY + fieldKey),
+            addStatementBuilder);
       } else if (filtersWithSortedFields.containsKey(fieldKey)) {
         QueryResource.genFilterStatements(statements, fieldKey, filtersWithSortedFields.get(fieldKey),
             addStatementBuilder);

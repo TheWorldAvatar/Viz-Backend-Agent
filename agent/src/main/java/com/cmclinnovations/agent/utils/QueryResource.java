@@ -4,9 +4,8 @@ import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -320,6 +319,27 @@ public class QueryResource {
     }
 
     /**
+     * Generate a FILTER IN clause for the specific field and values.
+     * 
+     * @param field  The field of interest.
+     * @param values The values to be inserted into the clause.
+     */
+    public static String filterIn(String field, Collection<String> values) {
+        if (values.isEmpty()) {
+            return "";
+        }
+        String fieldVar = QueryResource.genVariable(field).getQueryString();
+        StringBuilder queryBuilder = new StringBuilder();
+        values.forEach(value -> {
+            if (!queryBuilder.isEmpty()) {
+                queryBuilder.append(",");
+            }
+            queryBuilder.append(value);
+        });
+        return "FILTER(" + fieldVar + " IN (" + queryBuilder.toString() + "))";
+    }
+
+    /**
      * Generate a FILTER NOT IN clause for the specific field and values.
      * 
      * @param field         The field of interest.
@@ -355,7 +375,8 @@ public class QueryResource {
      */
     public static void genFilterStatements(String query, String field, Set<String> filters, StringBuilder builder) {
         // Special parsing for recurrence/schedule type
-        if (field.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
+        if (field.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)
+                || field.equals(StringResource.EXCLUDE_FILTER_KEY + LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
             builder.append(query); // Append general query
             boolean hasRegularService = filters.stream()
                     .anyMatch(scheduleType -> scheduleType.substring(1, scheduleType.length() - 1).equals(
@@ -380,13 +401,15 @@ public class QueryResource {
                     }).collect(Collectors.toSet());
             if (hasRegularService) {
                 // Remove the negation if the filter is present
-                Map<String, String> negationMappings = new HashMap<>(LifecycleResource.NEGATE_RECURRENCE_MAP);
-                parsedFilters.forEach(filter -> negationMappings.remove(filter));
-                if (!negationMappings.isEmpty()) {
-                    builder.append("FILTER(")
-                            .append(negationMappings.values().stream().collect(Collectors.joining("&&")))
-                            .append(")");
+                Set<String> negationSet = new HashSet<>(LifecycleResource.RECURRENCE_VALUES);
+                parsedFilters.forEach(negationSet::remove);
+                if (field.startsWith(StringResource.EXCLUDE_FILTER_KEY)) {
+                    builder.append(QueryResource.filterIn(field.substring(1), negationSet));
+                } else {
+                    builder.append(QueryResource.filterNotIn(field, negationSet, false));
                 }
+            } else if (field.startsWith(StringResource.EXCLUDE_FILTER_KEY)) {
+                builder.append(QueryResource.filterNotIn(field.substring(1), parsedFilters, false));
             } else {
                 String valuesClause = QueryResource.values(parsedFilters, field);
                 builder.append(valuesClause);
