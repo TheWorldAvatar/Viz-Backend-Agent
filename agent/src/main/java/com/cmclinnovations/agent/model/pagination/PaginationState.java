@@ -81,6 +81,10 @@ public class PaginationState {
                 .results()
                 .map(match -> {
                     String field = this.parseLifecycleSortFields(match.group(2), isContract);
+                    // Last modified should always be the original non-string version for sorting
+                    if (field.equals(LifecycleResource.LAST_MODIFIED_KEY)) {
+                        field = StringResource.ORIGINAL_PREFIX + LifecycleResource.LAST_MODIFIED_KEY;
+                    }
                     Variable fieldVar = QueryResource.genVariable(field);
                     // First group matches the sign
                     String sign = match.group(1);
@@ -107,10 +111,6 @@ public class PaginationState {
         String result = field;
         if (isContract != null) {
             result = LifecycleResource.revertLifecycleSpecialFields(field, isContract);
-            // Last modified should always be the original non-string version for sorting
-            if (result.equals(LifecycleResource.LAST_MODIFIED_KEY)) {
-                result = StringResource.ORIGINAL_PREFIX + LifecycleResource.LAST_MODIFIED_KEY;
-            }
         }
         return result;
     }
