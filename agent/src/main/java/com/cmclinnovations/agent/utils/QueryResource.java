@@ -374,14 +374,13 @@ public class QueryResource {
      * @param builder Stores the output.
      */
     public static void genFilterStatements(String query, String field, Set<String> filters, StringBuilder builder) {
-        // Special parsing for recurrence/schedule type
-        if (field.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)
+        // For sort only fields
+        if (filters.contains(StringResource.SORT_KEY)) {
+            builder.append(query);
+            // Special parsing for recurrence/schedule type
+        } else if (field.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)
                 || field.equals(StringResource.EXCLUDE_FILTER_KEY + LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
             builder.append(query); // Append general query
-            // Early termination for sort only fields
-            if (filters.contains(StringResource.SORT_KEY)) {
-                return;
-            }
             boolean hasRegularService = filters.stream()
                     .anyMatch(scheduleType -> scheduleType.substring(1, scheduleType.length() - 1).equals(
                             LocalisationTranslator.getMessage(LocalisationResource.REGULAR_SERVICE_KEY)));
@@ -447,7 +446,7 @@ public class QueryResource {
      * @param filters The list of filter values to target by.
      * @param builder Stores the output.
      */
-    public static void genDefaultDatatypeFilters(String query, String field, Set<String> filters,
+    private static void genDefaultDatatypeFilters(String query, String field, Set<String> filters,
             StringBuilder builder) {
         if (filters.contains(LifecycleResource.DATE_KEY)) {
             String dateFiltersStr = QueryResource.genDateFilterExpression(field, filters);
@@ -467,13 +466,9 @@ public class QueryResource {
                         .append(QueryResource.filterNotIn(field.substring(1), filters, !hasNull));
             }
         } else if (!filters.isEmpty()) {
-            // For string sorting fields, only append query
-            if (filters.contains(StringResource.SORT_KEY)) {
-                builder.append(query);
-
-                // When there are null filter values, the user has requested for blank values,
-                // and this should be excluded from the query via a MINUS clause
-            } else if (filters.remove(QueryResource.NULL_KEY)) {
+            // When there are null filter values, the user has requested for blank values,
+            // and this should be excluded from the query via a MINUS clause
+            if (filters.remove(QueryResource.NULL_KEY)) {
                 String minusStatement = QueryResource.minus(query);
                 // If there is only one null filter, this should merely be a MINUS clause
                 if (filters.isEmpty()) {
