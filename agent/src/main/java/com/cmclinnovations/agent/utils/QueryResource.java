@@ -463,9 +463,13 @@ public class QueryResource {
                         .append(QueryResource.filterNotIn(field.substring(1), filters, !hasNull));
             }
         } else if (!filters.isEmpty()) {
-            // When there are null filter values, the user has requested for blank values,
-            // and this should be excluded from the query via a MINUS clause
-            if (filters.remove(QueryResource.NULL_KEY)) {
+            // For string sorting fields, only append query
+            if (filters.remove(StringResource.SORT_KEY)) {
+                builder.append(query);
+
+                // When there are null filter values, the user has requested for blank values,
+                // and this should be excluded from the query via a MINUS clause
+            } else if (filters.remove(QueryResource.NULL_KEY)) {
                 String minusStatement = QueryResource.minus(query);
                 // If there is only one null filter, this should merely be a MINUS clause
                 if (filters.isEmpty()) {
@@ -476,8 +480,8 @@ public class QueryResource {
                     String valuesClause = QueryResource.values(filters, field);
                     builder.append(QueryResource.union(minusStatement, query + valuesClause));
                 }
+            } else {
                 // For default string filters, only include VALUES if they are available
-            } else if (!filters.isEmpty()) {
                 String valuesClause = QueryResource.values(filters, field);
                 builder.append(query)
                         .append(valuesClause);

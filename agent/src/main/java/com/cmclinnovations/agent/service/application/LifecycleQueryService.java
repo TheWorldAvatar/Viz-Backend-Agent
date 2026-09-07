@@ -163,7 +163,9 @@ public class LifecycleQueryService {
     // Sorted field statements should also be added
     Map<String, Set<String>> filtersWithSortedFields = new HashMap<>(filters);
     if (!sortedFields.isEmpty()) {
-      sortedFields.forEach(sortField -> filtersWithSortedFields.putIfAbsent(sortField, new HashSet<>()));
+      Set<String> sortedFilter = new HashSet<>();
+      sortedFilter.add(StringResource.SORT_KEY);
+      sortedFields.forEach(sortField -> filtersWithSortedFields.putIfAbsent(sortField, sortedFilter));
     }
     queryMappings.forEach((fieldKey, statements) -> {
       // Lifecycle statements itself must be included; When the current field requires
