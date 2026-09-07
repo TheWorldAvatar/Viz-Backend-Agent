@@ -378,6 +378,10 @@ public class QueryResource {
         if (field.equals(LifecycleResource.SCHEDULE_RECURRENCE_KEY)
                 || field.equals(StringResource.EXCLUDE_FILTER_KEY + LifecycleResource.SCHEDULE_RECURRENCE_KEY)) {
             builder.append(query); // Append general query
+            // Early termination for sort only fields
+            if (filters.contains(StringResource.SORT_KEY)) {
+                return;
+            }
             boolean hasRegularService = filters.stream()
                     .anyMatch(scheduleType -> scheduleType.substring(1, scheduleType.length() - 1).equals(
                             LocalisationTranslator.getMessage(LocalisationResource.REGULAR_SERVICE_KEY)));

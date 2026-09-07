@@ -42,7 +42,7 @@ public class PaginationState {
         // REGEX will match two groups per sort directive in the url
         this.sortedFields = SORT_PARAM_PATTERN.matcher(sortBy)
                 .results()
-                .map(match -> match.group(2))
+                .map(match -> this.parseLifecycleSortFields(match.group(2), isContract))
                 .collect(Collectors.toCollection(HashSet::new));
         this.sortedDirectives = this.parseSortDirectives(sortBy, isContract);
         this.filters = StringResource.parseFilters(filters, isContract);
@@ -80,14 +80,7 @@ public class PaginationState {
         return SORT_PARAM_PATTERN.matcher(sortBy)
                 .results()
                 .map(match -> {
-                    String field = match.group(2);
-                    if (isContract != null) {
-                        field = LifecycleResource.revertLifecycleSpecialFields(field, isContract);
-                        // Last modified should always be the original non-string version for sorting
-                        if (field.equals(LifecycleResource.LAST_MODIFIED_KEY)) {
-                            field = StringResource.ORIGINAL_PREFIX + LifecycleResource.LAST_MODIFIED_KEY;
-                        }
-                    }
+                    String field = this.parseLifecycleSortFields(match.group(2), isContract);
                     Variable fieldVar = QueryResource.genVariable(field);
                     // First group matches the sign
                     String sign = match.group(1);
@@ -102,5 +95,23 @@ public class PaginationState {
                 // Keep the first direction when callers append an existing tie-breaker.
                 .filter(directive -> parsedFields.add(directive.field().getVarName()))
                 .collect(Collectors.toCollection(ArrayDeque::new));
+    }
+
+    /**
+     * Parses the lifecycle sort fields into their true form.
+     * 
+     * @param field      The field of interest.
+     * @param isContract Indicates if it is a contract or task otherwise.
+     */
+    private String parseLifecycleSortFields(String field, Boolean isContract) {
+        String result = field;
+        if (isContract != null) {
+            result = LifecycleResource.revertLifecycleSpecialFields(field, isContract);
+            // Last modified should always be the original non-string version for sorting
+            if (result.equals(LifecycleResource.LAST_MODIFIED_KEY)) {
+                result = StringResource.ORIGINAL_PREFIX + LifecycleResource.LAST_MODIFIED_KEY;
+            }
+        }
+        return result;
     }
 }
