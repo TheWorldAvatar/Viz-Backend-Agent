@@ -479,12 +479,8 @@ public class LifecycleTaskService {
         filterClauseBuilder.append(numericalFilterExpression).append("\n");
       } else if (propertyKey.startsWith(StringResource.EXCLUDE_FILTER_KEY)) {
         boolean hasNull = filterValues.remove(QueryResource.NULL_KEY);
-        if (hasNull && filterValues.isEmpty()) {
-          filterClauseBuilder.append(combinedGraphPath);
-        } else {
-          filterClauseBuilder.append(QueryResource.optional(combinedGraphPath))
-              .append(QueryResource.filterNotIn(propertyKey.substring(1), filterValues, !hasNull));
-        }
+        filterClauseBuilder.append(QueryResource.optional(combinedGraphPath))
+            .append(QueryResource.filterNotIn(propertyKey.substring(1), filterValues, !hasNull));
       } else {
         // handle string-base filtering
         String valuesListString = "";

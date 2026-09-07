@@ -459,12 +459,8 @@ public class QueryResource {
             builder.append(query).append(numericalFiltersStr);
         } else if (!filters.isEmpty() && field.startsWith(StringResource.EXCLUDE_FILTER_KEY)) {
             boolean hasNull = filters.remove(QueryResource.NULL_KEY);
-            if (hasNull && filters.isEmpty()) {
-                builder.append(query);
-            } else {
-                builder.append(QueryResource.optional(query))
-                        .append(QueryResource.filterNotIn(field.substring(1), filters, !hasNull));
-            }
+            builder.append(QueryResource.optional(query))
+                    .append(QueryResource.filterNotIn(field.substring(1), filters, !hasNull));
         } else if (!filters.isEmpty()) {
             // When there are null filter values, the user has requested for blank values,
             // and this should be excluded from the query via a MINUS clause
