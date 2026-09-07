@@ -468,7 +468,7 @@ public class QueryResource {
             }
         } else if (!filters.isEmpty()) {
             // For string sorting fields, only append query
-            if (filters.remove(StringResource.SORT_KEY)) {
+            if (filters.contains(StringResource.SORT_KEY)) {
                 builder.append(query);
 
                 // When there are null filter values, the user has requested for blank values,
