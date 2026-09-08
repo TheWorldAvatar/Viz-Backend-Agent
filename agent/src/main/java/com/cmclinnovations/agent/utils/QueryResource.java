@@ -329,14 +329,10 @@ public class QueryResource {
             return "";
         }
         String fieldVar = QueryResource.genVariable(field).getQueryString();
-        StringBuilder queryBuilder = new StringBuilder();
-        values.forEach(value -> {
-            if (!queryBuilder.isEmpty()) {
-                queryBuilder.append(",");
-            }
-            queryBuilder.append(value);
-        });
-        return "FILTER(" + fieldVar + " IN (" + queryBuilder.toString() + "))";
+        String valuesClause = values.stream()
+                .filter(v -> v != null)
+                .collect(Collectors.joining(","));
+        return "FILTER(" + fieldVar + " IN (" + valuesClause + "))";
     }
 
     /**
@@ -348,18 +344,15 @@ public class QueryResource {
      */
     public static String filterNotIn(String field, Collection<String> values, boolean includeBlanks) {
         String fieldVar = QueryResource.genVariable(field).getQueryString();
-        StringBuilder queryBuilder = new StringBuilder();
-        values.forEach(value -> {
-            if (!queryBuilder.isEmpty()) {
-                queryBuilder.append(",");
-            }
-            queryBuilder.append(value);
-        });
+        String valuesClause = values.stream()
+                .filter(v -> v != null)
+                .collect(Collectors.joining(","));
+
         String unboundedStatement = includeBlanks ? "!BOUND(" + fieldVar + ")"
                 : "BOUND(" + fieldVar + ")";
         String conditionJoins = includeBlanks ? " || " : " && ";
         String notInExpression = values.size() > 0
-                ? conditionJoins + fieldVar + " NOT IN (" + queryBuilder.toString() + ")"
+                ? conditionJoins + fieldVar + " NOT IN (" + valuesClause + ")"
                 : "";
         return "FILTER(" + unboundedStatement + notInExpression + ")";
     }
