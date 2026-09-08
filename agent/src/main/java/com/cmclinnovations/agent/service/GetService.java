@@ -576,7 +576,7 @@ public class GetService {
     // requires sorting or filtering
     Set<String> groups = new HashSet<>();
     Set<String> filterFields = filters.keySet().stream()
-        .map(filterField -> filterField.contains(StringResource.EXCLUDE_FILTER_KEY) ? filterField.substring(1)
+        .map(filterField -> filterField.startsWith(StringResource.EXCLUDE_FILTER_KEY) ? filterField.substring(1)
             : filterField)
         .collect(Collectors.toSet());
     Map<String, ArrayDeque<Queue<SparqlBinding>>> groupQueryPartMappings = new HashMap<>();
