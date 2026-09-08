@@ -96,7 +96,7 @@ public class LocalisationTranslator {
         // The white space below is NOT a delimiter and is intended to separate the
         // potential assigned key values
         yield Rdf.literalOf(LifecycleResource.EVENT_DELIVERY + ";" + LifecycleResource.EVENT_PENDING_STATUS)
-            .getQueryString() + " " + Rdf.literalOf(LifecycleResource.EVENT_DISPATCH).getQueryString();
+            .getQueryString() + "," + Rdf.literalOf(LifecycleResource.EVENT_DISPATCH).getQueryString();
       case LocalisationResource.EVENT_STATUS_NEW_KEY:
         yield Rdf.literalOf(LifecycleResource.EVENT_ORDER_RECEIVED).getQueryString();
       case LocalisationResource.EVENT_STATUS_BILLABLE_COMPLETED_KEY:

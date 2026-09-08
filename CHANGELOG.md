@@ -1,5 +1,9 @@
 # Change Log
 
+# 1.69.0
+
+- Extended to support exclusionary filters
+
 # 1.68.1
 
 - Fixed conflict checks for task completion to continue when no conflicts are detected

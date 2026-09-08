@@ -1,8 +1,7 @@
 package com.cmclinnovations.agent.utils;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -96,20 +95,12 @@ public class LifecycleResource {
   public static final Pattern OCCURRENCE_VARIABLES_PATTERN = Pattern.compile("SELECT\\s+DISTINCT\\s+(.*?)\\s+WHERE",
       Pattern.DOTALL);
   public static final Pattern OCCURRENCE_WHERE_CLAUSE_PATTERN = Pattern.compile("WHERE\\s*\\{(.*)\\}$", Pattern.DOTALL);
-  public static final Map<String, String> NEGATE_RECURRENCE_MAP;
+  public static final Set<String> RECURRENCE_VALUES = Set.of(RECURRENCE_DAILY_TASK_STRING,
+      RECURRENCE_ALT_DAY_TASK_STRING, EMPTY_STRING, RECURRENCE_FIXED_DATE_TASK_STRING);
 
   // Private constructor to prevent instantiation
   private LifecycleResource() {
     throw new UnsupportedOperationException("This class cannot be instantiated!");
-  }
-
-  static {
-    Map<String, String> template = new HashMap<>();
-    template.put(RECURRENCE_DAILY_TASK_STRING, "?recurrence!=\"P1D\"");
-    template.put(RECURRENCE_ALT_DAY_TASK_STRING, "?recurrence!=\"P2D\"");
-    template.put(EMPTY_STRING, "?recurrence!=\"\"");
-    template.put(RECURRENCE_FIXED_DATE_TASK_STRING, "?recurrence!=\"" + RECURRENCE_FIXED_DATE_TASK + "\"");
-    NEGATE_RECURRENCE_MAP = Collections.unmodifiableMap(template);
   }
 
   /**
