@@ -682,6 +682,7 @@ public class LifecycleTaskService {
     // Set up for checking
     Set<String> uniqueIdChecker = new HashSet<>();
     Queue<List<String>> uniqueIds = new ArrayDeque<>();
+    List<List<String>> uniqueEventIds = new ArrayList<>();
     Queue<String> eventIds = new ArrayDeque<>();
     while (!ids.isEmpty()) {
       List<String> idPair = ids.poll();
@@ -697,6 +698,7 @@ public class LifecycleTaskService {
       // All event Ids are unique and must be returned as IRIs
       String eventId = idPair.get(1);
       eventIds.offer("<" + eventId + ">");
+      uniqueEventIds.add(Collections.singletonList(StringResource.getLocalName(eventId)));
     }
     Set<ColumnMetaPayload> varSequences = new LinkedHashSet<>(this.taskColumnMeta);
     String occurrenceQueryString = this.genOccurrenceEventQuery(varSequences, eventIds, eventType,
@@ -728,10 +730,29 @@ public class LifecycleTaskService {
           Queue<SparqlBinding> instances = this.getService.getInstances(occurrenceQueryString);
           instances = this.kgService.combineBindingQueue(instances, occurrenceArrayVariables);
           return new DataManifest<>(instances, new ArrayList<>());
+        },
+        () -> {
+          Set<ColumnMetaPayload> virtualSequences = new HashSet<>();
+          Map<String, SparqlBinding> virtualResults = new HashMap<>();
+          this.lifecycleQueryService.mergeEventVirtualResults(LifecycleEventType.SERVICE_ORDER_DISPATCHED,
+              virtualResults, uniqueEventIds, virtualSequences);
+          if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE)
+              || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
+            this.lifecycleQueryService.mergeEventVirtualResults(LifecycleEventType.SERVICE_EXECUTION, virtualResults,
+                uniqueEventIds, varSequences);
+            this.lifecycleQueryService.mergeEventVirtualResults(LifecycleEventType.SERVICE_CANCELLATION, virtualResults,
+                uniqueEventIds, varSequences);
+            this.lifecycleQueryService.mergeEventVirtualResults(LifecycleEventType.SERVICE_INCIDENT_REPORT,
+                virtualResults, uniqueEventIds, varSequences);
+            this.lifecycleQueryService.mergeEventVirtualResults(LifecycleEventType.SERVICE_EXEMPT, virtualResults,
+                uniqueEventIds, varSequences);
+          }
+          return new DataManifest<>(new ArrayDeque(virtualResults.values()), new ArrayList<>(virtualSequences));
         });
 
     // Unpack query results
     DataManifest<Queue<SparqlBinding>> coreEntityResultManifest = parallelResults.get(0);
+    DataManifest<Queue<SparqlBinding>> virtualResultManifest = parallelResults.get(2);
     Queue<SparqlBinding> taskInstances = parallelResults.get(1).data();
 
     // Combine results from entity query and event query
@@ -739,6 +760,8 @@ public class LifecycleTaskService {
         QueryResource.ID_KEY);
     Map<String, Map<String, Object>> eventById = mapBindingsById(taskInstances,
         QueryResource.EVENT_ID_VAR.getVarName());
+    Map<String, Map<String, Object>> virtualEventResultsById = mapBindingsById(virtualResultManifest.data(),
+        QueryResource.ID_KEY);
 
     // Merge data of primary entity and event
     List<Map<String, Object>> mergedData = new ArrayList<>();
@@ -752,6 +775,14 @@ public class LifecycleTaskService {
       if (eventRow != null) {
         mergedRow.putAll(eventRow);
       }
+      if (!virtualResultManifest.data().isEmpty()) {
+        String eventId = StringResource.getLocalName(pair.get(1));
+        if (virtualEventResultsById.containsKey(eventId)) {
+          Map<String, Object> eventVirtualRow = virtualEventResultsById.get(eventId);
+          eventVirtualRow.remove(QueryResource.ID_KEY);
+          mergedRow.putAll(eventVirtualRow);
+        }
+      }
       if (!mergedRow.isEmpty()) {
         mergedData.add(mergedRow);
       }
@@ -760,6 +791,7 @@ public class LifecycleTaskService {
     // Merge column metadata
     List<ColumnMetaPayload> mergedColumns = new ArrayList<>(coreEntityResultManifest.columns());
     mergedColumns.addAll(varSequences);
+    mergedColumns.addAll(virtualResultManifest.columns());
 
     return new DataManifest<>(mergedData, mergedColumns);
   }

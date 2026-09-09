@@ -3,6 +3,7 @@ package com.cmclinnovations.agent.service;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -718,7 +719,7 @@ public class GetService {
       return this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addColumns);
     }
     // Execute virtual results first as IDs are removed on the actual execution
-    Map<String, SparqlBinding> virtualResults = this.kgService.execVirtualShaclRules(resourceID, ids);
+    Map<String, SparqlBinding> virtualResults = this.execVirtualShaclRules(resourceID, ids);
     if (!virtualResults.isEmpty()) {
       SparqlBinding virtualBinding = virtualResults.values().iterator().next();
       List<ColumnMetaPayload> virtualColumns = virtualBinding.getFields().stream()
@@ -738,6 +739,17 @@ public class GetService {
           return instance;
         }).collect(Collectors.toCollection(ArrayDeque::new)),
         instancesManifest.columns());
+  }
+
+  /**
+   * Executes the SHACL SPARQL virtual rules on all available endpoints to get
+   * data at query time.
+   * 
+   * @param resourceID The target resource identifier.
+   * @param ids        List of ids that are relevant to the query.
+   */
+  public Map<String, SparqlBinding> execVirtualShaclRules(String resourceID, Collection<List<String>> ids) {
+    return this.kgService.execVirtualShaclRules(resourceID, ids);
   }
 
   /**

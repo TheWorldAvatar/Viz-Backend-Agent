@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -326,7 +327,7 @@ public class KGService {
    * @param resourceID The target resource identifier.
    * @param ids        List of ids that are relevant to the query.
    */
-  public Map<String, SparqlBinding> execVirtualShaclRules(String resourceID, Queue<List<String>> ids) {
+  public Map<String, SparqlBinding> execVirtualShaclRules(String resourceID, Collection<List<String>> ids) {
     Model virtualRules = this.getShaclRules(resourceID, ShaclRuleType.SPARQL_VIRTUAL_RULE);
     if (virtualRules.isEmpty()) {
       return new HashMap<>();
