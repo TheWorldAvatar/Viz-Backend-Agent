@@ -701,24 +701,6 @@ public class LifecycleTaskService {
       uniqueEventIds.add(Collections.singletonList(StringResource.getLocalName(eventId)));
     }
     Set<ColumnMetaPayload> varSequences = new LinkedHashSet<>(this.taskColumnMeta);
-    String occurrenceQueryString = this.genOccurrenceEventQuery(varSequences, eventIds, eventType,
-        lifecycleStatements[2]);
-
-    // Keep each array parent linked to the child fields selected by the occurrence
-    // query.
-    Map<String, Set<String>> occurrenceArrayVariables = new HashMap<>();
-    // Inspect every column returned by the occurrence shapes.
-    varSequences.stream()
-        // Process only columns that represent arrays.
-        .filter(column -> column.type().equals(ShaclResource.ARRAY_KEY))
-        .forEach(column -> {
-          // Use the parent itself for simple arrays, or extract each nested child field.
-          Set<String> arrayFields = column.arrayFields() == null
-              ? Set.of(column.value())
-              : column.arrayFields().stream().map(ColumnMetaPayload::value).collect(Collectors.toSet());
-          // Merge child fields when multiple shapes contribute to the same array parent.
-          occurrenceArrayVariables.computeIfAbsent(column.value(), key -> new HashSet<>()).addAll(arrayFields);
-        });
 
     // Execute primary entity and event queries in parallel
     List<DataManifest<Queue<SparqlBinding>>> parallelResults = ParallelTaskExecutor.execParallelQueries(
@@ -727,10 +709,30 @@ public class LifecycleTaskService {
             new ArrayList<>(this.taskEntityColumnMeta)),
         // Query for event
         () -> {
+          String occurrenceQueryString = this.genOccurrenceEventQuery(varSequences, eventIds, eventType,
+              lifecycleStatements[2]);
+
+          // Keep each array parent linked to the child fields selected by the occurrence
+          // query.
+          Map<String, Set<String>> occurrenceArrayVariables = new HashMap<>();
+          // Inspect every column returned by the occurrence shapes.
+          varSequences.stream()
+              // Process only columns that represent arrays.
+              .filter(column -> column.type().equals(ShaclResource.ARRAY_KEY))
+              .forEach(column -> {
+                // Use the parent itself for simple arrays, or extract each nested child field.
+                Set<String> arrayFields = column.arrayFields() == null
+                    ? Set.of(column.value())
+                    : column.arrayFields().stream().map(ColumnMetaPayload::value).collect(Collectors.toSet());
+                // Merge child fields when multiple shapes contribute to the same array parent.
+                occurrenceArrayVariables.computeIfAbsent(column.value(), key -> new HashSet<>()).addAll(arrayFields);
+              });
+
           Queue<SparqlBinding> instances = this.getService.getInstances(occurrenceQueryString);
           instances = this.kgService.combineBindingQueue(instances, occurrenceArrayVariables);
           return new DataManifest<>(instances, new ArrayList<>());
         },
+        // Query for virtual event rules
         () -> {
           Set<ColumnMetaPayload> virtualSequences = new HashSet<>();
           Map<String, SparqlBinding> virtualResults = new HashMap<>();
