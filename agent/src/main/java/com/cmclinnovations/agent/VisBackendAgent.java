@@ -258,6 +258,21 @@ public class VisBackendAgent {
   }
 
   /**
+   * Retrieves the form template for the target entity of the specified type from
+   * the knowledge graph, with human readable labels for any concept field. This
+   * route is intended for consumers rendering a record read-only, and does not
+   * suit the editable form, which requires the concept IRI to match the selected
+   * option against its dropdown.
+   */
+  @GetMapping("/form/{type}/label/{id}")
+  public ResponseEntity<StandardApiResponse<?>> retrieveFormTemplateWithLabels(@PathVariable String type,
+      @PathVariable String id) {
+    LOGGER.info("Received request to get specific form template for {} with human readable data...", type);
+    return this.concurrencyService.executeInOptimisticReadLock(type,
+        () -> this.getService.getFormWithConceptLabels(id, type));
+  }
+
+  /**
    * Retrieve the metadata (IRI, label, and description) of the concept associated
    * with the specified type in the knowledge graph.
    */

@@ -35,6 +35,7 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.SparqlEndpointType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.model.util.DataManifest;
+import com.cmclinnovations.agent.service.core.ConceptLabelService;
 import com.cmclinnovations.agent.service.core.KGService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.BillingResource;
@@ -50,6 +51,7 @@ import tools.jackson.databind.node.ArrayNode;
 public class GetService {
   private final KGService kgService;
   private final QueryTemplateService queryTemplateService;
+  private final ConceptLabelService conceptLabelService;
   private final ResponseEntityBuilder responseEntityBuilder;
 
   private static final String SUCCESSFUL_REQUEST_MSG = "Request has been completed successfully!";
@@ -61,12 +63,14 @@ public class GetService {
    * 
    * @param kgService             KG service for performing the query.
    * @param queryTemplateService  Service for generating query templates.
+   * @param conceptLabelService   Service for resolving concepts into labels.
    * @param responseEntityBuilder A component to build the response entity.
    */
   public GetService(KGService kgService, QueryTemplateService queryTemplateService,
-      ResponseEntityBuilder responseEntityBuilder) {
+      ConceptLabelService conceptLabelService, ResponseEntityBuilder responseEntityBuilder) {
     this.kgService = kgService;
     this.queryTemplateService = queryTemplateService;
+    this.conceptLabelService = conceptLabelService;
     this.responseEntityBuilder = responseEntityBuilder;
   }
 
@@ -810,6 +814,22 @@ public class GetService {
       currentEntity = (Map<String, Object>) currentEntityResponse.getBody().data().items().get(0);
     }
     return this.getForm(resourceID, isReplacement, currentEntity);
+  }
+
+  /**
+   * Retrieve the form template for the target entity instance, with any concept
+   * field resolved into its human readable label. Note that linked instance
+   * fields ie sh:class retain their IRI as they are rendered as nested entities.
+   * It's a post-processing step that runs after getForm has already produced the template.
+   * 
+   * @param targetId   The target instance identifier.
+   * @param resourceID The target resource identifier for the instance class.
+   */
+  public ResponseEntity<StandardApiResponse<?>> getFormWithConceptLabels(String targetId, String resourceID) {
+    ResponseEntity<StandardApiResponse<?>> response = this.getForm(targetId, resourceID, false, null);
+    // The template is the same instance held in the payload, and is resolved in place
+    this.conceptLabelService.resolve((Map<String, Object>) response.getBody().data().items().get(0));
+    return response;
   }
 
   /**
