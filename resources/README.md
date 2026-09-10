@@ -615,10 +615,10 @@ A `POST` request should be sent to `<baseURL>/vis-backend-agent/calculation` wit
 
 ### 1.3.1 Virtual or persist derivation
 
-The `twa-form:SPARQLVirtualRule` is a custom extension of the `sh:Rule` and `sh:SPARQLSelectExecutable` class, that is designed for query-time derivation ie display information temporarily without persistence in the triplestore. It requires only a `sh:select` property with the corresponding `SELECT` `SPARQL` query. The agent will return the `SELECT` variables.
+The `twa-form:SPARQLVirtualRule` is a custom extension of the `sh:Rule` and `sh:SPARQLSelectExecutable` class, that is designed for query-time derivation ie display information temporarily without persistence in the triplestore. It requires only a `sh:select` property with the corresponding `SELECT` `SPARQL` query. The agent will return the `SELECT` variables. Please do **NOT** return unbound variables in virtual queries as it may result in unexpected behaviour.
 
 > [!CAUTION]
-> Like all SHACL rules, the variable `$this` is reserved for the current focus node. Your SPARQL string must utilise `$this` to ensure the rule scope is correctly applied to the individual instance being processed.
+> Like all SHACL rules, the variable `$this` is reserved for the current focus node. Your SPARQL string must utilise `$this` to ensure the rule scope is correctly applied to the individual instance being processed. For lifecycle events, please ensure that you have included the `exemplifies` relation to target the right event as all identifiers are the same in the task.
 
 > [!TIP]
 > The agent will include ids automatically via the `dc-term:identifier` property and transforming the select query. The data **MUST** contain this property. Users can choose to include this statement `GROUP BY ?id` when using aggregates instead of `?this` as the id variable is included by default.
