@@ -145,27 +145,18 @@ public class ShaclPropertyBinding {
 
         PropertyPathBuilder jointPredicate = this.labelPredicate == null ? this.predicate
                 : this.predicate.then(this.labelPredicate.build());
-        if (this.isClazz && this.labelPredicate == null) {
+        if (this.isClazz && this.labelPredicate == null && this.isLabel) {
             // Add a final rdfs:label if it requires a label but is a class without other
             // labels
-            if (this.isLabel) {
-                jointPredicate = jointPredicate.then(RDFS.LABEL);
-                // If no label is required, filter out the parent classes
-            } else {
-                Variable inferredPropertyClass = QueryResource.genVariable(this.property.getVarName() + " parent");
-                contents.add(
-                        this.property.has(QueryResource.RDFS_SUBCLASSOF, inferredPropertyClass)
-                                .filter(Expressions.and(
-                                        Expressions.notEquals(this.property, inferredPropertyClass),
-                                        Expressions.notEquals(inferredPropertyClass, RDFS.RESOURCE))));
-            }
+            jointPredicate = jointPredicate.then(RDFS.LABEL);
         }
 
         // If a group exists and has patterns to append, it should be the subject
         if (this.group != null && hasGroupPatterns) {
             this.subject = this.group;
         }
-        TriplePattern primaryTriples = this.subject.has(jointPredicate.build(), this.property);
+        TriplePattern primaryTriples = this.subject.has(jointPredicate.build(),
+                this.property);
         if (this.subjectFilter.isEmpty()) {
             contents.add(primaryTriples);
         } else {
