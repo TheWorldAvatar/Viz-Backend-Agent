@@ -1,5 +1,9 @@
 # Change Log
 
+# 1.69.1
+
+- Fixed class query clause for being too restrictive and being redundant
+
 # 1.69.0
 
 - Extended to support exclusionary filters
