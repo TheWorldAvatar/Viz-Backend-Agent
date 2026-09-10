@@ -741,13 +741,13 @@ public class LifecycleTaskService {
           if (eventType.equals(LifecycleEventType.ACTIVE_SERVICE)
               || eventType.equals(LifecycleEventType.SERVICE_ACCRUAL)) {
             this.lifecycleQueryService.mergeEventVirtualResults(LifecycleEventType.SERVICE_EXECUTION, virtualResults,
-                uniqueEventIds, varSequences);
+                uniqueEventIds, virtualSequences);
             this.lifecycleQueryService.mergeEventVirtualResults(LifecycleEventType.SERVICE_CANCELLATION, virtualResults,
-                uniqueEventIds, varSequences);
+                uniqueEventIds, virtualSequences);
             this.lifecycleQueryService.mergeEventVirtualResults(LifecycleEventType.SERVICE_INCIDENT_REPORT,
-                virtualResults, uniqueEventIds, varSequences);
+                virtualResults, uniqueEventIds, virtualSequences);
             this.lifecycleQueryService.mergeEventVirtualResults(LifecycleEventType.SERVICE_EXEMPT, virtualResults,
-                uniqueEventIds, varSequences);
+                uniqueEventIds, virtualSequences);
           }
           return new DataManifest<>(new ArrayDeque(virtualResults.values()), new ArrayList<>(virtualSequences));
         });
