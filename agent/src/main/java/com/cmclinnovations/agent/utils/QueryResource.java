@@ -130,6 +130,7 @@ public class QueryResource {
     public static final String URI_TYPE = "uri";
     public static final String NUMERIC_TYPE = "numeric";
     public static final String TIME_TYPE = "time";
+    public static final String VIRTUAL_TYPE = "virtual";
 
     public static final String DATE_FILTER_TEMPLATE = "xsd:date(?{0}){1}\"{2}\"^^xsd:date";
     public static final String NUMERIC_FILTER_TEMPLATE = "xsd:decimal(?{0}){1}\"{2}\"^^xsd:decimal";

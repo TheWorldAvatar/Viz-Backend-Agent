@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * Represents the column metadata information for a specific variable, including
- * their header name, type (uri, literal, array), datatype, and if they have a
+ * their header name, type (uri, literal, array, virtual), datatype, and if they have a
  * specific lifecycle stage. Fields with null values will be excluded from the
  * JSON output.
  */
