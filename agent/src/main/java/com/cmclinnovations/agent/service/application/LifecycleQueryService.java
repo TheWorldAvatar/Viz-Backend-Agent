@@ -290,7 +290,7 @@ public class LifecycleQueryService {
     List<ColumnMetaPayload> virtualColumns = tempVirtualResults.values().iterator().next()
         .getFields().stream()
         .filter(field -> !field.equals(QueryResource.ID_KEY))
-        .map(field -> new ColumnMetaPayload(field, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING))
+        .map(field -> new ColumnMetaPayload(field, QueryResource.VIRTUAL_TYPE, ShaclResource.XSD_STRING))
         .toList();
     varSequences.addAll(virtualColumns);
     tempVirtualResults.forEach(
