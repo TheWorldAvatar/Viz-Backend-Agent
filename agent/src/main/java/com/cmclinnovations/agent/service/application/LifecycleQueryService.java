@@ -3,7 +3,6 @@ package com.cmclinnovations.agent.service.application;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +10,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.springframework.stereotype.Service;
 
 import com.cmclinnovations.agent.component.LocalisationTranslator;
@@ -24,7 +22,6 @@ import com.cmclinnovations.agent.service.core.DateTimeService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.QueryResource;
-import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 import com.cmclinnovations.agent.utils.TypeCastUtils;
 
@@ -283,16 +280,10 @@ public class LifecycleQueryService {
   public void mergeEventVirtualResults(LifecycleEventType eventType, Map<String, SparqlBinding> output,
       List<List<String>> ids, Set<ColumnMetaPayload> varSequences) {
     Map<String, SparqlBinding> tempVirtualResults = this.getService.execVirtualShaclRules(
-        eventType.getId(), ids);
+        eventType.getId(), ids, varSequences);
     if (tempVirtualResults.isEmpty()) {
       return;
     }
-    List<ColumnMetaPayload> virtualColumns = tempVirtualResults.values().iterator().next()
-        .getFields().stream()
-        .filter(field -> !field.equals(QueryResource.ID_KEY))
-        .map(field -> new ColumnMetaPayload(field, QueryResource.VIRTUAL_TYPE, ShaclResource.XSD_STRING))
-        .toList();
-    varSequences.addAll(virtualColumns);
     tempVirtualResults.forEach(
         (key, newBinding) -> output.merge(key, newBinding,
             (existing, replacement) -> {

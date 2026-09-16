@@ -719,7 +719,7 @@ public class GetService {
       return this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addColumns);
     }
     // Execute virtual results first as IDs are removed on the actual execution
-    Map<String, SparqlBinding> virtualResults = this.execVirtualShaclRules(resourceID, ids);
+    Map<String, SparqlBinding> virtualResults = this.execVirtualShaclRules(resourceID, ids, addColumns);
     if (!virtualResults.isEmpty()) {
       SparqlBinding virtualBinding = virtualResults.values().iterator().next();
       List<ColumnMetaPayload> virtualColumns = virtualBinding.getFields().stream()
@@ -747,9 +747,11 @@ public class GetService {
    * 
    * @param resourceID The target resource identifier.
    * @param ids        List of ids that are relevant to the query.
+   * @param output     Output collection to store virtual fields.
    */
-  public Map<String, SparqlBinding> execVirtualShaclRules(String resourceID, Collection<List<String>> ids) {
-    return this.kgService.execVirtualShaclRules(resourceID, ids);
+  public Map<String, SparqlBinding> execVirtualShaclRules(String resourceID, Collection<List<String>> ids,
+      Collection<ColumnMetaPayload> output) {
+    return this.kgService.execVirtualShaclRules(resourceID, ids, output);
   }
 
   /**

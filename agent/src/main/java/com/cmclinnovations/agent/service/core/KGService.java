@@ -33,6 +33,7 @@ import com.cmclinnovations.agent.component.ShaclRuleProcesser;
 import com.cmclinnovations.agent.component.repository.KGRepository;
 import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.model.SparqlBinding;
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.ShaclRuleType;
@@ -326,8 +327,10 @@ public class KGService {
    * 
    * @param resourceID The target resource identifier.
    * @param ids        List of ids that are relevant to the query.
+   * @param output     Output collection to store virtual fields.
    */
-  public Map<String, SparqlBinding> execVirtualShaclRules(String resourceID, Collection<List<String>> ids) {
+  public Map<String, SparqlBinding> execVirtualShaclRules(String resourceID, Collection<List<String>> ids,
+      Collection<ColumnMetaPayload> output) {
     Model virtualRules = this.getShaclRules(resourceID, ShaclRuleType.SPARQL_VIRTUAL_RULE);
     if (virtualRules.isEmpty()) {
       return new HashMap<>();
@@ -336,7 +339,7 @@ public class KGService {
     List<String> targetIds = ids.stream()
         .map(list -> Rdf.literalOf(list.get(0)).getQueryString())
         .toList();
-    Queue<String> queries = this.shaclRuleProcesser.getVirtualQueries(virtualRules, targetIds);
+    Queue<String> queries = this.shaclRuleProcesser.getVirtualQueries(virtualRules, targetIds, output);
 
     Map<String, SparqlBinding> results = new HashMap<>();
     while (!queries.isEmpty()) {
