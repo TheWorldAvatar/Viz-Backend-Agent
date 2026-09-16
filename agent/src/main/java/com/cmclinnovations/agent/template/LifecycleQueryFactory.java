@@ -197,6 +197,7 @@ public class LifecycleQueryFactory {
         String eventIdVar = QueryResource.EVENT_ID_VAR.getQueryString();
         String eventStatusVar = QueryResource.EVENT_STATUS_VAR.getQueryString();
         String lastModifiedVar = QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY).getQueryString();
+        String priorityVar = QueryResource.genVariable(LifecycleResource.PRIORITY_KEY).getQueryString();
 
         Map<String, String> results = new HashMap<>();
         String filterContractStatement = contract != null ? "?iri dc-terms:identifier \"" + contract + "\"." : "";
@@ -266,6 +267,11 @@ public class LifecycleQueryFactory {
         results.put(LifecycleResource.LAST_MODIFIED_KEY, eventIdVar
                 + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
                 + lastModifiedVar + ShaclResource.FULL_STOP);
+        // High priority is stored on the order event; default to "false" as a string
+        // so that every task row carries the column
+        results.put(LifecycleResource.PRIORITY_KEY, "OPTIONAL{?order_event "
+                + Rdf.iri(LifecycleResource.HAS_PRIORITY_RELATIONS).getQueryString() + " ?priority_value.}"
+                + "BIND(STR(COALESCE(?priority_value, false)) AS " + priorityVar + ")");
         results.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, "OPTIONAL{ {?iri "
                 + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
                 "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?recurrences.}"
