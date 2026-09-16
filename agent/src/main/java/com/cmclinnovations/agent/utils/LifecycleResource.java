@@ -66,12 +66,14 @@ public class LifecycleResource {
   public static final String SCHEDULE_RECURRENCE_PLACEHOLDER_KEY = "recurrences";
   public static final String SCHEDULE_TYPE_KEY = "scheduleType";
   public static final String RESCHEDULE_DATE_KEY = "reschedule date";
+  public static final String PRIORITY_KEY = "priority";
 
   public static final String EXEMPLIFIES_RELATIONS = "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies";
   public static final String IS_ABOUT_RELATIONS = "https://www.omg.org/spec/Commons/Documents/isAbout";
 
   public static final String LIFECYCLE_STAGE_PREDICATE_PATH = "<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasLifecycle>/<https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Lifecycles/hasStage>";
   public static final String LIFECYCLE_EVENT_TYPE_PREDICATE_PATH = "<" + EXEMPLIFIES_RELATIONS + ">";
+  public static final String HAS_PRIORITY_RELATIONS = ShaclResource.BASE_PREFIX + "hasPriority";
   public static final String CREATION_STAGE = "https://www.theworldavatar.com/kg/ontoservice/CreationStage";
   public static final String SERVICE_EXECUTION_STAGE = "https://www.theworldavatar.com/kg/ontoservice/ServiceExecutionStage";
   public static final String EXPIRATION_STAGE = "https://www.theworldavatar.com/kg/ontoservice/ExpirationStage";
@@ -217,6 +219,25 @@ public class LifecycleResource {
     return eventVar + " <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/exemplifies> "
         + Rdf.iri(lifecycleEvent.getEvent()).getQueryString()
         + ";<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event.";
+  }
+
+  /**
+   * Generates a SPARQL query to toggle the high priority state of the target
+   * order event.
+   *
+   * @param orderEventIri The IRI of the task's order event instance.
+   * @param isPriority    Indicates the current high priority state and inverse
+   *                      it. If it is high priority, the query will remove it.
+   */
+  public static String getPriorityUpdateQuery(String orderEventIri, boolean isPriority) {
+    String triplePrefix = Rdf.iri(orderEventIri).getQueryString() + " "
+        + Rdf.iri(HAS_PRIORITY_RELATIONS).getQueryString() + " ";
+    return QueryResource.PREFIX_TEMPLATE
+        + "DELETE {" + triplePrefix + "?priority.}\n"
+        + "INSERT {" + triplePrefix + (isPriority ? "false" : "true") + "}\n"
+        + "WHERE {\n"
+        + "\tOPTIONAL {" + triplePrefix + "?priority.}\n"
+        + "}";
   }
 
   /**
