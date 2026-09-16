@@ -72,6 +72,7 @@ public class ShaclRuleProcesser {
                                     + this.getIriClause(QueryResource.ID_KEY, iris));
             Query query = QueryFactory.create(selectQuery);
             query.getProjectVars().stream()
+                    .filter(v -> !v.getVarName().equals(QueryResource.ID_KEY))
                     .forEach(v -> fieldsOutput.add(new ColumnMetaPayload(v.getVarName(), QueryResource.VIRTUAL_TYPE,
                             ShaclResource.XSD_STRING)));
             return selectQuery;
