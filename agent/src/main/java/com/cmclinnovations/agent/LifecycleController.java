@@ -410,6 +410,19 @@ public class LifecycleController {
   }
 
   /**
+   * Toggles the high priority state of a service task. If the task is not high
+   * priority, it will be marked as such; otherwise, the high priority is removed.
+   */
+  @PutMapping("/service/priority")
+  public ResponseEntity<StandardApiResponse<?>> updatePriority(@RequestBody Map<String, Object> params) {
+    this.checkMissingParams(params, QueryResource.ID_KEY);
+    LOGGER.info("Received request to update the high priority state...");
+    String taskId = params.get(QueryResource.ID_KEY).toString();
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.lifecycleTaskService.updatePriority(taskId));
+  }
+
+  /**
    * Route to perform a service action on a specific service. Valid types include:
    * 1) report: Reports any unfulfilled service delivery
    * 2) cancel: Cancel any upcoming service

@@ -28,6 +28,10 @@ public enum TrackActionType {
   EXEMPT("https://theworldavatar.io/kg/ontochangelog/ExemptionActivity", "label.activity.exempt"),
   ACCOUNT_FLAG("https://theworldavatar.io/kg/ontochangelog/AccountFlagActivity", "label.activity.flag"),
   ACCOUNT_UNFLAG("https://theworldavatar.io/kg/ontochangelog/AccountUnflagActivity", "label.activity.unflag"),
+  TASK_PRIORITY("https://theworldavatar.io/kg/ontochangelog/TaskPriorityActivity", "label.activity.priority"),
+  TASK_PRIORITY_REVERTED("https://theworldavatar.io/kg/ontochangelog/TaskPriorityRevertedActivity",
+      "label.activity.revert.priority"),
+
   IGNORED("", "");
 
   private final String clazz;
