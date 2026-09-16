@@ -720,14 +720,6 @@ public class GetService {
     }
     // Execute virtual results first as IDs are removed on the actual execution
     Map<String, SparqlBinding> virtualResults = this.execVirtualShaclRules(resourceID, ids, addColumns);
-    if (!virtualResults.isEmpty()) {
-      SparqlBinding virtualBinding = virtualResults.values().iterator().next();
-      List<ColumnMetaPayload> virtualColumns = virtualBinding.getFields().stream()
-          .filter(field -> !field.equals(QueryResource.ID_KEY))
-          .map(field -> new ColumnMetaPayload(field, QueryResource.VIRTUAL_TYPE, ShaclResource.XSD_STRING))
-          .toList();
-      addColumns.addAll(virtualColumns);
-    }
     DataManifest<Queue<SparqlBinding>> instancesManifest = this.execGetInstances(iri, ids, requireLabel,
         addQueryStatements, addColumns);
     return new DataManifest<>(
