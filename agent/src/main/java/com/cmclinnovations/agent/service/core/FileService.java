@@ -105,6 +105,7 @@ public class FileService {
   public static final String TASK_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "task.sparql";
   public static final String TASK_ACCRUAL_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "task_accrual.sparql";
   public static final String RESCHEDULE_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "reschedule.sparql";
+  public static final String PRIORITY_QUERY_RESOURCE = QUERY_GET_LIFECYCLE_DIR + "task_priority.sparql";
   public static final String INFER_CONTRACT_BRANCH_QUERY_RESOURCE = SPRING_FILE_PATH_PREFIX + BRANCH_QUERY_DIR
       + "infer-contract-branch.sparql";
 
