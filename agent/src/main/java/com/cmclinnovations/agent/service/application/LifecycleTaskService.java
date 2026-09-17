@@ -882,7 +882,7 @@ public class LifecycleTaskService {
     String orderEventIri = task.getFieldValue(QueryResource.IRI_KEY);
     boolean isPriority = Boolean.parseBoolean(task.getFieldValue(LifecycleResource.PRIORITY_KEY));
     LOGGER.info("High priority for task {} is currently: {}", taskId, isPriority);
-    String query = LifecycleResource.getPriorityUpdateQuery(taskId, isPriority);
+    String query = this.lifecycleQueryFactory.getPriorityUpdateQuery(taskId, isPriority);
     ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(query);
     if (response.getStatusCode() != HttpStatus.OK) {
       return response;

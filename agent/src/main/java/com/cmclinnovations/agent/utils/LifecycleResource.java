@@ -222,26 +222,6 @@ public class LifecycleResource {
   }
 
   /**
-   * Generates a SPARQL query to toggle the high priority state of the task's
-   * order event.
-   *
-   * @param taskId     The identifier of the task.
-   * @param isPriority Indicates the current high priority state and inverse it.
-   *                   If it is high priority, the query will remove it.
-   */
-  public static String getPriorityUpdateQuery(String taskId, boolean isPriority) {
-    return QueryResource.PREFIX_TEMPLATE
-        + "\nPREFIX twa: <" + ShaclResource.BASE_PREFIX + ">\n"
-        + "DELETE {?iri twa:hasPriority ?priority.}\n"
-        + "INSERT {?iri twa:hasPriority " + (isPriority ? "false" : "true") + ".}\n"
-        + "WHERE {\n"
-        + "\t?iri fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent;\n"
-        + "\t\tdc-terms:identifier \"" + taskId + "\".\n"
-        + "\tOPTIONAL {?iri twa:hasPriority ?priority.}\n"
-        + "}";
-  }
-
-  /**
    * Reverts back the special fields for lifecycle back to their original variable
    * form.
    * 
