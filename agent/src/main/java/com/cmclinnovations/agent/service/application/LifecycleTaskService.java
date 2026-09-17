@@ -95,7 +95,7 @@ public class LifecycleTaskService {
         .add(new ColumnMetaPayload(LifecycleResource.STATUS_KEY, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
     this.taskColumnMeta
         .add(new ColumnMetaPayload(LifecycleResource.PRIORITY_KEY, QueryResource.LITERAL_TYPE,
-            ShaclResource.XSD_STRING));
+            ShaclResource.XSD_BOOLEAN));
     this.taskColumnMeta
         .add(QueryResource.EVENT_ID_COL);
     this.taskEntityColumnMeta.add(new ColumnMetaPayload(LifecycleResource.SCHEDULE_TYPE_KEY, QueryResource.LITERAL_TYPE,

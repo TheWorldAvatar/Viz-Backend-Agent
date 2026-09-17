@@ -945,7 +945,7 @@ Users can send a `DELETE` request to the `<baseURL>/vis-backend-agent/contracts/
 
 > Toggle high priority for service tasks
 
-Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/priority` endpoint to toggle the high priority state of a service task. If the task is not currently high priority, it will be marked as high priority; if it already is, the high priority will be removed. The request body does not specify the desired state. The state is persisted on the task's order event in the knowledge graph via the `https://theworldavatar.io/kg/hasPriority` property, and is returned as a `priority` column with a `"true"` or `"false"` string value in the outstanding, scheduled, and closed task listings. Note that this route does require the following `JSON` request parameters:
+Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/priority` endpoint to toggle the high priority state of a service task. If the task is not currently high priority, it will be marked as high priority; if it already is, the high priority will be removed. The request body does not specify the desired state. The state is persisted on the task's order event in the knowledge graph via the `https://theworldavatar.io/kg/hasPriority` property, and is returned as a boolean `priority` column in the outstanding, scheduled, and closed task listings. Note that this route does require the following `JSON` request parameters:
 
 ```json
 {
