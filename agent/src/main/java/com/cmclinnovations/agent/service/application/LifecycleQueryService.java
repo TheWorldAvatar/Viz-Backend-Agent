@@ -3,8 +3,8 @@ package com.cmclinnovations.agent.service.application;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import com.cmclinnovations.agent.component.LocalisationTranslator;
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.core.DateTimeService;
@@ -163,7 +164,7 @@ public class LifecycleQueryService {
     // Sorted field statements should also be added
     Map<String, Set<String>> filtersWithSortedFields = new HashMap<>(filters);
     if (!sortedFields.isEmpty()) {
-      Set<String> sortedFilter =  Set.of(StringResource.SORT_KEY);
+      Set<String> sortedFilter = Set.of(StringResource.SORT_KEY);
       sortedFields.forEach(sortField -> filtersWithSortedFields.putIfAbsent(sortField, sortedFilter));
     }
     queryMappings.forEach((fieldKey, statements) -> {
@@ -267,4 +268,29 @@ public class LifecycleQueryService {
     }
   }
 
+  /**
+   * Query for virtual rule results associated with the specific event type and
+   * merge them into the output.
+   * 
+   * @param eventType    Target event type.
+   * @param output       Output to store the virtual query results.
+   * @param ids          The list of event IDs to query for.
+   * @param varSequences Stores the variables.
+   */
+  public void mergeEventVirtualResults(LifecycleEventType eventType, Map<String, SparqlBinding> output,
+      List<List<String>> ids, Set<ColumnMetaPayload> varSequences) {
+    Map<String, SparqlBinding> tempVirtualResults = this.getService.execVirtualShaclRules(
+        eventType.getId(), ids, varSequences);
+    if (tempVirtualResults.isEmpty()) {
+      return;
+    }
+    tempVirtualResults.forEach(
+        (key, newBinding) -> output.merge(key, newBinding,
+            (existing, replacement) -> {
+              // If there is an existing mapping, merge the two
+              existing.merge(replacement);
+              return existing;
+            }));
+
+  }
 }

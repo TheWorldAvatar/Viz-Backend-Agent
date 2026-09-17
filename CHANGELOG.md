@@ -1,5 +1,10 @@
 # Change Log
 
+# 1.70.0
+
+- Extended sparql virtual rules for lifecycle events as a parallel call
+- Refactor code to improve parallelisation capabilities for events
+
 # 1.69.2
 
 - Refactor so that virtual fields are given the virtual type
