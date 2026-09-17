@@ -222,21 +222,22 @@ public class LifecycleResource {
   }
 
   /**
-   * Generates a SPARQL query to toggle the high priority state of the target
+   * Generates a SPARQL query to toggle the high priority state of the task's
    * order event.
    *
-   * @param orderEventIri The IRI of the task's order event instance.
-   * @param isPriority    Indicates the current high priority state and inverse
-   *                      it. If it is high priority, the query will remove it.
+   * @param taskId     The identifier of the task.
+   * @param isPriority Indicates the current high priority state and inverse it.
+   *                   If it is high priority, the query will remove it.
    */
-  public static String getPriorityUpdateQuery(String orderEventIri, boolean isPriority) {
-    String triplePrefix = Rdf.iri(orderEventIri).getQueryString() + " "
-        + Rdf.iri(HAS_PRIORITY_RELATIONS).getQueryString() + " ";
+  public static String getPriorityUpdateQuery(String taskId, boolean isPriority) {
     return QueryResource.PREFIX_TEMPLATE
-        + "DELETE {" + triplePrefix + "?priority.}\n"
-        + "INSERT {" + triplePrefix + (isPriority ? "false" : "true") + "}\n"
+        + "\nPREFIX twa: <" + ShaclResource.BASE_PREFIX + ">\n"
+        + "DELETE {?iri twa:hasPriority ?priority.}\n"
+        + "INSERT {?iri twa:hasPriority " + (isPriority ? "false" : "true") + ".}\n"
         + "WHERE {\n"
-        + "\tOPTIONAL {" + triplePrefix + "?priority.}\n"
+        + "\t?iri fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent;\n"
+        + "\t\tdc-terms:identifier \"" + taskId + "\".\n"
+        + "\tOPTIONAL {?iri twa:hasPriority ?priority.}\n"
         + "}";
   }
 
