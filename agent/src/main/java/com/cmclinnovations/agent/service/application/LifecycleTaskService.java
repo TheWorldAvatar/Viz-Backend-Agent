@@ -94,6 +94,9 @@ public class LifecycleTaskService {
     this.taskColumnMeta
         .add(new ColumnMetaPayload(LifecycleResource.STATUS_KEY, QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
     this.taskColumnMeta
+        .add(new ColumnMetaPayload(LifecycleResource.PRIORITY_KEY, QueryResource.LITERAL_TYPE,
+            ShaclResource.XSD_BOOLEAN));
+    this.taskColumnMeta
         .add(QueryResource.EVENT_ID_COL);
     this.taskEntityColumnMeta.add(new ColumnMetaPayload(LifecycleResource.SCHEDULE_TYPE_KEY, QueryResource.LITERAL_TYPE,
         ShaclResource.XSD_STRING));
@@ -354,7 +357,8 @@ public class LifecycleTaskService {
       // Statements for event properties
       String eventStatements = statementMappings.get(LifecycleResource.EVENT_LIFECYCLE_RESOURCE)
           + "\n" + statementMappings.get(LifecycleResource.EVENT_KEY)
-          + "\n" + statementMappings.get(LifecycleResource.LAST_MODIFIED_KEY);
+          + "\n" + statementMappings.get(LifecycleResource.LAST_MODIFIED_KEY)
+          + "\n" + statementMappings.get(LifecycleResource.PRIORITY_KEY);
       return new String[] { lifecycleStatements, entityStatements, eventStatements };
     } else {
       return new String[] { lifecycleStatements };
@@ -899,6 +903,29 @@ public class LifecycleTaskService {
   public ResponseEntity<StandardApiResponse<?>> getTask(String taskId) {
     SparqlBinding task = this.lifecycleQueryService.getInstance(FileService.TASK_QUERY_RESOURCE, taskId);
     return this.responseEntityBuilder.success(null, this.lifecycleQueryService.parseLifecycleBinding(task.get()));
+  }
+
+  /**
+   * Toggles the high priority state of the specified task. A task that is not
+   * high priority will be marked as such, and vice versa.
+   *
+   * @param taskId The identifier of the task.
+   */
+  public ResponseEntity<StandardApiResponse<?>> updatePriority(String taskId) {
+    SparqlBinding task = this.lifecycleQueryService.getInstance(FileService.PRIORITY_QUERY_RESOURCE, taskId);
+    String orderEventIri = task.getFieldValue(QueryResource.IRI_KEY);
+    boolean isPriority = Boolean.parseBoolean(task.getFieldValue(LifecycleResource.PRIORITY_KEY));
+    LOGGER.info("High priority for task {} is currently: {}", taskId, isPriority);
+    String query = this.lifecycleQueryFactory.getPriorityUpdateQuery(taskId, isPriority);
+    ResponseEntity<StandardApiResponse<?>> response = this.updateService.update(query);
+    if (response.getStatusCode() != HttpStatus.OK) {
+      return response;
+    }
+    this.addService.logActivity(orderEventIri,
+        isPriority ? TrackActionType.TASK_PRIORITY_REVERTED : TrackActionType.TASK_PRIORITY);
+    return this.responseEntityBuilder.success(taskId, LocalisationTranslator.getMessage(
+        isPriority ? LocalisationResource.SUCCESS_CONTRACT_TASK_PRIORITY_REMOVE_KEY
+            : LocalisationResource.SUCCESS_CONTRACT_TASK_PRIORITY_KEY));
   }
 
   /**

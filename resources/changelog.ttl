@@ -18,3 +18,5 @@ ocl:PricingAdjustmentActivity rdfs:subClassOf ocl:Activity.
 ocl:ExemptionActivity rdfs:subClassOf ocl:Activity.
 ocl:AccountFlagActivity rdfs:subClassOf ocl:Activity.
 ocl:AccountUnflagActivity rdfs:subClassOf ocl:Activity.
+ocl:TaskPriorityActivity rdfs:subClassOf ocl:Activity.
+ocl:TaskPriorityRevertedActivity rdfs:subClassOf ocl:Activity.

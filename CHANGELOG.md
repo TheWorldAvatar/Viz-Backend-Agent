@@ -1,5 +1,10 @@
 # Change Log
 
+# 1.71.0
+
+- Added a new route route to toggle the high priority state of a service task
+- Added a `priority` column to the outstanding, scheduled, and closed task listings
+
 # 1.70.0
 
 - Extended sparql virtual rules for lifecycle events as a parallel call
