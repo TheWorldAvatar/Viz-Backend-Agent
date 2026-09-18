@@ -1,5 +1,9 @@
 # Change Log
 
+# 1.71.1
+
+- Fixed deletion of optional SHACL nested fields for delete and update operations
+  
 # 1.71.0
 
 - Added a new route route to toggle the high priority state of a service task
