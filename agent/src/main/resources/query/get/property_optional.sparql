@@ -8,12 +8,16 @@ WHERE{
          sh:targetClass [target] ;
          (sh:or/rdf:rest*/rdf:first)? ?node.
     ?node (sh:and/rdf:rest*/rdf:first)?/sh:node?/sh:property ?property .
-    ?property sh:name ?name ;
+    ?property sh:name ?ori_name ;
+    OPTIONAL{
+      ?property sh:node/sh:property/sh:name ?nestedname.
+    }
 
     OPTIONAL{
       ?property sh:minCount ?minCount.
     }
 
+  BIND(CONCAT(?ori_name, COALESCE(CONCAT(" ",?nestedname), "")) AS ?name)
   FILTER ((COALESCE(?minCount, 0)=0))
 
 }
