@@ -197,6 +197,7 @@ public class LifecycleQueryFactory {
         String eventIdVar = QueryResource.EVENT_ID_VAR.getQueryString();
         String eventStatusVar = QueryResource.EVENT_STATUS_VAR.getQueryString();
         String lastModifiedVar = QueryResource.genVariable(LifecycleResource.LAST_MODIFIED_KEY).getQueryString();
+        String priorityVar = QueryResource.genVariable(LifecycleResource.PRIORITY_KEY).getQueryString();
 
         Map<String, String> results = new HashMap<>();
         String filterContractStatement = contract != null ? "?iri dc-terms:identifier \"" + contract + "\"." : "";
@@ -266,6 +267,11 @@ public class LifecycleQueryFactory {
         results.put(LifecycleResource.LAST_MODIFIED_KEY, eventIdVar
                 + "<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/Occurrences/hasEventDate> "
                 + lastModifiedVar + ShaclResource.FULL_STOP);
+        // High priority is stored on the order event; default to false so that every
+        // task row carries the column
+        results.put(LifecycleResource.PRIORITY_KEY, "OPTIONAL{?order_event "
+                + Rdf.iri(LifecycleResource.HAS_PRIORITY_RELATIONS).getQueryString() + " ?priority_value.}"
+                + "BIND(COALESCE(?priority_value, false) AS " + priorityVar + ")");
         results.put(LifecycleResource.SCHEDULE_RECURRENCE_KEY, "OPTIONAL{ {?iri "
                 + LifecycleResource.LIFECYCLE_STAGE_PREDICATE_PATH +
                 "/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasSchedule>/<https://spec.edmcouncil.org/fibo/ontology/FND/DatesAndTimes/FinancialDates/hasRecurrenceInterval>/<https://www.omg.org/spec/Commons/DatesAndTimes/hasDurationValue> ?recurrences.}"
@@ -301,6 +307,26 @@ public class LifecycleQueryFactory {
                                 instance),
                         eventStatusPattern);
         return updateQuery.getQueryString();
+    }
+
+    /**
+     * Generates a UPDATE query to toggle the high priority state of the task's
+     * order event.
+     *
+     * @param taskId     The identifier of the task.
+     * @param isPriority Indicates the current high priority state and inverse it.
+     *                   If it is high priority, the query will remove it.
+     */
+    public String getPriorityUpdateQuery(String taskId, boolean isPriority) {
+        return QueryResource.PREFIX_TEMPLATE
+                + "\nPREFIX twa: <" + ShaclResource.BASE_PREFIX + ">\n"
+                + "DELETE {?iri twa:hasPriority ?priority.}\n"
+                + "INSERT {?iri twa:hasPriority " + (isPriority ? "false" : "true") + ".}\n"
+                + "WHERE {\n"
+                + "\t?iri fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent;\n"
+                + "\t\tdc-terms:identifier \"" + taskId + "\".\n"
+                + "\tOPTIONAL {?iri twa:hasPriority ?priority.}\n"
+                + "}";
     }
 
     /**

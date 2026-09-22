@@ -2,6 +2,7 @@ package com.cmclinnovations.agent.component;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,8 +31,10 @@ import org.springframework.stereotype.Component;
 
 import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.SparqlResponseField;
+import com.cmclinnovations.agent.model.response.ColumnMetaPayload;
 import com.cmclinnovations.agent.model.type.ShaclRuleType;
 import com.cmclinnovations.agent.utils.QueryResource;
+import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
 @Component
@@ -55,17 +58,24 @@ public class ShaclRuleProcesser {
     /**
      * Retrieve all virtual queries to be executed at query time.
      *
-     * @param rules The model containing SHACL rules.
-     * @param iris  The list of IRIs to be targeted.
+     * @param rules        The model containing SHACL rules.
+     * @param iris         The list of IRIs to be targeted.
+     * @param fieldsOutput The output collection to store virtual fields.
      */
-    public Queue<String> getVirtualQueries(Model rules, List<String> iris) {
+    public Queue<String> getVirtualQueries(Model rules, List<String> iris, Collection<ColumnMetaPayload> fieldsOutput) {
         LOGGER.debug("Retrieving SHACL virtual rules....");
         Queue<String> queries = this.execVirtualQueryOperation(rules, (String selectStatement) -> {
             // Update the query with ID filters and variable
-            return QueryResource.DC_TERM.getQueryString() +
+            String selectQuery = QueryResource.DC_TERM.getQueryString() +
                     selectStatement.replaceFirst("(?i)WHERE\\s*\\{",
                             "?id WHERE{" + ID_TRIPLE_STATEMENT
                                     + this.getIriClause(QueryResource.ID_KEY, iris));
+            Query query = QueryFactory.create(selectQuery);
+            query.getProjectVars().stream()
+                    .filter(v -> !v.getVarName().equals(QueryResource.ID_KEY))
+                    .forEach(v -> fieldsOutput.add(new ColumnMetaPayload(v.getVarName(), QueryResource.VIRTUAL_TYPE,
+                            ShaclResource.XSD_STRING)));
+            return selectQuery;
         });
         return queries;
     }

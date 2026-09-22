@@ -943,6 +943,17 @@ Users can send a `POST` request to the `<baseURL>/vis-backend-agent/contracts/se
 
 Users can send a `DELETE` request to the `<baseURL>/vis-backend-agent/contracts/service/{type}/{id}` endpoint to undo a cancellation, report, or void action for a service task, where `{type}` must be `cancel`, `report`, or `void`, and `{id}` is the task's identifier. The target action must be the latest event for the task and must directly follow a supported service event.
 
+> Toggle high priority for service tasks
+
+Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/priority` endpoint to toggle the high priority state of a service task. If the task is not currently high priority, it will be marked as high priority; if it already is, the high priority will be removed. The request body does not specify the desired state. The state is persisted on the task's order event in the knowledge graph via the `https://theworldavatar.io/kg/hasPriority` property, and is returned as a boolean `priority` column in the outstanding, scheduled, and closed task listings. Note that this route does require the following `JSON` request parameters:
+
+```json
+{
+  /* parameters */
+  "id": "The ID of the task"
+}
+```
+
 #### 2.6.6 Archive contract route
 
 The endpoint serves to archive in progress contracts as well as retrieve all contracts that have expired and are in archive.

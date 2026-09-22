@@ -7,13 +7,18 @@ WHERE{
   ?shape rdf:type sh:NodeShape ;
          sh:targetClass [target] ;
          (sh:or/rdf:rest*/rdf:first)? ?node.
-    ?node (sh:and/rdf:rest*/rdf:first)?/sh:node?/sh:property ?property .
-    ?property sh:name ?name ;
-
-    OPTIONAL{
-      ?property sh:minCount ?minCount.
-    }
+  ?node (sh:and/rdf:rest*/rdf:first)?/sh:node?/sh:property ?property .
+  OPTIONAL{
+    ?property sh:minCount ?minCount.
+  }
 
   FILTER ((COALESCE(?minCount, 0)=0))
 
+  {
+    ?property sh:name ?name.
+  } UNION {
+    ?property sh:name ?ori_name ;
+      sh:node/sh:property/sh:name ?nestedname.
+    BIND(CONCAT(?ori_name, COALESCE(CONCAT(" ",?nestedname), "")) AS ?name)
+  }
 }

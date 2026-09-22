@@ -1,0 +1,12 @@
+PREFIX dc-terms: <http://purl.org/dc/terms/>
+PREFIX fibo-fnd-rel-rel: <https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/>
+PREFIX ontoservice: <https://www.theworldavatar.com/kg/ontoservice/>
+PREFIX twa: <https://theworldavatar.io/kg/>
+
+SELECT DISTINCT ?iri ?priority
+WHERE {
+  ?iri dc-terms:identifier "[target]";
+    fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent.
+  OPTIONAL{?iri twa:hasPriority ?priority_value}
+  BIND(COALESCE(?priority_value, false) AS ?priority)
+}

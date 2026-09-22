@@ -3,6 +3,7 @@ package com.cmclinnovations.agent.service;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -718,15 +719,7 @@ public class GetService {
       return this.execGetInstances(iri, ids, requireLabel, addQueryStatements, addColumns);
     }
     // Execute virtual results first as IDs are removed on the actual execution
-    Map<String, SparqlBinding> virtualResults = this.kgService.execVirtualShaclRules(resourceID, ids);
-    if (!virtualResults.isEmpty()) {
-      SparqlBinding virtualBinding = virtualResults.values().iterator().next();
-      List<ColumnMetaPayload> virtualColumns = virtualBinding.getFields().stream()
-          .filter(field -> !field.equals(QueryResource.ID_KEY))
-          .map(field -> new ColumnMetaPayload(field, QueryResource.VIRTUAL_TYPE, ShaclResource.XSD_STRING))
-          .toList();
-      addColumns.addAll(virtualColumns);
-    }
+    Map<String, SparqlBinding> virtualResults = this.execVirtualShaclRules(resourceID, ids, addColumns);
     DataManifest<Queue<SparqlBinding>> instancesManifest = this.execGetInstances(iri, ids, requireLabel,
         addQueryStatements, addColumns);
     return new DataManifest<>(
@@ -738,6 +731,19 @@ public class GetService {
           return instance;
         }).collect(Collectors.toCollection(ArrayDeque::new)),
         instancesManifest.columns());
+  }
+
+  /**
+   * Executes the SHACL SPARQL virtual rules on all available endpoints to get
+   * data at query time.
+   * 
+   * @param resourceID The target resource identifier.
+   * @param ids        List of ids that are relevant to the query.
+   * @param output     Output collection to store virtual fields.
+   */
+  public Map<String, SparqlBinding> execVirtualShaclRules(String resourceID, Collection<List<String>> ids,
+      Collection<ColumnMetaPayload> output) {
+    return this.kgService.execVirtualShaclRules(resourceID, ids, output);
   }
 
   /**

@@ -1,5 +1,19 @@
 # Change Log
 
+# 1.71.1
+
+- Fixed deletion of optional SHACL nested fields for delete and update operations
+  
+# 1.71.0
+
+- Added a new route route to toggle the high priority state of a service task
+- Added a `priority` column to the outstanding, scheduled, and closed task listings
+
+# 1.70.0
+
+- Extended sparql virtual rules for lifecycle events as a parallel call
+- Refactor code to improve parallelisation capabilities for events
+
 # 1.69.2
 
 - Refactor so that virtual fields are given the virtual type
