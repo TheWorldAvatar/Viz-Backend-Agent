@@ -334,8 +334,15 @@ public class LifecycleTaskService {
    */
   private String[] genLifecycleStatements(String startTimestamp, String endTimestamp, Set<String> sortedFields,
       Map<String, Set<String>> filters, String field, LifecycleEventType eventType, boolean reqOriStatements) {
-    String[] targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp,
-        eventType.equals(LifecycleEventType.ACTIVE_SERVICE));
+    String[] targetStartEndDates;
+    // Order rank events query will be restricted to single dates
+    if (eventType == LifecycleEventType.SERVICE_ORDER_RANK) {
+      String currentDate = this.dateTimeService.getDateFromTimestamp(startTimestamp);
+      targetStartEndDates = new String[] { currentDate, currentDate };
+    } else {
+      targetStartEndDates = this.dateTimeService.getStartEndDate(startTimestamp, endTimestamp,
+          eventType.equals(LifecycleEventType.ACTIVE_SERVICE));
+    }
     Map<String, String> statementMappings = this.lifecycleQueryFactory.getServiceTasksQuery(null,
         targetStartEndDates[0], targetStartEndDates[1], eventType);
     // Get combined filter statements for events that matches any sort/filter
@@ -822,6 +829,10 @@ public class LifecycleTaskService {
       eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_CANCELLATION, varSequences);
       eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_INCIDENT_REPORT, varSequences);
       eventQuery += "\n" + this.parseEventOccurrenceQuery(LifecycleEventType.SERVICE_EXEMPT, varSequences);
+    } else if (eventType.equals(LifecycleEventType.SERVICE_ORDER_RANK)) {
+      eventQuery += "\nOPTIONAL{?order_event <https://theworldavatar.io/kg/lifecycle/hasOrder> ?lexorank.}";
+      varSequences.add(new ColumnMetaPayload(QueryResource.genVariable(QueryResource.LEXORANK_KEY).getVarName(),
+          QueryResource.LITERAL_TYPE, ShaclResource.XSD_STRING));
     }
 
     varSequences.add(new ColumnMetaPayload(QueryResource.EVENT_ID_VAR.getVarName(), QueryResource.LITERAL_TYPE,
