@@ -1,5 +1,6 @@
 package com.cmclinnovations.agent.template;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -242,7 +243,7 @@ public class LifecycleQueryFactory {
                 + " <https://www.omg.org/spec/Commons/DatesAndTimes/succeeds>* ?order_event.";
         // Statements to retrieve essential contract and event instances
         results.put(LifecycleResource.LIFECYCLE_RESOURCE, lifecyclePrefix
-                + eventChainStatements + eventTargetStatements+ filterDateStatement
+                + eventChainStatements + eventTargetStatements + filterDateStatement
                 // Event must be the last in the chain i.e. no successor event
                 + "MINUS{" + eventIdVar + " ^<https://www.omg.org/spec/Commons/DatesAndTimes/succeeds> ?any_event}");
         // Statements to link order event and latest event
@@ -326,6 +327,23 @@ public class LifecycleQueryFactory {
                 + "\t?iri fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent;\n"
                 + "\t\tdc-terms:identifier \"" + taskId + "\".\n"
                 + "\tOPTIONAL {?iri twa:hasPriority ?priority.}\n"
+                + "}";
+    }
+
+    /**
+     * Generates a UPDATE query to update the lexorank of a task.
+     *
+     * @param idLexorankValues A list of id and lexorank query values.
+     */
+    public String getTaskOrderUpdateQuery(Collection<String> idLexorankValues) {
+        return QueryResource.PREFIX_TEMPLATE
+                + "\nDELETE {?iri <https://theworldavatar.io/kg/lifecycle/hasOrder> ?old_rank.}\n"
+                + "INSERT {?iri <https://theworldavatar.io/kg/lifecycle/hasOrder> ?lexorank.}\n"
+                + "WHERE {\n"
+                + "  ?iri dc-terms:identifier ?id;\n"
+                + "     fibo-fnd-rel-rel:exemplifies ontoservice:OrderReceivedEvent.\n"
+                + "  OPTIONAL{?iri <https://theworldavatar.io/kg/lifecycle/hasOrder> ?old_rank .}\n"
+                + QueryResource.values(idLexorankValues, QueryResource.ID_KEY, QueryResource.LEXORANK_KEY)
                 + "}";
     }
 

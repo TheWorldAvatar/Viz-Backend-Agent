@@ -35,6 +35,7 @@ import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.model.util.DataManifest;
 import com.cmclinnovations.agent.model.util.LifecycleTask;
+import com.cmclinnovations.agent.model.util.TaskRank;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
@@ -903,6 +904,17 @@ public class LifecycleTaskService {
   public ResponseEntity<StandardApiResponse<?>> getTask(String taskId) {
     SparqlBinding task = this.lifecycleQueryService.getInstance(FileService.TASK_QUERY_RESOURCE, taskId);
     return this.responseEntityBuilder.success(null, this.lifecycleQueryService.parseLifecycleBinding(task.get()));
+  }
+
+  /**
+   * Updates the lexoranks of the target tasks.
+   *
+   * @param tasks The list of tasks and their ranks.
+   */
+  public ResponseEntity<StandardApiResponse<?>> updateLexoRank(List<TaskRank> tasks) {
+    List<String> queryValues = tasks.stream().map(task -> task.getValueClauseValue()).toList();
+    String query = this.lifecycleQueryFactory.getTaskOrderUpdateQuery(queryValues);
+    return this.updateService.update(query);
   }
 
   /**

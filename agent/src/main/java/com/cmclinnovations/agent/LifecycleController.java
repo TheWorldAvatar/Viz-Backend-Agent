@@ -28,6 +28,7 @@ import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.model.type.LifecycleEventType;
 import com.cmclinnovations.agent.model.type.TrackActionType;
 import com.cmclinnovations.agent.model.util.LifecycleTask;
+import com.cmclinnovations.agent.model.util.TaskRank;
 import com.cmclinnovations.agent.service.AddService;
 import com.cmclinnovations.agent.service.DeleteService;
 import com.cmclinnovations.agent.service.GetService;
@@ -298,7 +299,8 @@ public class LifecycleController {
    *
    * @param entityType      Target contract resource type.
    * @param contractDetails Contract parameters to copy.
-   * @param draftDetails    Lifecycle and schedule parameters for the copied contract.
+   * @param draftDetails    Lifecycle and schedule parameters for the copied
+   *                        contract.
    */
   private void cloneDraftContract(String entityType, Map<String, Object> contractDetails,
       Map<String, Object> draftDetails) {
@@ -392,7 +394,8 @@ public class LifecycleController {
   @PutMapping("/service/{type}/bulk")
   public ResponseEntity<StandardApiResponse<?>> bulkUpdateTaskEventDetails(@PathVariable String type,
       @RequestBody Map<String, List<Map<String, Object>>> params) {
-    // Hold one task lock across dispatch replacement and subsequent activity logging.
+    // Hold one task lock across dispatch replacement and subsequent activity
+    // logging.
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
         () -> this.lifecycleTaskBatchService.updateTaskEventDetails(type, params.get("items")));
   }
@@ -420,6 +423,16 @@ public class LifecycleController {
     String taskId = params.get(QueryResource.ID_KEY).toString();
     return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
         () -> this.lifecycleTaskService.updatePriority(taskId));
+  }
+
+  /**
+   * Updates the LexoRank of the tasks.
+   */
+  @PutMapping("/service/rank")
+  public ResponseEntity<StandardApiResponse<?>> updateLexoRank(@RequestBody List<TaskRank> ranks) {
+    LOGGER.info("Received request to update the lexoranks of tasks...");
+    return this.concurrencyService.executeInWriteLock(LifecycleResource.TASK_RESOURCE,
+        () -> this.lifecycleTaskService.updateLexoRank(ranks));
   }
 
   /**
