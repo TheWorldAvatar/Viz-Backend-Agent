@@ -807,7 +807,7 @@ Users can also send a `GET` request to the `<baseURL>/vis-backend-agent/contract
 
 ---
 
-For getting open or assigned tasks on specific dates with lexoranks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/rank?type={contractType}&startTimestamp={start}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all the relevant tasks for the target date, where `contractType` is the resource ID of the contract type, `start` is the UNIX timestamps for the selected date that the users are interested in, `{page}` is the current page number (with 1-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
+For getting open or assigned tasks on specific dates with lexoranks, users can send a `GET` request to the `<baseURL>/vis-backend-agent/contracts/service/rank?type={contractType}&startTimestamp={start}&page={page}&limit={limit}&sort_by={sortby}` endpoint to retrieve all the relevant tasks for the target date, where `contractType` is the resource ID of the contract type, `start` is the UNIX timestamps for the selected date that the users are interested in, `{page}` is the current page number (with 0-index), `{limit}` is the number of results per page, and `{sortby}` specifies one or more fields for sorting.
 
 Users can send a `PUT` request to the `<baseURL>/vis-backend-agent/contracts/service/rank` endpoint to update lexoranks for the target tasks. It requires a `JSON` body of an array of the object `{id: taskId, lexorank: lexorank}`.
 
