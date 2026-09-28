@@ -706,12 +706,11 @@ public class LifecycleController {
     String startTimestamp = allRequestParams.remove(StringResource.START_TIMESTAMP_REQUEST_PARAM);
     Integer page = Integer.valueOf(allRequestParams.remove(StringResource.PAGE_REQUEST_PARAM));
     Integer limit = Integer.valueOf(allRequestParams.remove(StringResource.LIMIT_REQUEST_PARAM));
-    String sortBy = allRequestParams.getOrDefault(StringResource.SORT_BY_REQUEST_PARAM, StringResource.DEFAULT_SORT_BY);
-    allRequestParams.remove(StringResource.SORT_BY_REQUEST_PARAM);
     return this.concurrencyService.executeInOptimisticReadLock(LifecycleResource.TASK_RESOURCE,
         () -> this.lifecycleTaskService.getOccurrences(startTimestamp, startTimestamp, type,
             LifecycleEventType.SERVICE_ORDER_RANK,
-            new PaginationState(page, limit, sortBy + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false,
+            new PaginationState(page, limit,
+                "+" + QueryResource.LEXORANK_KEY + LifecycleResource.TASK_ID_SORT_BY_PARAMS, false,
                 allRequestParams),
             allRequestParams));
   }

@@ -367,6 +367,10 @@ public class LifecycleTaskService {
           + "\n" + statementMappings.get(LifecycleResource.EVENT_KEY)
           + "\n" + statementMappings.get(LifecycleResource.LAST_MODIFIED_KEY)
           + "\n" + statementMappings.get(LifecycleResource.PRIORITY_KEY);
+      if (eventType.equals(LifecycleEventType.SERVICE_ORDER_RANK)) {
+        lifecycleStatements = lifecycleStatements
+            + "\nOPTIONAL{?order_event <https://theworldavatar.io/kg/lifecycle/hasOrder> ?lexorank.}";
+      }
       return new String[] { lifecycleStatements, entityStatements, eventStatements };
     } else {
       return new String[] { lifecycleStatements };
