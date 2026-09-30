@@ -1,5 +1,10 @@
 # Change Log
 
+# 1.72.0
+
+- Added route to update lexoranks
+- Added route to retrieve tasks with lexoranks
+
 # 1.71.1
 
 - Fixed deletion of optional SHACL nested fields for delete and update operations
