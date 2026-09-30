@@ -115,6 +115,8 @@ public class QueryResource {
     public static final Variable SCHEDULE_RECURRENCE_VAR = QueryResource
             .genVariable(LifecycleResource.SCHEDULE_RECURRENCE_KEY);
     public static final Variable LATEST_DATE_VAR = QueryResource.genVariable("latest_date");
+    public static final String LEXORANK_KEY = "lexorank";
+    public static final Variable LEXORANK_VAR = QueryResource.genVariable(QueryResource.LEXORANK_KEY);
 
     public static final String ADD_BRANCH_KEY = "branch_add";
     public static final String BRANCH_NAME_KEY = "branch_name";

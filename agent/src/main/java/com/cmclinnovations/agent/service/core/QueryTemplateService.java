@@ -10,6 +10,8 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
+import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.stereotype.Service;
@@ -140,8 +142,8 @@ public class QueryTemplateService {
    * @param requireId            If the results should include ID.
    * @param requireIri           If the results should include IRI variable.
    */
-  public SelectQuery getAllInstancesQueryTemplate(String nodeShapeReplacement, PaginationState pagination, boolean requireId,
-      boolean requireIri) {
+  public SelectQuery getAllInstancesQueryTemplate(String nodeShapeReplacement, PaginationState pagination,
+      boolean requireId, boolean requireIri) {
     // If pagination is not given, no limits and offset should be set
     SelectQuery query = QueryResource.getSelectQuery(true, pagination.getLimit())
         .where(QueryResource.IRI_VAR.isA(Rdf.iri(
@@ -161,6 +163,9 @@ public class QueryTemplateService {
       SortDirective directive = sortDirectives.poll();
       if (!directive.field().getVarName().equals(QueryResource.ID_KEY)) {
         query.select(directive.field());
+      }
+      if (directive.field().equals(QueryResource.LEXORANK_VAR)) {
+        query.orderBy(SparqlBuilder.desc(Expressions.bound(QueryResource.LEXORANK_VAR)));
       }
       query.orderBy(directive.order());
     }
