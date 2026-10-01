@@ -8,14 +8,8 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 SELECT DISTINCT ?type ?label ?description
 WHERE {
   BIND([target] AS ?root_class)
-  {
-    ?root_class rdfs:label ?label ;
-          rdfs:comment ?description .
-    FILTER(lang(?label) = "en" || lang(?label) = "")
-    BIND(?root_class AS ?type)
-  } UNION {
-    ?type a ?root_class ;
-          lcc-cr:hasEnglishShortName ?label ;
-          skos:definition ?description .
-  }
+  ?root_class rdfs:label ?label ;
+        rdfs:comment ?description .
+  FILTER(lang(?label) = "en" || lang(?label) = "")
+  BIND(?root_class AS ?type)
 }
