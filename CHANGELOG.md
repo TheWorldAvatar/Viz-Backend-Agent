@@ -1,5 +1,9 @@
 # Change Log
 
+# 1.72.1
+
+- Extended concept route to return single class as an option
+
 # 1.72.0
 
 - Added route to update lexoranks

@@ -212,10 +212,12 @@ public class QueryTemplateService {
   /**
    * Retrieves the conceptual query for the target class.
    * 
-   * @param conceptClass The target class details to retrieved.
+   * @param conceptClass     The target class details to retrieved.
+   * @param requiresSubclass If true, results will include subclasses.
    */
-  public String getConceptQuery(String conceptClass) {
-    return this.fileService.getContentsWithReplacement(FileService.INSTANCE_QUERY_RESOURCE,
+  public String getConceptQuery(String conceptClass, boolean requiresSubclass) {
+    return this.fileService.getContentsWithReplacement(
+        requiresSubclass ? FileService.INSTANCE_QUERY_RESOURCE : FileService.INSTANCE_SPECIFIC_QUERY_RESOURCE,
         Rdf.iri(conceptClass).getQueryString());
   }
 

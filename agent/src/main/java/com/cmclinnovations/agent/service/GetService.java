@@ -168,10 +168,11 @@ public class GetService {
    * with the target resource. This will return their current or sub-classes.
    * 
    * @param conceptClass The target class details to retrieved.
+   * @param requiresSubclass If true, results will include subclasses.
    */
-  public ResponseEntity<StandardApiResponse<?>> getConceptMetadata(String conceptClass) {
+  public ResponseEntity<StandardApiResponse<?>> getConceptMetadata(String conceptClass, boolean requiresSubclass) {
     LOGGER.debug("Retrieving the instances for {} ...", conceptClass);
-    String query = this.queryTemplateService.getConceptQuery(conceptClass);
+    String query = this.queryTemplateService.getConceptQuery(conceptClass, requiresSubclass);
     Queue<SparqlBinding> results = this.getInstances(query);
     List<Map<String, Object>> resultItems;
     if (results.isEmpty()) {

@@ -106,7 +106,8 @@ public class VisBackendAgent {
     LOGGER.info("Received request to get all instances for {}...", type);
     return this.concurrencyService.executeInOptimisticReadLock(type, () -> {
       // This route does not require further restriction on parent instances
-      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, null, "", "", 0, QueryResource.PAGINATION_DEFAULT_LIMIT);
+      List<SelectOption> options = this.getService.getAllFilterOptions(type, search, null, "", "", 0,
+          QueryResource.PAGINATION_DEFAULT_LIMIT);
       return this.responseEntityBuilder.success(options);
     });
   }
@@ -262,9 +263,11 @@ public class VisBackendAgent {
    * with the specified type in the knowledge graph.
    */
   @GetMapping("/type")
-  public ResponseEntity<StandardApiResponse<?>> getConceptMetadata(@RequestParam(name = "uri") String uri) {
+  public ResponseEntity<StandardApiResponse<?>> getConceptMetadata(@RequestParam(name = "uri") String uri,
+      @RequestParam(name = "subclass") boolean requiresSubclass) {
     LOGGER.info("Received request to get the metadata for the concept: {}...", uri);
-    return this.concurrencyService.executeInOptimisticReadLock(uri, () -> this.getService.getConceptMetadata(uri));
+    return this.concurrencyService.executeInOptimisticReadLock(uri,
+        () -> this.getService.getConceptMetadata(uri, requiresSubclass));
   }
 
   /**
