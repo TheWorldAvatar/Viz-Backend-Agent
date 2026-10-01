@@ -50,6 +50,7 @@ public class FileService {
   public static final String SHACL_RULE_QUERY_RESOURCE = QUERY_CONSTR_DIR + "shacl_rule.sparql";
   public static final String ENDPOINT_QUERY_RESOURCE = QUERY_GET_DIR + "endpoint.sparql";
   public static final String INSTANCE_QUERY_RESOURCE = QUERY_GET_DIR + "instance.sparql";
+  public static final String INSTANCE_SPECIFIC_QUERY_RESOURCE = QUERY_GET_DIR + "instance_specific.sparql";
   public static final String SHACL_PATH_QUERY_RESOURCE = QUERY_GET_DIR + "property_path.sparql";
   public static final String SHACL_PATH_LABEL_QUERY_RESOURCE = QUERY_GET_DIR + "property_path_label.sparql";
   public static final String SHACL_PATH_GROUP_QUERY_RESOURCE = QUERY_GET_DIR + "property_path_group.sparql";

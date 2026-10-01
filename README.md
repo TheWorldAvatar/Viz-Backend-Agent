@@ -321,7 +321,7 @@ If successful, the response will return a form template in the following (minima
 
 ### 2.4 Concept Metadata Route: `<baseURL>/vis-backend-agent/type`
 
-This route serves as an endpoint to retrieve all available ontology classes and subclasses along with their human readable labels and descriptions associated with the type. Users can send a `GET` request to `<baseURL>/vis-backend-agent/type` with the `uri` query parameter and value of the required ontology class.
+This route serves as an endpoint to retrieve all available ontology classes and subclasses along with their human readable labels and descriptions associated with the type. Users can send a `GET` request to `<baseURL>/vis-backend-agent/type` with the `uri` query parameter and value of the required ontology class as well as a boolean `subclass` query parameter if they required subclasses.
 
 If successful, the response will return an array of objects in the `data.items` keys in the following format:
 
