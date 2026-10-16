@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.application.TableAppearanceService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
+import com.cmclinnovations.agent.utils.TableAppearanceResource;
 
 /**
  * Routes for the shared appearance settings of tables in the viz frontend, such
@@ -37,7 +38,7 @@ public class TableAppearanceController {
   public ResponseEntity<StandardApiResponse<?>> getColourProfiles(@RequestParam(required = false) String table) {
     LOGGER.info("Received request to get the colour profiles for a table...");
     // Table is verified in the service to return a bad request when missing
-    return this.concurrencyService.executeInOptimisticReadLock(TableAppearanceService.COLOUR_PROFILE_RESOURCE,
+    return this.concurrencyService.executeInOptimisticReadLock(TableAppearanceResource.COLOUR_PROFILE_RESOURCE,
         () -> this.tableAppearanceService.getColourProfiles(table));
   }
 }
