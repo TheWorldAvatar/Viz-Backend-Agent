@@ -56,8 +56,7 @@ public class TableAppearanceService {
   }
 
   /**
-   * Retrieves all colour profiles of the target table, sorted
-   * case-insensitively by name. Profiles with malformed rules are skipped.
+   * Retrieves all colour profiles of the target table
    *
    * @param table The table key that the profiles belong to.
    */
