@@ -18,6 +18,7 @@ import com.cmclinnovations.agent.model.SparqlBinding;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.core.FileService;
+import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.TableAppearanceResource;
@@ -27,29 +28,28 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Manages the shared appearance settings of tables in the viz frontend, such as
- * colour profiles, colsumn settings, and padding.
+ * Manages the presentation settings for a view model.
  */
 @Service
-public class TableAppearanceService {
-  private final FileService fileService;
+public class ViewPresentationService {
+  private final QueryTemplateService queryTemplateService;
   private final GetService getService;
   private final ResponseEntityBuilder responseEntityBuilder;
   private final ObjectMapper objectMapper;
 
-  private static final Logger LOGGER = LogManager.getLogger(TableAppearanceService.class);
+  private static final Logger LOGGER = LogManager.getLogger(ViewPresentationService.class);
 
   /**
    * Constructs a new service with the following dependencies.
    *
-   * @param fileService           File service for accessing file resources.
+   * @param queryTemplateService  Query template retrieval.
    * @param getService            Service to execute the query.
    * @param responseEntityBuilder A component to build the response entity.
    * @param objectMapper          The JSON object mapper.
    */
-  public TableAppearanceService(FileService fileService, GetService getService,
+  public ViewPresentationService(QueryTemplateService queryTemplateService, GetService getService,
       ResponseEntityBuilder responseEntityBuilder, ObjectMapper objectMapper) {
-    this.fileService = fileService;
+    this.queryTemplateService = queryTemplateService;
     this.getService = getService;
     this.responseEntityBuilder = responseEntityBuilder;
     this.objectMapper = objectMapper;
@@ -60,25 +60,26 @@ public class TableAppearanceService {
    *
    * @param table The table key that the profiles belong to.
    */
-  public ResponseEntity<StandardApiResponse<?>> getColourProfiles(String table) {
-    if (table == null || table.isBlank()) {
+  public ResponseEntity<StandardApiResponse<?>> getCellFormattingRules(String resource) {
+    if (resource == null || resource.isBlank()) {
       throw new IllegalArgumentException(
           LocalisationTranslator.getMessage(LocalisationResource.ERROR_MISSING_FIELD_KEY,
-              TableAppearanceResource.TABLE_KEY));
+              resource));
     }
-    LOGGER.debug("Retrieving the colour profiles for the table {}...", table);
-    String query = this.fileService.getContentsWithReplacement(FileService.TABLE_COLOUR_PROFILE_QUERY_RESOURCE,
-        Rdf.literalOf(table).getQueryString());
+    LOGGER.debug("Retrieving the cell formatting rules for {}...", resource);
+    String query = this.queryTemplateService.getQueryWithReplacements(
+        FileService.VIEW_PRESENTATION_RULES_QUERY_RESOURCE,
+        Rdf.literalOf(resource).getQueryString());
     Queue<SparqlBinding> results = this.getService.getInstances(query);
-    List<Map<String, Object>> profiles = new ArrayList<>();
+    List<Map<String, Object>> rules = new ArrayList<>();
     while (!results.isEmpty()) {
-      Map<String, Object> profile = this.parseColourProfile(results.poll());
-      if (profile != null) {
-        profiles.add(profile);
+      Map<String, Object> rule = this.parseColourProfile(results.poll());
+      if (rule != null) {
+        rules.add(rule);
       }
     }
-    LOGGER.info("Retrieved {} colour profile(s) for the table {}", profiles.size(), table);
-    return this.responseEntityBuilder.success(null, profiles);
+    LOGGER.info("Retrieved {} cell formattinng rules for {}", rules.size(), resource);
+    return this.responseEntityBuilder.success(null, rules);
   }
 
   /**

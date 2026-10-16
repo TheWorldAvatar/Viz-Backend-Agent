@@ -269,6 +269,16 @@ public class QueryTemplateService {
   }
 
   /**
+   * A generic method to retrieve the query with replacements.
+   * 
+   * @param resourceID   The target resource identifier.
+   * @param replacements A variable list values to replace [target] with.
+   */
+  public String getQueryWithReplacements(String resourceID, String... replacements) {
+    return this.fileService.getContentsWithReplacement(resourceID, replacements);
+  }
+
+  /**
    * Generates the form template as a JSON object.
    * 
    * @param shaclFormInputs the form inputs queried from the SHACL restrictions.
