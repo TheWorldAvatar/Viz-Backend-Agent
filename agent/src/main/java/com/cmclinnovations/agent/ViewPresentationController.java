@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cmclinnovations.agent.model.response.StandardApiResponse;
 import com.cmclinnovations.agent.service.application.ViewPresentationService;
 import com.cmclinnovations.agent.service.core.ConcurrencyService;
-import com.cmclinnovations.agent.utils.TableAppearanceResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 
 /**
  * Routes for the presentation settings for any views
@@ -36,7 +36,7 @@ public class ViewPresentationController {
   @GetMapping("/rules/{id}")
   public ResponseEntity<StandardApiResponse<?>> getCellFormattingRules(@PathVariable String id) {
     LOGGER.info("Received request to get the cell formatting rules...");
-    return this.concurrencyService.executeInOptimisticReadLock(TableAppearanceResource.COLOUR_PROFILE_RESOURCE,
+    return this.concurrencyService.executeInOptimisticReadLock(QueryResource.VIEWS_CELL_RULES_RESOURCE,
         () -> this.viewPresentationService.getCellFormattingRules(id));
   }
 }

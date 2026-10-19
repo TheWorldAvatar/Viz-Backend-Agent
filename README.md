@@ -1105,33 +1105,18 @@ Users can send a `PUT` request to `<baseURL>/vis-backend-agent/rules/{id}` to ad
 {
   "id": "Identifier must match the id path",
   "name": "Name of the cell formatting ruleset",
+  "subject": "The subject's resource identifier that these rules applies to",
   "rules": [
     {
       "rules field": "Name of the field that this condition rule applies to. Note the names must be joined with _ not whitespace",
       "rules order": "The order of the condition that should apply first",
       "rules operator": "Operator for the condition eg equals, notEquals, contains, empty, notEmpty, gt, gte, lt, lte",
       "rules value": "Value that the condition operator will execute on",
-      "rules background": "Background cell formatting if conditions are met in hex color codes",
-      "rules text": "Text cell formatting if conditions are met in hex color codes",
+      "rules background": "Background cell formatting in hex color codes if conditions are met",
+      "rules text": "Optional text cell formatting in hex color codes if conditions are met",
     }
   ]
 }
 ```
 
-Users can send a `GET` request to `<baseURL>/vis-backend-agent/views/rules/{id}` to get rule-based styles for the specific resource, where `{id}` is the required resource identifier. A style will conditionally format a table cell based on a condition. A successful response will return an array of objects in the `data.items` keys in the following format:
-
-```json
-{
-  "id": "https://theworldavatar.io/kg/table-colour-profile/8c1f0a52-0d0e-4c43-9f2a-1b5d6c7e8f90",
-  "table": "pending",
-  "name": "Bin and remarks colours",
-  "rules": [
-    {
-      "column": "bin_type",
-      "condition": { "operator": "equals", "value": "3ft" },
-      "style": { "background": "#dc2626", "text": "#ffffff" }
-    },
-    { "column": "remarks", "style": { "background": "#fef9c3" } }
-  ]
-}
-```
+Users can send a `GET` request to `<baseURL>/vis-backend-agent/views/rules/{id}` to get rule-based styles for the specific resource, where `{id}` is the required resource identifier ie the subject when instantiating. A style will conditionally format a table cell based on a condition.

@@ -12,6 +12,10 @@
     "@replace": "name",
     "@type": "literal"
   },
+  "http://purl.org/dc/terms/subject": {
+    "@replace": "subject",
+    "@type": "literal"
+  },
   "https://www.omg.org/spec/Commons/Collections/comprises": [
     {
       "@replace": "rules",
@@ -60,7 +64,8 @@
           },
           "https://theworldavatar.io/kg/views/text": {
             "@replace": "text",
-            "@type": "literal"
+            "@type": "literal",
+            "@optional": true
           }
         }
       }
