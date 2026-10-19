@@ -30,6 +30,7 @@ public class StringResource {
   public static final String EXCLUDE_FILTER_KEY = "-";
   public static final String BACKGROUND_KEY = "background";
   public static final String OPERATOR_KEY = "operator";
+  public static final String CONDITIONAL_FORMAT_KEY = "conditional_format";
   public static final String TEXT_KEY = "text";
   public static final String VAL_KEY = "value";
 

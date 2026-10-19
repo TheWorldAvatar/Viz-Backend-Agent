@@ -65,7 +65,7 @@ public class ViewPresentationService {
         Rdf.literalOf(resource).getQueryString());
     Queue<SparqlBinding> results = this.getService.getInstances(query);
 
-    Map<String, Object> rules = new HashMap<>();
+    Map<String, Map<String, List<Map<String, Object>>>> rules = new HashMap<>();
     while (!results.isEmpty()) {
       SparqlBinding currentBinding = results.poll();
       String name = currentBinding.getFieldValue(ShaclResource.NAME_PROPERTY);
@@ -81,13 +81,20 @@ public class ViewPresentationService {
       }
 
       // Append to the list corresponding to this name as a key
-      Map<String, List<Map<String, Object>>> currentResourceRules = (Map<String, List<Map<String, Object>>>) rules
+      Map<String, List<Map<String, Object>>> currentResourceRules = rules
           .computeIfAbsent(name, k -> new HashMap<>());
       List<Map<String, Object>> existingResourceFieldRuleList = currentResourceRules
           .computeIfAbsent(field, k -> new ArrayList<>());
       existingResourceFieldRuleList.add(rule);
     }
     LOGGER.info("Retrieved {} cell formatting rules for {}", rules.size(), resource);
-    return this.responseEntityBuilder.success(null, rules);
+    List<Map<String, Object>> singletonRules = rules.entrySet().stream()
+        .map(currentRule -> {
+          Map<String, Object> output = new HashMap(currentRule.getValue());
+          output.put(StringResource.CONDITIONAL_FORMAT_KEY, currentRule.getKey());
+          return output;
+        })
+        .toList();
+    return this.responseEntityBuilder.success(null, singletonRules);
   }
 }
