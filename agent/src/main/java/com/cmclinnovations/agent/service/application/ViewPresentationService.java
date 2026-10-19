@@ -21,6 +21,7 @@ import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
+import com.cmclinnovations.agent.utils.StringResource;
 
 /**
  * Manages the presentation settings for a view model.
@@ -68,19 +69,23 @@ public class ViewPresentationService {
     while (!results.isEmpty()) {
       SparqlBinding currentBinding = results.poll();
       String name = currentBinding.getFieldValue(ShaclResource.NAME_PROPERTY);
+      String field = currentBinding.getFieldValue(StringResource.FIELD_REQUEST_PARAM);
 
       // Create a sub-map
       Map<String, Object> rule = new HashMap<>();
-      rule.put("field", currentBinding.getFieldValue("field"));
-      rule.put("operator", currentBinding.getFieldValue("operator"));
-      rule.put("value", currentBinding.getFieldValue("value"));
-      rule.put("background", currentBinding.getFieldValue("background"));
-      rule.put("text", currentBinding.getFieldValue("text"));
+      rule.put(StringResource.OPERATOR_KEY, currentBinding.getFieldValue(StringResource.OPERATOR_KEY));
+      rule.put(StringResource.VAL_KEY, currentBinding.getFieldValue(StringResource.VAL_KEY));
+      rule.put(StringResource.BACKGROUND_KEY, currentBinding.getFieldValue(StringResource.BACKGROUND_KEY));
+      if (currentBinding.containsField(StringResource.TEXT_KEY)) {
+        rule.put(StringResource.TEXT_KEY, currentBinding.getFieldValue(StringResource.TEXT_KEY));
+      }
 
       // Append to the list corresponding to this name as a key
-      List<Map<String, Object>> existingRuleList = (List<Map<String, Object>>) rules.computeIfAbsent(name,
-          k -> new ArrayList<>());
-      existingRuleList.add(rule);
+      Map<String, List<Map<String, Object>>> currentResourceRules = (Map<String, List<Map<String, Object>>>) rules
+          .computeIfAbsent(name, k -> new HashMap<>());
+      List<Map<String, Object>> existingResourceFieldRuleList = currentResourceRules
+          .computeIfAbsent(field, k -> new ArrayList<>());
+      existingResourceFieldRuleList.add(rule);
     }
     LOGGER.info("Retrieved {} cell formatting rules for {}", rules.size(), resource);
     return this.responseEntityBuilder.success(null, rules);
