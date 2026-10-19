@@ -23,6 +23,7 @@ import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -87,6 +88,8 @@ public class FileService {
       + "jsonld/history/agent.jsonld";
   public static final String HISTORY_CONFLICT_JSON_LD_RESOURCE = CLASS_PATH_DIR
       + "jsonld/history/conflict.jsonld";
+  public static final String VIEWS_CELL_RULES_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/presentation/cell_format_rules.jsonld";
 
   public static final String ACCOUNT_AGREEMENT_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_agreement.sparql";
   public static final String ACCOUNT_FINANCIAL_RECORD_QUERY_RESOURCE = QUERY_GET_BILLING_DIR
@@ -216,6 +219,8 @@ public class FileService {
     } else if (resourceID.equals(BillingResource.CONTRACT_PRICING_RESOURCE)
         || resourceID.equals(BillingResource.CONTRACT_MULTI_PRICING_RESOURCE)) {
       return BillingResource.PAYMENT_OBLIGATION_IRI;
+    } else if (resourceID.equals(QueryResource.VIEWS_CELL_RULES_RESOURCE)) {
+      return QueryResource.CELL_RULES_TEMPLATE_IRI;
     }
     String targetClass = this.getResourceTarget(resourceID,
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_FORM_RESOURCE);

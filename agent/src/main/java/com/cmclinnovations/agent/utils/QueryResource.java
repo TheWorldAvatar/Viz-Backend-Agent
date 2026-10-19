@@ -141,8 +141,11 @@ public class QueryResource {
     public static final String HISTORY_CONFLICT_RESOURCE = "conflict";
     public static final String HISTORY_ACTIVITY_RESOURCE = "activity";
     public static final String HISTORY_AGENT_RESOURCE = "agent";
+    public static final String VIEWS_CELL_RULES_RESOURCE = "rules";
     public static final String MESSAGE_RESOURCE = "message";
 
+    public static final Iri CELL_RULES_TEMPLATE_IRI = Rdf
+            .iri("https://theworldavatar.io/kg/views/CellFormatRuleTemplate");
     private static final Pattern OPTIONAL_CLAUSE_PATTERN = Pattern.compile("OPTIONAL\\s*\\{(.*?)\\}", Pattern.DOTALL);
     private static final Pattern MINUS_CLAUSE_PATTERN = Pattern.compile("MINUS\\s*\\{(.*?)\\}", Pattern.DOTALL);
 

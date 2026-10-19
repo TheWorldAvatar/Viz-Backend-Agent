@@ -50,9 +50,8 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
       - [2.7.3 Invoice route](#273-invoice-route)
       - [2.7.3.1 Add invoice](#2731-add-invoice)
     - [2.8 Filter Query Parameters](#28-filter-query-parameters)
-    - [2.9 Table Appearance Route: `<baseURL>/vis-backend-agent/table-appearance`](#29-table-appearance-route-baseurlvis-backend-agenttable-appearance)
-      - [2.9.1 Colour profile route](#291-colour-profile-route)
-      - [2.9.2 Seeding a colour profile](#292-seeding-a-colour-profile)
+    - [2.9 View Presentation Route](#29-view-presentation-route)
+      - [2.9.1 Rule-based styles route](#291-rule-based-styles-route)
 
 ## 1. Agent Deployment
 
@@ -1094,15 +1093,32 @@ Users can apply filters by appending query parameters to the URL:
 - **Single numeric fields**: `field=operatorVal` - expressions using operator and value eg `gt50.00`; valid operators include `eq`(equals), `neq`(not equals), `gt`(greater than), `gte`(greater than or equal to), `lt`(less than), and `lte`(less than or equal to)
 - **Multiple numeric fields**: `field=operatorVal&operatorVal2` - separate multiple values using the ampersand (&) delimiter
 
-### 2.9 Table Appearance Route: `<baseURL>/vis-backend-agent/table-appearance`
+### 2.9 View Presentation Route
 
-These routes manage the shared appearance settings of tables in the viz frontend. Settings are shared by all users and are stored in the agent's `NAMESPACE` Blazegraph namespace in the default graph. Colour profiles are currently the only supported setting, and they are read-only.
+These routes manage the presentation settings for the view model ie frontend platform. Settings are shared by all users and are stored in the agent's `NAMESPACE` Blazegraph namespace.
 
-#### 2.9.1 Colour profile route
+#### 2.9.1 Rule-based styles route
 
-A colour profile is a named list of rules that colour table cells (e.g. `bin_type = 3ft` → red background). Users can send a `GET` request to `<baseURL>/vis-backend-agent/table-appearance/colour-profiles?table={tableKey}`, where `{tableKey}` is the required table key. If the table key is missing or blank, the agent will return a `400 Bad Request` response. Profiles are sorted case-insensitively by name, and the `rules` are returned as a `JSON` array. If no profiles exist for the table, `data.items` will be an empty array. Any profile whose stored rules are not a valid `JSON` array is skipped and logged as a warning.
+Users can send a `PUT` request to `<baseURL>/vis-backend-agent/rules/{id}` to add or update the rule-based styles, where `{id}` is the ruleset's identifier with the following request body format:
 
-If successful, the response will return an array of objects in the `data.items` keys in the following format:
+```json
+{
+  "id": "Identifier must match the id path",
+  "name": "Name of the cell formatting ruleset",
+  "rules": [
+    {
+      "rules field": "Name of the field that this condition rule applies to. Note the names must be joined with _ not whitespace",
+      "rules order": "The order of the condition that should apply first",
+      "rules operator": "Operator for the condition eg equals, notEquals, contains, empty, notEmpty, gt, gte, lt, lte",
+      "rules value": "Value that the condition operator will execute on",
+      "rules background": "Background cell formatting if conditions are met in hex color codes",
+      "rules text": "Text cell formatting if conditions are met in hex color codes",
+    }
+  ]
+}
+```
+
+Users can send a `GET` request to `<baseURL>/vis-backend-agent/views/rules/{id}` to get rule-based styles for the specific resource, where `{id}` is the required resource identifier. A style will conditionally format a table cell based on a condition. A successful response will return an array of objects in the `data.items` keys in the following format:
 
 ```json
 {
@@ -1117,36 +1133,5 @@ If successful, the response will return an array of objects in the `data.items` 
     },
     { "column": "remarks", "style": { "background": "#fef9c3" } }
   ]
-}
-```
-
-#### 2.9.2 Seeding a colour profile
-
-Each colour profile consists of exactly the four triples below. The rules are stored as a `JSON` string literal in `viz:colourRules`. Users can create a profile by running the following update against the agent's `NAMESPACE`. Please replace the UUID with a newly generated one for each profile, and keep it fixed in the update so that the update stays safe to rerun.
-
-The update only inserts the profile when its IRI has no triples, so running it again will not change the knowledge graph. To change an existing profile, delete its triples first or use a new profile IRI.
-
-```sparql
-PREFIX viz:  <https://theworldavatar.io/kg/viz/>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
-
-INSERT {
-  ?profile a viz:TableColourProfile ;
-    viz:table ?table ;
-    rdfs:label ?name ;
-    viz:colourRules ?rules .
-}
-WHERE {
-  BIND(<https://theworldavatar.io/kg/table-colour-profile/8c1f0a52-0d0e-4c43-9f2a-1b5d6c7e8f90> AS ?profile)
-  BIND("pending" AS ?table)
-  BIND("Bin and remarks colours" AS ?name)
-  BIND('''[
-    {"column": "bin_type", "condition": {"operator": "equals", "value": "3ft"}, "style": {"background": "#dc2626", "text": "#ffffff"}},
-    {"column": "remarks", "style": {"background": "#fef9c3"}},
-    {"column": "service_type", "style": {"background": "#32a83c"}}
-  ]'''^^xsd:string AS ?rules)
-
-  FILTER NOT EXISTS { ?profile ?existingPredicate ?existingObject . }
 }
 ```

@@ -1,0 +1,69 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": {
+    "@replace": "id",
+    "@type": "iri",
+    "prefix": "https://theworldavatar.io/kg/views/template/"
+  },
+  "@type": "https://theworldavatar.io/kg/views/CellFormatRuleTemplate",
+  "http://www.w3.org/2000/01/rdf-schema#label": {
+    "@replace": "name",
+    "@type": "literal"
+  },
+  "https://www.omg.org/spec/Commons/Collections/comprises": [
+    {
+      "@replace": "rules",
+      "@type": "array",
+      "@contents": {
+        "@id": {
+          "@replace": "id",
+          "@type": "iri",
+          "prefix": "https://theworldavatar.io/kg/views/rule/"
+        },
+        "@type": "https://theworldavatar.io/kg/views/CellFormatRule",
+        "http://www.w3.org/2000/01/rdf-schema#label": {
+          "@replace": "field",
+          "@type": "literal"
+        },
+        "https://theworldavatar.io/kg/views/order": {
+          "@replace": "order",
+          "@type": "literal"
+        },
+        "https://theworldavatar.io/kg/views/condition": {
+          "@id": {
+            "@replace": "id",
+            "@type": "iri",
+            "prefix": "https://theworldavatar.io/kg/views/rule/condition/"
+          },
+          "@type": "https://theworldavatar.io/kg/views/CellFormatCondition",
+          "https://theworldavatar.io/kg/views/operator": {
+            "@replace": "operator",
+            "@type": "literal"
+          },
+          "https://theworldavatar.io/kg/views/value": {
+            "@replace": "value",
+            "@type": "literal"
+          }
+        },
+        "https://theworldavatar.io/kg/views/styles": {
+          "@id": {
+            "@replace": "id",
+            "@type": "iri",
+            "prefix": "https://theworldavatar.io/kg/views/rule/style/"
+          },
+          "@type": "https://theworldavatar.io/kg/views/CellFormatStyle",
+          "https://theworldavatar.io/kg/views/background": {
+            "@replace": "background",
+            "@type": "literal"
+          },
+          "https://theworldavatar.io/kg/views/text": {
+            "@replace": "text",
+            "@type": "literal"
+          }
+        }
+      }
+    }
+  ]
+}
