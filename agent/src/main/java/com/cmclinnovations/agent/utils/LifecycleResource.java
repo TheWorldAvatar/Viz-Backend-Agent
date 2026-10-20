@@ -162,6 +162,8 @@ public class LifecycleResource {
         return FileService.HISTORY_AGENT_JSON_LD_RESOURCE;
       case QueryResource.HISTORY_CONFLICT_RESOURCE:
         return FileService.HISTORY_CONFLICT_JSON_LD_RESOURCE;
+      case QueryResource.VIEWS_CELL_RULES_RESOURCE:
+        return FileService.VIEWS_CELL_RULES_JSON_LD_RESOURCE;
       default:
         return null;
     }

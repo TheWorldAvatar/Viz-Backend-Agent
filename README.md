@@ -50,6 +50,8 @@ All notable changes to this agent are documented in the `CHANGELOG.md` file. Ple
       - [2.7.3 Invoice route](#273-invoice-route)
       - [2.7.3.1 Add invoice](#2731-add-invoice)
     - [2.8 Filter Query Parameters](#28-filter-query-parameters)
+    - [2.9 View Presentation Route](#29-view-presentation-route)
+      - [2.9.1 Rule-based styles route](#291-rule-based-styles-route)
 
 ## 1. Agent Deployment
 
@@ -1090,3 +1092,31 @@ Users can apply filters by appending query parameters to the URL:
 - **Date ranges**: `field=YYYY-MM-DD..YYYY-MM-DD` - use the same date for both bounds to filter by a single day
 - **Single numeric fields**: `field=operatorVal` - expressions using operator and value eg `gt50.00`; valid operators include `eq`(equals), `neq`(not equals), `gt`(greater than), `gte`(greater than or equal to), `lt`(less than), and `lte`(less than or equal to)
 - **Multiple numeric fields**: `field=operatorVal&operatorVal2` - separate multiple values using the ampersand (&) delimiter
+
+### 2.9 View Presentation Route
+
+These routes manage the presentation settings for the view model ie frontend platform. Settings are shared by all users and are stored in the agent's `NAMESPACE` Blazegraph namespace.
+
+#### 2.9.1 Rule-based styles route
+
+Users can send a `PUT` request to `<baseURL>/vis-backend-agent/rules/{id}` to add or update the rule-based styles, where `{id}` is the ruleset's identifier with the following request body format:
+
+```json
+{
+  "id": "Identifier must match the id path",
+  "name": "Name of the cell formatting ruleset",
+  "subject": "The subject's resource identifier that these rules applies to",
+  "rules": [
+    {
+      "rules field": "Name of the field that this condition rule applies to. Note the names must be joined with _ not whitespace",
+      "rules order": "The order of the condition that should apply first",
+      "rules operator": "Operator for the condition eg equals, notEquals, contains, empty, notEmpty, gt, gte, lt, lte",
+      "rules value": "Value that the condition operator will execute on",
+      "rules background": "Background cell formatting in hex color codes if conditions are met",
+      "rules text": "Optional text cell formatting in hex color codes if conditions are met",
+    }
+  ]
+}
+```
+
+Users can send a `GET` request to `<baseURL>/vis-backend-agent/views/rules/{id}` to get rule-based styles for the specific resource, where `{id}` is the required resource identifier ie the subject when instantiating. A style will conditionally format a table cell based on a condition.

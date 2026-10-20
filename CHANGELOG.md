@@ -1,5 +1,9 @@
 # Change Log
 
+# 1.73.0
+
+- Added conditional formatting routes to get and update preset options
+  
 # 1.72.1
 
 - Extended concept route to return single class as an option

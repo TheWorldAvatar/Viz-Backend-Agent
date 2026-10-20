@@ -28,6 +28,11 @@ public class StringResource {
   public static final String ORIGINAL_PREFIX = "ori_";
   public static final String SORT_KEY = "@sort";
   public static final String EXCLUDE_FILTER_KEY = "-";
+  public static final String BACKGROUND_KEY = "background";
+  public static final String OPERATOR_KEY = "operator";
+  public static final String CONDITIONAL_FORMAT_KEY = "conditional_format";
+  public static final String TEXT_KEY = "text";
+  public static final String VAL_KEY = "value";
 
   public static final String INVALID_SHACL_ERROR_MSG = "Invalid knowledge model! SHACL restrictions have not been defined/instantiated in the knowledge graph.";
   public static final Pattern DATE_RANGE_FILTER_PATTERN = Pattern
@@ -163,7 +168,7 @@ public class StringResource {
           boolean isExcluded = key.startsWith(EXCLUDE_FILTER_KEY);
           String rawKey = isExcluded ? key.substring(EXCLUDE_FILTER_KEY.length()) : key;
           String reverted = LifecycleResource.revertLifecycleSpecialFields(rawKey, isContract);
-          return Map.entry(isExcluded ? EXCLUDE_FILTER_KEY + reverted: reverted, valueSet);
+          return Map.entry(isExcluded ? EXCLUDE_FILTER_KEY + reverted : reverted, valueSet);
         })
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }

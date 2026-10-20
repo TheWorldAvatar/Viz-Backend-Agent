@@ -23,6 +23,7 @@ import com.cmclinnovations.agent.exception.InvalidRouteException;
 import com.cmclinnovations.agent.utils.BillingResource;
 import com.cmclinnovations.agent.utils.LifecycleResource;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -46,6 +47,7 @@ public class FileService {
   private static final String QUERY_GET_DIR = QUERY_DIR + "get/";
   private static final String QUERY_GET_BILLING_DIR = QUERY_GET_DIR + "billing/";
   private static final String QUERY_GET_LIFECYCLE_DIR = QUERY_GET_DIR + "lifecycle/";
+  private static final String QUERY_GET_PRESENTATION_DIR = QUERY_GET_DIR + "view/";
   public static final String FORM_QUERY_RESOURCE = QUERY_CONSTR_DIR + "form.sparql";
   public static final String SHACL_RULE_QUERY_RESOURCE = QUERY_CONSTR_DIR + "shacl_rule.sparql";
   public static final String ENDPOINT_QUERY_RESOURCE = QUERY_GET_DIR + "endpoint.sparql";
@@ -57,6 +59,8 @@ public class FileService {
   public static final String SHACL_PROPERTY_OPTIONAL_RESOURCE = QUERY_GET_DIR + "property_optional.sparql";
   public static final String CHANGELOG_RESOURCE = QUERY_GET_DIR + "changelog/changes.sparql";
   public static final String CHANGELOG_TASK_RESOURCE = QUERY_GET_DIR + "changelog/task_changes.sparql";
+  public static final String VIEW_PRESENTATION_RULES_QUERY_RESOURCE = QUERY_GET_PRESENTATION_DIR
+      + "rules.sparql";
 
   public static final String LIFECYCLE_JSON_LD_RESOURCE = CLASS_PATH_DIR + "jsonld/lifecycle.jsonld";
   public static final String LIFECYCLE_REGULAR_SCHEDULE_JSON_LD_RESOURCE = CLASS_PATH_DIR
@@ -84,6 +88,8 @@ public class FileService {
       + "jsonld/history/agent.jsonld";
   public static final String HISTORY_CONFLICT_JSON_LD_RESOURCE = CLASS_PATH_DIR
       + "jsonld/history/conflict.jsonld";
+  public static final String VIEWS_CELL_RULES_JSON_LD_RESOURCE = CLASS_PATH_DIR
+      + "jsonld/presentation/cell_format_rules.jsonld";
 
   public static final String ACCOUNT_AGREEMENT_QUERY_RESOURCE = QUERY_GET_BILLING_DIR + "account_agreement.sparql";
   public static final String ACCOUNT_FINANCIAL_RECORD_QUERY_RESOURCE = QUERY_GET_BILLING_DIR
@@ -213,6 +219,8 @@ public class FileService {
     } else if (resourceID.equals(BillingResource.CONTRACT_PRICING_RESOURCE)
         || resourceID.equals(BillingResource.CONTRACT_MULTI_PRICING_RESOURCE)) {
       return BillingResource.PAYMENT_OBLIGATION_IRI;
+    } else if (resourceID.equals(QueryResource.VIEWS_CELL_RULES_RESOURCE)) {
+      return QueryResource.CELL_RULES_TEMPLATE_IRI;
     }
     String targetClass = this.getResourceTarget(resourceID,
         FileService.SPRING_FILE_PATH_PREFIX + FileService.APPLICATION_FORM_RESOURCE);
