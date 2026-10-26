@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.cmclinnovations</groupId>
 	<artifactId>vis-backend-agent</artifactId>
-	<version>1.73.0</version>
+	<version>1.73.1-delete-optional-field-array-SNAPSHOT</version>
 	<packaging>war</packaging>
 	<name>vis-backend-agent</name>
 	<url />
