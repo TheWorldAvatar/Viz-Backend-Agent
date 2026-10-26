@@ -279,7 +279,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
         Queue<GraphPattern> arrayGraphPatterns = this.arrayPatternsMap.computeIfAbsent(
             objectNode.path(ShaclResource.REPLACE_KEY).asString(),
             v -> new ArrayDeque<>());
-        String arrayGroupName = ((Variable) sparqlObject).getVarName();
+        String arrayGroupName = ((Variable) sparqlObject).getVarName().replace("_", ShaclResource.WHITE_SPACE);
         Set<String> optVariables = optVarNames.stream()
             .filter(varName -> varName.startsWith(arrayGroupName))
             .map(s -> s.replaceFirst("^" + Pattern.quote(arrayGroupName) + "\\s+", ""))
