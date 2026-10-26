@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -81,7 +83,7 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
    * Initialise a delete template.
    * 
    * @param targetIds The identifiers of the instances to delete.
-   * @param idVar    The instance id as a variable.
+   * @param idVar     The instance id as a variable.
    */
   private ModifyQuery genDeleteTemplate(List<String> targetIds, Variable idVar) {
     RdfObject targetId = targetIds.size() == 1
@@ -277,9 +279,14 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
         Queue<GraphPattern> arrayGraphPatterns = this.arrayPatternsMap.computeIfAbsent(
             objectNode.path(ShaclResource.REPLACE_KEY).asString(),
             v -> new ArrayDeque<>());
+        String arrayGroupName = ((Variable) sparqlObject).getVarName();
+        Set<String> optVariables = optVarNames.stream()
+            .filter(varName -> varName.startsWith(arrayGroupName))
+            .map(s -> s.replaceFirst("^" + Pattern.quote(arrayGroupName) + "\\s+", ""))
+            .collect(Collectors.toSet());
         // Add where pattern grouped within array statements
         arrayGraphPatterns.offer(wherePattern);
-        this.recursiveParseNode(deleteTemplate, arrayGraphPatterns, arrayContents, branch, optVarNames);
+        this.recursiveParseNode(deleteTemplate, arrayGraphPatterns, arrayContents, branch, optVariables);
       } else {
         this.updateWherePatterns(wherePattern, deleteTemplate, whereBranchPatterns);
       }
