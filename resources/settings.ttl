@@ -1,0 +1,99 @@
+@prefix base:             <https://theworldavatar.io/kg/settings/> .
+@prefix sh:               <http://www.w3.org/ns/shacl#> .
+@prefix xsd:              <http://www.w3.org/2001/XMLSchema#> .
+@prefix dc-term:          <http://purl.org/dc/terms/> .
+@prefix rdfs:             <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix twa-views:        <https://theworldavatar.io/kg/views/> .
+
+@prefix cmns-col:         <https://www.omg.org/spec/Commons/Collections/> .
+
+base:ConditionalFormatSettingShape
+  a sh:NodeShape ;  
+  sh:targetClass twa-views:CellFormatRuleTemplate ;
+  sh:property [
+    sh:name "subject" ;
+    sh:description "The target of this template, typically a specific table." ;
+    sh:order 0 ;
+    sh:path dc-term:subject ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:name "name" ;
+    sh:description "The name of the conditional formatting template." ;
+    sh:order 1 ;
+    sh:path rdfs:label ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+   sh:property [
+    sh:name "rules";
+    sh:description "The rules to apply the conditional format for.";
+    sh:order 2;
+    sh:path cmns-col:comprises ;
+    sh:node base:CellFormatRuleShape ;
+    sh:minCount 1 ;
+  ] .
+
+base:CellFormatRuleShape
+	a sh:NodeShape ;
+  sh:property [
+    sh:name "field" ;
+    sh:description "The specific form field this conditional rule applies to" ;
+    sh:order 1 ;
+    sh:path rdfs:label ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:name "order" ;
+    sh:description "The execution sequence or priority of the condition. Lower numbers are evaluated first." ;
+    sh:order 2 ;
+    sh:path twa-views:order ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:name "operator" ;
+    sh:description "The comparison logic used to evaluate the condition" ;
+    sh:order 3 ;
+    sh:path (
+      twa-views:condition
+      twa-views:operator
+    ) ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:name "value" ;
+    sh:description "The target value or threshold that the operator evaluates against" ;
+    sh:order 4 ;
+    sh:path (
+      twa-views:condition
+      twa-views:value
+    ) ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:name "background" ;
+    sh:description "The background color applied to the cell in hex format when condition is met" ;
+    sh:order 5 ;
+    sh:path (
+      twa-views:styles
+      twa-views:background
+    ) ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:name "text" ;
+    sh:description "The optional text color applied to the cell in hex format when condition is met" ;
+    sh:order 6 ;
+    sh:path (
+      twa-views:styles
+      twa-views:text
+    ) ;
+    sh:minCount 0 ;
+    sh:maxCount 1 ;
+  ] .
