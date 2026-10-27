@@ -1099,7 +1099,7 @@ These routes manage the presentation settings for the view model ie frontend pla
 
 #### 2.9.1 Rule-based styles route
 
-Users can send a `PUT` request to `<baseURL>/vis-backend-agent/rules/{id}` to add or update the rule-based styles, where `{id}` is the ruleset's identifier with the following request body format:
+Users can send a `PUT` request to `<baseURL>/vis-backend-agent/rules/{id}` to add or update the rule-based styles, where `{id}` is the ruleset's identifier with the following request body format. Please upload the associated required `SHACL` shapes in the `settings.ttl` to the agent endpoint.
 
 ```json
 {

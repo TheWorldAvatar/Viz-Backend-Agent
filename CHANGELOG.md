@@ -1,5 +1,10 @@
 # Change Log
 
+# 1.73.1
+
+- Fixed optional nested array SHACL fields not being picked up
+- Added SHACL shapes for conditional cell formatting
+
 # 1.73.0
 
 - Added conditional formatting routes to get and update preset options
