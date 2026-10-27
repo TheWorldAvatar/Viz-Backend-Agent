@@ -281,7 +281,6 @@ public class DeleteQueryTemplateFactory extends AbstractQueryTemplateFactory {
             v -> new ArrayDeque<>());
         String arrayGroupName = ((Variable) sparqlObject).getVarName().replace("_", ShaclResource.WHITE_SPACE);
         Set<String> optVariables = optVarNames.stream()
-            .filter(varName -> varName.startsWith(arrayGroupName))
             .map(s -> s.replaceFirst("^" + Pattern.quote(arrayGroupName) + "\\s+", ""))
             .collect(Collectors.toSet());
         // Add where pattern grouped within array statements

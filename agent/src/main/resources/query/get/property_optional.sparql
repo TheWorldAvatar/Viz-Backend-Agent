@@ -4,19 +4,27 @@ PREFIX twa:            <https://theworldavatar.io/kg/form/>
 
 SELECT DISTINCT ?name
 WHERE{
-  ?shape rdf:type sh:NodeShape ;
-         sh:targetClass [target] ;
-         (sh:or/rdf:rest*/rdf:first)? ?node.
-  ?node (sh:and/rdf:rest*/rdf:first)?/sh:node?/sh:property ?property .
+  {
+    SELECT ?ori_name ?nestedname ?minCount ?subMinCount ?subproperty WHERE {
+      ?shape rdf:type sh:NodeShape ;
+               sh:targetClass [target] ;
+             (sh:or/rdf:rest*/rdf:first)? ?node.
+      ?node (sh:and/rdf:rest*/rdf:first)?/sh:node?/sh:property ?property .
 
- ?property sh:name ?ori_name .
-  OPTIONAL {
-    ?property sh:node/sh:property ?subproperty .
-    ?subproperty sh:name ?nestedname .
-    OPTIONAL {?subproperty sh:minCount ?subMinCount . }
+      ?property sh:name ?ori_name .
+      OPTIONAL {
+        ?property sh:node/sh:property ?subproperty .
+        ?subproperty sh:name ?nestedname .
+        OPTIONAL {?subproperty sh:minCount ?subMinCount . }
+      }
+      OPTIONAL {?property sh:minCount ?minCount . }
+      FILTER (COALESCE(?minCount, 0) = 0 || (BOUND(?subproperty) && COALESCE(?subMinCount, 0) = 0))
+    }
   }
-  BIND(IF(BOUND(?nestedname), CONCAT(?ori_name, " ", ?nestedname), ?ori_name) AS ?name)
+
+  # Add two result rows to store both the ori name and its combination with nested name
+  VALUES ?rowType { 1 2 }
+  FILTER (?rowType = 1 || BOUND(?nestedname))
   
-  OPTIONAL {?property sh:minCount ?minCount . }
-  FILTER (COALESCE(?minCount, 0) = 0 || (BOUND(?subproperty) && COALESCE(?subMinCount, 0) = 0))
+  BIND(IF(?rowType = 2, ?ori_name, IF(BOUND(?nestedname), CONCAT(?ori_name, " ", ?nestedname), ?ori_name)) AS ?name)
 }
