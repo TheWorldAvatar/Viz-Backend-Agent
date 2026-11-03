@@ -15,6 +15,7 @@ base:ConditionalFormatSettingShape
     sh:description "The target of this template, typically a specific table." ;
     sh:order 0 ;
     sh:path dc-term:subject ;
+    sh:datatype xsd:string ;
     sh:minCount 1 ;
     sh:maxCount 1 ;
   ] ;
@@ -23,6 +24,7 @@ base:ConditionalFormatSettingShape
     sh:description "The name of the conditional formatting template." ;
     sh:order 1 ;
     sh:path rdfs:label ;
+    sh:datatype xsd:string ;
     sh:minCount 1 ;
     sh:maxCount 1 ;
   ] ;
@@ -42,6 +44,7 @@ base:CellFormatRuleShape
     sh:description "The specific form field this conditional rule applies to" ;
     sh:order 1 ;
     sh:path rdfs:label ;
+    sh:datatype xsd:string ;
     sh:minCount 1 ;
     sh:maxCount 1 ;
   ] ;
@@ -50,6 +53,7 @@ base:CellFormatRuleShape
     sh:description "The execution sequence or priority of the condition. Lower numbers are evaluated first." ;
     sh:order 2 ;
     sh:path twa-views:order ;
+    sh:datatype xsd:integer ;
     sh:minCount 1 ;
     sh:maxCount 1 ;
   ] ;
@@ -61,6 +65,7 @@ base:CellFormatRuleShape
       twa-views:condition
       twa-views:operator
     ) ;
+    sh:datatype xsd:string ;
     sh:minCount 1 ;
     sh:maxCount 1 ;
   ] ;
@@ -72,6 +77,7 @@ base:CellFormatRuleShape
       twa-views:condition
       twa-views:value
     ) ;
+    sh:datatype xsd:string ;
     sh:minCount 1 ;
     sh:maxCount 1 ;
   ] ;
@@ -83,6 +89,7 @@ base:CellFormatRuleShape
       twa-views:styles
       twa-views:background
     ) ;
+    sh:datatype xsd:string ;
     sh:minCount 1 ;
     sh:maxCount 1 ;
   ] ;
@@ -94,6 +101,7 @@ base:CellFormatRuleShape
       twa-views:styles
       twa-views:text
     ) ;
+    sh:datatype xsd:string ;
     sh:minCount 0 ;
     sh:maxCount 1 ;
   ] .
