@@ -20,6 +20,7 @@ import com.cmclinnovations.agent.service.GetService;
 import com.cmclinnovations.agent.service.core.FileService;
 import com.cmclinnovations.agent.service.core.QueryTemplateService;
 import com.cmclinnovations.agent.utils.LocalisationResource;
+import com.cmclinnovations.agent.utils.QueryResource;
 import com.cmclinnovations.agent.utils.ShaclResource;
 import com.cmclinnovations.agent.utils.StringResource;
 
@@ -66,8 +67,10 @@ public class ViewPresentationService {
     Queue<SparqlBinding> results = this.getService.getInstances(query);
 
     Map<String, Map<String, List<Map<String, Object>>>> rules = new HashMap<>();
+    Map<String, String> ruleNameIdMapping = new HashMap<>();
     while (!results.isEmpty()) {
       SparqlBinding currentBinding = results.poll();
+      String id = currentBinding.getFieldValue(QueryResource.ID_KEY);
       String name = currentBinding.getFieldValue(ShaclResource.NAME_PROPERTY);
       String field = currentBinding.getFieldValue(StringResource.FIELD_REQUEST_PARAM);
 
@@ -83,6 +86,7 @@ public class ViewPresentationService {
       // Append to the list corresponding to this name as a key
       Map<String, List<Map<String, Object>>> currentResourceRules = rules
           .computeIfAbsent(name, k -> new HashMap<>());
+      ruleNameIdMapping.putIfAbsent(name, id);
       List<Map<String, Object>> existingResourceFieldRuleList = currentResourceRules
           .computeIfAbsent(field, k -> new ArrayList<>());
       existingResourceFieldRuleList.add(rule);
@@ -91,6 +95,8 @@ public class ViewPresentationService {
     List<Map<String, Object>> singletonRules = rules.entrySet().stream()
         .map(currentRule -> {
           Map<String, Object> output = new HashMap(currentRule.getValue());
+          output.put(StringResource.CONDITIONAL_FORMAT_KEY + QueryResource.ID_KEY,
+              ruleNameIdMapping.get(currentRule.getKey()));
           output.put(StringResource.CONDITIONAL_FORMAT_KEY, currentRule.getKey());
           return output;
         })
