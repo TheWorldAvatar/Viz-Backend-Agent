@@ -1,5 +1,6 @@
 {
   "identifier": "https://www.example.org/kg/ClassName",
   "idtwo": "https://www.example.org/kg/ClassTwo",
-  "invoice": "https://purl.org/p2p-o/document#E-Invoice"
+  "invoice": "https://purl.org/p2p-o/document#E-Invoice",
+  "cell_format": "https://theworldavatar.io/kg/views/CellFormatRuleTemplate"
 }
