@@ -13,8 +13,8 @@ WHERE {
   ?rules rdfs:label ?field;
     twa-views:order ?order;
     twa-views:condition/twa-views:operator ?operator;
-    twa-views:condition/twa-views:value ?value;
     twa-views:styles/twa-views:background ?background.
+  OPTIONAL{?rules twa-views:condition/twa-views:value ?value.}
   OPTIONAL{?rules twa-views:styles/twa-views:text ?text.}
 }
 ORDER BY ?order
