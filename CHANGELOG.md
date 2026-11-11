@@ -1,5 +1,10 @@
 # Change Log
 
+# 1.73.2
+- Preserved alternate-day recurrence when extending the rolling 30-day task-generation window, preventing tasks from becoming daily
+- Restricted fixed-date generation to the active generation window, preventing previously generated tasks from being duplicated
+- Added validation for weekly recurrence intervals to prevent invalid schedules from causing an infinite generation loop
+
 # 1.73.1
 
 - Fixed optional nested array SHACL fields not being picked up
