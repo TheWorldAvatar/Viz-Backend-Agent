@@ -213,12 +213,19 @@ public class DateTimeService {
   public int getWeeklyInterval(String recurrence) {
     // Regex to extract numbers from a string
     Matcher matcher = WEEKLY_INTERVAL_PATERN.matcher(recurrence);
-    if (matcher.matches()) {
-      int number = Integer.parseInt(matcher.group(1));
-      return number / 7;
-    } else {
+    if (!matcher.matches()) {
       throw new IllegalArgumentException("Input format is incorrect: " + recurrence);
     }
+
+    int number = Integer.parseInt(matcher.group(1));
+    // Values below seven or values that are not whole weeks would truncate to an
+    // incorrect interval. In particular, truncating to zero would prevent the
+    // occurrence-generation loop from advancing.
+    if (number < 7 || number % 7 != 0) {
+      throw new IllegalArgumentException(
+          "Weekly recurrence must be a positive interval in whole weeks: " + recurrence);
+    }
+    return number / 7;
   }
 
   /**
@@ -312,13 +319,21 @@ public class DateTimeService {
   }
 
   /**
-   * Retrieve dates of occurrences given a list of date and the end date as a
-   * cutoff.
+   * Retrieve dates of occurrences given a list of dates and optional lower and
+   * upper cutoffs.
+   *
+   * @param entryDates     Candidate occurrence dates.
+   * @param startDateInput Optional inclusive lower cutoff.
+   * @param endDateInput   Inclusive upper cutoff.
    */
-  public Queue<String> getOccurrenceDates(List<String> entryDates, String endDateInput) {
+  public Queue<String> getOccurrenceDates(List<String> entryDates, String startDateInput, String endDateInput) {
     return entryDates.stream().filter(dateString -> {
       try {
-        return !this.isFutureDate(dateString, endDateInput);
+        // Initial generation has no lower bound. Scheduled generation supplies the
+        // day after the latest task so previously generated fixed dates are skipped.
+        boolean isOnOrAfterStart = startDateInput == null
+            || this.isTodayOrFutureDate(dateString, startDateInput);
+        return isOnOrAfterStart && !this.isFutureDate(dateString, endDateInput);
       } catch (Exception e) {
         return false;
       }

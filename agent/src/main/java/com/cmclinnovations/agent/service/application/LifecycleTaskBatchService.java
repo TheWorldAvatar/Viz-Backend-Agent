@@ -475,7 +475,7 @@ public class LifecycleTaskBatchService {
       List<String> entryDateStrings = entryDates.stream()
           .map(entryDate -> entryDate.get(QueryResource.FIXED_DATE_DATE_KEY).value())
           .collect(Collectors.toList());
-      occurrences = this.dateTimeService.getOccurrenceDates(entryDateStrings, endDate);
+      occurrences = this.dateTimeService.getOccurrenceDates(entryDateStrings, nextTaskStartDate, endDate);
     } else {
       // Extract date of occurrences based on the schedule information
       // For perpetual and single time schedules, simply add the start date
