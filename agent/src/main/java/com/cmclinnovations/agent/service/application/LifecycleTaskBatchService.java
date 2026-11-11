@@ -475,7 +475,7 @@ public class LifecycleTaskBatchService {
       List<String> entryDateStrings = entryDates.stream()
           .map(entryDate -> entryDate.get(QueryResource.FIXED_DATE_DATE_KEY).value())
           .collect(Collectors.toList());
-      occurrences = this.dateTimeService.getOccurrenceDates(entryDateStrings, endDate);
+      occurrences = this.dateTimeService.getOccurrenceDates(entryDateStrings, nextTaskStartDate, endDate);
     } else {
       // Extract date of occurrences based on the schedule information
       // For perpetual and single time schedules, simply add the start date
@@ -483,6 +483,12 @@ public class LifecycleTaskBatchService {
         occurrences.offer(this.dateTimeService.getDateTimeFromDate(startDate));
       } else if (recurrence.equals(LifecycleResource.RECURRENCE_ALT_DAY_TASK)) {
         // Alternate day recurrence should have dual interval
+        // During scheduled generation, startDate is already the latest task date
+        // plus one day. Advance it once more so the P2D recurrence continues from
+        // the latest task instead of treating the following day as a new anchor.
+        if (nextTaskStartDate != null) {
+          startDate = this.dateTimeService.getFutureDate(startDate, 1);
+        }
         occurrences = this.dateTimeService.getOccurrenceDates(startDate, endDate, 2);
       } else {
         // Note that this may run for other intervals like P3D but
