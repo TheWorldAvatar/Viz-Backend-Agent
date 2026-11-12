@@ -1,5 +1,10 @@
 # Change Log
 
+# 1.73.3
+- Return id for conditional format presets
+- Added missing datatypes in settings shacl
+- Made value field optional for conditional format preset
+
 # 1.73.2
 - Preserved alternate-day recurrence when extending the rolling 30-day task-generation window, preventing tasks from becoming daily
 - Restricted fixed-date generation to the active generation window, preventing previously generated tasks from being duplicated

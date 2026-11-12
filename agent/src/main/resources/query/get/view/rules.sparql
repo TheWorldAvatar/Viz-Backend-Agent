@@ -3,17 +3,18 @@ PREFIX cmns-col: <https://www.omg.org/spec/Commons/Collections/>
 PREFIX dc-term: <http://purl.org/dc/terms/>
 PREFIX twa-views: <https://theworldavatar.io/kg/views/>
 
-SELECT DISTINCT ?name ?field ?operator ?value ?background ?text
+SELECT DISTINCT ?name ?id ?field ?operator ?value ?background ?text
 WHERE {
   ?template a twa-views:CellFormatRuleTemplate;
+    dc-term:identifier ?id;
     dc-term:subject [target];
     rdfs:label ?name;
     cmns-col:comprises ?rules.
   ?rules rdfs:label ?field;
     twa-views:order ?order;
     twa-views:condition/twa-views:operator ?operator;
-    twa-views:condition/twa-views:value ?value;
     twa-views:styles/twa-views:background ?background.
+  OPTIONAL{?rules twa-views:condition/twa-views:value ?value.}
   OPTIONAL{?rules twa-views:styles/twa-views:text ?text.}
 }
 ORDER BY ?order
